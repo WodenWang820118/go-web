@@ -1,0 +1,25 @@
+{
+  admin off
+  auto_https off
+}
+
+:80 {
+  root * C:\software-dev\gx.go\dist\apps\go-web\browser
+  encode zstd gzip
+
+  @backend path /api/* /socket.io/*
+  handle @backend {
+    reverse_proxy 127.0.0.1:3000 {
+      flush_interval -1
+      stream_close_delay 5m
+      transport http {
+        versions h1_1
+      }
+    }
+  }
+
+  handle {
+    try_files {path} /index.html
+    file_server
+  }
+}

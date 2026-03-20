@@ -21,9 +21,18 @@ import { TagModule } from 'primeng/tag';
             Go and Gomoku in one focused board-game workspace
           </h1>
           <p class="max-w-2xl text-base leading-7 text-stone-300 sm:text-lg">
-            Start a polished local match with a custom SVG board, quick rules help,
-            signal-driven state, and room for backend integration later.
+            Start a polished local match with a custom SVG board, or open a hosted
+            room with live spectators, chat, and external share links.
           </p>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <a
+              routerLink="/online/new"
+              class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
+            >
+              Create online room
+            </a>
+          </div>
         </div>
       </header>
 

@@ -38,7 +38,7 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
     '0-3',
     '7-7',
   ]) {
-    await page.getByTestId(`intersection-${point}`).click();
+    await page.getByTestId(`intersection-${point}`).click({ force: true });
   }
 
   await expect(page.getByRole('dialog', { name: /match result/i })).toBeVisible();

@@ -65,7 +65,13 @@
           "buildTarget": "go-web:build:development"
         }
       },
-      "defaultConfiguration": "development"
+      "defaultConfiguration": "development",
+      "dependsOn": [
+        "go-server:serve"
+      ],
+      "options": {
+        "proxyConfig": "apps/go-web/proxy.conf.json"
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint"
@@ -78,7 +84,7 @@
       "continuous": true,
       "executor": "@nx/web:file-server",
       "options": {
-        "buildTarget": "go-web:build",
+        "buildTarget": "go-web:build:development",
         "port": 4200,
         "staticFilePath": "dist/apps/go-web/browser",
         "spa": true

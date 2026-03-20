@@ -1,0 +1,13 @@
+<service>
+  <id>gx-go-caddy</id>
+  <name>gx.go Caddy</name>
+  <description>Caddy reverse proxy and static host for gx.go</description>
+  <executable>C:\Services\caddy\caddy.exe</executable>
+  <arguments>run --config C:\software-dev\gx.go\deploy\windows\Caddyfile</arguments>
+  <workingdirectory>C:\software-dev\gx.go</workingdirectory>
+  <log mode="roll-by-size">
+    <sizeThreshold>10485760</sizeThreshold>
+    <keepFiles>5</keepFiles>
+  </log>
+  <onfailure action="restart" delay="10 sec" />
+</service>

@@ -24,10 +24,11 @@ export default defineConfig({
   },
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm exec -- nx run go-web:serve',
+    command: 'node tools/e2e/start-go-web-stack.cjs',
     url: 'http://localhost:4200',
-    reuseExistingServer: true,
-    cwd: workspaceRoot
+    reuseExistingServer: false,
+    timeout: 180 * 1000,
+    cwd: workspaceRoot,
   },
   projects: [
     {
