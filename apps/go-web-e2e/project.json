@@ -1,0 +1,11 @@
+{
+  "name": "go-web-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/go-web-e2e/src",
+  "implicitDependencies": [
+    "go-web"
+  ],
+  "// targets": "to see all targets run: nx show project go-web-e2e --web",
+  "targets": {}
+}
