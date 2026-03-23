@@ -4,6 +4,7 @@
 }
 
 :80 {
+  bind 127.0.0.1
   root * C:\software-dev\gx.go\dist\apps\go-web\browser
   encode zstd gzip
 
@@ -13,7 +14,7 @@
       flush_interval -1
       stream_close_delay 5m
       transport http {
-        versions h1_1
+        versions 1.1
       }
     }
   }

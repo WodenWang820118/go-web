@@ -1,0 +1,15 @@
+<service>
+  <id>gx-go-server</id>
+  <name>gx.go Nest Server</name>
+  <description>Hosted multiplayer backend for gx.go</description>
+  <executable>C:\nvm4w\nodejs\node.exe</executable>
+  <arguments>C:\software-dev\gx.go\dist\go-server\main.js</arguments>
+  <workingdirectory>C:\software-dev\gx.go</workingdirectory>
+  <env name="HOST" value="127.0.0.1" />
+  <env name="PORT" value="3000" />
+  <log mode="roll-by-size">
+    <sizeThreshold>10485760</sizeThreshold>
+    <keepFiles>5</keepFiles>
+  </log>
+  <onfailure action="restart" delay="10 sec" />
+</service>
