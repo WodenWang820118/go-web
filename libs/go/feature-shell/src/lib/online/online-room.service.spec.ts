@@ -82,7 +82,7 @@ describe('OnlineRoomService', () => {
     window.localStorage.clear();
   });
 
-  it('restores a saved identity and rejoins over websocket during bootstrap', async () => {
+  it('restores a saved identity and rejoins over websocket during bootstrap', () => {
     const stored: StoredRoomIdentity = {
       displayName: 'Host',
       participantId: 'host-1',
@@ -90,12 +90,11 @@ describe('OnlineRoomService', () => {
     };
     storage.set('ROOM42', stored);
 
-    const bootstrapPromise = service.bootstrapRoom('room42');
+    service.bootstrapRoom('room42');
 
     httpMock.expectOne('/api/rooms/ROOM42').flush({
       snapshot: createSnapshot('ROOM42'),
     });
-    await Promise.resolve();
     const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
     expect(joinRequest.request.body.participantToken).toBe('token-1');
     joinRequest.flush({
@@ -105,8 +104,6 @@ describe('OnlineRoomService', () => {
       resumed: true,
       snapshot: createSnapshot('ROOM42'),
     });
-
-    await bootstrapPromise;
 
     expect(service.participantId()).toBe('host-1');
     expect(service.connectionState()).toBe('connected');
@@ -119,8 +116,8 @@ describe('OnlineRoomService', () => {
     });
   });
 
-  it('applies presence updates pushed from the websocket', async () => {
-    const joinPromise = service.joinRoom('ROOM42', 'Guest');
+  it('applies presence updates pushed from the websocket', () => {
+    service.joinRoom('ROOM42', 'Guest').subscribe();
 
     const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
     joinRequest.flush({
@@ -130,8 +127,6 @@ describe('OnlineRoomService', () => {
       resumed: false,
       snapshot: createSnapshot('ROOM42'),
     });
-
-    await joinPromise;
 
     socket.trigger('room.presence', {
       roomId: 'ROOM42',

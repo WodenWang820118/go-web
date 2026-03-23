@@ -1,37 +1,42 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { computed, Injectable, inject, signal } from '@angular/core';
 import {
-  ChatMessageEvent,
   cloneRoomSnapshot,
-  CommandErrorEvent,
   CreateRoomResponse,
   GameCommand,
-  GameUpdatedEvent,
   GameStartSettings,
-  GetRoomResponse,
   JoinRoomResponse,
-  RoomPresenceEvent,
   RoomSnapshot,
-  SystemNoticeEvent,
 } from '@org/go/contracts';
 import { PlayerColor } from '@org/go/domain';
-import { firstValueFrom } from 'rxjs';
-import { Socket, io } from 'socket.io-client';
+import {
+  EMPTY,
+  Observable,
+  Subscription,
+  catchError,
+  defer,
+  finalize,
+  map,
+  of,
+  switchMap,
+  tap,
+  throwError,
+} from 'rxjs';
+import { OnlineRoomSocketService } from './online-room-socket.service';
+import { OnlineRoomsHttpService } from './online-rooms-http.service';
 import {
   OnlineRoomStorageService,
   StoredRoomIdentity,
 } from './online-room-storage.service';
 
 type BootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
-type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
 
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomService {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(OnlineRoomsHttpService);
   private readonly storage = inject(OnlineRoomStorageService);
-  private readonly serverOrigin = this.resolveServerOrigin();
-  private readonly apiBase = `${this.serverOrigin}/api/rooms`;
-  private socket: Socket | null = null;
+  private readonly socket = inject(OnlineRoomSocketService);
+  private bootstrapSubscription: Subscription | null = null;
 
   private readonly activeRoomIdSignal = signal<string | null>(null);
   private readonly snapshotSignal = signal<RoomSnapshot | null>(null);
@@ -39,7 +44,6 @@ export class OnlineRoomService {
   private readonly participantTokenSignal = signal<string | null>(null);
   private readonly displayNameSignal = signal('');
   private readonly bootstrapStateSignal = signal<BootstrapState>('idle');
-  private readonly connectionStateSignal = signal<ConnectionState>('idle');
   private readonly joiningSignal = signal(false);
   private readonly creatingSignal = signal(false);
   private readonly lastErrorSignal = signal<string | null>(null);
@@ -51,7 +55,7 @@ export class OnlineRoomService {
   readonly participantToken = this.participantTokenSignal.asReadonly();
   readonly displayName = this.displayNameSignal.asReadonly();
   readonly bootstrapState = this.bootstrapStateSignal.asReadonly();
-  readonly connectionState = this.connectionStateSignal.asReadonly();
+  readonly connectionState = this.socket.connectionState;
   readonly joining = this.joiningSignal.asReadonly();
   readonly creating = this.creatingSignal.asReadonly();
   readonly lastError = this.lastErrorSignal.asReadonly();
@@ -112,7 +116,11 @@ export class OnlineRoomService {
     return `${window.location.origin}/online/room/${roomId}`;
   });
 
-  async bootstrapRoom(roomId: string): Promise<void> {
+  constructor() {
+    this.bindRealtimeEvents();
+  }
+
+  bootstrapRoom(roomId: string): void {
     const normalizedRoomId = roomId.toUpperCase();
 
     if (
@@ -122,75 +130,106 @@ export class OnlineRoomService {
       return;
     }
 
+    this.bootstrapSubscription?.unsubscribe();
     this.resetForRoom(normalizedRoomId);
     this.bootstrapStateSignal.set('loading');
     this.lastErrorSignal.set(null);
 
-    try {
-      const response = await firstValueFrom(
-        this.http.get<GetRoomResponse>(`${this.apiBase}/${normalizedRoomId}`)
-      );
-      this.snapshotSignal.set(cloneRoomSnapshot(response.snapshot));
-      this.bootstrapStateSignal.set('ready');
+    const stored = this.storage.get(normalizedRoomId);
 
+    this.bootstrapSubscription = this.api
+      .getRoom(normalizedRoomId)
+      .pipe(
+        tap(response => {
+          this.snapshotSignal.set(cloneRoomSnapshot(response.snapshot));
+          this.bootstrapStateSignal.set('ready');
+
+          if (stored) {
+            this.displayNameSignal.set(stored.displayName);
+          }
+        }),
+        switchMap(() => {
+          if (!stored) {
+            return of(void 0);
+          }
+
+          return this.api
+            .joinRoom(normalizedRoomId, stored.displayName, stored.participantToken)
+            .pipe(
+              tap(response => {
+                this.applyJoinResponse(normalizedRoomId, stored.displayName, response);
+              }),
+              map(() => void 0)
+            );
+        }),
+        catchError(error => {
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            this.bootstrapStateSignal.set('missing');
+            this.snapshotSignal.set(null);
+            return EMPTY;
+          }
+
+          this.bootstrapStateSignal.set('ready');
+          this.lastErrorSignal.set(
+            this.api.describeHttpError(error, 'Unexpected network error.')
+          );
+          return EMPTY;
+        }),
+        finalize(() => {
+          this.bootstrapSubscription = null;
+        })
+      )
+      .subscribe();
+  }
+
+  createRoom(displayName: string): Observable<CreateRoomResponse> {
+    return defer(() => {
+      this.creatingSignal.set(true);
+      this.lastErrorSignal.set(null);
+
+      return this.api.createRoom(displayName).pipe(
+        tap(response => {
+          this.applyJoinResponse(response.roomId, displayName, response);
+        }),
+        catchError(error => {
+          this.lastErrorSignal.set(
+            this.api.describeHttpError(error, 'Unexpected network error.')
+          );
+          return throwError(() => error);
+        }),
+        finalize(() => {
+          this.creatingSignal.set(false);
+        })
+      );
+    });
+  }
+
+  joinRoom(roomId: string, displayName: string): Observable<void> {
+    return defer(() => {
+      this.joiningSignal.set(true);
+      this.lastErrorSignal.set(null);
+
+      const normalizedRoomId = roomId.toUpperCase();
       const stored = this.storage.get(normalizedRoomId);
-      if (stored) {
-        this.displayNameSignal.set(stored.displayName);
-        await this.joinRoom(normalizedRoomId, stored.displayName);
-      }
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 404) {
-        this.bootstrapStateSignal.set('missing');
-        this.snapshotSignal.set(null);
-        return;
-      }
 
-      this.bootstrapStateSignal.set('ready');
-      this.lastErrorSignal.set(this.describeHttpError(error));
-    }
-  }
-
-  async createRoom(displayName: string): Promise<CreateRoomResponse> {
-    this.creatingSignal.set(true);
-    this.lastErrorSignal.set(null);
-
-    try {
-      const response = await firstValueFrom(
-        this.http.post<CreateRoomResponse>(this.apiBase, {
-          displayName,
-        })
-      );
-
-      this.applyJoinResponse(response.roomId, displayName, response);
-      return response;
-    } catch (error) {
-      this.lastErrorSignal.set(this.describeHttpError(error));
-      throw error;
-    } finally {
-      this.creatingSignal.set(false);
-    }
-  }
-
-  async joinRoom(roomId: string, displayName: string): Promise<void> {
-    this.joiningSignal.set(true);
-    this.lastErrorSignal.set(null);
-
-    try {
-      const stored = this.storage.get(roomId);
-      const response = await firstValueFrom(
-        this.http.post<JoinRoomResponse>(`${this.apiBase}/${roomId}/join`, {
-          displayName,
-          participantToken: stored?.participantToken,
-        })
-      );
-
-      this.applyJoinResponse(roomId, displayName, response);
-    } catch (error) {
-      this.lastErrorSignal.set(this.describeHttpError(error));
-      throw error;
-    } finally {
-      this.joiningSignal.set(false);
-    }
+      return this.api
+        .joinRoom(normalizedRoomId, displayName, stored?.participantToken)
+        .pipe(
+          tap(response => {
+            this.applyJoinResponse(normalizedRoomId, displayName, response);
+          }),
+          map(() => void 0),
+          catchError(error => {
+            this.lastErrorSignal.set(
+              this.api.describeHttpError(error, 'Unexpected network error.')
+            );
+            return throwError(() => error);
+          }),
+          finalize(() => {
+            this.joiningSignal.set(false);
+          })
+        );
+    });
   }
 
   claimSeat(color: PlayerColor): void {
@@ -245,7 +284,38 @@ export class OnlineRoomService {
   }
 
   disconnect(): void {
-    this.destroySocket();
+    this.socket.disconnect();
+  }
+
+  private bindRealtimeEvents(): void {
+    this.socket.roomSnapshot$.subscribe(snapshot => {
+      this.snapshotSignal.set(cloneRoomSnapshot(snapshot));
+    });
+    this.socket.roomPresence$.subscribe(event => {
+      this.updateSnapshot(snapshot => ({
+        ...snapshot,
+        participants: event.participants,
+        seatState: event.seatState,
+      }));
+    });
+    this.socket.gameUpdated$.subscribe(event => {
+      this.updateSnapshot(snapshot => ({
+        ...snapshot,
+        match: event.match ? structuredClone(event.match) : null,
+      }));
+    });
+    this.socket.chatMessage$.subscribe(event => {
+      this.updateSnapshot(snapshot => ({
+        ...snapshot,
+        chat: [...snapshot.chat, event.message].slice(-100),
+      }));
+    });
+    this.socket.notice$.subscribe(event => {
+      this.lastNoticeSignal.set(event.notice.message);
+    });
+    this.socket.commandError$.subscribe(event => {
+      this.lastErrorSignal.set(event.message);
+    });
   }
 
   private applyJoinResponse(
@@ -267,60 +337,7 @@ export class OnlineRoomService {
     };
 
     this.storage.set(roomId, identity);
-    this.connectSocket(roomId, response.participantToken);
-  }
-
-  private connectSocket(roomId: string, participantToken: string): void {
-    this.destroySocket();
-
-    const socket = io(this.serverOrigin || undefined, {
-      path: '/socket.io',
-      transports: ['websocket'],
-      autoConnect: false,
-    });
-
-    socket.on('connect', () => {
-      this.connectionStateSignal.set('connected');
-      socket.emit('room.join', {
-        roomId,
-        participantToken,
-      });
-    });
-    socket.on('disconnect', () => {
-      this.connectionStateSignal.set('disconnected');
-    });
-    socket.on('room.snapshot', (snapshot: RoomSnapshot) => {
-      this.snapshotSignal.set(cloneRoomSnapshot(snapshot));
-    });
-    socket.on('room.presence', (event: RoomPresenceEvent) => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        participants: event.participants,
-        seatState: event.seatState,
-      }));
-    });
-    socket.on('game.updated', (event: GameUpdatedEvent) => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        match: event.match ? structuredClone(event.match) : null,
-      }));
-    });
-    socket.on('chat.message', (event: ChatMessageEvent) => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        chat: [...snapshot.chat, event.message].slice(-100),
-      }));
-    });
-    socket.on('system.notice', (event: SystemNoticeEvent) => {
-      this.lastNoticeSignal.set(event.notice.message);
-    });
-    socket.on('command.error', (event: CommandErrorEvent) => {
-      this.lastErrorSignal.set(event.message);
-    });
-
-    this.connectionStateSignal.set('connecting');
-    socket.connect();
-    this.socket = socket;
+    this.socket.connect(roomId, response.participantToken);
   }
 
   private emit(
@@ -335,20 +352,23 @@ export class OnlineRoomService {
       | 'host.kick',
     payload: Record<string, unknown> = {}
   ): void {
-    const socket = this.socket;
     const roomId = this.activeRoomIdSignal();
     const participantToken = this.participantTokenSignal();
 
-    if (!socket || !roomId || !participantToken) {
+    if (!roomId || !participantToken) {
       this.lastErrorSignal.set('Join the room before sending realtime commands.');
       return;
     }
 
-    socket.emit(event, {
+    const emitted = this.socket.emit(event, {
       roomId,
       participantToken,
       ...payload,
     });
+
+    if (!emitted) {
+      this.lastErrorSignal.set('Join the room before sending realtime commands.');
+    }
   }
 
   private updateSnapshot(
@@ -365,54 +385,14 @@ export class OnlineRoomService {
 
   private resetForRoom(roomId: string): void {
     if (this.activeRoomIdSignal() !== roomId) {
-      this.destroySocket();
+      this.socket.disconnect();
     }
 
     this.activeRoomIdSignal.set(roomId);
+    this.snapshotSignal.set(null);
     this.participantIdSignal.set(null);
     this.participantTokenSignal.set(null);
     this.displayNameSignal.set('');
     this.lastNoticeSignal.set(null);
-  }
-
-  private destroySocket(): void {
-    if (!this.socket) {
-      return;
-    }
-
-    this.socket.removeAllListeners();
-    this.socket.disconnect();
-    this.socket = null;
-    this.connectionStateSignal.set('idle');
-  }
-
-  private resolveServerOrigin(): string {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-
-    const { protocol, hostname, port } = window.location;
-
-    if (port === '4200') {
-      return `${protocol}//${hostname}:3000`;
-    }
-
-    return '';
-  }
-
-  private describeHttpError(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'Unexpected network error.';
-    }
-
-    if (typeof error.error?.message === 'string') {
-      return error.error.message;
-    }
-
-    if (Array.isArray(error.error?.message)) {
-      return error.error.message.join(', ');
-    }
-
-    return error.message;
   }
 }

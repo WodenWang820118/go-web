@@ -1,32 +1,44 @@
 import { Route } from '@angular/router';
 import { activeMatchGuard, validModeGuard } from '@org/go/state';
-import { LandingPageComponent } from './pages/landing-page.component';
-import { OnlineCreatePageComponent } from './pages/online-create-page.component';
-import { OnlineRoomPageComponent } from './pages/online-room-page.component';
-import { PlayPageComponent } from './pages/play-page.component';
-import { SetupPageComponent } from './pages/setup-page.component';
 
 export const goFeatureShellRoutes: Route[] = [
   {
     path: '',
-    component: LandingPageComponent,
+    async loadComponent() {
+      return (await import('./pages/online-create-page.component')).OnlineCreatePageComponent;
+    },
   },
   {
     path: 'setup/:mode',
-    component: SetupPageComponent,
+    async loadComponent() {
+      return (await import('./pages/setup-page.component')).SetupPageComponent;
+    },
     canActivate: [validModeGuard],
   },
   {
+    path: 'online',
+    async loadComponent() {
+      return (await import('./pages/online-lobby-page.component')).OnlineLobbyPageComponent;
+    },
+  },
+  {
     path: 'online/new',
-    component: OnlineCreatePageComponent,
+    redirectTo: 'online',
+    pathMatch: 'full',
   },
   {
     path: 'online/room/:roomId',
-    component: OnlineRoomPageComponent,
+    async loadComponent() {
+      const m = await import('./pages/online-room-page.component');
+      return m.OnlineRoomPageComponent;
+    }
   },
   {
     path: 'play/:mode',
-    component: PlayPageComponent,
+    async loadComponent() {
+      const m = await import('./pages/play-page.component');
+      return m.PlayPageComponent;
+    },
     canActivate: [validModeGuard, activeMatchGuard],
   },
   {

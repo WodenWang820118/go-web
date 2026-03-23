@@ -16,6 +16,9 @@ import {
   GetRoomResponse,
   HostedMatchSnapshot,
   JoinRoomResponse,
+  ListRoomsResponse,
+  LobbyRoomStatus,
+  LobbyRoomSummary,
   RoomSnapshot,
   SystemNotice,
 } from '@org/go/contracts';
@@ -168,6 +171,25 @@ export class RoomsService implements OnModuleDestroy {
   getRoom(roomId: string): GetRoomResponse {
     return {
       snapshot: this.snapshotFor(this.getRoomRecord(roomId)),
+    };
+  }
+
+  listRooms(): ListRoomsResponse {
+    const rooms = [...this.rooms.values()]
+      .filter(room => !this.isRoomOffline(room))
+      .map(room => this.lobbySummaryFor(room))
+      .sort((left, right) => {
+        const statusOrder = this.compareLobbyStatus(left.status, right.status);
+
+        if (statusOrder !== 0) {
+          return statusOrder;
+        }
+
+        return right.updatedAt.localeCompare(left.updatedAt);
+      });
+
+    return {
+      rooms,
     };
   }
 
@@ -595,6 +617,34 @@ export class RoomsService implements OnModuleDestroy {
     };
   }
 
+  private lobbySummaryFor(room: RoomRecord): LobbyRoomSummary {
+    const host = room.participants.get(room.hostParticipantId);
+    const black = this.getSeatHolder(room, 'black');
+    const white = this.getSeatHolder(room, 'white');
+    const onlineCount = [...room.participants.values()].filter(
+      participant => participant.online
+    ).length;
+
+    return {
+      roomId: room.id,
+      createdAt: room.createdAt,
+      updatedAt: room.updatedAt,
+      hostDisplayName: host?.displayName ?? 'Host',
+      status: this.getLobbyStatus(room, black, white),
+      mode: room.match?.settings.mode ?? null,
+      boardSize: room.match?.settings.boardSize ?? null,
+      players: {
+        black: black?.displayName ?? null,
+        white: white?.displayName ?? null,
+      },
+      participantCount: room.participants.size,
+      onlineCount,
+      spectatorCount: [...room.participants.values()].filter(
+        participant => participant.seat === null
+      ).length,
+    };
+  }
+
   private getRoomRecord(roomId: string): RoomRecord {
     const normalized = roomId.trim().toUpperCase();
     const room = this.rooms.get(normalized);
@@ -673,6 +723,35 @@ export class RoomsService implements OnModuleDestroy {
     }
 
     return null;
+  }
+
+  private getLobbyStatus(
+    room: RoomRecord,
+    black: ParticipantRecord | null,
+    white: ParticipantRecord | null
+  ): LobbyRoomStatus {
+    if (room.match && room.match.state.phase !== 'finished') {
+      return 'live';
+    }
+
+    if (black && white) {
+      return 'ready';
+    }
+
+    return 'waiting';
+  }
+
+  private compareLobbyStatus(
+    left: LobbyRoomStatus,
+    right: LobbyRoomStatus
+  ): number {
+    const order: Record<LobbyRoomStatus, number> = {
+      live: 0,
+      ready: 1,
+      waiting: 2,
+    };
+
+    return order[left] - order[right];
   }
 
   private assertSeatChangeAllowed(room: RoomRecord): void {

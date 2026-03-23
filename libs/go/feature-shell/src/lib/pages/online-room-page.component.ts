@@ -13,7 +13,7 @@ import {
   capitalizePlayerColor,
 } from '@org/go/domain';
 import { GameBoardComponent, GameStatusChipComponent, StoneBadgeComponent } from '@org/go/ui';
-import { map } from 'rxjs';
+import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 
 @Component({
@@ -47,6 +47,29 @@ export class OnlineRoomPageComponent {
   protected readonly match = this.onlineRoom.match;
   protected readonly participants = this.onlineRoom.participants;
   protected readonly viewer = this.onlineRoom.viewer;
+  protected readonly roomStage = computed(() => {
+    const snapshot = this.snapshot();
+
+    if (!snapshot || this.match()) {
+      return null;
+    }
+
+    if (snapshot.seatState.black && snapshot.seatState.white) {
+      return {
+        label: 'Ready room',
+        title: 'Players are matched and waiting for the host.',
+        description:
+          'Both seats are filled, spectators can already chat, and the host can start the next match at any time.',
+      };
+    }
+
+    return {
+      label: 'Waiting room',
+      title: 'Open seats are still available.',
+      description:
+        'Players can claim black and white while spectators join early and keep the room chat moving.',
+    };
+  });
   protected readonly seats = computed(() => {
     const snapshot = this.snapshot();
 
@@ -92,6 +115,14 @@ export class OnlineRoomPageComponent {
       !!this.snapshot()?.seatState.white
   );
   protected readonly shareUrl = this.onlineRoom.shareUrl;
+  protected readonly joinCardTitle = computed(() =>
+    this.match() ? 'Join as spectator' : 'Enter as a spectator or player'
+  );
+  protected readonly joinCardDescription = computed(() =>
+    this.match()
+      ? 'Live rooms are watch-and-chat only until the current match ends.'
+      : 'Pick a display name to join the room before claiming a seat or chatting.'
+  );
 
   protected readonly joinForm = new FormGroup({
     displayName: new FormControl('', {
@@ -120,7 +151,7 @@ export class OnlineRoomPageComponent {
       const roomId = this.roomId();
 
       if (roomId) {
-        void this.onlineRoom.bootstrapRoom(roomId);
+        this.onlineRoom.bootstrapRoom(roomId);
       }
     });
 
@@ -152,17 +183,23 @@ export class OnlineRoomPageComponent {
     });
   }
 
-  protected async joinRoom(): Promise<void> {
+  protected joinRoom(): void {
     const roomId = this.roomId();
 
     if (!roomId) {
       return;
     }
 
-    await this.onlineRoom.joinRoom(roomId, this.joinForm.controls.displayName.value);
+    this.onlineRoom
+      .joinRoom(roomId, this.joinForm.controls.displayName.value)
+      .pipe(
+        catchError(() => EMPTY),
+        take(1)
+      )
+      .subscribe();
   }
 
-  protected async copyShareUrl(): Promise<void> {
+  protected copyShareUrl(): void {
     const shareUrl = this.shareUrl();
 
     if (!shareUrl || typeof navigator === 'undefined' || !navigator.clipboard) {
@@ -170,8 +207,18 @@ export class OnlineRoomPageComponent {
       return;
     }
 
-    await navigator.clipboard.writeText(shareUrl);
-    this.onlineRoom.clearTransientMessages();
+    from(navigator.clipboard.writeText(shareUrl))
+      .pipe(
+        tap(() => {
+          this.onlineRoom.clearTransientMessages();
+        }),
+        catchError(() => {
+          this.onlineRoom.clearTransientMessages();
+          return EMPTY;
+        }),
+        take(1)
+      )
+      .subscribe();
   }
 
   protected claimSeat(color: PlayerColor): void {

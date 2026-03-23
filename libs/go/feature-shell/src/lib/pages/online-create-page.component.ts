@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { EMPTY, catchError, from, switchMap, take } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 
 @Component({
@@ -75,8 +76,14 @@ export class OnlineCreatePageComponent {
     }),
   });
 
-  protected async createRoom(): Promise<void> {
-    const response = await this.onlineRoom.createRoom(this.form.controls.displayName.value);
-    await this.router.navigate(['/online/room', response.roomId]);
+  protected createRoom(): void {
+    this.onlineRoom
+      .createRoom(this.form.controls.displayName.value)
+      .pipe(
+        switchMap(response => from(this.router.navigate(['/online/room', response.roomId]))),
+        catchError(() => EMPTY),
+        take(1)
+      )
+      .subscribe();
   }
 }

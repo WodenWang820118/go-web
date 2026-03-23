@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import {
   CreateRoomResponse,
   JoinRoomResponse,
+  ListRoomsResponse,
   RoomSnapshot,
 } from '@org/go/contracts';
 import request from 'supertest';
@@ -156,6 +157,51 @@ describe('rooms integration', () => {
     },
     30000
   );
+
+  it('lists public lobby rooms through the REST API', async () => {
+    const waitingResponse = await request(app.getHttpServer())
+      .post('/api/rooms')
+      .send({ displayName: 'Host Waiting' })
+      .expect(201);
+    const waitingRoom = waitingResponse.body as CreateRoomResponse;
+
+    await request(app.getHttpServer())
+      .post('/api/rooms')
+      .send({ displayName: 'Host Offline' })
+      .expect(201);
+
+    const waitingSocket = io(baseUrl, {
+      path: '/socket.io',
+      transports: ['websocket'],
+      forceNew: true,
+    });
+
+    sockets.push(waitingSocket);
+    await waitForConnect(waitingSocket);
+
+    const waitingJoined = once<RoomSnapshot>(waitingSocket, 'room.snapshot');
+    waitingSocket.emit('room.join', {
+      roomId: waitingRoom.roomId,
+      participantToken: waitingRoom.participantToken,
+    });
+    await waitingJoined;
+
+    const listResponse = await request(app.getHttpServer())
+      .get('/api/rooms')
+      .expect(200);
+    const body = listResponse.body as ListRoomsResponse;
+
+    expect(body.rooms).toEqual([
+      expect.objectContaining({
+        roomId: waitingRoom.roomId,
+        hostDisplayName: 'Host Waiting',
+        status: 'waiting',
+        participantCount: 1,
+        onlineCount: 1,
+        spectatorCount: 1,
+      }),
+    ]);
+  });
 });
 
 function waitForConnect(socket: Socket): Promise<void> {

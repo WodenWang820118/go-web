@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { computed, signal } from '@angular/core';
 import { RoomSnapshot } from '@org/go/contracts';
+import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';
 import { OnlineRoomService } from '../online/online-room.service';
@@ -33,6 +34,128 @@ describe('OnlineRoomPageComponent', () => {
 
     expect(text).toContain('Host controls');
     expect(text).toContain('You are here as');
+  });
+
+  it('shows waiting copy when seats are still open', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const text = await renderText(roomService);
+
+    expect(text).toContain('Waiting room');
+    expect(text).toContain('Open seats are still available.');
+  });
+
+  it('shows ready copy when both seats are filled before the match starts', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+      }),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const text = await renderText(roomService);
+
+    expect(text).toContain('Ready room');
+    expect(text).toContain('Players are matched and waiting for the host.');
+  });
+
+  it('shows spectator join copy for live rooms', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null)
+            ),
+            phase: 'playing',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: null,
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: 'Black to move.',
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const text = await renderText(roomService);
+
+    expect(text).toContain('Join as spectator');
+    expect(text).toContain('Live rooms are watch-and-chat only until the current match ends.');
   });
 });
 
@@ -112,8 +235,8 @@ function createRoomServiceStub(options: {
     canChangeSeats,
     shareUrl,
     chat,
-    bootstrapRoom: vi.fn().mockResolvedValue(undefined),
-    joinRoom: vi.fn().mockResolvedValue(undefined),
+    bootstrapRoom: vi.fn(),
+    joinRoom: vi.fn().mockReturnValue(of(void 0)),
     claimSeat: vi.fn(),
     releaseSeat: vi.fn(),
     startMatch: vi.fn(),
@@ -126,7 +249,7 @@ function createRoomServiceStub(options: {
   };
 }
 
-function createSnapshot(): RoomSnapshot {
+function createSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
   return {
     roomId: 'ROOM42',
     createdAt: '2026-03-20T00:00:00.000Z',
@@ -149,5 +272,6 @@ function createSnapshot(): RoomSnapshot {
     },
     match: null,
     chat: [],
+    ...overrides,
   };
 }

@@ -42,6 +42,25 @@ export interface HostedMatchSnapshot {
   startedAt: string;
 }
 
+export type LobbyRoomStatus = 'live' | 'ready' | 'waiting';
+
+export interface LobbyRoomSummary {
+  roomId: string;
+  createdAt: string;
+  updatedAt: string;
+  hostDisplayName: string;
+  status: LobbyRoomStatus;
+  mode: MatchSettings['mode'] | null;
+  boardSize: MatchSettings['boardSize'] | null;
+  players: {
+    black: string | null;
+    white: string | null;
+  };
+  participantCount: number;
+  onlineCount: number;
+  spectatorCount: number;
+}
+
 export interface RoomSnapshot {
   roomId: string;
   createdAt: string;
@@ -79,6 +98,10 @@ export interface JoinRoomResponse {
 
 export interface GetRoomResponse {
   snapshot: RoomSnapshot;
+}
+
+export interface ListRoomsResponse {
+  rooms: LobbyRoomSummary[];
 }
 
 export interface RoomJoinPayload {

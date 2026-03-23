@@ -1,0 +1,61 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { LobbyRoomSummary } from '@org/go/contracts';
+import { EMPTY, Subscription, catchError, finalize, tap } from 'rxjs';
+import { OnlineRoomsHttpService } from './online-rooms-http.service';
+
+@Injectable({ providedIn: 'root' })
+export class OnlineLobbyService {
+  private readonly api = inject(OnlineRoomsHttpService);
+  private refreshSubscription: Subscription | null = null;
+
+  private readonly roomsSignal = signal<LobbyRoomSummary[]>([]);
+  private readonly loadingSignal = signal(true);
+  private readonly lastErrorSignal = signal<string | null>(null);
+  private readonly initializedSignal = signal(false);
+
+  readonly rooms = this.roomsSignal.asReadonly();
+  readonly loading = this.loadingSignal.asReadonly();
+  readonly lastError = this.lastErrorSignal.asReadonly();
+  readonly hasRooms = computed(() => this.roomsSignal().length > 0);
+
+  refresh(): void {
+    if (this.refreshSubscription) {
+      return;
+    }
+
+    const isInitialLoad = !this.initializedSignal();
+
+    if (isInitialLoad) {
+      this.loadingSignal.set(true);
+    }
+
+    this.lastErrorSignal.set(null);
+
+    this.refreshSubscription = this.api
+      .listRooms()
+      .pipe(
+        tap(response => {
+          this.roomsSignal.set([...response.rooms]);
+          this.initializedSignal.set(true);
+        }),
+        catchError((error: unknown) => {
+          this.initializedSignal.set(true);
+          this.lastErrorSignal.set(
+            this.api.describeHttpError(
+              error,
+              'Unable to load the online lobby right now.'
+            )
+          );
+          return EMPTY;
+        }),
+        finalize(() => {
+          if (isInitialLoad) {
+            this.loadingSignal.set(false);
+          }
+
+          this.refreshSubscription = null;
+        })
+      )
+      .subscribe();
+  }
+}

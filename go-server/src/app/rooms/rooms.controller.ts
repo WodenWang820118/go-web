@@ -11,6 +11,7 @@ import {
   CreateRoomResponse,
   GetRoomResponse,
   JoinRoomResponse,
+  ListRoomsResponse,
 } from '@org/go/contracts';
 import { Request } from 'express';
 import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
@@ -45,6 +46,11 @@ export class RoomsController {
       body.participantToken,
       this.requesterKey(request, `join:${roomId}`)
     );
+  }
+
+  @Get()
+  listRooms(): ListRoomsResponse {
+    return this.roomsService.listRooms();
   }
 
   @Get(':roomId')

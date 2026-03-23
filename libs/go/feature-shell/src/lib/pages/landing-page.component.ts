@@ -27,10 +27,10 @@ import { TagModule } from 'primeng/tag';
 
           <div class="flex flex-wrap gap-3 pt-2">
             <a
-              routerLink="/online/new"
+              routerLink="/online"
               class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
             >
-              Create online room
+              Open online lobby
             </a>
           </div>
         </div>
