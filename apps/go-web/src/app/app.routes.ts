@@ -4,6 +4,6 @@ export const appRoutes: Route[] = [
   {
     path: '',
     loadChildren: () =>
-      import('@org/go/feature-shell').then(module => module.goFeatureShellRoutes),
+      import('@gx/go/feature-shell').then(module => module.goFeatureShellRoutes),
   },
 ];

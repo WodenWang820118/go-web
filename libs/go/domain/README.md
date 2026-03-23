@@ -10,7 +10,7 @@ Framework-free Go and Gomoku domain model for the workspace.
 
 ## Public API
 
-Import from `@org/go/domain`.
+Import from `@gx/go/domain`.
 
 Key exports include:
 

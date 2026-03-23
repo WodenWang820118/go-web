@@ -6,8 +6,8 @@ import {
   RoomPresenceEvent,
   RoomSnapshot,
   SystemNoticeEvent,
-} from '@org/go/contracts';
-import { GO_SERVER_ORIGIN } from '@org/go/state';
+} from '@gx/go/contracts';
+import { GO_SERVER_ORIGIN } from '@gx/go/state';
 import { Subject } from 'rxjs';
 import { Socket, io } from 'socket.io-client';
 

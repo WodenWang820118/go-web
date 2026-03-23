@@ -1,5 +1,5 @@
-import { HostedMatchSnapshot, ParticipantSummary, RoomSnapshot } from '@org/go/contracts';
-import { PlayerColor } from '@org/go/domain';
+import { HostedMatchSnapshot, ParticipantSummary, RoomSnapshot } from '@gx/go/contracts';
+import { PlayerColor } from '@gx/go/domain';
 
 /**
  * Returns the current participant list for a hosted room.

@@ -3,7 +3,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { GO_SERVER_ORIGIN, resolveGoServerOrigin } from '@org/go/state';
+import { GO_SERVER_ORIGIN, resolveGoServerOrigin } from '@gx/go/state';
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';

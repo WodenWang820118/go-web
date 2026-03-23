@@ -11,7 +11,7 @@ Angular feature library for the Go application routes and page-level orchestrati
 
 ## Public API
 
-Import from `@org/go/feature-shell`.
+Import from `@gx/go/feature-shell`.
 
 Public entrypoints currently include:
 

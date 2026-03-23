@@ -2,7 +2,7 @@ import {
   CreateRoomRequest,
   GameStartSettings,
   JoinRoomRequest,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 import { Transform } from 'class-transformer';
 import {
   IsInt,

@@ -20,7 +20,7 @@ import {
   SeatReleasePayload,
   SystemNotice,
   SystemNoticeEvent,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 import { HttpException, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';

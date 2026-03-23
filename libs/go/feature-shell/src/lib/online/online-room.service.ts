@@ -7,8 +7,8 @@ import {
   GameStartSettings,
   JoinRoomResponse,
   RoomSnapshot,
-} from '@org/go/contracts';
-import { PlayerColor } from '@org/go/domain';
+} from '@gx/go/contracts';
+import { PlayerColor } from '@gx/go/domain';
 import {
   EMPTY,
   Observable,

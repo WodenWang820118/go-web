@@ -1,5 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { LobbyRoomSummary } from '@org/go/contracts';
+import { LobbyRoomSummary } from '@gx/go/contracts';
 import { EMPTY, Subscription, catchError, finalize, tap } from 'rxjs';
 import { OnlineRoomsHttpService } from './online-rooms-http.service';
 
@@ -46,6 +47,12 @@ export class OnlineLobbyService {
         }),
         catchError((error: unknown) => {
           this.initializedSignal.set(true);
+
+          if (this.isMissingLobby(error)) {
+            this.roomsSignal.set([]);
+            return EMPTY;
+          }
+
           this.lastErrorSignal.set(
             this.api.describeHttpError(
               error,
@@ -63,5 +70,9 @@ export class OnlineLobbyService {
         })
       )
       .subscribe();
+  }
+
+  private isMissingLobby(error: unknown): error is HttpErrorResponse {
+    return error instanceof HttpErrorResponse && error.status === 404;
   }
 }

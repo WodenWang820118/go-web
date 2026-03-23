@@ -5,7 +5,7 @@ import {
   MatchSettings,
   MatchState,
   MoveRecord,
-} from '@org/go/domain';
+} from '@gx/go/domain';
 import { ButtonModule } from 'primeng/button';
 import { DividerModule } from 'primeng/divider';
 import { TagModule } from 'primeng/tag';

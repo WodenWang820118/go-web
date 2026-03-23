@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { GAME_MODE_LIST } from '@org/go/domain';
+import { GAME_MODE_LIST } from '@gx/go/domain';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 

@@ -6,11 +6,11 @@ Shared presentational Angular components for the Go frontend.
 
 - Renders the game board and supporting status UI
 - Stays focused on display and interaction surfaces rather than room/network orchestration
-- Provides reusable standalone components consumed by `@org/go/feature-shell`
+- Provides reusable standalone components consumed by `@gx/go/feature-shell`
 
 ## Public API
 
-Import from `@org/go/ui`.
+Import from `@gx/go/ui`.
 
 Current exports include:
 

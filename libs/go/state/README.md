@@ -11,7 +11,7 @@ Client-side state and integration layer for the Go frontend.
 
 ## Public API
 
-Import from `@org/go/state`.
+Import from `@gx/go/state`.
 
 Key exports include:
 
@@ -23,7 +23,7 @@ Key exports include:
 - `GO_SERVER_ORIGIN`
 - `resolveGoServerOrigin`
 
-Keep pure rules and board logic in `@org/go/domain`; keep Angular-independent room contracts in `@org/go/contracts`.
+Keep pure rules and board logic in `@gx/go/domain`; keep Angular-independent room contracts in `@gx/go/contracts`.
 
 ## Validation
 

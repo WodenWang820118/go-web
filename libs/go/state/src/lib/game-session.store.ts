@@ -6,7 +6,7 @@ import {
   type GameMode,
   type MatchSettings,
   type PlayerColor,
-} from '@org/go/domain';
+} from '@gx/go/domain';
 import { GAME_SESSION_PORT } from './game-session.port';
 import { cloneSnapshot, GameSessionSnapshot } from './game-session.types';
 

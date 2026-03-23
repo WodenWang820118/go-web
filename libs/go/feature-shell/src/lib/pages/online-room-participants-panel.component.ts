@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { HostedMatchSnapshot, ParticipantSummary } from '@org/go/contracts';
-import { capitalizePlayerColor, PlayerColor } from '@org/go/domain';
-import { GameStatusChipComponent, StoneBadgeComponent } from '@org/go/ui';
+import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
+import { capitalizePlayerColor, PlayerColor } from '@gx/go/domain';
+import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { OnlineRoomSeatViewModel } from './online-room-page.models';
 
 @Component({

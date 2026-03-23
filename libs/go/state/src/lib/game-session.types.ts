@@ -1,4 +1,4 @@
-import { MatchSettings, MatchState } from '@org/go/domain';
+import { MatchSettings, MatchState } from '@gx/go/domain';
 
 export interface GameSessionSnapshot {
   settings: MatchSettings;

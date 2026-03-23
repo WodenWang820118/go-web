@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { MatchPhase, PlayerColor, ResultSummary } from '@org/go/domain';
+import { MatchPhase, PlayerColor, ResultSummary } from '@gx/go/domain';
 
 @Component({
   selector: 'lib-go-game-status-chip',

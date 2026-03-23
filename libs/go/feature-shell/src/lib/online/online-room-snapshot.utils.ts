@@ -3,7 +3,7 @@ import {
   GameUpdatedEvent,
   RoomPresenceEvent,
   RoomSnapshot,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 
 const CHAT_HISTORY_LIMIT = 100;
 

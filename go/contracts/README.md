@@ -10,7 +10,7 @@ Shared multiplayer room contracts for the Go stack.
 
 ## Public API
 
-Import from `@org/go/contracts`.
+Import from `@gx/go/contracts`.
 
 Key exported shapes include:
 

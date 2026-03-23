@@ -4,8 +4,8 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { LobbyRoomSummary } from '@org/go/contracts';
-import { GO_SERVER_ORIGIN } from '@org/go/state';
+import { LobbyRoomSummary } from '@gx/go/contracts';
+import { GO_SERVER_ORIGIN } from '@gx/go/state';
 import { OnlineLobbyService } from './online-lobby.service';
 
 describe('OnlineLobbyService', () => {
@@ -71,6 +71,20 @@ describe('OnlineLobbyService', () => {
     expect(service.loading()).toBe(false);
     expect(service.rooms()).toEqual([]);
     expect(service.lastError()).toBe('Lobby unavailable');
+  });
+
+  it('treats a missing lobby endpoint as an empty lobby', () => {
+    service.refresh();
+
+    httpMock.expectOne('/api/rooms').flush('Cannot GET /api/rooms', {
+      status: 404,
+      statusText: 'Not Found',
+    });
+
+    expect(service.loading()).toBe(false);
+    expect(service.rooms()).toEqual([]);
+    expect(service.hasRooms()).toBe(false);
+    expect(service.lastError()).toBeNull();
   });
 });
 

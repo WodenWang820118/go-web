@@ -11,8 +11,8 @@ import {
   GO_BOARD_SIZES,
   isGameMode,
   type GoBoardSize,
-} from '@org/go/domain';
-import { GameSessionStore } from '@org/go/state';
+} from '@gx/go/domain';
+import { GameSessionStore } from '@gx/go/state';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';

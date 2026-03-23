@@ -1,5 +1,5 @@
 {
-  "name": "@org/go/contracts",
+  "name": "@gx/go/contracts",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",

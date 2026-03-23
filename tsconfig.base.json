@@ -23,11 +23,11 @@
       ],
       "@org/shop/feature-products": ["libs/shop/feature-products/src/index.ts"],
       "@org/shop/shared-ui": ["libs/shop/shared-ui/src/index.ts"],
-      "@org/go/domain": ["libs/go/domain/src/index.ts"],
-      "@org/go/state": ["libs/go/state/src/index.ts"],
-      "@org/go/ui": ["libs/go/ui/src/index.ts"],
-      "@org/go/feature-shell": ["libs/go/feature-shell/src/index.ts"],
-      "@org/go/contracts": ["go/contracts/src/index.ts"]
+      "@gx/go/domain": ["libs/go/domain/src/index.ts"],
+      "@gx/go/state": ["libs/go/state/src/index.ts"],
+      "@gx/go/ui": ["libs/go/ui/src/index.ts"],
+      "@gx/go/feature-shell": ["libs/go/feature-shell/src/index.ts"],
+      "@gx/go/contracts": ["go/contracts/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

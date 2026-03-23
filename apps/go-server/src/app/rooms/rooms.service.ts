@@ -21,7 +21,7 @@ import {
   LobbyRoomSummary,
   RoomSnapshot,
   SystemNotice,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 import {
   DEFAULT_GO_KOMI,
   GOMOKU_BOARD_SIZE,
@@ -29,7 +29,7 @@ import {
   MatchSettings,
   PlayerColor,
   getRulesEngine,
-} from '@org/go/domain';
+} from '@gx/go/domain';
 
 const ROOM_ID_LENGTH = 6;
 const ROOM_ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

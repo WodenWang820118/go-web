@@ -19,7 +19,7 @@ import {
   PlayerColor,
   pointEquals,
   pointKey,
-} from '@org/go/domain';
+} from '@gx/go/domain';
 import { BoardCoordinatesComponent } from '../board-coordinates/board-coordinates.component';
 
 @Component({

@@ -12,7 +12,7 @@ import {
   GetRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 import { Request } from 'express';
 import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
 import { RoomsService } from './rooms.service';

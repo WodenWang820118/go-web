@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { computed, signal } from '@angular/core';
-import { RoomSnapshot } from '@org/go/contracts';
+import { RoomSnapshot } from '@gx/go/contracts';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';

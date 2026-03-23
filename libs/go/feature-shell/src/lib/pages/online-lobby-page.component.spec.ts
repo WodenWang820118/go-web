@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Component, computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { CreateRoomResponse, LobbyRoomSummary, RoomSnapshot } from '@org/go/contracts';
+import { CreateRoomResponse, LobbyRoomSummary, RoomSnapshot } from '@gx/go/contracts';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyService } from '../online/online-lobby.service';

@@ -7,7 +7,7 @@ import {
   output,
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ChatMessage } from '@org/go/contracts';
+import { ChatMessage } from '@gx/go/contracts';
 
 @Component({
   selector: 'lib-go-online-room-chat-panel',

@@ -3,8 +3,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { BoardPoint, DEFAULT_GO_KOMI, GOMOKU_BOARD_SIZE, GO_BOARD_SIZES, GameMode, PlayerColor } from '@org/go/domain';
-import { GameBoardComponent, StoneBadgeComponent } from '@org/go/ui';
+import { BoardPoint, DEFAULT_GO_KOMI, GOMOKU_BOARD_SIZE, GO_BOARD_SIZES, GameMode, PlayerColor } from '@gx/go/domain';
+import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';

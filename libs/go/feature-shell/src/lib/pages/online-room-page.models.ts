@@ -1,5 +1,5 @@
-import { ParticipantSummary } from '@org/go/contracts';
-import { PlayerColor } from '@org/go/domain';
+import { ParticipantSummary } from '@gx/go/contracts';
+import { PlayerColor } from '@gx/go/domain';
 
 export interface OnlineRoomStageViewModel {
   label: string;

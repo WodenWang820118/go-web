@@ -13,9 +13,9 @@ import {
   getGameModeMeta,
   isGameMode,
   type BoardPoint,
-} from '@org/go/domain';
-import { GameSessionStore } from '@org/go/state';
-import { GameBoardComponent, MatchSidebarComponent, StoneBadgeComponent } from '@org/go/ui';
+} from '@gx/go/domain';
+import { GameSessionStore } from '@gx/go/state';
+import { GameBoardComponent, MatchSidebarComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';

@@ -3,7 +3,7 @@ import { computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { GameSessionStore } from '@org/go/state';
+import { GameSessionStore } from '@gx/go/state';
 import { OnlineLobbyService } from '../online/online-lobby.service';
 import { OnlineRoomService } from '../online/online-room.service';
 import { goFeatureShellRoutes } from '../go-feature-shell.routes';

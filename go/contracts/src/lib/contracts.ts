@@ -4,7 +4,7 @@ import {
   MatchState,
   MoveCommand,
   PlayerColor,
-} from '@org/go/domain';
+} from '@gx/go/domain';
 
 export interface ParticipantSummary {
   participantId: string;

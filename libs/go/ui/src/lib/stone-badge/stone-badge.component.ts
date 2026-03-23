@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { PlayerColor } from '@org/go/domain';
+import { PlayerColor } from '@gx/go/domain';
 
 @Component({
   selector: 'lib-go-stone-badge',

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { buildCoordinateLabels, BoardSize } from '@org/go/domain';
+import { buildCoordinateLabels, BoardSize } from '@gx/go/domain';
 
 @Component({
   selector: 'lib-go-board-coordinates',

@@ -5,8 +5,8 @@ import {
   GetRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
-} from '@org/go/contracts';
-import { GO_SERVER_ORIGIN } from '@org/go/state';
+} from '@gx/go/contracts';
+import { GO_SERVER_ORIGIN } from '@gx/go/state';
 import { Observable } from 'rxjs';
 
 /**

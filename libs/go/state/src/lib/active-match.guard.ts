@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { isGameMode } from '@org/go/domain';
+import { isGameMode } from '@gx/go/domain';
 import { GameSessionStore } from './game-session.store';
 
 /**

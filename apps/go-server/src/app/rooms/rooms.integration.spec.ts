@@ -5,7 +5,7 @@ import {
   JoinRoomResponse,
   ListRoomsResponse,
   RoomSnapshot,
-} from '@org/go/contracts';
+} from '@gx/go/contracts';
 import request from 'supertest';
 import { Socket, io } from 'socket.io-client';
 import { AppModule } from '../app.module';

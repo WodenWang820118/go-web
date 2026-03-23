@@ -4,8 +4,8 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { RoomSnapshot } from '@org/go/contracts';
-import { GO_SERVER_ORIGIN } from '@org/go/state';
+import { RoomSnapshot } from '@gx/go/contracts';
+import { GO_SERVER_ORIGIN } from '@gx/go/state';
 import { vi } from 'vitest';
 import { OnlineRoomService } from './online-room.service';
 import {
