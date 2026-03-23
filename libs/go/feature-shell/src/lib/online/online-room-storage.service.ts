@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
 
+/**
+ * Persisted identity used to restore a participant into the same hosted room.
+ */
 export interface StoredRoomIdentity {
   displayName: string;
   participantId: string;
   participantToken: string;
 }
 
+/**
+ * Local storage adapter for hosted room identities.
+ */
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomStorageService {
   private readonly prefix = 'gx.go.online.room.';

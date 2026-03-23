@@ -3,6 +3,9 @@ import { LobbyRoomSummary } from '@org/go/contracts';
 import { EMPTY, Subscription, catchError, finalize, tap } from 'rxjs';
 import { OnlineRoomsHttpService } from './online-rooms-http.service';
 
+/**
+ * Facade for the public hosted-room lobby.
+ */
 @Injectable({ providedIn: 'root' })
 export class OnlineLobbyService {
   private readonly api = inject(OnlineRoomsHttpService);
@@ -18,6 +21,9 @@ export class OnlineLobbyService {
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly hasRooms = computed(() => this.roomsSignal().length > 0);
 
+  /**
+   * Refreshes the publicly visible room summaries while collapsing overlapping requests.
+   */
   refresh(): void {
     if (this.refreshSubscription) {
       return;

@@ -28,15 +28,50 @@ import {
   OnlineRoomStorageService,
   StoredRoomIdentity,
 } from './online-room-storage.service';
+import {
+  applyChatMessage,
+  applyGameUpdated,
+  applyRoomPresence,
+  buildRoomShareUrl,
+} from './online-room-snapshot.utils';
+import {
+  selectCanChangeSeats,
+  selectCanInteractBoard,
+  selectChatMessages,
+  selectHostedMatch,
+  selectIsActivePlayer,
+  selectRoomParticipants,
+  selectViewer,
+  selectViewerIsHost,
+  selectViewerIsMuted,
+  selectViewerSeat,
+} from './online-room-selectors';
 
 type BootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
+type OnlineRoomRealtimeEvent =
+  | 'seat.claim'
+  | 'seat.release'
+  | 'game.start'
+  | 'game.command'
+  | 'chat.send'
+  | 'host.mute'
+  | 'host.unmute'
+  | 'host.kick';
 
+const JOIN_ROOM_REQUIRED_MESSAGE =
+  'Join the room before sending realtime commands.';
+
+/**
+ * Frontend facade for a single hosted multiplayer room.
+ */
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomService {
   private readonly api = inject(OnlineRoomsHttpService);
   private readonly storage = inject(OnlineRoomStorageService);
   private readonly socket = inject(OnlineRoomSocketService);
   private bootstrapSubscription: Subscription | null = null;
+  private readonly browserOrigin =
+    typeof window === 'undefined' ? '' : window.location.origin;
 
   private readonly activeRoomIdSignal = signal<string | null>(null);
   private readonly snapshotSignal = signal<RoomSnapshot | null>(null);
@@ -61,65 +96,33 @@ export class OnlineRoomService {
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly lastNotice = this.lastNoticeSignal.asReadonly();
 
-  readonly participants = computed(() => this.snapshotSignal()?.participants ?? []);
-  readonly match = computed(() => this.snapshotSignal()?.match ?? null);
-  readonly chat = computed(() => this.snapshotSignal()?.chat ?? []);
-  readonly viewer = computed(() => {
-    const participantId = this.participantIdSignal();
-
-    return participantId
-      ? (this.participants().find(
-          participant => participant.participantId === participantId
-        ) ?? null)
-      : null;
-  });
-  readonly viewerSeat = computed(() => this.viewer()?.seat ?? null);
-  readonly isHost = computed(() => this.viewer()?.isHost ?? false);
-  readonly isMuted = computed(() => this.viewer()?.muted ?? false);
-  readonly isActivePlayer = computed(() => {
-    const match = this.match();
-    const seat = this.viewerSeat();
-
-    return (
-      !!match &&
-      !!seat &&
-      match.state.phase === 'playing' &&
-      match.state.nextPlayer === seat
-    );
-  });
-  readonly canInteractBoard = computed(() => {
-    const match = this.match();
-    const seat = this.viewerSeat();
-
-    if (!match || !seat || match.state.phase === 'finished') {
-      return false;
-    }
-
-    if (match.state.phase === 'scoring') {
-      return true;
-    }
-
-    return match.state.nextPlayer === seat;
-  });
-  readonly canChangeSeats = computed(() => {
-    const match = this.match();
-
-    return !match || match.state.phase === 'finished';
-  });
-  readonly shareUrl = computed(() => {
-    const roomId = this.activeRoomIdSignal();
-
-    if (!roomId || typeof window === 'undefined') {
-      return '';
-    }
-
-    return `${window.location.origin}/online/room/${roomId}`;
-  });
+  readonly participants = computed(() => selectRoomParticipants(this.snapshotSignal()));
+  readonly match = computed(() => selectHostedMatch(this.snapshotSignal()));
+  readonly chat = computed(() => selectChatMessages(this.snapshotSignal()));
+  readonly viewer = computed(() =>
+    selectViewer(this.participants(), this.participantIdSignal())
+  );
+  readonly viewerSeat = computed(() => selectViewerSeat(this.viewer()));
+  readonly isHost = computed(() => selectViewerIsHost(this.viewer()));
+  readonly isMuted = computed(() => selectViewerIsMuted(this.viewer()));
+  readonly isActivePlayer = computed(() =>
+    selectIsActivePlayer(this.match(), this.viewerSeat())
+  );
+  readonly canInteractBoard = computed(() =>
+    selectCanInteractBoard(this.match(), this.viewerSeat())
+  );
+  readonly canChangeSeats = computed(() => selectCanChangeSeats(this.match()));
+  readonly shareUrl = computed(() =>
+    buildRoomShareUrl(this.activeRoomIdSignal(), this.browserOrigin)
+  );
 
   constructor() {
     this.bindRealtimeEvents();
   }
 
+  /**
+   * Loads a hosted room and restores a saved participant identity when possible.
+   */
   bootstrapRoom(roomId: string): void {
     const normalizedRoomId = roomId.toUpperCase();
 
@@ -292,23 +295,13 @@ export class OnlineRoomService {
       this.snapshotSignal.set(cloneRoomSnapshot(snapshot));
     });
     this.socket.roomPresence$.subscribe(event => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        participants: event.participants,
-        seatState: event.seatState,
-      }));
+      this.updateSnapshot(snapshot => applyRoomPresence(snapshot, event));
     });
     this.socket.gameUpdated$.subscribe(event => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        match: event.match ? structuredClone(event.match) : null,
-      }));
+      this.updateSnapshot(snapshot => applyGameUpdated(snapshot, event));
     });
     this.socket.chatMessage$.subscribe(event => {
-      this.updateSnapshot(snapshot => ({
-        ...snapshot,
-        chat: [...snapshot.chat, event.message].slice(-100),
-      }));
+      this.updateSnapshot(snapshot => applyChatMessage(snapshot, event));
     });
     this.socket.notice$.subscribe(event => {
       this.lastNoticeSignal.set(event.notice.message);
@@ -341,22 +334,14 @@ export class OnlineRoomService {
   }
 
   private emit(
-    event:
-      | 'seat.claim'
-      | 'seat.release'
-      | 'game.start'
-      | 'game.command'
-      | 'chat.send'
-      | 'host.mute'
-      | 'host.unmute'
-      | 'host.kick',
+    event: OnlineRoomRealtimeEvent,
     payload: Record<string, unknown> = {}
   ): void {
     const roomId = this.activeRoomIdSignal();
     const participantToken = this.participantTokenSignal();
 
     if (!roomId || !participantToken) {
-      this.lastErrorSignal.set('Join the room before sending realtime commands.');
+      this.lastErrorSignal.set(JOIN_ROOM_REQUIRED_MESSAGE);
       return;
     }
 
@@ -367,7 +352,7 @@ export class OnlineRoomService {
     });
 
     if (!emitted) {
-      this.lastErrorSignal.set('Join the room before sending realtime commands.');
+      this.lastErrorSignal.set(JOIN_ROOM_REQUIRED_MESSAGE);
     }
   }
 

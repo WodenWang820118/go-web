@@ -1,11 +1,29 @@
 # contracts
 
-This library was generated with [Nx](https://nx.dev).
+Shared multiplayer room contracts for the Go stack.
 
-## Building
+## Responsibilities
 
-Run `nx build contracts` to build the library.
+- Defines the REST request/response DTOs used by `go-web` and `go-server`
+- Defines the Socket.IO payloads and event shapes used for hosted-room realtime updates
+- Provides small helper utilities such as `cloneRoomSnapshot()`
 
-## Running unit tests
+## Public API
 
-Run `nx test contracts` to execute the unit tests via [Vitest](https://vitest.dev/).
+Import from `@org/go/contracts`.
+
+Key exported shapes include:
+
+- lobby and room snapshots
+- room creation and join payloads
+- seat, game, chat, and moderation payloads
+- realtime event payloads such as presence, chat, and game updates
+
+Keep these contracts aligned with both the Angular frontend and the Nest backend. Changes here are cross-boundary API changes.
+
+## Validation
+
+```bash
+npm exec nx -- run contracts:test
+npm exec nx -- run contracts:typecheck
+```

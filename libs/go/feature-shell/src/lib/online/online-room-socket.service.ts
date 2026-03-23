@@ -7,15 +7,18 @@ import {
   RoomSnapshot,
   SystemNoticeEvent,
 } from '@org/go/contracts';
+import { GO_SERVER_ORIGIN } from '@org/go/state';
 import { Subject } from 'rxjs';
 import { Socket, io } from 'socket.io-client';
-import { OnlineRoomsHttpService } from './online-rooms-http.service';
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
 
+/**
+ * Thin websocket adapter for hosted room realtime events.
+ */
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomSocketService {
-  private readonly http = inject(OnlineRoomsHttpService);
+  private readonly serverOrigin = inject(GO_SERVER_ORIGIN);
   private socket: Socket | null = null;
 
   private readonly connectionStateSignal = signal<ConnectionState>('idle');
@@ -37,7 +40,7 @@ export class OnlineRoomSocketService {
   connect(roomId: string, participantToken: string): void {
     this.disconnect();
 
-    const socket = io(this.http.serverOrigin || undefined, {
+    const socket = io(this.serverOrigin || undefined, {
       path: '/socket.io',
       transports: ['websocket'],
       autoConnect: false,

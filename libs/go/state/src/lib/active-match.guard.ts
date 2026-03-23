@@ -3,6 +3,9 @@ import { CanActivateFn, Router } from '@angular/router';
 import { isGameMode } from '@org/go/domain';
 import { GameSessionStore } from './game-session.store';
 
+/**
+ * Rejects routes whose `mode` parameter is not one of the supported local game modes.
+ */
 export const validModeGuard: CanActivateFn = route => {
   const mode = route.paramMap.get('mode');
 
@@ -13,6 +16,9 @@ export const validModeGuard: CanActivateFn = route => {
   return inject(Router).createUrlTree(['/']);
 };
 
+/**
+ * Keeps `/play/:mode` behind an existing local match for the same mode.
+ */
 export const activeMatchGuard: CanActivateFn = route => {
   const mode = route.paramMap.get('mode');
   const router = inject(Router);

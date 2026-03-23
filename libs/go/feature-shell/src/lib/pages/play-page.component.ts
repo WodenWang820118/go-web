@@ -23,6 +23,46 @@ import { DrawerModule } from 'primeng/drawer';
 import { ToastModule } from 'primeng/toast';
 import { map } from 'rxjs';
 
+interface ConfirmationCopy {
+  header: string;
+  message: string;
+  acceptLabel: string;
+  rejectLabel: string;
+}
+
+const PLAY_PAGE_CONFIRMATIONS: Record<
+  'resign' | 'restart' | 'newSetup',
+  ConfirmationCopy
+> = {
+  resign: {
+    header: 'Resign this match?',
+    message: 'This will end the current local game immediately.',
+    acceptLabel: 'Resign',
+    rejectLabel: 'Keep playing',
+  },
+  restart: {
+    header: 'Restart the current match?',
+    message: 'Players and board settings stay the same, but the board resets.',
+    acceptLabel: 'Restart',
+    rejectLabel: 'Cancel',
+  },
+  newSetup: {
+    header: 'Start a new setup?',
+    message:
+      'The current local board will be cleared and you will return to the setup screen.',
+    acceptLabel: 'Go to setup',
+    rejectLabel: 'Stay here',
+  },
+};
+
+const PLAY_PAGE_TOASTS = {
+  restarted: {
+    severity: 'success' as const,
+    summary: 'Match restarted',
+    detail: 'The local board has been reset.',
+  },
+};
+
 @Component({
   selector: 'lib-go-play-page',
   standalone: true,
@@ -37,139 +77,8 @@ import { map } from 'rxjs';
     MatchSidebarComponent,
     StoneBadgeComponent,
   ],
-  template: `
-    @if (meta() && state() && settings()) {
-      <p-toast />
-      <p-confirmdialog />
-
-      <section class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <a
-              [routerLink]="['/setup', mode()]"
-              class="text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
-            >
-              &larr; Back to setup
-            </a>
-            <h1 class="mt-3 text-3xl font-semibold text-stone-950 sm:text-4xl">
-              {{ meta()!.title }}
-            </h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-              {{ state()!.message }}
-            </p>
-          </div>
-
-          <div class="rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-600 shadow-sm backdrop-blur">
-            Current turn:
-            <span class="ml-2 inline-flex items-center gap-2 font-semibold text-stone-900">
-              <lib-go-stone-badge [color]="state()!.nextPlayer" />
-              {{ store.currentPlayerName() }}
-            </span>
-          </div>
-        </div>
-
-        @if (state()!.phase === 'scoring') {
-          <div class="mt-6 rounded-[1.5rem] border border-amber-300/50 bg-amber-100/80 px-5 py-4 text-sm text-amber-950 shadow-sm">
-            Click stones on the board to mark dead groups, then use the sidebar to
-            finalize the score.
-          </div>
-        }
-
-        <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
-          <div class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-4 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6">
-            <lib-go-game-board
-              [mode]="settings()!.mode"
-              [boardSize]="state()!.boardSize"
-              [board]="state()!.board"
-              [phase]="state()!.phase"
-              [currentPlayer]="state()!.nextPlayer"
-              [lastMove]="lastPlacedPoint()"
-              [winningLine]="state()!.winnerLine"
-              [deadStones]="state()!.scoring?.deadStones ?? []"
-              [interactive]="state()!.phase !== 'finished'"
-              (pointSelected)="onBoardPoint($event)"
-            />
-          </div>
-
-            <lib-go-match-sidebar
-              [settings]="settings()"
-              [state]="state()"
-            (passRequested)="passTurn()"
-            (resignRequested)="resignMatch()"
-            (finalizeScoringRequested)="finalizeScoring()"
-            (helpRequested)="helpVisible.set(true)"
-            (restartRequested)="restartMatch()"
-            (newMatchRequested)="openNewMatchConfirm()"
-          />
-        </div>
-      </section>
-
-      <p-drawer
-        [visible]="helpVisible()"
-        (visibleChange)="helpVisible.set($event)"
-        position="right"
-        header="Rules and reminders"
-      >
-        <div class="space-y-4 text-sm leading-6 text-stone-700">
-          <p>{{ meta()!.description }}</p>
-          <ul class="space-y-3">
-            @for (fact of meta()!.help; track fact) {
-              <li class="flex gap-3">
-                <span class="mt-2 h-2 w-2 rounded-full bg-amber-500"></span>
-                <span>{{ fact }}</span>
-              </li>
-            }
-          </ul>
-        </div>
-      </p-drawer>
-
-      <p-dialog
-        [visible]="resultVisible()"
-        (visibleChange)="resultVisible.set($event)"
-        [modal]="true"
-        [dismissableMask]="true"
-        [draggable]="false"
-        [resizable]="false"
-        header="Match result"
-      >
-        <div class="space-y-4">
-          <p class="text-base font-semibold text-stone-900">
-            {{ state()!.result?.summary }}
-          </p>
-
-          @if (state()!.result?.score) {
-            <div class="grid grid-cols-2 gap-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm">
-              <div>
-                <p class="font-semibold text-stone-900">Black</p>
-                <p>{{ state()!.result!.score!.black.toFixed(1) }}</p>
-              </div>
-              <div>
-                <p class="font-semibold text-stone-900">White</p>
-                <p>{{ state()!.result!.score!.white.toFixed(1) }}</p>
-              </div>
-            </div>
-          }
-
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              class="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
-              (click)="restartMatch()"
-            >
-              Restart match
-            </button>
-            <button
-              type="button"
-              class="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:text-stone-950"
-              (click)="openNewMatchConfirm()"
-            >
-              New setup
-            </button>
-          </div>
-        </div>
-      </p-dialog>
-    }
-  `,
+  templateUrl: './play-page.component.html',
+  styleUrl: './play-page.component.css',
   providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -202,6 +111,7 @@ export class PlayPageComponent {
     const command = this.state()?.lastMove?.command;
     return command?.type === 'place' ? command.point : null;
   });
+  protected readonly copy = PLAY_PAGE_CONFIRMATIONS;
 
   constructor() {
     effect(() => {
@@ -225,10 +135,7 @@ export class PlayPageComponent {
 
   protected resignMatch(): void {
     this.confirmation.confirm({
-      header: 'Resign this match?',
-      message: 'This will end the current local game immediately.',
-      acceptLabel: 'Resign',
-      rejectLabel: 'Keep playing',
+      ...this.copy.resign,
       accept: () => {
         this.reportAction(this.store.resign(), 'Resignation unavailable');
       },
@@ -237,18 +144,11 @@ export class PlayPageComponent {
 
   protected restartMatch(): void {
     this.confirmation.confirm({
-      header: 'Restart the current match?',
-      message: 'Players and board settings stay the same, but the board resets.',
-      acceptLabel: 'Restart',
-      rejectLabel: 'Cancel',
+      ...this.copy.restart,
       accept: () => {
         if (this.store.restartMatch()) {
           this.resultVisible.set(false);
-          this.messages.add({
-            severity: 'success',
-            summary: 'Match restarted',
-            detail: 'The local board has been reset.',
-          });
+          this.messages.add(PLAY_PAGE_TOASTS.restarted);
         }
       },
     });
@@ -258,10 +158,7 @@ export class PlayPageComponent {
     const mode = this.mode();
 
     this.confirmation.confirm({
-      header: 'Start a new setup?',
-      message: 'The current local board will be cleared and you will return to the setup screen.',
-      acceptLabel: 'Go to setup',
-      rejectLabel: 'Stay here',
+      ...this.copy.newSetup,
       accept: async () => {
         this.store.clearMatch();
         this.resultVisible.set(false);

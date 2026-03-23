@@ -1,7 +1,33 @@
 # go-state
 
-This library was generated with [Nx](https://nx.dev).
+Client-side state and integration layer for the Go frontend.
 
-## Running unit tests
+## Responsibilities
 
-Run `nx test go-state` to execute the unit tests via [Vitest](https://vitest.dev/).
+- Exposes `GameSessionStore` and the session port abstractions used by local play
+- Exposes route guards such as `activeMatchGuard` and `validModeGuard`
+- Provides storage and configuration helpers for the hosted-room experience
+- Defines the `GO_SERVER_ORIGIN` injection token and `resolveGoServerOrigin()` so backend origin selection happens at the app composition root
+
+## Public API
+
+Import from `@org/go/state`.
+
+Key exports include:
+
+- `GameSessionStore`
+- `GAME_SESSION_PORT`
+- `LocalGameSessionAdapter`
+- `activeMatchGuard`
+- `validModeGuard`
+- `GO_SERVER_ORIGIN`
+- `resolveGoServerOrigin`
+
+Keep pure rules and board logic in `@org/go/domain`; keep Angular-independent room contracts in `@org/go/contracts`.
+
+## Validation
+
+```bash
+npm exec nx -- run go-state:test
+npm exec nx -- run go-state:typecheck
+```

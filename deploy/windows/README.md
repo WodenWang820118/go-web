@@ -7,6 +7,13 @@ This folder contains the Windows laptop hosting assets for the multiplayer stack
 - Shared room URL: `https://go.<your-domain>/online/room/:roomId`
 - Local-only origin path: `cloudflared -> http://localhost:80 -> Caddy -> 127.0.0.1:3000`
 
+## Source layout
+
+- Frontend app: `apps/go-web`
+- Backend app: `apps/go-server`
+- Shared frontend libraries: `libs/go/*`
+- Shared room contracts: `go/contracts`
+
 ## Runtime behavior
 
 - `go-server` stays bound to `127.0.0.1:3000`
@@ -52,7 +59,7 @@ What the script does:
 
 - Builds `go-web` in production mode with `npm exec -- nx build go-web --configuration=production`
 - Builds `go-server` with `npm exec -- nx build go-server`
-- Verifies `dist/apps/go-web/browser/index.html` and `dist/go-server/main.js`
+- Verifies `dist/apps/go-web/browser/index.html` and `dist/apps/go-server/main.js`
 - Copies `WinSW-x64.exe` into `gx-go-server.exe` and `gx-go-caddy.exe` if those wrappers do not already exist
 - Installs or refreshes the `gx-go-server` and `gx-go-caddy` services
 - Starts or restarts both services

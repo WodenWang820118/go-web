@@ -1,7 +1,29 @@
 # go-domain
 
-This library was generated with [Nx](https://nx.dev).
+Framework-free Go and Gomoku domain model for the workspace.
 
-## Running unit tests
+## Responsibilities
 
-Run `nx test go-domain` to execute the unit tests via [Vitest](https://vitest.dev/).
+- Defines shared game types such as board size, player color, move commands, and match state
+- Provides board utilities and the rules engine implementations
+- Stays reusable from Angular, Nest, and shared contracts without bringing in framework dependencies
+
+## Public API
+
+Import from `@org/go/domain`.
+
+Key exports include:
+
+- domain `types`
+- `board-utils`
+- `game-mode-meta`
+- `go-rules-engine`
+- `gomoku-rules-engine`
+- `rules-engine-registry`
+
+## Validation
+
+```bash
+npm exec nx -- run go-domain:test
+npm exec nx -- run go-domain:typecheck
+```

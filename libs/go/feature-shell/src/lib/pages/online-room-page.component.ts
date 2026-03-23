@@ -1,31 +1,31 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import {
-  BoardPoint,
-  DEFAULT_GO_KOMI,
-  GOMOKU_BOARD_SIZE,
-  GO_BOARD_SIZES,
-  GameMode,
-  PlayerColor,
-  capitalizePlayerColor,
-} from '@org/go/domain';
-import { GameBoardComponent, GameStatusChipComponent, StoneBadgeComponent } from '@org/go/ui';
+import { BoardPoint, DEFAULT_GO_KOMI, GOMOKU_BOARD_SIZE, GO_BOARD_SIZES, GameMode, PlayerColor } from '@org/go/domain';
+import { GameBoardComponent, StoneBadgeComponent } from '@org/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
+import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';
+import { OnlineRoomHeroComponent } from './online-room-hero.component';
+import {
+  OnlineRoomSeatViewModel,
+  OnlineRoomStageViewModel,
+} from './online-room-page.models';
+import { OnlineRoomParticipantsPanelComponent } from './online-room-participants-panel.component';
 
 @Component({
   selector: 'lib-go-online-room-page',
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
     RouterLink,
     GameBoardComponent,
-    GameStatusChipComponent,
     StoneBadgeComponent,
+    OnlineRoomHeroComponent,
+    OnlineRoomParticipantsPanelComponent,
+    OnlineRoomChatPanelComponent,
   ],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',
@@ -47,7 +47,7 @@ export class OnlineRoomPageComponent {
   protected readonly match = this.onlineRoom.match;
   protected readonly participants = this.onlineRoom.participants;
   protected readonly viewer = this.onlineRoom.viewer;
-  protected readonly roomStage = computed(() => {
+  protected readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
     const snapshot = this.snapshot();
 
     if (!snapshot || this.match()) {
@@ -70,8 +70,11 @@ export class OnlineRoomPageComponent {
         'Players can claim black and white while spectators join early and keep the room chat moving.',
     };
   });
-  protected readonly seats = computed(() => {
+  protected readonly seats = computed<OnlineRoomSeatViewModel[]>(() => {
     const snapshot = this.snapshot();
+    const canChangeSeats = this.onlineRoom.canChangeSeats();
+    const participantId = this.onlineRoom.participantId();
+    const viewerSeat = this.onlineRoom.viewerSeat();
 
     if (!snapshot) {
       return [];
@@ -83,6 +86,11 @@ export class OnlineRoomPageComponent {
         snapshot.participants.find(
           participant => participant.participantId === snapshot.seatState[color]
         ) ?? null,
+      canClaim:
+        !!participantId &&
+        canChangeSeats &&
+        !snapshot.seatState[color],
+      isViewerSeat: viewerSeat === color,
     }));
   });
   protected readonly lastPlacedPoint = computed(() => {
@@ -123,6 +131,29 @@ export class OnlineRoomPageComponent {
       ? 'Live rooms are watch-and-chat only until the current match ends.'
       : 'Pick a display name to join the room before claiming a seat or chatting.'
   );
+  protected readonly connectionLabel = computed(() => {
+    switch (this.onlineRoom.connectionState()) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting';
+      case 'disconnected':
+        return 'Reconnecting';
+      default:
+        return 'Offline';
+    }
+  });
+  protected readonly chatHelperText = computed(() => {
+    if (!this.onlineRoom.participantId()) {
+      return 'Join the room to chat.';
+    }
+
+    if (this.onlineRoom.isMuted()) {
+      return 'The host muted your chat access.';
+    }
+
+    return 'Spectators and players can chat in real time.';
+  });
 
   protected readonly joinForm = new FormGroup({
     displayName: new FormControl('', {
@@ -297,37 +328,5 @@ export class OnlineRoomPageComponent {
 
   protected kickParticipant(participantId: string): void {
     this.onlineRoom.kickParticipant(participantId);
-  }
-
-  protected isViewerSeat(color: PlayerColor): boolean {
-    return this.onlineRoom.viewerSeat() === color;
-  }
-
-  protected canClaimSeat(color: PlayerColor): boolean {
-    const snapshot = this.snapshot();
-
-    return (
-      !!this.onlineRoom.participantId() &&
-      this.onlineRoom.canChangeSeats() &&
-      !!snapshot &&
-      !snapshot.seatState[color]
-    );
-  }
-
-  protected connectionLabel(): string {
-    switch (this.onlineRoom.connectionState()) {
-      case 'connected':
-        return 'Connected';
-      case 'connecting':
-        return 'Connecting';
-      case 'disconnected':
-        return 'Reconnecting';
-      default:
-        return 'Offline';
-    }
-  }
-
-  protected capitalizePlayer(color: PlayerColor): string {
-    return capitalizePlayerColor(color);
   }
 }

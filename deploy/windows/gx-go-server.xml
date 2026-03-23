@@ -3,7 +3,7 @@
   <name>gx.go Nest Server</name>
   <description>Hosted multiplayer backend for gx.go</description>
   <executable>C:\nvm4w\nodejs\node.exe</executable>
-  <arguments>C:\software-dev\gx.go\dist\go-server\main.js</arguments>
+  <arguments>C:\software-dev\gx.go\dist\apps\go-server\main.js</arguments>
   <workingdirectory>C:\software-dev\gx.go</workingdirectory>
   <env name="HOST" value="127.0.0.1" />
   <env name="PORT" value="3000" />

@@ -6,12 +6,16 @@ import {
   JoinRoomResponse,
   ListRoomsResponse,
 } from '@org/go/contracts';
+import { GO_SERVER_ORIGIN } from '@org/go/state';
 import { Observable } from 'rxjs';
 
+/**
+ * REST client for hosted multiplayer room endpoints.
+ */
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomsHttpService {
   private readonly http = inject(HttpClient);
-  readonly serverOrigin = this.resolveServerOrigin();
+  private readonly serverOrigin = inject(GO_SERVER_ORIGIN);
   private readonly apiBase = `${this.serverOrigin}/api/rooms`;
 
   listRooms(): Observable<ListRoomsResponse> {
@@ -53,19 +57,5 @@ export class OnlineRoomsHttpService {
     }
 
     return error.message;
-  }
-
-  private resolveServerOrigin(): string {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-
-    const { protocol, hostname, port } = window.location;
-
-    if (port === '4200' || port === '4201') {
-      return `${protocol}//${hostname}:3000`;
-    }
-
-    return '';
   }
 }

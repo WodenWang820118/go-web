@@ -5,6 +5,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { LobbyRoomSummary } from '@org/go/contracts';
+import { GO_SERVER_ORIGIN } from '@org/go/state';
 import { OnlineLobbyService } from './online-lobby.service';
 
 describe('OnlineLobbyService', () => {
@@ -15,6 +16,10 @@ describe('OnlineLobbyService', () => {
     TestBed.configureTestingModule({
       providers: [
         OnlineLobbyService,
+        {
+          provide: GO_SERVER_ORIGIN,
+          useValue: '',
+        },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],

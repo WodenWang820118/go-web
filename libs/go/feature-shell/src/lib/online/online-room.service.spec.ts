@@ -5,6 +5,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { RoomSnapshot } from '@org/go/contracts';
+import { GO_SERVER_ORIGIN } from '@org/go/state';
 import { vi } from 'vitest';
 import { OnlineRoomService } from './online-room.service';
 import {
@@ -67,6 +68,10 @@ describe('OnlineRoomService', () => {
       providers: [
         OnlineRoomService,
         OnlineRoomStorageService,
+        {
+          provide: GO_SERVER_ORIGIN,
+          useValue: '',
+        },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],

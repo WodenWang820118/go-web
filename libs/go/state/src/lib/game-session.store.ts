@@ -10,6 +10,22 @@ import {
 import { GAME_SESSION_PORT } from './game-session.port';
 import { cloneSnapshot, GameSessionSnapshot } from './game-session.types';
 
+type LocalMatchCommand =
+  | {
+      type: 'pass';
+    }
+  | {
+      type: 'resign';
+      player?: PlayerColor;
+    }
+  | {
+      type: 'place';
+      point: BoardPoint;
+    };
+
+/**
+ * Signal-backed facade for the local, single-device game session.
+ */
 @Injectable({ providedIn: 'root' })
 export class GameSessionStore {
   private readonly port = inject(GAME_SESSION_PORT);
@@ -32,6 +48,9 @@ export class GameSessionStore {
   readonly isScoring = computed(() => this.state()?.phase === 'scoring');
   readonly isFinished = computed(() => this.state()?.phase === 'finished');
 
+  /**
+   * Starts a new local match and persists it through the configured session port.
+   */
   startMatch(settings: MatchSettings): GameSessionSnapshot {
     const snapshot = {
       settings,
@@ -62,6 +81,9 @@ export class GameSessionStore {
     return this.snapshotSignal()?.settings.mode === mode;
   }
 
+  /**
+   * Applies a board click to the current local match, including dead-group toggling in scoring.
+   */
   playPoint(point: BoardPoint): string | null {
     const snapshot = this.snapshotSignal();
 
@@ -132,20 +154,7 @@ export class GameSessionStore {
     return null;
   }
 
-  private applyCommand(
-    command:
-      | {
-          type: 'pass';
-        }
-      | {
-          type: 'resign';
-          player?: PlayerColor;
-        }
-      | {
-          type: 'place';
-          point: BoardPoint;
-        }
-  ): string | null {
+  private applyCommand(command: LocalMatchCommand): string | null {
     const snapshot = this.snapshotSignal();
 
     if (!snapshot) {
