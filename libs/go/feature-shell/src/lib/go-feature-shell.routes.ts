@@ -5,7 +5,7 @@ export const goFeatureShellRoutes: Route[] = [
   {
     path: '',
     async loadComponent() {
-      return (await import('./pages/online-create-page.component')).OnlineCreatePageComponent;
+      return (await import('./pages/online-lobby-page.component')).OnlineLobbyPageComponent;
     },
   },
   {
@@ -17,13 +17,12 @@ export const goFeatureShellRoutes: Route[] = [
   },
   {
     path: 'online',
-    async loadComponent() {
-      return (await import('./pages/online-lobby-page.component')).OnlineLobbyPageComponent;
-    },
+    redirectTo: '',
+    pathMatch: 'full',
   },
   {
     path: 'online/new',
-    redirectTo: 'online',
+    redirectTo: '',
     pathMatch: 'full',
   },
   {

@@ -9,6 +9,7 @@ import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';
 import { OnlineRoomHeroComponent } from './online-room-hero.component';
+import { HostedShellHeaderComponent } from './hosted-shell-header.component';
 import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
@@ -23,6 +24,7 @@ import { OnlineRoomParticipantsPanelComponent } from './online-room-participants
     RouterLink,
     GameBoardComponent,
     StoneBadgeComponent,
+    HostedShellHeaderComponent,
     OnlineRoomHeroComponent,
     OnlineRoomParticipantsPanelComponent,
     OnlineRoomChatPanelComponent,

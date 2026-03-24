@@ -126,13 +126,6 @@ export class OnlineRoomService {
   bootstrapRoom(roomId: string): void {
     const normalizedRoomId = roomId.toUpperCase();
 
-    if (
-      this.activeRoomIdSignal() === normalizedRoomId &&
-      this.bootstrapStateSignal() === 'ready'
-    ) {
-      return;
-    }
-
     this.bootstrapSubscription?.unsubscribe();
     this.resetForRoom(normalizedRoomId);
     this.bootstrapStateSignal.set('loading');

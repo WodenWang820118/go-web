@@ -1,82 +1,39 @@
 <section class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-  <a
-    routerLink="/"
-    class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
-  >
-    <span class="text-lg">&larr;</span>
-    Back to modes
-  </a>
+  <lib-go-hosted-shell-header activeSection="lobby" />
 
-  <header class="mt-5 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(41,37,36,0.9))] px-6 py-8 text-stone-50 shadow-2xl shadow-slate-950/30 sm:px-8">
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+  <header
+    class="mt-6 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(140deg,_rgba(15,23,42,0.96),_rgba(41,37,36,0.9))] px-6 py-8 text-stone-50 shadow-2xl shadow-slate-950/25 sm:px-8"
+  >
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
       <div class="space-y-4">
         <p class="text-xs font-semibold uppercase tracking-[0.32em] text-amber-200/70">
           Hosted multiplayer lobby
         </p>
         <h1 class="max-w-3xl text-4xl font-semibold leading-tight text-balance sm:text-5xl">
-          Watch live rooms, spot open seats, and send players into the right match.
+          Go and Gomoku rooms, ready to join.
         </h1>
-        <p class="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-          Live rooms stay open for spectators and chat, ready rooms wait for the
-          host to start, and waiting rooms keep open seats visible for the next
-          players.
+        <p class="max-w-3xl text-sm leading-7 text-stone-300 sm:text-base">
+          Start in the lobby, pick the room that fits the moment, and move straight
+          into chat without hunting through extra screens.
         </p>
-
-        <div class="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-stone-300">
-          <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            Live - watch and chat
-          </span>
-          <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            Ready - waiting for host start
-          </span>
-          <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            Waiting - open seats
-          </span>
-        </div>
       </div>
 
-      <section class="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/70">
-          Create a room
+      <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
+          Flow
         </p>
-        <h2 class="mt-2 text-2xl font-semibold text-stone-50">
-          Host the next match
-        </h2>
-        <p class="mt-3 text-sm leading-6 text-stone-300">
-          Create a hosted room, share the room link, and invite players to fill
-          black and white before the game begins.
-        </p>
-
-        @if (onlineRoom.lastError()) {
-          <div class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-            {{ onlineRoom.lastError() }}
+        <div class="mt-4 grid gap-3 text-sm text-stone-200">
+          <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
+            1. Browse rooms by live, ready, or waiting status.
           </div>
-        }
-
-        <form
-          class="mt-5 space-y-4"
-          data-testid="online-lobby-create-form"
-          [formGroup]="form"
-          (ngSubmit)="createRoom()"
-        >
-          <label class="block space-y-2 text-sm font-medium text-stone-200">
-            <span>Your display name</span>
-            <input
-              formControlName="displayName"
-              maxlength="24"
-              class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
-            />
-          </label>
-
-          <button
-            type="submit"
-            class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="onlineRoom.creating()"
-          >
-            {{ onlineRoom.creating() ? 'Creating room...' : 'Create room' }}
-          </button>
-        </form>
-      </section>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
+            2. Enter your display name once.
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
+            3. Create a room or quick-join the selected room for chat.
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -86,134 +43,275 @@
     </div>
   }
 
-  @if (onlineLobby.loading()) {
-    <section class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
-      Loading online lobby...
-    </section>
-  } @else if (!onlineLobby.hasRooms()) {
-    <section
-      class="mt-6 rounded-[2rem] border border-dashed border-stone-300 bg-white/80 px-6 py-10 text-center shadow-xl shadow-stone-950/5"
-      data-testid="online-lobby-empty"
-    >
-      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-        No active rooms
-      </p>
-      <h2 class="mt-3 text-3xl font-semibold text-stone-950">
-        The hosted lobby is clear right now.
-      </h2>
-      <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-600">
-        Create the first room to start matching players, or come back once a host
-        reconnects and opens a room.
-      </p>
-    </section>
-  } @else {
-    <div class="mt-6 space-y-6">
-      @for (section of sections(); track section.status) {
+  @if (onlineRoom.lastError()) {
+    <div class="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+      {{ onlineRoom.lastError() }}
+    </div>
+  }
+
+  <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
+    <div class="space-y-6">
+      @if (onlineLobby.loading()) {
+        <section class="rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
+          Loading hosted rooms...
+        </section>
+      } @else if (!onlineLobby.hasRooms()) {
         <section
-          class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-5 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6"
-          [attr.data-testid]="'lobby-section-' + section.status"
+          class="rounded-[2rem] border border-dashed border-stone-300 bg-white/80 px-6 py-10 text-center shadow-xl shadow-stone-950/5"
+          data-testid="online-lobby-empty"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+            No active rooms
+          </p>
+          <h2 class="mt-3 text-3xl font-semibold text-stone-950">
+            The hosted lobby is clear right now.
+          </h2>
+          <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-600">
+            Create the next room below and it will become the first place players
+            can jump into chat.
+          </p>
+        </section>
+      } @else {
+        @for (section of sections(); track section.status) {
+          <section
+            class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-5 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6"
+            [attr.data-testid]="'lobby-section-' + section.status"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+                  {{ roomStatusLabel(section.status) }} rooms
+                </p>
+                <h2 class="mt-2 text-2xl font-semibold text-stone-950">
+                  {{ section.title }}
+                </h2>
+                <p class="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
+                  {{ section.caption }}
+                </p>
+              </div>
+
+              <div class="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                {{ countLabel(section.rooms.length, 'room') }}
+              </div>
+            </div>
+
+            @if (section.rooms.length > 0) {
+              <div class="mt-5 grid gap-4 xl:grid-cols-2">
+                @for (room of section.rooms; track room.roomId) {
+                  <button
+                    type="button"
+                    class="w-full rounded-[1.75rem] border p-5 text-left transition"
+                    [attr.data-testid]="'lobby-room-' + room.roomId"
+                    [attr.aria-pressed]="isSelectedRoom(room.roomId)"
+                    [ngClass]="
+                      isSelectedRoom(room.roomId)
+                        ? 'border-amber-300 bg-amber-50 shadow-lg shadow-amber-950/10'
+                        : 'border-stone-200 bg-white/95 shadow-md shadow-stone-950/5'
+                    "
+                    (click)="selectRoom(room.roomId)"
+                  >
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                          Room {{ room.roomId }}
+                        </p>
+                        <h3 class="mt-2 text-2xl font-semibold text-stone-950">
+                          {{ room.hostDisplayName }}'s room
+                        </h3>
+                      </div>
+
+                      <div class="flex flex-col items-end gap-2">
+                        <span class="rounded-full bg-stone-950 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-50">
+                          {{ roomStatusLabel(room.status) }}
+                        </span>
+                        @if (isSelectedRoom(room.roomId)) {
+                          <span class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                            Selected
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                    <p class="mt-4 text-sm leading-7 text-stone-600">
+                      {{ roomStatusHeadline(room) }}
+                    </p>
+
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                      <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                          Black seat
+                        </p>
+                        <p class="mt-2 text-sm font-semibold text-stone-950">
+                          {{ seatLabel(room.players.black, 'black') }}
+                        </p>
+                      </div>
+
+                      <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                          White seat
+                        </p>
+                        <p class="mt-2 text-sm font-semibold text-stone-950">
+                          {{ seatLabel(room.players.white, 'white') }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                      <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+                        {{ roomModeLabel(room) }}
+                      </span>
+                      <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+                        {{ countLabel(room.participantCount, 'person', 'people') }}
+                      </span>
+                      <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+                        {{ countLabel(room.onlineCount, 'online', 'online') }}
+                      </span>
+                    </div>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="mt-5 rounded-[1.75rem] border border-dashed border-stone-300 bg-stone-50/80 px-5 py-8 text-sm text-stone-600">
+                No {{ section.title.toLowerCase() }} yet.
+              </div>
+            }
+          </section>
+        }
+      }
+    </div>
+
+    <aside class="space-y-4 xl:sticky xl:top-6">
+      <section class="rounded-[1.75rem] border border-white/10 bg-slate-950/88 p-5 text-stone-100 shadow-2xl shadow-slate-950/30">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/70">
+          Your identity
+        </p>
+        <h2 class="mt-2 text-2xl font-semibold text-stone-50">
+          Enter your name once
+        </h2>
+        <p class="mt-3 text-sm leading-6 text-stone-300">
+          The same display name is reused when you create a room or join the one
+          you selected from the lobby.
+        </p>
+
+        <label class="mt-5 block space-y-2 text-sm font-medium text-stone-200">
+          <span>Display name</span>
+          <input
+            [formControl]="displayName"
+            data-testid="lobby-display-name-input"
+            maxlength="24"
+            class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
+          />
+        </label>
+
+        <button
+          type="button"
+          data-testid="online-lobby-create-button"
+          class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="onlineRoom.creating() || !canSubmitIdentity()"
+          (click)="createRoom()"
+        >
+          {{ onlineRoom.creating() ? 'Creating room...' : 'Create room' }}
+        </button>
+      </section>
+
+      @if (selectedRoom(); as room) {
+        <section
+          class="rounded-[1.75rem] border border-stone-200/80 bg-white/90 p-5 shadow-xl shadow-stone-950/10"
+          data-testid="online-lobby-selected-room"
         >
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-                {{ roomStatusLabel(section.status) }}
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Selected room
               </p>
               <h2 class="mt-2 text-2xl font-semibold text-stone-950">
-                {{ section.title }}
+                {{ room.hostDisplayName }}'s room
               </h2>
-              <p class="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
-                {{ section.caption }}
+            </div>
+
+            <span class="rounded-full bg-stone-950 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-50">
+              {{ roomStatusLabel(room.status) }}
+            </span>
+          </div>
+
+          <p class="mt-4 text-sm leading-7 text-stone-600">
+            {{ roomStatusCopy(room) }}
+          </p>
+
+          <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                Black seat
+              </p>
+              <p class="mt-2 text-sm font-semibold text-stone-950">
+                {{ seatLabel(room.players.black, 'black') }}
               </p>
             </div>
 
-            <div class="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-              {{ countLabel(section.rooms.length, 'room') }}
+            <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                White seat
+              </p>
+              <p class="mt-2 text-sm font-semibold text-stone-950">
+                {{ seatLabel(room.players.white, 'white') }}
+              </p>
             </div>
           </div>
 
-          @if (section.rooms.length > 0) {
-            <div class="mt-5 grid gap-4 xl:grid-cols-2">
-              @for (room of section.rooms; track room.roomId) {
-                <article
-                  class="rounded-[1.75rem] border border-stone-200 bg-[linear-gradient(145deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.96))] p-5 shadow-lg shadow-stone-950/5"
-                  [attr.data-testid]="'lobby-room-' + room.roomId"
-                >
-                  <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                        Room {{ room.roomId }}
-                      </p>
-                      <h3 class="mt-2 text-2xl font-semibold text-stone-950">
-                        {{ room.hostDisplayName }}'s room
-                      </h3>
-                    </div>
+          <div class="mt-5 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+              {{ roomModeLabel(room) }}
+            </span>
+            <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+              {{ countLabel(room.participantCount, 'person', 'people') }}
+            </span>
+            <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+              {{ countLabel(room.onlineCount, 'online', 'online') }}
+            </span>
+            <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
+              {{ countLabel(room.spectatorCount, 'spectator') }}
+            </span>
+          </div>
 
-                    <span class="rounded-full bg-stone-950 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-stone-50">
-                      {{ roomStatusLabel(room.status) }}
-                    </span>
-                  </div>
+          <p class="mt-5 text-sm leading-6 text-stone-600">
+            {{ roomActionHint(room) }}
+          </p>
 
-                  <p class="mt-4 text-sm leading-7 text-stone-600">
-                    {{ roomStatusCopy(room) }}
-                  </p>
+          <button
+            type="button"
+            data-testid="online-lobby-join-selected-button"
+            class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="onlineRoom.joining() || !canSubmitIdentity()"
+            (click)="joinSelectedRoom()"
+          >
+            {{ onlineRoom.joining() ? 'Joining room...' : roomActionLabel(room) }}
+          </button>
 
-                  <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
-                      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                        Black seat
-                      </p>
-                      <p class="mt-2 text-sm font-semibold text-stone-950">
-                        {{ seatLabel(room.players.black, 'black') }}
-                      </p>
-                    </div>
+          <a
+            class="mt-3 inline-flex items-center justify-center rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+            [routerLink]="['/online/room', room.roomId]"
+          >
+            Open room details
+          </a>
 
-                    <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
-                      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                        White seat
-                      </p>
-                      <p class="mt-2 text-sm font-semibold text-stone-950">
-                        {{ seatLabel(room.players.white, 'white') }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="mt-5 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                      {{ roomModeLabel(room) }}
-                    </span>
-                    <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                      {{ countLabel(room.participantCount, 'person', 'people') }}
-                    </span>
-                    <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                      {{ countLabel(room.onlineCount, 'online', 'online') }}
-                    </span>
-                    <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                      {{ countLabel(room.spectatorCount, 'spectator') }}
-                    </span>
-                  </div>
-
-                  <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-xs uppercase tracking-[0.18em] text-stone-400">
-                      Updated {{ room.updatedAt | date: 'shortTime' }}
-                    </p>
-
-                    <a
-                      class="inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
-                      [routerLink]="['/online/room', room.roomId]"
-                    >
-                      {{ roomActionLabel(room) }}
-                    </a>
-                  </div>
-                </article>
-              }
-            </div>
-          } @else {
-            <div class="mt-5 rounded-[1.75rem] border border-dashed border-stone-300 bg-stone-50/80 px-5 py-8 text-sm text-stone-600">
-              No {{ section.title.toLowerCase() }} yet.
-            </div>
-          }
+          <p class="mt-4 text-xs uppercase tracking-[0.18em] text-stone-400">
+            Updated {{ room.updatedAt | date: 'shortTime' }}
+          </p>
+        </section>
+      } @else {
+        <section class="rounded-[1.75rem] border border-dashed border-stone-300 bg-white/85 p-5 text-stone-700 shadow-xl shadow-stone-950/5">
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            Selected room
+          </p>
+          <h2 class="mt-2 text-2xl font-semibold text-stone-950">
+            Pick a room once one appears
+          </h2>
+          <p class="mt-3 text-sm leading-6 text-stone-600">
+            The quick-join panel fills in automatically as soon as the lobby has an
+            active room to select.
+          </p>
         </section>
       }
-    </div>
-  }
+    </aside>
+  </div>
 </section>

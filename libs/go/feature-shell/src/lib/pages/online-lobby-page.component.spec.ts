@@ -15,6 +15,12 @@ import { OnlineLobbyPageComponent } from './online-lobby-page.component';
 })
 class DummyRoomPageComponent {}
 
+@Component({
+  standalone: true,
+  template: '<p>Setup detail</p>',
+})
+class DummySetupPageComponent {}
+
 describe('OnlineLobbyPageComponent', () => {
   it('shows an empty state when no public rooms are available', async () => {
     const lobbyService = createLobbyServiceStub([]);
@@ -27,7 +33,80 @@ describe('OnlineLobbyPageComponent', () => {
     expect(text).toContain('The hosted lobby is clear right now.');
   });
 
-  it('renders live and ready room cards with the expected lobby copy', async () => {
+  it('creates a room from the root lobby and redirects into the room detail page', async () => {
+    const lobbyService = createLobbyServiceStub([]);
+    const roomService = createRoomServiceStub({
+      createRoomResponse: {
+        roomId: 'ROOM42',
+        participantId: 'host-1',
+        participantToken: 'token-1',
+        snapshot: createSnapshot('ROOM42'),
+      },
+    });
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const router = TestBed.inject(Router);
+    const input = harness.routeNativeElement?.querySelector(
+      '[data-testid="lobby-display-name-input"]'
+    ) as HTMLInputElement;
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]'
+    ) as HTMLButtonElement;
+
+    input.value = 'Captain';
+    input.dispatchEvent(new Event('input'));
+    button.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain');
+    expect(router.url).toBe('/online/room/ROOM42');
+  });
+
+  it('selects a room and quick-joins it from the lobby', async () => {
+    const lobbyService = createLobbyServiceStub([
+      createRoomSummary({
+        roomId: 'WAIT42',
+        hostDisplayName: 'Waiting Host',
+      }),
+      createRoomSummary({
+        roomId: 'READY7',
+        hostDisplayName: 'Ready Host',
+        status: 'ready',
+        players: {
+          black: 'Ready Host',
+          white: 'Guest Ready',
+        },
+        participantCount: 2,
+        onlineCount: 2,
+        spectatorCount: 0,
+      }),
+    ]);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const router = TestBed.inject(Router);
+    const input = harness.routeNativeElement?.querySelector(
+      '[data-testid="lobby-display-name-input"]'
+    ) as HTMLInputElement;
+    const roomCard = harness.routeNativeElement?.querySelector(
+      '[data-testid="lobby-room-READY7"]'
+    ) as HTMLButtonElement;
+    const joinButton = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-join-selected-button"]'
+    ) as HTMLButtonElement;
+
+    input.value = 'Captain';
+    input.dispatchEvent(new Event('input'));
+    roomCard.click();
+    await harness.fixture.whenStable();
+    joinButton.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.joinRoom).toHaveBeenCalledWith('READY7', 'Captain');
+    expect(router.url).toBe('/online/room/READY7');
+  });
+
+  it('uses live-room spectator copy in the selected-room action panel', async () => {
     const lobbyService = createLobbyServiceStub([
       createRoomSummary({
         roomId: 'LIVE42',
@@ -43,80 +122,35 @@ describe('OnlineLobbyPageComponent', () => {
         onlineCount: 2,
         spectatorCount: 0,
       }),
-      createRoomSummary({
-        roomId: 'READY7',
-        hostDisplayName: 'Ready Host',
-        status: 'ready',
-        players: {
-          black: 'Ready Host',
-          white: 'Guest Ready',
-        },
-        participantCount: 3,
-        onlineCount: 3,
-        spectatorCount: 1,
-      }),
     ]);
     const roomService = createRoomServiceStub();
 
     const text = await renderText(lobbyService, roomService);
 
-    expect(text).toContain('Live - watch and chat');
-    expect(text).toContain('Live Host\'s room');
+    expect(text).toContain('Watch and chat live');
     expect(text).toContain(
-      'New visitors join as spectators and can chat until the current match ends.'
-    );
-    expect(text).toContain('Ready - waiting for host start');
-    expect(text).toContain(
-      'Both seats are filled. Open the room to follow the countdown to the host start.'
+      'Joining from the lobby takes you straight into spectator chat while the active game stays locked.'
     );
   });
 
-  it('refreshes the lobby again after ten seconds', async () => {
-    vi.useFakeTimers();
-
-    try {
-      const lobbyService = createLobbyServiceStub([]);
-      const roomService = createRoomServiceStub();
-
-      await renderLobby(lobbyService, roomService);
-      expect(lobbyService.refresh).toHaveBeenCalledTimes(1);
-
-      await vi.advanceTimersByTimeAsync(10000);
-      await Promise.resolve();
-
-      expect(lobbyService.refresh).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('creates a room and redirects into the room detail page', async () => {
+  it('keeps local play links visible from the lobby-first home page', async () => {
     const lobbyService = createLobbyServiceStub([]);
-    const roomService = createRoomServiceStub({
-      createRoomResponse: {
-        roomId: 'ROOM42',
-        participantId: 'host-1',
-        participantToken: 'token-1',
-        snapshot: createSnapshot('ROOM42'),
-      },
-    });
+    const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService);
     const router = TestBed.inject(Router);
-    const input = harness.routeNativeElement?.querySelector(
-      'input[formcontrolname="displayName"]'
-    ) as HTMLInputElement;
-    const form = harness.routeNativeElement?.querySelector(
-      '[data-testid="online-lobby-create-form"]'
-    ) as HTMLFormElement;
 
-    input.value = 'Captain';
-    input.dispatchEvent(new Event('input'));
-    form.dispatchEvent(new Event('submit'));
+    const goLink = harness.routeNativeElement?.querySelector(
+      'a[href="/setup/go"]'
+    ) as HTMLAnchorElement;
+
+    expect(harness.routeNativeElement?.textContent).toContain('Start local Go');
+    expect(harness.routeNativeElement?.textContent).toContain('Start local Gomoku');
+
+    goLink.click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain');
-    expect(router.url).toBe('/online/room/ROOM42');
+    expect(router.url).toBe('/setup/go');
   });
 });
 
@@ -136,12 +170,16 @@ async function renderLobby(
     providers: [
       provideRouter([
         {
-          path: 'online',
+          path: '',
           component: OnlineLobbyPageComponent,
         },
         {
           path: 'online/room/:roomId',
           component: DummyRoomPageComponent,
+        },
+        {
+          path: 'setup/:mode',
+          component: DummySetupPageComponent,
         },
       ]),
       {
@@ -156,7 +194,7 @@ async function renderLobby(
   });
 
   const harness = await RouterTestingHarness.create();
-  await harness.navigateByUrl('/online', OnlineLobbyPageComponent);
+  await harness.navigateByUrl('/', OnlineLobbyPageComponent);
   await harness.fixture.whenStable();
 
   return harness;
@@ -181,23 +219,26 @@ function createRoomServiceStub(options?: {
 }) {
   const displayName = signal('Host');
   const creating = signal(false);
+  const joining = signal(false);
   const lastError = signal<string | null>(null);
 
   return {
     displayName,
     creating,
+    joining,
     lastError,
     clearTransientMessages: vi.fn(),
     createRoom: vi.fn().mockReturnValue(
       of(
-      options?.createRoomResponse ?? {
-        roomId: 'ROOM01',
-        participantId: 'host-1',
-        participantToken: 'token-1',
-        snapshot: createSnapshot('ROOM01'),
-      }
+        options?.createRoomResponse ?? {
+          roomId: 'ROOM01',
+          participantId: 'host-1',
+          participantToken: 'token-1',
+          snapshot: createSnapshot('ROOM01'),
+        }
       )
     ),
+    joinRoom: vi.fn().mockReturnValue(of(void 0)),
   };
 }
 

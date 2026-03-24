@@ -66,8 +66,8 @@ npm exec nx -- graph
 
 Current Go routes:
 
-- `/`
-- `/online`
+- `/` hosted multiplayer lobby and default app entry
+- `/online` legacy redirect to `/`
 - `/online/room/:roomId`
 - `/setup/:mode`
 - `/play/:mode`
