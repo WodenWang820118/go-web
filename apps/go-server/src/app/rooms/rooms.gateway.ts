@@ -21,6 +21,7 @@ import {
   SystemNotice,
   SystemNoticeEvent,
 } from '@gx/go/contracts';
+import { createMessage, isMessageDescriptor } from '@gx/go/domain';
 import { HttpException, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
@@ -276,20 +277,25 @@ export class RoomsGateway implements OnGatewayDisconnect {
   private emitCommandError(client: Socket, error: unknown): void {
     const payload: CommandErrorEvent = {
       code: 'internal_error',
-      message: 'Unexpected server error.',
+      message: createMessage('room.error.unexpected_server_error'),
     };
 
     if (error instanceof HttpException) {
       const response = error.getResponse();
       const message =
         typeof response === 'string'
-          ? response
+          ? null
           : Array.isArray((response as { message?: unknown }).message)
-            ? (response as { message: string[] }).message.join(', ')
-            : ((response as { message?: string }).message ?? error.message);
+            ? (response as { message: unknown[] }).message.find(isMessageDescriptor) ?? null
+            : isMessageDescriptor((response as { message?: unknown }).message)
+              ? (response as { message: ReturnType<typeof createMessage> }).message
+              : null;
 
       payload.code = String(error.getStatus());
-      payload.message = message;
+
+      if (message) {
+        payload.message = message;
+      }
     }
 
     client.emit('command.error', payload);

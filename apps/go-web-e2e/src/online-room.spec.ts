@@ -1,13 +1,11 @@
-import { expect, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 
-test('moves a hosted room from waiting to ready to live through the lobby-first flow', async ({
+test('creates a hosted room, seats players, starts a match, and supports spectators plus chat', async ({
   browser,
   page,
 }) => {
-  const lobbyContext = await browser.newContext();
   const guestContext = await browser.newContext();
   const spectatorContext = await browser.newContext();
-  const lobbyPage = await lobbyContext.newPage();
   const guestPage = await guestContext.newPage();
   const spectatorPage = await spectatorContext.newPage();
 
@@ -28,7 +26,7 @@ test('moves a hosted room from waiting to ready to live through the lobby-first 
       )
       .toBe(true);
 
-    await page.goto('/');
+    await useEnglish(page);
     await page.getByTestId('lobby-display-name-input').fill('Host');
     await page.getByTestId('online-lobby-create-button').click();
     await expect(page).toHaveURL(/\/online\/room\/[A-Z0-9]+$/, {
@@ -41,19 +39,11 @@ test('moves a hosted room from waiting to ready to live through the lobby-first 
     const roomIdMatch = page.url().match(/\/online\/room\/([A-Z0-9]+)$/);
     expect(roomIdMatch?.[1]).toBeTruthy();
     const roomId = roomIdMatch![1];
-    await lobbyPage.goto('/');
-    const waitingCard = lobbyPage.getByTestId(`lobby-room-${roomId}`);
-    await expect(waitingCard).toContainText('Waiting', {
-      timeout: 15000,
-    });
 
-    await guestPage.goto('/');
-    await guestPage.getByTestId('lobby-display-name-input').fill('Guest');
-    await expect(guestPage.getByTestId(`lobby-room-${roomId}`)).toContainText('Waiting', {
-      timeout: 15000,
-    });
-    await guestPage.getByTestId(`lobby-room-${roomId}`).click();
-    await guestPage.getByTestId('online-lobby-join-selected-button').click();
+    await useEnglish(guestPage);
+    await guestPage.goto(`/online/room/${roomId}`);
+    await guestPage.getByTestId('join-room-form').getByLabel('Display name').fill('Guest');
+    await guestPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(page.getByTestId('claim-black')).toBeVisible();
     await expect(guestPage.getByTestId('claim-white')).toBeVisible();
@@ -61,37 +51,16 @@ test('moves a hosted room from waiting to ready to live through the lobby-first 
     await page.getByTestId('claim-black').click();
     await guestPage.getByTestId('claim-white').click();
 
-    await lobbyPage.goto('/');
-    await expect(lobbyPage.getByTestId(`lobby-room-${roomId}`)).toContainText(
-      'Ready',
-      {
-        timeout: 15000,
-      }
-    );
-
     await expect(page.getByTestId('start-hosted-match')).toBeEnabled();
     await page.getByTestId('start-hosted-match').click();
 
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();
 
-    await lobbyPage.goto('/');
-    await expect(lobbyPage.getByTestId(`lobby-room-${roomId}`)).toContainText(
-      'Live',
-      {
-        timeout: 15000,
-      }
-    );
-
-    await spectatorPage.goto('/');
-    await spectatorPage.getByTestId('lobby-display-name-input').fill('Spectator');
-    await expect(
-      spectatorPage.getByTestId(`lobby-room-${roomId}`)
-    ).toContainText('Live', {
-      timeout: 15000,
-    });
-    await spectatorPage.getByTestId(`lobby-room-${roomId}`).click();
-    await spectatorPage.getByTestId('online-lobby-join-selected-button').click();
+    await useEnglish(spectatorPage);
+    await spectatorPage.goto(`/online/room/${roomId}`);
+    await spectatorPage.getByTestId('join-room-form').getByLabel('Display name').fill('Spectator');
+    await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
     await expect(spectatorPage.getByTestId('claim-black')).toHaveCount(0);
@@ -108,8 +77,13 @@ test('moves a hosted room from waiting to ready to live through the lobby-first 
     await expect(page.getByText('Watching live')).toBeVisible();
     await expect(guestPage.getByText('Watching live')).toBeVisible();
   } finally {
-    await lobbyContext.close();
     await guestContext.close();
     await spectatorContext.close();
   }
 });
+
+async function useEnglish(page: Page): Promise<void> {
+  await page.goto('/');
+  await page.getByTestId('locale-option-en').click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+}

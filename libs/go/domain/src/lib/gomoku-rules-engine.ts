@@ -1,7 +1,6 @@
 import {
   boardHash,
   boardIsFull,
-  capitalizePlayerColor,
   cloneBoard,
   createBoard,
   findWinningLine,
@@ -11,7 +10,14 @@ import {
   setCell,
 } from './board-utils';
 import { failure, RulesEngine, success } from './rules-engine';
-import { MatchSettings, MatchState, MoveCommand, MoveRecord, PlayerColor } from './types';
+import {
+  createMessage,
+  MatchSettings,
+  MatchState,
+  MoveCommand,
+  MoveRecord,
+  PlayerColor,
+} from './types';
 
 export class GomokuRulesEngine implements RulesEngine {
   readonly mode = 'gomoku' as const;
@@ -31,7 +37,7 @@ export class GomokuRulesEngine implements RulesEngine {
       lastMove: null,
       consecutivePasses: 0,
       winnerLine: [],
-      message: 'Black to move. Build five in a row to win.',
+      message: createMessage('game.gomoku.state.opening'),
       scoring: null,
       result: null,
     };
@@ -39,12 +45,12 @@ export class GomokuRulesEngine implements RulesEngine {
 
   applyMove(state: MatchState, settings: MatchSettings, command: MoveCommand) {
     if (state.phase !== 'playing') {
-      return failure(state, 'This Gomoku match is already complete.');
+      return failure(state, 'game.gomoku.error.match_closed');
     }
 
     switch (command.type) {
       case 'pass':
-        return failure(state, 'Passing is not available in Gomoku.');
+        return failure(state, 'game.gomoku.error.pass_unavailable');
       case 'resign':
         return success(this.resign(state, command.player ?? state.nextPlayer));
       case 'place':
@@ -54,7 +60,7 @@ export class GomokuRulesEngine implements RulesEngine {
 
   private placeStone(state: MatchState, settings: MatchSettings, point: { x: number; y: number }) {
     if (getCell(state.board, point) !== null) {
-      return failure(state, 'That intersection is already occupied.');
+      return failure(state, 'game.error.intersection_occupied');
     }
 
     const nextBoard = cloneBoard(state.board);
@@ -67,7 +73,9 @@ export class GomokuRulesEngine implements RulesEngine {
     const winningLine = findWinningLine(nextBoard, point, player, 5);
 
     if (winningLine) {
-      const summary = `${capitalizePlayerColor(player)} wins with five in a row.`;
+      const summary = createMessage('game.gomoku.result.five_in_row', {
+        winner: createMessage(`common.player.${player}`),
+      });
 
       return success({
         ...state,
@@ -89,7 +97,7 @@ export class GomokuRulesEngine implements RulesEngine {
     }
 
     if (boardIsFull(nextBoard)) {
-      const summary = 'The board is full. The match ends in a draw.';
+      const summary = createMessage('game.gomoku.result.board_full_draw');
 
       return success({
         ...state,
@@ -117,7 +125,9 @@ export class GomokuRulesEngine implements RulesEngine {
       previousBoardHashes: [...state.previousBoardHashes, boardHash(nextBoard)],
       lastMove: moveRecord,
       winnerLine: [],
-      message: `${capitalizePlayerColor(opponent)} to move.`,
+      message: createMessage('game.state.next_turn', {
+        player: createMessage(`common.player.${opponent}`),
+      }),
       scoring: null,
       result: null,
     });
@@ -131,7 +141,9 @@ export class GomokuRulesEngine implements RulesEngine {
       { type: 'resign', player: resignedBy },
       state.board
     );
-    const summary = `${capitalizePlayerColor(winner)} wins by resignation.`;
+    const summary = createMessage('game.result.win_by_resignation', {
+      winner: createMessage(`common.player.${winner}`),
+    });
 
     return {
       ...state,

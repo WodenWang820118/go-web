@@ -29,7 +29,9 @@ describe('GomokuRulesEngine', () => {
     });
 
     expect(duplicate.ok).toBe(false);
-    expect(duplicate.error).toContain('occupied');
+    expect(duplicate.error).toMatchObject({
+      key: 'game.error.intersection_occupied',
+    });
   });
 
   it('detects a horizontal five-in-a-row win', () => {

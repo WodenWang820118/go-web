@@ -10,11 +10,11 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
-  getGameModeMeta,
   isGameMode,
+  type GoMessageDescriptor,
   type BoardPoint,
 } from '@gx/go/domain';
-import { GameSessionStore } from '@gx/go/state';
+import { GameSessionStore, GoI18nService } from '@gx/go/state';
 import { GameBoardComponent, MatchSidebarComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -29,39 +29,6 @@ interface ConfirmationCopy {
   acceptLabel: string;
   rejectLabel: string;
 }
-
-const PLAY_PAGE_CONFIRMATIONS: Record<
-  'resign' | 'restart' | 'newSetup',
-  ConfirmationCopy
-> = {
-  resign: {
-    header: 'Resign this match?',
-    message: 'This will end the current local game immediately.',
-    acceptLabel: 'Resign',
-    rejectLabel: 'Keep playing',
-  },
-  restart: {
-    header: 'Restart the current match?',
-    message: 'Players and board settings stay the same, but the board resets.',
-    acceptLabel: 'Restart',
-    rejectLabel: 'Cancel',
-  },
-  newSetup: {
-    header: 'Start a new setup?',
-    message:
-      'The current local board will be cleared and you will return to the setup screen.',
-    acceptLabel: 'Go to setup',
-    rejectLabel: 'Stay here',
-  },
-};
-
-const PLAY_PAGE_TOASTS = {
-  restarted: {
-    severity: 'success' as const,
-    summary: 'Match restarted',
-    detail: 'The local board has been reset.',
-  },
-};
 
 @Component({
   selector: 'lib-go-play-page',
@@ -83,6 +50,7 @@ const PLAY_PAGE_TOASTS = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlayPageComponent {
+  protected readonly i18n = inject(GoI18nService);
   protected readonly store = inject(GameSessionStore);
   protected readonly helpVisible = signal(false);
   protected readonly resultVisible = signal(false);
@@ -103,7 +71,7 @@ export class PlayPageComponent {
   );
   protected readonly meta = computed(() => {
     const mode = this.mode();
-    return mode ? getGameModeMeta(mode) : null;
+    return mode ? this.i18n.gameModeMeta(mode) : null;
   });
   protected readonly settings = this.store.settings;
   protected readonly state = this.store.state;
@@ -111,7 +79,29 @@ export class PlayPageComponent {
     const command = this.state()?.lastMove?.command;
     return command?.type === 'place' ? command.point : null;
   });
-  protected readonly copy = PLAY_PAGE_CONFIRMATIONS;
+  protected readonly copy = computed<Record<
+    'resign' | 'restart' | 'newSetup',
+    ConfirmationCopy
+  >>(() => ({
+    resign: {
+      header: this.i18n.t('play.confirm.resign.header'),
+      message: this.i18n.t('play.confirm.resign.message'),
+      acceptLabel: this.i18n.t('play.confirm.resign.accept'),
+      rejectLabel: this.i18n.t('play.confirm.resign.reject'),
+    },
+    restart: {
+      header: this.i18n.t('play.confirm.restart.header'),
+      message: this.i18n.t('play.confirm.restart.message'),
+      acceptLabel: this.i18n.t('play.confirm.restart.accept'),
+      rejectLabel: this.i18n.t('play.confirm.restart.reject'),
+    },
+    newSetup: {
+      header: this.i18n.t('play.confirm.new_setup.header'),
+      message: this.i18n.t('play.confirm.new_setup.message'),
+      acceptLabel: this.i18n.t('play.confirm.new_setup.accept'),
+      rejectLabel: this.i18n.t('play.confirm.new_setup.reject'),
+    },
+  }));
 
   constructor() {
     effect(() => {
@@ -122,33 +112,43 @@ export class PlayPageComponent {
   }
 
   protected onBoardPoint(point: BoardPoint): void {
-    this.reportAction(this.store.playPoint(point), 'Move rejected');
+    this.reportAction(this.store.playPoint(point), 'play.toast.move_rejected');
   }
 
   protected passTurn(): void {
-    this.reportAction(this.store.passTurn(), 'Pass unavailable');
+    this.reportAction(this.store.passTurn(), 'play.toast.pass_unavailable');
   }
 
   protected finalizeScoring(): void {
-    this.reportAction(this.store.finalizeScoring(), 'Scoring unavailable');
+    this.reportAction(
+      this.store.finalizeScoring(),
+      'play.toast.scoring_unavailable'
+    );
   }
 
   protected resignMatch(): void {
     this.confirmation.confirm({
-      ...this.copy.resign,
+      ...this.copy().resign,
       accept: () => {
-        this.reportAction(this.store.resign(), 'Resignation unavailable');
+        this.reportAction(
+          this.store.resign(),
+          'play.toast.resignation_unavailable'
+        );
       },
     });
   }
 
   protected restartMatch(): void {
     this.confirmation.confirm({
-      ...this.copy.restart,
+      ...this.copy().restart,
       accept: () => {
         if (this.store.restartMatch()) {
           this.resultVisible.set(false);
-          this.messages.add(PLAY_PAGE_TOASTS.restarted);
+          this.messages.add({
+            severity: 'success',
+            summary: this.i18n.t('play.toast.match_restarted.summary'),
+            detail: this.i18n.t('play.toast.match_restarted.detail'),
+          });
         }
       },
     });
@@ -158,7 +158,7 @@ export class PlayPageComponent {
     const mode = this.mode();
 
     this.confirmation.confirm({
-      ...this.copy.newSetup,
+      ...this.copy().newSetup,
       accept: async () => {
         this.store.clearMatch();
         this.resultVisible.set(false);
@@ -167,15 +167,24 @@ export class PlayPageComponent {
     });
   }
 
-  private reportAction(error: string | null, summary: string): void {
+  protected translateMessage(
+    message: GoMessageDescriptor | null | undefined
+  ): string {
+    return this.i18n.translateMessage(message);
+  }
+
+  private reportAction(
+    error: GoMessageDescriptor | null,
+    summaryKey: string
+  ): void {
     if (!error) {
       return;
     }
 
     this.messages.add({
       severity: 'warn',
-      summary,
-      detail: error,
+      summary: this.i18n.t(summaryKey),
+      detail: this.i18n.translateMessage(error),
     });
   }
 }

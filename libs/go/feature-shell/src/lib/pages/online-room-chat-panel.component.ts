@@ -3,11 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   output,
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ChatMessage } from '@gx/go/contracts';
+import { GoI18nService } from '@gx/go/state';
 
 @Component({
   selector: 'lib-go-online-room-chat-panel',
@@ -16,7 +18,7 @@ import { ChatMessage } from '@gx/go/contracts';
   template: `
     <section class="flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
       <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-        Room chat
+        {{ i18n.t('room.chat.title') }}
       </p>
 
       <div class="chat-feed mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
@@ -28,7 +30,7 @@ import { ChatMessage } from '@gx/go/contracts';
                   {{ message.displayName }}
                 </p>
                 <p class="text-[0.7rem] uppercase tracking-[0.16em] text-stone-500">
-                  {{ message.sentAt | date: 'shortTime' }}
+                  {{ message.sentAt | date: 'shortTime' : undefined : i18n.locale() }}
                 </p>
               </div>
               <p class="mt-2 text-sm leading-6 text-stone-300">
@@ -38,7 +40,7 @@ import { ChatMessage } from '@gx/go/contracts';
           }
         } @else {
           <p class="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
-            Join the room to start the conversation.
+            {{ i18n.t('room.chat.empty') }}
           </p>
         }
       </div>
@@ -48,7 +50,7 @@ import { ChatMessage } from '@gx/go/contracts';
           [for]="chatMessageInputId"
           class="block text-xs font-semibold uppercase tracking-[0.24em] text-stone-400"
         >
-          Message
+          {{ i18n.t('room.chat.message') }}
         </label>
         <textarea
           [id]="chatMessageInputId"
@@ -56,7 +58,7 @@ import { ChatMessage } from '@gx/go/contracts';
           rows="3"
           data-testid="chat-message-input"
           class="w-full rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-stone-50 outline-none transition focus:border-amber-300/50"
-          placeholder="Message the room..."
+          [placeholder]="i18n.t('room.chat.placeholder')"
           [readOnly]="!canSend()"
         ></textarea>
 
@@ -70,7 +72,7 @@ import { ChatMessage } from '@gx/go/contracts';
             class="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
             [disabled]="!canSend()"
           >
-            Send
+            {{ i18n.t('room.chat.send') }}
           </button>
         </div>
       </form>
@@ -79,6 +81,8 @@ import { ChatMessage } from '@gx/go/contracts';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomChatPanelComponent {
+  protected readonly i18n = inject(GoI18nService);
+
   readonly chatForm = input.required<FormGroup>();
   readonly participantId = input<string | null>(null);
   readonly isMuted = input.required<boolean>();

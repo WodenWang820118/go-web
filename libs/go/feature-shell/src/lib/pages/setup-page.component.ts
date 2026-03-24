@@ -5,14 +5,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   DEFAULT_GO_KOMI,
-  DEFAULT_PLAYER_NAMES,
-  getGameModeMeta,
   GOMOKU_BOARD_SIZE,
   GO_BOARD_SIZES,
   isGameMode,
   type GoBoardSize,
 } from '@gx/go/domain';
-import { GameSessionStore } from '@gx/go/state';
+import { GameSessionStore, GoI18nService } from '@gx/go/state';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';
@@ -37,7 +35,7 @@ import { map } from 'rxjs';
           class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
         >
           <span class="text-lg">&larr;</span>
-          Back to modes
+          {{ i18n.t('setup.back_to_modes') }}
         </a>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -45,7 +43,7 @@ import { map } from 'rxjs';
             <ng-template pTemplate="header">
               <div class="border-b border-stone-200/80 bg-[linear-gradient(135deg,_rgba(254,249,240,0.98),_rgba(255,255,255,0.92))] px-6 py-6">
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
-                  Match setup
+                  {{ i18n.t('setup.match_setup') }}
                 </p>
                 <h1 class="mt-2 text-3xl font-semibold text-stone-950">
                   {{ meta()!.title }}
@@ -64,19 +62,21 @@ import { map } from 'rxjs';
             >
               <div class="grid gap-4 sm:grid-cols-2">
                 <label class="space-y-2 text-sm font-medium text-stone-700">
-                  <span>Black player</span>
+                  <span>{{ i18n.t('setup.black_player') }}</span>
                   <input pInputText formControlName="blackName" class="w-full" />
                 </label>
 
                 <label class="space-y-2 text-sm font-medium text-stone-700">
-                  <span>White player</span>
+                  <span>{{ i18n.t('setup.white_player') }}</span>
                   <input pInputText formControlName="whiteName" class="w-full" />
                 </label>
               </div>
 
               @if (mode() === 'go') {
                 <div class="space-y-3">
-                  <p class="text-sm font-medium text-stone-700">Board size</p>
+                  <p class="text-sm font-medium text-stone-700">
+                    {{ i18n.t('setup.board_size') }}
+                  </p>
                   <p-selectbutton
                     [options]="boardSizeOptions"
                     optionLabel="label"
@@ -84,12 +84,16 @@ import { map } from 'rxjs';
                     formControlName="boardSize"
                   />
                   <p class="text-sm text-stone-500">
-                    White komi is fixed at {{ DEFAULT_GO_KOMI }} for this local release.
+                    {{ i18n.t('setup.go_komi_note', { komi: DEFAULT_GO_KOMI }) }}
                   </p>
                 </div>
               } @else {
                 <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-600">
-                  Gomoku uses a fixed {{ GOMOKU_BOARD_SIZE }}x{{ GOMOKU_BOARD_SIZE }} board.
+                  {{
+                    i18n.t('setup.gomoku_fixed_board', {
+                      size: GOMOKU_BOARD_SIZE,
+                    })
+                  }}
                 </div>
               }
 
@@ -97,7 +101,7 @@ import { map } from 'rxjs';
                 type="submit"
                 class="inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
               >
-                Start local match
+                {{ i18n.t('setup.start_local_match') }}
               </button>
             </form>
           </p-card>
@@ -106,7 +110,7 @@ import { map } from 'rxjs';
             <ng-template pTemplate="header">
               <div class="border-b border-white/10 px-6 py-6">
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/60">
-                  Rules refresher
+                  {{ i18n.t('setup.rules_refresher') }}
                 </p>
                 <h2 class="mt-2 text-2xl font-semibold">{{ meta()!.strapline }}</h2>
               </div>
@@ -134,6 +138,7 @@ export class SetupPageComponent {
   protected readonly DEFAULT_GO_KOMI = DEFAULT_GO_KOMI;
   protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
 
+  protected readonly i18n = inject(GoI18nService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(GameSessionStore);
@@ -149,15 +154,19 @@ export class SetupPageComponent {
   );
   protected readonly meta = computed(() => {
     const mode = this.mode();
-    return mode ? getGameModeMeta(mode) : null;
+    return mode ? this.i18n.gameModeMeta(mode) : null;
   });
   protected readonly boardSizeOptions = GO_BOARD_SIZES.map(size => ({
     label: `${size} x ${size}`,
     value: size,
   }));
   protected readonly form = new FormGroup({
-    blackName: new FormControl(DEFAULT_PLAYER_NAMES.black, { nonNullable: true }),
-    whiteName: new FormControl(DEFAULT_PLAYER_NAMES.white, { nonNullable: true }),
+    blackName: new FormControl(this.i18n.playerLabel('black'), {
+      nonNullable: true,
+    }),
+    whiteName: new FormControl(this.i18n.playerLabel('white'), {
+      nonNullable: true,
+    }),
     boardSize: new FormControl<GoBoardSize>(19, { nonNullable: true }),
   });
 
@@ -174,8 +183,14 @@ export class SetupPageComponent {
       boardSize: mode === 'go' ? this.form.controls.boardSize.value : GOMOKU_BOARD_SIZE,
       komi: mode === 'go' ? DEFAULT_GO_KOMI : 0,
       players: {
-        black: sanitizeName(this.form.controls.blackName.value, DEFAULT_PLAYER_NAMES.black),
-        white: sanitizeName(this.form.controls.whiteName.value, DEFAULT_PLAYER_NAMES.white),
+        black: sanitizeName(
+          this.form.controls.blackName.value,
+          this.i18n.playerLabel('black')
+        ),
+        white: sanitizeName(
+          this.form.controls.whiteName.value,
+          this.i18n.playerLabel('white')
+        ),
       },
     });
 

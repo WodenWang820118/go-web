@@ -1,5 +1,6 @@
 import {
   BoardPoint,
+  GoMessageDescriptor,
   MatchSettings,
   MatchState,
   MoveCommand,
@@ -32,7 +33,7 @@ export interface ChatMessage {
 
 export interface SystemNotice {
   id: string;
-  message: string;
+  message: GoMessageDescriptor;
   createdAt: string;
 }
 
@@ -183,7 +184,11 @@ export interface SystemNoticeEvent {
 
 export interface CommandErrorEvent {
   code: string;
-  message: string;
+  message: GoMessageDescriptor;
+}
+
+export interface LocalizedErrorResponse {
+  message: GoMessageDescriptor | GoMessageDescriptor[];
 }
 
 export function cloneRoomSnapshot(snapshot: RoomSnapshot): RoomSnapshot {

@@ -71,7 +71,9 @@ describe('GoRulesEngine', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error).toContain('Ko');
+    expect(result.error).toMatchObject({
+      key: 'game.go.error.ko_repeat',
+    });
   });
 
   it('enters scoring after two passes and finalizes the result', () => {

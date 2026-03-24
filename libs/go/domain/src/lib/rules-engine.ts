@@ -1,4 +1,11 @@
-import { GameMode, MatchSettings, MatchState, MoveCommand, RuleResult } from './types';
+import {
+  createMessage,
+  GameMode,
+  MatchSettings,
+  MatchState,
+  MoveCommand,
+  RuleResult,
+} from './types';
 
 export interface RulesEngine {
   readonly mode: GameMode;
@@ -12,6 +19,14 @@ export function success(state: MatchState): RuleResult {
   return { ok: true, state };
 }
 
-export function failure(state: MatchState, error: string): RuleResult {
-  return { ok: false, state, error };
+export function failure(
+  state: MatchState,
+  key: string,
+  params?: Parameters<typeof createMessage>[1]
+): RuleResult {
+  return {
+    ok: false,
+    state,
+    error: createMessage(key, params),
+  };
 }

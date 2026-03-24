@@ -1,12 +1,15 @@
 <section class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-  <lib-go-hosted-shell-header activeSection="room" pageLabel="Room view" />
+  <lib-go-hosted-shell-header
+    activeSection="room"
+    [pageLabel]="i18n.t('hosted.header.page.room')"
+  />
 
   <a
     routerLink="/"
     class="mt-6 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
   >
     <span class="text-lg">&larr;</span>
-    Back to lobby
+    {{ i18n.t('room.page.back_to_lobby') }}
   </a>
 
   <lib-go-online-room-hero
@@ -31,27 +34,26 @@
   @switch (onlineRoom.bootstrapState()) {
     @case ('loading') {
       <div class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
-        Loading hosted room state...
+        {{ i18n.t('room.page.loading') }}
       </div>
     }
 
     @case ('missing') {
       <div class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 shadow-xl shadow-stone-950/5">
         <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-          Room unavailable
+          {{ i18n.t('room.page.missing.label') }}
         </p>
         <h2 class="mt-3 text-3xl font-semibold text-stone-950">
-          This room could not be found.
+          {{ i18n.t('room.page.missing.title') }}
         </h2>
         <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
-          The room may have expired after being empty for too long, or the link may
-          be incorrect.
+          {{ i18n.t('room.page.missing.description') }}
         </p>
         <a
           routerLink="/"
           class="mt-6 inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
         >
-          Return to lobby
+          {{ i18n.t('room.page.missing.action') }}
         </a>
       </div>
     }
@@ -65,7 +67,7 @@
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                      Live board
+                      {{ i18n.t('room.page.live_board') }}
                     </p>
                     <h2 class="mt-2 text-2xl font-semibold text-stone-950">
                       {{ match()!.settings.players.black }} vs {{ match()!.settings.players.white }}
@@ -73,7 +75,7 @@
                   </div>
 
                   <div class="flex items-center gap-3 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-700">
-                    <span>Turn:</span>
+                    <span>{{ i18n.t('room.page.turn') }}:</span>
                     <span class="inline-flex items-center gap-2 font-semibold text-stone-950">
                       <lib-go-stone-badge [color]="match()!.state.nextPlayer" />
                       {{ match()!.settings.players[match()!.state.nextPlayer] }}

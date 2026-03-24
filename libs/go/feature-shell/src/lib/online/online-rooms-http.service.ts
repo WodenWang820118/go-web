@@ -4,9 +4,11 @@ import {
   CreateRoomResponse,
   GetRoomResponse,
   JoinRoomResponse,
+  LocalizedErrorResponse,
   ListRoomsResponse,
 } from '@gx/go/contracts';
-import { GO_SERVER_ORIGIN } from '@gx/go/state';
+import { GO_SERVER_ORIGIN, GoI18nService } from '@gx/go/state';
+import { isMessageDescriptor } from '@gx/go/domain';
 import { Observable } from 'rxjs';
 
 /**
@@ -15,6 +17,7 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomsHttpService {
   private readonly http = inject(HttpClient);
+  private readonly i18n = inject(GoI18nService);
   private readonly serverOrigin = inject(GO_SERVER_ORIGIN);
   private readonly apiBase = `${this.serverOrigin}/api/rooms`;
 
@@ -43,19 +46,28 @@ export class OnlineRoomsHttpService {
     });
   }
 
-  describeHttpError(error: unknown, fallback: string): string {
+  describeHttpError(error: unknown, fallbackKey: string): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return fallback;
+      return this.i18n.t(fallbackKey);
     }
 
-    if (typeof error.error?.message === 'string') {
-      return error.error.message;
+    const response = error.error as LocalizedErrorResponse | undefined;
+    const message = response?.message;
+
+    if (isMessageDescriptor(message)) {
+      return this.i18n.translateMessage(message);
     }
 
-    if (Array.isArray(error.error?.message)) {
-      return error.error.message.join(', ');
+    if (Array.isArray(message)) {
+      return message
+        .map(item => this.i18n.translateMessage(item))
+        .join(', ');
     }
 
-    return error.message;
+    if (typeof error.message === 'string' && error.message.length > 0) {
+      return error.message;
+    }
+
+    return this.i18n.t(fallbackKey);
   }
 }

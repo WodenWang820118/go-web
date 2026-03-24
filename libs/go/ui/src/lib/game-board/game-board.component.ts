@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   output,
   signal,
@@ -20,6 +21,7 @@ import {
   pointEquals,
   pointKey,
 } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 import { BoardCoordinatesComponent } from '../board-coordinates/board-coordinates.component';
 
 @Component({
@@ -31,6 +33,8 @@ import { BoardCoordinatesComponent } from '../board-coordinates/board-coordinate
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameBoardComponent {
+  private readonly i18n = inject(GoI18nService);
+
   readonly mode = input<GameMode>('go');
   readonly boardSize = input<BoardSize>(9);
   readonly board = input<(PlayerColor | null)[][]>([]);
@@ -75,7 +79,10 @@ export class GameBoardComponent {
   readonly starPoints = computed(() => this.resolveStarPoints());
   readonly ariaLabel = computed(
     () =>
-      `${this.mode() === 'go' ? 'Go' : 'Gomoku'} board, ${this.boardSize()} by ${this.boardSize()} intersections`
+      this.i18n.t('ui.game_board.aria_label', {
+        mode: this.i18n.t(`common.mode.${this.mode()}`),
+        size: this.boardSize(),
+      })
   );
   protected readonly pointEquals = pointEquals;
   protected readonly pointKey = pointKey;

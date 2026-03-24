@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+} from '@angular/core';
 import { MatchPhase, PlayerColor, ResultSummary } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 
 @Component({
   selector: 'lib-go-game-status-chip',
@@ -24,21 +31,29 @@ import { MatchPhase, PlayerColor, ResultSummary } from '@gx/go/domain';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameStatusChipComponent {
+  private readonly i18n = inject(GoI18nService);
+
   readonly phase = input<MatchPhase>('playing');
   readonly currentPlayer = input<PlayerColor | null>(null);
   readonly result = input<ResultSummary | null>(null);
 
   readonly text = computed(() => {
+    const result = this.result();
+
     if (this.phase() === 'finished') {
-      return this.result()?.winner === 'draw'
-        ? 'Draw'
-        : `${this.result()?.winner ?? 'black'} wins`;
+      return result?.winner === 'draw'
+        ? this.i18n.t('ui.game_status.draw')
+        : this.i18n.t('ui.game_status.win', {
+            player: this.i18n.playerLabel(result?.winner === 'white' ? 'white' : 'black'),
+          });
     }
 
     if (this.phase() === 'scoring') {
-      return 'Scoring review';
+      return this.i18n.t('ui.game_status.scoring_review');
     }
 
-    return `${this.currentPlayer() ?? 'black'} turn`;
+    return this.i18n.t('ui.game_status.turn', {
+      player: this.i18n.playerLabel(this.currentPlayer() ?? 'black'),
+    });
   });
 }

@@ -1,7 +1,14 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
-import { capitalizePlayerColor, PlayerColor } from '@gx/go/domain';
+import { PlayerColor } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { OnlineRoomSeatViewModel } from './online-room-page.models';
 
@@ -13,7 +20,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
     @if (!participantId()) {
       <section class="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/70">
-          Join room
+          {{ i18n.t('room.participants.join_room') }}
         </p>
         <h2 class="mt-2 text-xl font-semibold text-stone-50">
           {{ joinCardTitle() }}
@@ -31,7 +38,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
             [for]="joinDisplayNameInputId"
             class="block space-y-2 text-sm font-medium text-stone-200"
           >
-            <span>Display name</span>
+            <span>{{ i18n.t('room.participants.display_name') }}</span>
           </label>
           <input
             [id]="joinDisplayNameInputId"
@@ -45,14 +52,18 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
             class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
             [disabled]="joining()"
           >
-            {{ joining() ? 'Joining room...' : 'Join room' }}
+            {{
+              joining()
+                ? i18n.t('room.participants.joining_room')
+                : i18n.t('room.participants.join_room')
+            }}
           </button>
         </form>
       </section>
     } @else {
       <section class="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-          You are here as
+          {{ i18n.t('room.participants.you_are_here_as') }}
         </p>
         <div class="mt-3 flex items-center justify-between gap-3">
           <div>
@@ -75,10 +86,10 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-            Seats
+            {{ i18n.t('room.participants.seats') }}
           </p>
           <h2 class="mt-2 text-xl font-semibold text-stone-50">
-            Players and spectators
+            {{ i18n.t('room.participants.players_and_spectators') }}
           </h2>
         </div>
 
@@ -102,10 +113,13 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                 <lib-go-stone-badge [color]="seat.color" />
                 <div>
                   <p class="text-sm font-semibold text-stone-50">
-                    {{ capitalizePlayer(seat.color) }}
+                    {{ i18n.playerLabel(seat.color) }}
                   </p>
                   <p class="text-xs uppercase tracking-[0.24em] text-stone-400">
-                    {{ seat.occupant?.displayName ?? 'Open seat' }}
+                    {{
+                      seat.occupant?.displayName ??
+                        i18n.t('room.participants.open_seat')
+                    }}
                   </p>
                 </div>
               </div>
@@ -117,7 +131,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                   [attr.data-testid]="'release-' + seat.color"
                   (click)="releaseSeatRequested.emit()"
                 >
-                  Release
+                  {{ i18n.t('room.participants.release') }}
                 </button>
               } @else if (seat.canClaim) {
                 <button
@@ -126,7 +140,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                   [attr.data-testid]="'claim-' + seat.color"
                   (click)="claimSeatRequested.emit(seat.color)"
                 >
-                  Claim
+                  {{ i18n.t('room.participants.claim') }}
                 </button>
               }
             </div>
@@ -158,14 +172,18 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                         : muteParticipantRequested.emit(participant.participantId)
                     "
                   >
-                    {{ participant.muted ? 'Unmute' : 'Mute' }}
+                    {{
+                      participant.muted
+                        ? i18n.t('room.participants.unmute')
+                        : i18n.t('room.participants.mute')
+                    }}
                   </button>
                   <button
                     type="button"
                     class="rounded-full border border-rose-300/30 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-rose-100 transition hover:border-rose-200/50 hover:bg-rose-400/10"
                     (click)="kickParticipantRequested.emit(participant.participantId)"
                   >
-                    Kick
+                    {{ i18n.t('room.participants.kick') }}
                   </button>
                 </div>
               }
@@ -178,15 +196,15 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
     @if (isHost()) {
       <section class="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-          Host controls
+          {{ i18n.t('room.participants.host_controls') }}
         </p>
         <h2 class="mt-2 text-xl font-semibold text-stone-50">
-          Start a match
+          {{ i18n.t('room.participants.start_match') }}
         </h2>
 
         @if (!canChangeSeats()) {
           <p class="mt-3 text-sm leading-6 text-stone-300">
-            Finish the current match before reshuffling seats or starting a new game.
+            {{ i18n.t('room.participants.finish_current_before_start') }}
           </p>
         } @else {
           <form
@@ -199,22 +217,22 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               [for]="startModeSelectId"
               class="block space-y-2 text-sm font-medium text-stone-200"
             >
-              <span>Mode</span>
+              <span>{{ i18n.t('room.participants.mode') }}</span>
             </label>
             <select
               [id]="startModeSelectId"
               formControlName="mode"
               class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
             >
-              <option value="go">Go</option>
-              <option value="gomoku">Gomoku</option>
+              <option value="go">{{ i18n.t('common.mode.go') }}</option>
+              <option value="gomoku">{{ i18n.t('common.mode.gomoku') }}</option>
             </select>
 
             <label
               [for]="startBoardSizeSelectId"
               class="block space-y-2 text-sm font-medium text-stone-200"
             >
-              <span>Board size</span>
+              <span>{{ i18n.t('room.participants.board_size') }}</span>
             </label>
             <select
               [id]="startBoardSizeSelectId"
@@ -232,7 +250,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               data-testid="start-hosted-match"
               [disabled]="!canStartMatch()"
             >
-              Start hosted match
+              {{ i18n.t('room.participants.start_hosted_match') }}
             </button>
           </form>
         }
@@ -242,7 +260,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
     @if (match()) {
       <section class="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-          Match actions
+          {{ i18n.t('room.participants.match_actions') }}
         </p>
 
         <div class="mt-4 flex flex-wrap gap-2">
@@ -252,7 +270,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
             [disabled]="!canPass()"
             (click)="passRequested.emit()"
           >
-            Pass
+            {{ i18n.t('common.move.pass') }}
           </button>
           <button
             type="button"
@@ -260,7 +278,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
             [disabled]="!canResign()"
             (click)="resignRequested.emit()"
           >
-            Resign
+            {{ i18n.t('common.move.resign') }}
           </button>
           <button
             type="button"
@@ -268,16 +286,18 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
             [disabled]="!canFinalizeScoring()"
             (click)="finalizeScoringRequested.emit()"
           >
-            Finalize score
+            {{ i18n.t('room.participants.finalize_score') }}
           </button>
         </div>
 
         <div class="mt-5">
           <div class="mb-3 flex items-center justify-between">
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-              Move log
+              {{ i18n.t('room.participants.move_log') }}
             </p>
-            <span class="text-xs text-stone-500">{{ moveHistory().length }} moves</span>
+            <span class="text-xs text-stone-500">
+              {{ i18n.t('ui.match_sidebar.moves_count', { count: moveHistory().length }) }}
+            </span>
           </div>
 
           <div class="max-h-64 overflow-auto pr-1">
@@ -288,9 +308,11 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                     class="rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-sm text-stone-200"
                   >
                     <div class="flex items-center justify-between gap-3">
-                      <span class="font-semibold">{{ move.moveNumber }}. {{ move.notation }}</span>
+                      <span class="font-semibold">
+                        {{ move.moveNumber }}. {{ i18n.moveNotation(move) }}
+                      </span>
                       <span class="text-xs uppercase tracking-[0.24em] text-stone-500">
-                        {{ capitalizePlayer(move.player) }}
+                        {{ i18n.playerLabel(move.player) }}
                       </span>
                     </div>
                   </li>
@@ -300,7 +322,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               <p
                 class="rounded-2xl border border-dashed border-white/10 px-4 py-5 text-sm text-stone-400"
               >
-                Moves will appear here once the game begins.
+                {{ i18n.t('room.participants.empty_move_log') }}
               </p>
             }
           </div>
@@ -311,6 +333,8 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomParticipantsPanelComponent {
+  protected readonly i18n = inject(GoI18nService);
+
   readonly joinForm = input.required<FormGroup>();
   readonly startForm = input.required<FormGroup>();
   readonly boardSizeOptions = input.required<readonly number[]>();
@@ -346,27 +370,31 @@ export class OnlineRoomParticipantsPanelComponent {
   protected readonly startModeSelectId = 'room-start-mode';
   protected readonly startBoardSizeSelectId = 'room-start-board-size';
 
-  protected capitalizePlayer(color: PlayerColor): string {
-    return capitalizePlayerColor(color);
-  }
-
   protected viewerRoleLabel(): string {
     if (this.isHost()) {
-      return 'Host';
+      return this.i18n.t('common.role.host');
     }
 
     const seat = this.viewerSeat();
-    return seat ? `${capitalizePlayerColor(seat)} player` : 'Spectator';
+    return seat
+      ? this.i18n.t('room.participants.viewer_role.player', {
+          player: this.i18n.playerLabel(seat),
+        })
+      : this.i18n.t('common.role.spectator');
   }
 
   protected participantStatusLabel(participant: ParticipantSummary): string {
     const role = participant.isHost
-      ? 'Host'
+      ? this.i18n.t('common.role.host')
       : participant.seat
-        ? `${capitalizePlayerColor(participant.seat)} seat`
-        : 'Spectator';
-    const status = participant.online ? 'Online' : 'Offline';
+        ? this.i18n.t(`common.seat.${participant.seat}`)
+        : this.i18n.t('common.role.spectator');
+    const status = participant.online
+      ? this.i18n.t('common.status.online')
+      : this.i18n.t('common.status.offline');
 
-    return participant.muted ? `${role} - ${status} - muted` : `${role} - ${status}`;
+    return participant.muted
+      ? `${role} - ${status} - ${this.i18n.t('common.status.muted')}`
+      : `${role} - ${status}`;
   }
 }

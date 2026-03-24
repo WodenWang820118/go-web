@@ -1,6 +1,5 @@
 import {
   boardHash,
-  capitalizePlayerColor,
   cloneBoard,
   collectGroup,
   countStones,
@@ -18,6 +17,7 @@ import { failure, RulesEngine, success } from './rules-engine';
 import {
   BoardMatrix,
   BoardPoint,
+  createMessage,
   MatchSettings,
   MatchState,
   MoveCommand,
@@ -46,7 +46,7 @@ export class GoRulesEngine implements RulesEngine {
       lastMove: null,
       consecutivePasses: 0,
       winnerLine: [],
-      message: 'Black to move. Place the opening stone.',
+      message: createMessage('game.go.state.opening'),
       scoring: null,
       result: null,
     };
@@ -54,7 +54,7 @@ export class GoRulesEngine implements RulesEngine {
 
   applyMove(state: MatchState, settings: MatchSettings, command: MoveCommand) {
     if (state.phase !== 'playing') {
-      return failure(state, 'This Go match is no longer accepting moves.');
+      return failure(state, 'game.go.error.match_closed');
     }
 
     switch (command.type) {
@@ -102,7 +102,14 @@ export class GoRulesEngine implements RulesEngine {
     return {
       ...state,
       scoring,
-      message: `${capitalizePlayerColor(color)} group ${shouldRemove ? 'restored' : 'marked dead'} for scoring.`,
+      message: createMessage(
+        shouldRemove
+          ? 'game.go.state.group_restored'
+          : 'game.go.state.group_marked_dead',
+        {
+          player: createMessage(`common.player.${color}`),
+        }
+      ),
     };
   }
 
@@ -119,8 +126,11 @@ export class GoRulesEngine implements RulesEngine {
     const margin = Math.abs(score.black - score.white);
     const summary =
       winner === 'draw'
-        ? 'The match ends in a draw.'
-        : `${capitalizePlayerColor(winner)} wins by ${margin.toFixed(1)} points.`;
+        ? createMessage('game.result.draw')
+        : createMessage('game.result.win_by_points', {
+            winner: createMessage(`common.player.${winner}`),
+            margin: margin.toFixed(1),
+          });
 
     return {
       ...state,
@@ -138,7 +148,7 @@ export class GoRulesEngine implements RulesEngine {
 
   private placeStone(state: MatchState, settings: MatchSettings, point: BoardPoint) {
     if (getCell(state.board, point) !== null) {
-      return failure(state, 'That intersection is already occupied.');
+      return failure(state, 'game.error.intersection_occupied');
     }
 
     const nextBoard = cloneBoard(state.board);
@@ -169,7 +179,7 @@ export class GoRulesEngine implements RulesEngine {
     const ownGroup = collectGroup(nextBoard, point);
 
     if (!ownGroup || ownGroup.liberties.length === 0) {
-      return failure(state, 'Suicide is not legal in this ruleset.');
+      return failure(state, 'game.go.error.suicide');
     }
 
     const nextHash = boardHash(nextBoard);
@@ -178,7 +188,7 @@ export class GoRulesEngine implements RulesEngine {
       state.previousBoardHashes.length >= 2 &&
       nextHash === state.previousBoardHashes[state.previousBoardHashes.length - 2]
     ) {
-      return failure(state, 'Ko prevents an immediate repetition of the previous position.');
+      return failure(state, 'game.go.error.ko_repeat');
     }
 
     const nextCaptures = {
@@ -208,8 +218,13 @@ export class GoRulesEngine implements RulesEngine {
       winnerLine: [],
       message:
         capturedPoints.length > 0
-          ? `${capitalizePlayerColor(player)} captured ${capturedPoints.length} stone${capturedPoints.length === 1 ? '' : 's'}.`
-          : `${capitalizePlayerColor(opponent)} to move.`,
+          ? createMessage('game.go.state.captured_stones', {
+              player: createMessage(`common.player.${player}`),
+              count: capturedPoints.length,
+            })
+          : createMessage('game.state.next_turn', {
+              player: createMessage(`common.player.${opponent}`),
+            }),
       scoring: null,
       result: null,
     });
@@ -242,8 +257,10 @@ export class GoRulesEngine implements RulesEngine {
       consecutivePasses,
       message:
         phaseAfterMove === 'scoring'
-          ? 'Scoring phase started. Click groups to mark them dead, then finalize the result.'
-          : `${capitalizePlayerColor(otherPlayer(player))} to move after the pass.`,
+          ? createMessage('game.go.state.scoring_started')
+          : createMessage('game.go.state.next_turn_after_pass', {
+              player: createMessage(`common.player.${otherPlayer(player)}`),
+            }),
       scoring,
     };
   }
@@ -258,7 +275,9 @@ export class GoRulesEngine implements RulesEngine {
       'finished',
       state.captures
     );
-    const summary = `${capitalizePlayerColor(winner)} wins by resignation.`;
+    const summary = createMessage('game.result.win_by_resignation', {
+      winner: createMessage(`common.player.${winner}`),
+    });
 
     return {
       ...state,

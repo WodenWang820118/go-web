@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { GoI18nService } from '@gx/go/state';
 import { EMPTY, catchError, from, switchMap, take } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 
@@ -16,19 +17,18 @@ import { OnlineRoomService } from '../online/online-room.service';
         class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
       >
         <span class="text-lg">&larr;</span>
-        Back to modes
+        {{ i18n.t('create.back_to_modes') }}
       </a>
 
       <div class="mt-8 rounded-[2rem] border border-slate-900/5 bg-white/90 p-8 shadow-2xl shadow-slate-950/10">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
-          Hosted multiplayer
+          {{ i18n.t('create.eyebrow') }}
         </p>
         <h1 class="mt-3 text-4xl font-semibold text-stone-950">
-          Create an online room
+          {{ i18n.t('create.title') }}
         </h1>
         <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
-          You will become the host, get a shareable room URL, and can invite two
-          players plus any number of spectators.
+          {{ i18n.t('create.description') }}
         </p>
 
         @if (onlineRoom.lastError()) {
@@ -44,7 +44,7 @@ import { OnlineRoomService } from '../online/online-room.service';
           (ngSubmit)="createRoom()"
         >
           <label class="block space-y-2 text-sm font-medium text-stone-700">
-            <span>Your display name</span>
+            <span>{{ i18n.t('create.display_name') }}</span>
             <input
               formControlName="displayName"
               class="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 outline-none transition focus:border-stone-400 focus:bg-white"
@@ -57,7 +57,11 @@ import { OnlineRoomService } from '../online/online-room.service';
             class="inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
             [disabled]="onlineRoom.creating()"
           >
-            {{ onlineRoom.creating() ? 'Creating room...' : 'Create room' }}
+            {{
+              onlineRoom.creating()
+                ? i18n.t('create.creating_room')
+                : i18n.t('create.create_room')
+            }}
           </button>
         </form>
       </div>
@@ -66,14 +70,18 @@ import { OnlineRoomService } from '../online/online-room.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineCreatePageComponent {
+  protected readonly i18n = inject(GoI18nService);
   protected readonly onlineRoom = inject(OnlineRoomService);
 
   private readonly router = inject(Router);
 
   protected readonly form = new FormGroup({
-    displayName: new FormControl(this.onlineRoom.displayName() || 'Host', {
-      nonNullable: true,
-    }),
+    displayName: new FormControl(
+      this.onlineRoom.displayName() || this.i18n.t('common.role.host'),
+      {
+        nonNullable: true,
+      }
+    ),
   });
 
   protected createRoom(): void {

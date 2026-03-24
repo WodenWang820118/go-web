@@ -1,7 +1,8 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
-  DEFAULT_PLAYER_NAMES,
+  createMessage,
   getRulesEngine,
+  GoMessageDescriptor,
   type BoardPoint,
   type GameMode,
   type MatchSettings,
@@ -36,14 +37,12 @@ export class GameSessionStore {
   readonly state = computed(() => this.snapshotSignal()?.state ?? null);
   readonly hasMatch = computed(() => this.snapshotSignal() !== null);
   readonly currentMode = computed(() => this.settings()?.mode ?? null);
-  readonly playerNames = computed(
-    () => this.settings()?.players ?? DEFAULT_PLAYER_NAMES
-  );
+  readonly playerNames = computed(() => this.settings()?.players ?? null);
   readonly currentPlayerName = computed(() => {
     const state = this.state();
     const names = this.playerNames();
 
-    return state ? names[state.nextPlayer] : null;
+    return state && names ? names[state.nextPlayer] : null;
   });
   readonly isScoring = computed(() => this.state()?.phase === 'scoring');
   readonly isFinished = computed(() => this.state()?.phase === 'finished');
@@ -84,11 +83,11 @@ export class GameSessionStore {
   /**
    * Applies a board click to the current local match, including dead-group toggling in scoring.
    */
-  playPoint(point: BoardPoint): string | null {
+  playPoint(point: BoardPoint): GoMessageDescriptor | null {
     const snapshot = this.snapshotSignal();
 
     if (!snapshot) {
-      return 'Start a local match before placing stones.';
+      return createMessage('local.play.error.start_before_place');
     }
 
     if (snapshot.settings.mode === 'go' && snapshot.state.phase === 'scoring') {
@@ -100,7 +99,7 @@ export class GameSessionStore {
       );
 
       if (!nextState) {
-        return 'Unable to update the scoring preview.';
+        return createMessage('local.play.error.scoring_preview_unavailable');
       }
 
       this.commit({
@@ -117,33 +116,33 @@ export class GameSessionStore {
     });
   }
 
-  passTurn(): string | null {
+  passTurn(): GoMessageDescriptor | null {
     return this.applyCommand({ type: 'pass' });
   }
 
-  resign(player?: PlayerColor): string | null {
+  resign(player?: PlayerColor): GoMessageDescriptor | null {
     return this.applyCommand({
       type: 'resign',
       player,
     });
   }
 
-  finalizeScoring(): string | null {
+  finalizeScoring(): GoMessageDescriptor | null {
     const snapshot = this.snapshotSignal();
 
     if (!snapshot) {
-      return 'Start a local match before finalizing scoring.';
+      return createMessage('local.play.error.start_before_finalize_scoring');
     }
 
     if (snapshot.settings.mode !== 'go' || snapshot.state.phase !== 'scoring') {
-      return 'Scoring finalization is only available during a Go scoring phase.';
+      return createMessage('local.play.error.finalize_scoring_unavailable');
     }
 
     const engine = getRulesEngine('go');
     const nextState = engine.finalizeScoring?.(snapshot.state, snapshot.settings);
 
     if (!nextState) {
-      return 'Unable to finalize this score.';
+      return createMessage('local.play.error.finalize_score_failed');
     }
 
     this.commit({
@@ -154,11 +153,11 @@ export class GameSessionStore {
     return null;
   }
 
-  private applyCommand(command: LocalMatchCommand): string | null {
+  private applyCommand(command: LocalMatchCommand): GoMessageDescriptor | null {
     const snapshot = this.snapshotSignal();
 
     if (!snapshot) {
-      return 'Start a local match before making a move.';
+      return createMessage('local.play.error.start_before_move');
     }
 
     const result = getRulesEngine(snapshot.settings.mode).applyMove(
@@ -168,7 +167,7 @@ export class GameSessionStore {
     );
 
     if (!result.ok) {
-      return result.error ?? 'Move rejected.';
+      return result.error ?? createMessage('local.play.error.move_rejected');
     }
 
     this.commit({

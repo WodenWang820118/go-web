@@ -12,6 +12,15 @@ export type MatchPhase = 'playing' | 'scoring' | 'finished';
 
 export type ResultReason = 'score' | 'five-in-row' | 'resign' | 'draw';
 
+export interface GoMessageDescriptor {
+  key: string;
+  params?: GoMessageParams;
+}
+
+export type GoMessageParamValue = string | number | GoMessageDescriptor;
+
+export type GoMessageParams = Record<string, GoMessageParamValue>;
+
 export type CellValue = PlayerColor | null;
 
 export type BoardMatrix = CellValue[][];
@@ -65,7 +74,7 @@ export interface ScoringState {
 export interface ResultSummary {
   winner: PlayerColor | 'draw';
   reason: ResultReason;
-  summary: string;
+  summary: GoMessageDescriptor;
   margin?: number;
   resignedBy?: PlayerColor;
   winningLine?: BoardPoint[];
@@ -96,7 +105,7 @@ export interface MatchState {
   lastMove: MoveRecord | null;
   consecutivePasses: number;
   winnerLine: BoardPoint[];
-  message: string;
+  message: GoMessageDescriptor;
   scoring: ScoringState | null;
   result: ResultSummary | null;
 }
@@ -104,7 +113,7 @@ export interface MatchState {
 export interface RuleResult {
   ok: boolean;
   state: MatchState;
-  error?: string;
+  error?: GoMessageDescriptor;
 }
 
 export const GO_BOARD_SIZES: readonly GoBoardSize[] = [9, 13, 19];
@@ -113,7 +122,20 @@ export const GOMOKU_BOARD_SIZE: GomokuBoardSize = 15;
 
 export const DEFAULT_GO_KOMI = 6.5;
 
-export const DEFAULT_PLAYER_NAMES: Record<PlayerColor, string> = {
-  black: 'Black',
-  white: 'White',
-};
+export function createMessage(
+  key: string,
+  params?: GoMessageParams
+): GoMessageDescriptor {
+  return params ? { key, params } : { key };
+}
+
+export function isMessageDescriptor(
+  value: unknown
+): value is GoMessageDescriptor {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'key' in value &&
+    typeof (value as { key?: unknown }).key === 'string'
+  );
+}

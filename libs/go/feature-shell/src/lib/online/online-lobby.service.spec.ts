@@ -5,7 +5,8 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { LobbyRoomSummary } from '@gx/go/contracts';
-import { GO_SERVER_ORIGIN } from '@gx/go/state';
+import { createMessage } from '@gx/go/domain';
+import { GO_SERVER_ORIGIN, GoI18nService } from '@gx/go/state';
 import { OnlineLobbyService } from './online-lobby.service';
 
 describe('OnlineLobbyService', () => {
@@ -56,11 +57,13 @@ describe('OnlineLobbyService', () => {
   });
 
   it('keeps a readable error when the lobby request fails', () => {
+    const i18n = TestBed.inject(GoI18nService);
+
     service.refresh();
 
     httpMock.expectOne('/api/rooms').flush(
       {
-        message: 'Lobby unavailable',
+        message: createMessage('lobby.error.load_failed'),
       },
       {
         status: 503,
@@ -70,7 +73,7 @@ describe('OnlineLobbyService', () => {
 
     expect(service.loading()).toBe(false);
     expect(service.rooms()).toEqual([]);
-    expect(service.lastError()).toBe('Lobby unavailable');
+    expect(service.lastError()).toBe(i18n.t('lobby.error.load_failed'));
   });
 
   it('treats a missing lobby endpoint as an empty lobby', () => {

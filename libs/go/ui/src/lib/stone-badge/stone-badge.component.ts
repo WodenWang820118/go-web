@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+} from '@angular/core';
 import { PlayerColor } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 
 @Component({
   selector: 'lib-go-stone-badge',
@@ -21,8 +28,12 @@ import { PlayerColor } from '@gx/go/domain';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StoneBadgeComponent {
+  private readonly i18n = inject(GoI18nService);
+
   readonly color = input<PlayerColor>('black');
   readonly label = computed(() =>
-    this.color() === 'black' ? 'Black stone' : 'White stone'
+    this.i18n.t('ui.stone_badge.aria', {
+      player: this.i18n.playerLabel(this.color()),
+    })
   );
 }

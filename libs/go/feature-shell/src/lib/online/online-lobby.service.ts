@@ -56,7 +56,7 @@ export class OnlineLobbyService {
           this.lastErrorSignal.set(
             this.api.describeHttpError(
               error,
-              'Unable to load the online lobby right now.'
+              'lobby.error.load_failed'
             )
           );
           return EMPTY;

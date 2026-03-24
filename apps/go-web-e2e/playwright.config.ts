@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: {
     command: 'node tools/e2e/start-go-web-stack.cjs',
     url: 'http://localhost:4200',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env['CI'],
     timeout: 180 * 1000,
     cwd: workspaceRoot,
   },

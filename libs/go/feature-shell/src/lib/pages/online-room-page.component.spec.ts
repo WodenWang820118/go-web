@@ -3,6 +3,8 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { computed, signal } from '@angular/core';
 import { RoomSnapshot } from '@gx/go/contracts';
+import { createMessage } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';
@@ -17,10 +19,11 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
     expect(roomService.bootstrapRoom).toHaveBeenCalledWith('ROOM42');
-    expect(text).toContain('Join room');
-    expect(text).not.toContain('Host controls');
+    expect(text).toContain(i18n.t('room.participants.join_room'));
+    expect(text).not.toContain(i18n.t('room.participants.host_controls'));
   });
 
   it('shows host controls when the current viewer is the host', async () => {
@@ -31,9 +34,10 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain('Host controls');
-    expect(text).toContain('You are here as');
+    expect(text).toContain(i18n.t('room.participants.host_controls'));
+    expect(text).toContain(i18n.t('room.participants.you_are_here_as'));
   });
 
   it('shows waiting copy when seats are still open', async () => {
@@ -44,9 +48,10 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain('Waiting room');
-    expect(text).toContain('Open seats are still available.');
+    expect(text).toContain(i18n.t('room.stage.waiting.label'));
+    expect(text).toContain(i18n.t('room.stage.waiting.title'));
   });
 
   it('shows ready copy when both seats are filled before the match starts', async () => {
@@ -82,9 +87,10 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain('Ready room');
-    expect(text).toContain('Players are matched and waiting for the host.');
+    expect(text).toContain(i18n.t('room.stage.ready.label'));
+    expect(text).toContain(i18n.t('room.stage.ready.title'));
   });
 
   it('shows spectator join copy for live rooms', async () => {
@@ -142,7 +148,9 @@ describe('OnlineRoomPageComponent', () => {
             lastMove: null,
             consecutivePasses: 0,
             winnerLine: [],
-            message: 'Black to move.',
+            message: createMessage('game.state.next_turn', {
+              player: createMessage('common.player.black'),
+            }),
             scoring: null,
           },
           startedAt: '2026-03-20T00:05:00.000Z',
@@ -153,9 +161,10 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain('Join as spectator');
-    expect(text).toContain('Live rooms are watch-and-chat only until the current match ends.');
+    expect(text).toContain(i18n.t('room.join.title.spectator'));
+    expect(text).toContain(i18n.t('room.join.description.spectator'));
   });
 });
 

@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { RoomSnapshot } from '@gx/go/contracts';
-import { GameSessionStore } from '@gx/go/state';
+import { GameSessionStore, GoI18nService } from '@gx/go/state';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyService } from '../online/online-lobby.service';
@@ -39,11 +39,12 @@ describe('goFeatureShellRoutes', () => {
 
   it('renders the hosted lobby at the root route', async () => {
     const harness = await RouterTestingHarness.create();
+    const i18n = TestBed.inject(GoI18nService);
 
     await harness.navigateByUrl('/', OnlineLobbyPageComponent);
 
     expect(harness.routeNativeElement?.textContent).toContain(
-      'Hosted multiplayer lobby'
+      i18n.t('lobby.hero.eyebrow')
     );
   });
 

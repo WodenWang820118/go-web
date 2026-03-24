@@ -28,6 +28,8 @@ import {
   GO_BOARD_SIZES,
   MatchSettings,
   PlayerColor,
+  createMessage,
+  GoMessageDescriptor,
   getRulesEngine,
 } from '@gx/go/domain';
 
@@ -87,6 +89,61 @@ interface KickResult extends MutationResult {
   kickedSocketIds: string[];
 }
 
+function roomMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): GoMessageDescriptor {
+  return createMessage(key, params);
+}
+
+function badRequestMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): BadRequestException {
+  return new BadRequestException({
+    message: roomMessage(key, params),
+  });
+}
+
+function conflictMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): ConflictException {
+  return new ConflictException({
+    message: roomMessage(key, params),
+  });
+}
+
+function forbiddenMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): ForbiddenException {
+  return new ForbiddenException({
+    message: roomMessage(key, params),
+  });
+}
+
+function notFoundMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): NotFoundException {
+  return new NotFoundException({
+    message: roomMessage(key, params),
+  });
+}
+
+function throttledMessage(
+  key: string,
+  params?: GoMessageDescriptor['params']
+): HttpException {
+  return new HttpException(
+    {
+      message: roomMessage(key, params),
+    },
+    HttpStatus.TOO_MANY_REQUESTS
+  );
+}
+
 @Injectable()
 export class RoomsService implements OnModuleDestroy {
   private readonly rooms = new Map<string, RoomRecord>();
@@ -101,7 +158,7 @@ export class RoomsService implements OnModuleDestroy {
     this.assertAttemptWithinLimit(
       requesterKey,
       CREATE_ATTEMPTS_PER_WINDOW,
-      'Too many room creation attempts. Please try again shortly.'
+      'room.error.too_many_create_attempts'
     );
 
     const sanitizedName = this.sanitizeDisplayName(displayName);
@@ -138,7 +195,7 @@ export class RoomsService implements OnModuleDestroy {
     this.assertAttemptWithinLimit(
       requesterKey,
       JOIN_ATTEMPTS_PER_WINDOW,
-      'Too many room join attempts. Please wait a moment and try again.'
+      'room.error.too_many_join_attempts'
     );
 
     const room = this.getRoomRecord(roomId);
@@ -255,7 +312,7 @@ export class RoomsService implements OnModuleDestroy {
 
     const seatHolder = this.getSeatHolder(room, color);
     if (seatHolder && seatHolder.id !== participant.id) {
-      throw new ConflictException('That seat is already claimed.');
+      throw conflictMessage('room.error.seat_already_claimed');
     }
 
     if (participant.seat === color) {
@@ -270,8 +327,14 @@ export class RoomsService implements OnModuleDestroy {
       snapshot: this.snapshotFor(room),
       notice: this.createNotice(
         previousSeat
-          ? `${participant.displayName} moved to the ${color} seat.`
-          : `${participant.displayName} claimed the ${color} seat.`
+          ? roomMessage('room.notice.seat_moved', {
+              displayName: participant.displayName,
+              seat: roomMessage(`common.seat.${color}`),
+            })
+          : roomMessage('room.notice.seat_claimed', {
+              displayName: participant.displayName,
+              seat: roomMessage(`common.seat.${color}`),
+            })
       ),
     };
   }
@@ -283,7 +346,7 @@ export class RoomsService implements OnModuleDestroy {
     this.assertSeatChangeAllowed(room);
 
     if (!participant.seat) {
-      throw new BadRequestException('You do not currently occupy a player seat.');
+      throw badRequestMessage('room.error.no_player_seat');
     }
 
     const releasedSeat = participant.seat;
@@ -293,7 +356,10 @@ export class RoomsService implements OnModuleDestroy {
     return {
       snapshot: this.snapshotFor(room),
       notice: this.createNotice(
-        `${participant.displayName} released the ${releasedSeat} seat.`
+        roomMessage('room.notice.seat_released', {
+          displayName: participant.displayName,
+          seat: roomMessage(`common.seat.${releasedSeat}`),
+        })
       ),
     };
   }
@@ -307,18 +373,14 @@ export class RoomsService implements OnModuleDestroy {
     const host = this.assertHostParticipant(room, participantToken);
 
     if (room.match && room.match.state.phase !== 'finished') {
-      throw new BadRequestException(
-        'The current match must finish before a new one can start.'
-      );
+      throw badRequestMessage('room.error.match_must_finish');
     }
 
     const black = this.getSeatHolder(room, 'black');
     const white = this.getSeatHolder(room, 'white');
 
     if (!black || !white) {
-      throw new BadRequestException(
-        'Both black and white seats must be claimed before starting a match.'
-      );
+      throw badRequestMessage('room.error.both_seats_required');
     }
 
     const normalizedSettings = this.normalizeSettings(
@@ -338,7 +400,10 @@ export class RoomsService implements OnModuleDestroy {
     return {
       snapshot: this.snapshotFor(room),
       notice: this.createNotice(
-        `${host.displayName} started a ${normalizedSettings.mode} match.`
+        roomMessage('room.notice.match_started', {
+          displayName: host.displayName,
+          mode: roomMessage(`common.mode.${normalizedSettings.mode}`),
+        })
       ),
     };
   }
@@ -353,14 +418,12 @@ export class RoomsService implements OnModuleDestroy {
     const match = this.requireMatch(room);
 
     if (!participant.seat) {
-      throw new ForbiddenException('Spectators cannot submit game commands.');
+      throw forbiddenMessage('room.error.spectators_cannot_play');
     }
 
     if (command.type === 'toggle-dead') {
       if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
-        throw new BadRequestException(
-          'Dead-group toggling is only available during Go scoring.'
-        );
+        throw badRequestMessage('room.error.dead_group_toggle_unavailable');
       }
 
       const nextState = getRulesEngine('go').toggleDeadGroup?.(
@@ -370,7 +433,7 @@ export class RoomsService implements OnModuleDestroy {
       );
 
       if (!nextState) {
-        throw new BadRequestException('Unable to update scoring preview.');
+        throw badRequestMessage('room.error.scoring_preview_unavailable');
       }
 
       room.match = {
@@ -385,9 +448,7 @@ export class RoomsService implements OnModuleDestroy {
 
     if (command.type === 'finalize-scoring') {
       if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
-        throw new BadRequestException(
-          'Score finalization is only available during Go scoring.'
-        );
+        throw badRequestMessage('room.error.score_finalization_unavailable');
       }
 
       const nextState = getRulesEngine('go').finalizeScoring?.(
@@ -396,7 +457,7 @@ export class RoomsService implements OnModuleDestroy {
       );
 
       if (!nextState) {
-        throw new BadRequestException('Unable to finalize scoring.');
+        throw badRequestMessage('room.error.finalize_scoring_failed');
       }
 
       room.match = {
@@ -410,15 +471,15 @@ export class RoomsService implements OnModuleDestroy {
     }
 
     if (match.state.phase !== 'playing') {
-      throw new BadRequestException('The match is not accepting new moves.');
+      throw badRequestMessage('room.error.match_not_accepting_moves');
     }
 
     if (command.type !== 'resign' && match.state.nextPlayer !== participant.seat) {
-      throw new ForbiddenException('It is not your turn.');
+      throw forbiddenMessage('room.error.not_your_turn');
     }
 
     if (command.type === 'resign' && command.player && command.player !== participant.seat) {
-      throw new ForbiddenException('Players may only resign on their own behalf.');
+      throw forbiddenMessage('room.error.resign_only_for_self');
     }
 
     const normalizedCommand =
@@ -435,7 +496,9 @@ export class RoomsService implements OnModuleDestroy {
     );
 
     if (!result.ok) {
-      throw new BadRequestException(result.error ?? 'Move rejected.');
+      throw new BadRequestException({
+        message: result.error ?? roomMessage('room.error.move_rejected'),
+      });
     }
 
     room.match = {
@@ -458,7 +521,7 @@ export class RoomsService implements OnModuleDestroy {
     const participant = this.getParticipantByToken(room, participantToken);
 
     if (participant.muted) {
-      throw new ForbiddenException('You are muted in this room.');
+      throw forbiddenMessage('room.error.you_are_muted');
     }
 
     const sanitizedMessage = this.sanitizeChatMessage(message);
@@ -468,10 +531,7 @@ export class RoomsService implements OnModuleDestroy {
     );
 
     if (participant.chatTimestamps.length >= CHAT_MESSAGES_PER_WINDOW) {
-      throw new HttpException(
-        'You are sending chat messages too quickly.',
-        HttpStatus.TOO_MANY_REQUESTS
-      );
+      throw throttledMessage('room.error.chat_rate_limited');
     }
 
     participant.chatTimestamps.push(now);
@@ -505,7 +565,7 @@ export class RoomsService implements OnModuleDestroy {
     const target = this.getParticipantById(room, targetParticipantId);
 
     if (target.isHost) {
-      throw new BadRequestException('The host cannot be muted.');
+      throw badRequestMessage('room.error.host_cannot_be_muted');
     }
 
     target.muted = true;
@@ -514,7 +574,10 @@ export class RoomsService implements OnModuleDestroy {
     return {
       snapshot: this.snapshotFor(room),
       notice: this.createNotice(
-        `${host.displayName} muted ${target.displayName}.`
+        roomMessage('room.notice.participant_muted', {
+          actorDisplayName: host.displayName,
+          targetDisplayName: target.displayName,
+        })
       ),
     };
   }
@@ -534,7 +597,10 @@ export class RoomsService implements OnModuleDestroy {
     return {
       snapshot: this.snapshotFor(room),
       notice: this.createNotice(
-        `${host.displayName} unmuted ${target.displayName}.`
+        roomMessage('room.notice.participant_unmuted', {
+          actorDisplayName: host.displayName,
+          targetDisplayName: target.displayName,
+        })
       ),
     };
   }
@@ -549,13 +615,11 @@ export class RoomsService implements OnModuleDestroy {
     const target = this.getParticipantById(room, targetParticipantId);
 
     if (target.isHost) {
-      throw new BadRequestException('The host cannot be kicked.');
+      throw badRequestMessage('room.error.host_cannot_be_kicked');
     }
 
     if (target.seat && room.match && room.match.state.phase !== 'finished') {
-      throw new BadRequestException(
-        'Seated players cannot be kicked during an active match.'
-      );
+      throw badRequestMessage('room.error.cannot_kick_active_player');
     }
 
     const kickedSocketIds = [...target.socketIds];
@@ -575,7 +639,12 @@ export class RoomsService implements OnModuleDestroy {
     return {
       snapshot: this.snapshotFor(room),
       kickedSocketIds,
-      notice: this.createNotice(`${host.displayName} removed ${target.displayName}.`),
+      notice: this.createNotice(
+        roomMessage('room.notice.participant_removed', {
+          actorDisplayName: host.displayName,
+          targetDisplayName: target.displayName,
+        })
+      ),
     };
   }
 
@@ -650,7 +719,9 @@ export class RoomsService implements OnModuleDestroy {
     const room = this.rooms.get(normalized);
 
     if (!room) {
-      throw new NotFoundException(`Room ${normalized} was not found.`);
+      throw notFoundMessage('room.error.not_found', {
+        roomId: normalized,
+      });
     }
 
     return room;
@@ -658,7 +729,7 @@ export class RoomsService implements OnModuleDestroy {
 
   private requireMatch(room: RoomRecord): HostedMatchSnapshot {
     if (!room.match) {
-      throw new BadRequestException('No hosted match has been started yet.');
+      throw badRequestMessage('room.error.no_match_started');
     }
 
     return room.match;
@@ -680,7 +751,7 @@ export class RoomsService implements OnModuleDestroy {
     const participant = this.tryGetParticipantByToken(room, participantToken);
 
     if (!participant) {
-      throw new ForbiddenException('Participant token is invalid for this room.');
+      throw forbiddenMessage('room.error.invalid_participant_token');
     }
 
     return participant;
@@ -693,7 +764,7 @@ export class RoomsService implements OnModuleDestroy {
     const participant = room.participants.get(participantId);
 
     if (!participant) {
-      throw new NotFoundException('Participant was not found in this room.');
+      throw notFoundMessage('room.error.participant_not_found');
     }
 
     return participant;
@@ -706,7 +777,7 @@ export class RoomsService implements OnModuleDestroy {
     const participant = this.getParticipantByToken(room, participantToken);
 
     if (!participant.isHost) {
-      throw new ForbiddenException('Only the room host can perform this action.');
+      throw forbiddenMessage('room.error.host_only_action');
     }
 
     return participant;
@@ -756,9 +827,7 @@ export class RoomsService implements OnModuleDestroy {
 
   private assertSeatChangeAllowed(room: RoomRecord): void {
     if (room.match && room.match.state.phase !== 'finished') {
-      throw new BadRequestException(
-        'Seats cannot be changed while a match is in progress.'
-      );
+      throw badRequestMessage('room.error.seat_change_while_live');
     }
   }
 
@@ -768,14 +837,12 @@ export class RoomsService implements OnModuleDestroy {
     whiteName: string
   ): MatchSettings {
     if (settings.mode !== 'go' && settings.mode !== 'gomoku') {
-      throw new BadRequestException('Unsupported game mode.');
+      throw badRequestMessage('room.error.unsupported_mode');
     }
 
     if (settings.mode === 'go') {
       if (!GO_BOARD_SIZES.includes(settings.boardSize as 9 | 13 | 19)) {
-        throw new BadRequestException(
-          'Go matches must use a 9x9, 13x13, or 19x19 board.'
-        );
+        throw badRequestMessage('room.error.invalid_go_board_size');
       }
 
       return {
@@ -793,7 +860,7 @@ export class RoomsService implements OnModuleDestroy {
     }
 
     if (settings.boardSize !== GOMOKU_BOARD_SIZE) {
-      throw new BadRequestException('Gomoku matches must use a 15x15 board.');
+      throw badRequestMessage('room.error.invalid_gomoku_board_size');
     }
 
     return {
@@ -811,13 +878,13 @@ export class RoomsService implements OnModuleDestroy {
     const normalized = value.trim().replace(/\s+/g, ' ');
 
     if (normalized.length === 0) {
-      throw new BadRequestException('Display name is required.');
+      throw badRequestMessage('room.error.display_name_required');
     }
 
     if (normalized.length > MAX_DISPLAY_NAME_LENGTH) {
-      throw new BadRequestException(
-        `Display names must be ${MAX_DISPLAY_NAME_LENGTH} characters or fewer.`
-      );
+      throw badRequestMessage('room.error.display_name_too_long', {
+        max: MAX_DISPLAY_NAME_LENGTH,
+      });
     }
 
     return normalized;
@@ -827,13 +894,13 @@ export class RoomsService implements OnModuleDestroy {
     const normalized = value.trim().replace(/\s+/g, ' ');
 
     if (normalized.length === 0) {
-      throw new BadRequestException('Chat messages cannot be empty.');
+      throw badRequestMessage('room.error.chat_required');
     }
 
     if (normalized.length > MAX_CHAT_LENGTH) {
-      throw new BadRequestException(
-        `Chat messages must be ${MAX_CHAT_LENGTH} characters or fewer.`
-      );
+      throw badRequestMessage('room.error.chat_too_long', {
+        max: MAX_CHAT_LENGTH,
+      });
     }
 
     return normalized;
@@ -858,7 +925,7 @@ export class RoomsService implements OnModuleDestroy {
     };
   }
 
-  private createNotice(message: string): SystemNotice {
+  private createNotice(message: GoMessageDescriptor): SystemNotice {
     return {
       id: this.createId(),
       message,
@@ -898,7 +965,7 @@ export class RoomsService implements OnModuleDestroy {
   private assertAttemptWithinLimit(
     key: string,
     limit: number,
-    message: string
+    messageKey: string
   ): void {
     const now = Date.now();
     const timestamps = (this.attemptWindows.get(key) ?? []).filter(
@@ -907,7 +974,7 @@ export class RoomsService implements OnModuleDestroy {
 
     if (timestamps.length >= limit) {
       this.attemptWindows.set(key, timestamps);
-      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
+      throw throttledMessage(messageKey);
     }
 
     timestamps.push(now);

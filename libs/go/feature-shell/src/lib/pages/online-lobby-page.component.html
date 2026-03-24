@@ -7,30 +7,29 @@
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
       <div class="space-y-4">
         <p class="text-xs font-semibold uppercase tracking-[0.32em] text-amber-200/70">
-          Hosted multiplayer lobby
+          {{ i18n.t('lobby.hero.eyebrow') }}
         </p>
         <h1 class="max-w-3xl text-4xl font-semibold leading-tight text-balance sm:text-5xl">
-          Go and Gomoku rooms, ready to join.
+          {{ i18n.t('lobby.hero.title') }}
         </h1>
         <p class="max-w-3xl text-sm leading-7 text-stone-300 sm:text-base">
-          Start in the lobby, pick the room that fits the moment, and move straight
-          into chat without hunting through extra screens.
+          {{ i18n.t('lobby.hero.description') }}
         </p>
       </div>
 
       <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-          Flow
+          {{ i18n.t('lobby.hero.flow') }}
         </p>
         <div class="mt-4 grid gap-3 text-sm text-stone-200">
           <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
-            1. Browse rooms by live, ready, or waiting status.
+            1. {{ i18n.t('lobby.hero.flow.0') }}
           </div>
           <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
-            2. Enter your display name once.
+            2. {{ i18n.t('lobby.hero.flow.1') }}
           </div>
           <div class="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3">
-            3. Create a room or quick-join the selected room for chat.
+            3. {{ i18n.t('lobby.hero.flow.2') }}
           </div>
         </div>
       </div>
@@ -53,7 +52,7 @@
     <div class="space-y-6">
       @if (onlineLobby.loading()) {
         <section class="rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
-          Loading hosted rooms...
+          {{ i18n.t('lobby.loading') }}
         </section>
       } @else if (!onlineLobby.hasRooms()) {
         <section
@@ -61,14 +60,13 @@
           data-testid="online-lobby-empty"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-            No active rooms
+            {{ i18n.t('lobby.empty.label') }}
           </p>
           <h2 class="mt-3 text-3xl font-semibold text-stone-950">
-            The hosted lobby is clear right now.
+            {{ i18n.t('lobby.empty.title') }}
           </h2>
           <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-600">
-            Create the next room below and it will become the first place players
-            can jump into chat.
+            {{ i18n.t('lobby.empty.description') }}
           </p>
         </section>
       } @else {
@@ -80,7 +78,7 @@
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-                  {{ roomStatusLabel(section.status) }} rooms
+                  {{ section.title }}
                 </p>
                 <h2 class="mt-2 text-2xl font-semibold text-stone-950">
                   {{ section.title }}
@@ -113,10 +111,10 @@
                     <div class="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                          Room {{ room.roomId }}
+                          {{ roomCardLabel(room.roomId) }}
                         </p>
                         <h3 class="mt-2 text-2xl font-semibold text-stone-950">
-                          {{ room.hostDisplayName }}'s room
+                          {{ roomCardTitle(room.hostDisplayName) }}
                         </h3>
                       </div>
 
@@ -126,7 +124,7 @@
                         </span>
                         @if (isSelectedRoom(room.roomId)) {
                           <span class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                            Selected
+                            {{ i18n.t('lobby.room.selected') }}
                           </span>
                         }
                       </div>
@@ -139,7 +137,7 @@
                     <div class="mt-5 grid gap-3 sm:grid-cols-2">
                       <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                          Black seat
+                          {{ i18n.t('common.seat.black') }}
                         </p>
                         <p class="mt-2 text-sm font-semibold text-stone-950">
                           {{ seatLabel(room.players.black, 'black') }}
@@ -148,7 +146,7 @@
 
                       <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                          White seat
+                          {{ i18n.t('common.seat.white') }}
                         </p>
                         <p class="mt-2 text-sm font-semibold text-stone-950">
                           {{ seatLabel(room.players.white, 'white') }}
@@ -161,10 +159,10 @@
                         {{ roomModeLabel(room) }}
                       </span>
                       <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                        {{ countLabel(room.participantCount, 'person', 'people') }}
+                        {{ countLabel(room.participantCount, 'person') }}
                       </span>
                       <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-                        {{ countLabel(room.onlineCount, 'online', 'online') }}
+                        {{ countLabel(room.onlineCount, 'online') }}
                       </span>
                     </div>
                   </button>
@@ -172,7 +170,7 @@
               </div>
             } @else {
               <div class="mt-5 rounded-[1.75rem] border border-dashed border-stone-300 bg-stone-50/80 px-5 py-8 text-sm text-stone-600">
-                No {{ section.title.toLowerCase() }} yet.
+                {{ emptySectionLabel(section.status) }}
               </div>
             }
           </section>
@@ -183,18 +181,17 @@
     <aside class="space-y-4 xl:sticky xl:top-6">
       <section class="rounded-[1.75rem] border border-white/10 bg-slate-950/88 p-5 text-stone-100 shadow-2xl shadow-slate-950/30">
         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/70">
-          Your identity
+          {{ i18n.t('lobby.identity.label') }}
         </p>
         <h2 class="mt-2 text-2xl font-semibold text-stone-50">
-          Enter your name once
+          {{ i18n.t('lobby.identity.title') }}
         </h2>
         <p class="mt-3 text-sm leading-6 text-stone-300">
-          The same display name is reused when you create a room or join the one
-          you selected from the lobby.
+          {{ i18n.t('lobby.identity.description') }}
         </p>
 
         <label class="mt-5 block space-y-2 text-sm font-medium text-stone-200">
-          <span>Display name</span>
+          <span>{{ i18n.t('lobby.identity.display_name') }}</span>
           <input
             [formControl]="displayName"
             data-testid="lobby-display-name-input"
@@ -210,7 +207,11 @@
           [disabled]="onlineRoom.creating() || !canSubmitIdentity()"
           (click)="createRoom()"
         >
-          {{ onlineRoom.creating() ? 'Creating room...' : 'Create room' }}
+          {{
+            onlineRoom.creating()
+              ? i18n.t('lobby.identity.creating_room')
+              : i18n.t('lobby.identity.create_room')
+          }}
         </button>
       </section>
 
@@ -222,10 +223,10 @@
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Selected room
+                {{ i18n.t('lobby.selected.label') }}
               </p>
               <h2 class="mt-2 text-2xl font-semibold text-stone-950">
-                {{ room.hostDisplayName }}'s room
+                {{ roomCardTitle(room.hostDisplayName) }}
               </h2>
             </div>
 
@@ -241,7 +242,7 @@
           <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                Black seat
+                {{ i18n.t('common.seat.black') }}
               </p>
               <p class="mt-2 text-sm font-semibold text-stone-950">
                 {{ seatLabel(room.players.black, 'black') }}
@@ -250,7 +251,7 @@
 
             <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                White seat
+                {{ i18n.t('common.seat.white') }}
               </p>
               <p class="mt-2 text-sm font-semibold text-stone-950">
                 {{ seatLabel(room.players.white, 'white') }}
@@ -263,10 +264,10 @@
               {{ roomModeLabel(room) }}
             </span>
             <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-              {{ countLabel(room.participantCount, 'person', 'people') }}
+              {{ countLabel(room.participantCount, 'person') }}
             </span>
             <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
-              {{ countLabel(room.onlineCount, 'online', 'online') }}
+              {{ countLabel(room.onlineCount, 'online') }}
             </span>
             <span class="rounded-full border border-stone-200 bg-white px-3 py-2">
               {{ countLabel(room.spectatorCount, 'spectator') }}
@@ -284,31 +285,34 @@
             [disabled]="onlineRoom.joining() || !canSubmitIdentity()"
             (click)="joinSelectedRoom()"
           >
-            {{ onlineRoom.joining() ? 'Joining room...' : roomActionLabel(room) }}
+            {{
+              onlineRoom.joining()
+                ? i18n.t('room.participants.joining_room')
+                : roomActionLabel(room)
+            }}
           </button>
 
           <a
             class="mt-3 inline-flex items-center justify-center rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
             [routerLink]="['/online/room', room.roomId]"
           >
-            Open room details
+            {{ i18n.t('lobby.selected.open_room_details') }}
           </a>
 
           <p class="mt-4 text-xs uppercase tracking-[0.18em] text-stone-400">
-            Updated {{ room.updatedAt | date: 'shortTime' }}
+            {{ updatedLabel(room.updatedAt) }}
           </p>
         </section>
       } @else {
         <section class="rounded-[1.75rem] border border-dashed border-stone-300 bg-white/85 p-5 text-stone-700 shadow-xl shadow-stone-950/5">
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-            Selected room
+            {{ i18n.t('lobby.selected.label') }}
           </p>
           <h2 class="mt-2 text-2xl font-semibold text-stone-950">
-            Pick a room once one appears
+            {{ i18n.t('lobby.selected.placeholder.title') }}
           </h2>
           <p class="mt-3 text-sm leading-6 text-stone-600">
-            The quick-join panel fills in automatically as soon as the lobby has an
-            active room to select.
+            {{ i18n.t('lobby.selected.placeholder.description') }}
           </p>
         </section>
       }

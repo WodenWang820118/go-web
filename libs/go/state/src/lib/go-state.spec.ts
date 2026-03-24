@@ -1,3 +1,4 @@
+import { createMessage } from '@gx/go/domain';
 import { LocalGameSessionAdapter } from './local-game-session.adapter';
 
 describe('LocalGameSessionAdapter', () => {
@@ -26,7 +27,9 @@ describe('LocalGameSessionAdapter', () => {
         lastMove: null,
         consecutivePasses: 0,
         winnerLine: [],
-        message: 'Black to move.',
+        message: createMessage('game.state.next_turn', {
+          player: createMessage('common.player.black'),
+        }),
         scoring: null,
         result: null,
       },

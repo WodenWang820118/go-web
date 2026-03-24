@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { GoI18nService } from '@gx/go/state';
 
 @Component({
   selector: 'lib-go-online-room-hero',
@@ -10,18 +11,17 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       <div class="flex flex-wrap items-start justify-between gap-6">
         <div class="max-w-3xl space-y-3">
           <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">
-            Hosted multiplayer room
+            {{ i18n.t('room.hero.eyebrow') }}
           </p>
           <h1 class="text-3xl font-semibold sm:text-4xl">
             @if (roomId()) {
-              Room {{ roomId() }}
+              {{ i18n.t('room.hero.title', { roomId: roomId()! }) }}
             } @else {
-              Loading room...
+              {{ i18n.t('room.hero.loading_title') }}
             }
           </h1>
           <p class="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-            Invite two players to take seats, let spectators watch live, and keep the
-            room chat moving during the match.
+            {{ i18n.t('room.hero.description') }}
           </p>
         </div>
 
@@ -29,7 +29,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           class="min-w-[16rem] rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-stone-200"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-            Connection
+            {{ i18n.t('room.hero.connection') }}
           </p>
           <p class="mt-2 font-semibold text-stone-50">
             {{ connectionLabel() }}
@@ -40,7 +40,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
               [for]="shareUrlInputId"
               class="mt-4 block text-xs font-semibold uppercase tracking-[0.24em] text-stone-400"
             >
-              Share URL
+              {{ i18n.t('room.hero.share_url') }}
             </label>
             <div class="mt-2 flex gap-2">
               <input
@@ -54,7 +54,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
                 class="rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-stone-50 transition hover:border-white/30 hover:bg-white/10"
                 (click)="copyRequested.emit()"
               >
-                Copy
+                {{ i18n.t('room.hero.copy') }}
               </button>
             </div>
           }
@@ -65,6 +65,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomHeroComponent {
+  protected readonly i18n = inject(GoI18nService);
+
   readonly roomId = input<string | null>(null);
   readonly connectionLabel = input.required<string>();
   readonly shareUrl = input<string>('');

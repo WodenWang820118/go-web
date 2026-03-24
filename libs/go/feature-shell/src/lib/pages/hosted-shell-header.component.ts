@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GoI18nService } from '@gx/go/state';
 
 @Component({
   selector: 'lib-go-hosted-shell-header',
@@ -29,8 +30,7 @@ import { RouterLink } from '@angular/router';
           </div>
 
           <p class="max-w-2xl text-sm leading-6 text-stone-300">
-            Hosted rooms stay front and center, while local Go and Gomoku remain
-            one click away.
+            {{ i18n.t('hosted.header.description') }}
           </p>
         </div>
 
@@ -39,19 +39,19 @@ import { RouterLink } from '@angular/router';
             routerLink="/"
             class="inline-flex items-center rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
           >
-            Lobby
+            {{ i18n.t('hosted.header.lobby') }}
           </a>
           <a
             [routerLink]="['/setup', 'go']"
             class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-white/20 hover:bg-white/10"
           >
-            Start local Go
+            {{ i18n.t('hosted.header.start_local_go') }}
           </a>
           <a
             [routerLink]="['/setup', 'gomoku']"
             class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-white/20 hover:bg-white/10"
           >
-            Start local Gomoku
+            {{ i18n.t('hosted.header.start_local_gomoku') }}
           </a>
         </nav>
       </div>
@@ -60,6 +60,8 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HostedShellHeaderComponent {
+  protected readonly i18n = inject(GoI18nService);
+
   readonly activeSection = input<'lobby' | 'room'>('lobby');
   readonly pageLabel = input<string | null>(null);
 }

@@ -3,6 +3,7 @@ import { Component, computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { CreateRoomResponse, LobbyRoomSummary, RoomSnapshot } from '@gx/go/contracts';
+import { GoI18nService } from '@gx/go/state';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyService } from '../online/online-lobby.service';
@@ -27,10 +28,11 @@ describe('OnlineLobbyPageComponent', () => {
     const roomService = createRoomServiceStub();
 
     const text = await renderText(lobbyService, roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
     expect(lobbyService.refresh).toHaveBeenCalledTimes(1);
     expect(roomService.clearTransientMessages).toHaveBeenCalledTimes(1);
-    expect(text).toContain('The hosted lobby is clear right now.');
+    expect(text).toContain(i18n.t('lobby.empty.title'));
   });
 
   it('creates a room from the root lobby and redirects into the room detail page', async () => {
@@ -126,10 +128,11 @@ describe('OnlineLobbyPageComponent', () => {
     const roomService = createRoomServiceStub();
 
     const text = await renderText(lobbyService, roomService);
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain('Watch and chat live');
+    expect(text).toContain(i18n.t('lobby.room.action.live'));
     expect(text).toContain(
-      'Joining from the lobby takes you straight into spectator chat while the active game stays locked.'
+      i18n.t('lobby.room.status.live.copy')
     );
   });
 
@@ -139,13 +142,18 @@ describe('OnlineLobbyPageComponent', () => {
 
     const harness = await renderLobby(lobbyService, roomService);
     const router = TestBed.inject(Router);
+    const i18n = TestBed.inject(GoI18nService);
 
     const goLink = harness.routeNativeElement?.querySelector(
       'a[href="/setup/go"]'
     ) as HTMLAnchorElement;
 
-    expect(harness.routeNativeElement?.textContent).toContain('Start local Go');
-    expect(harness.routeNativeElement?.textContent).toContain('Start local Gomoku');
+    expect(harness.routeNativeElement?.textContent).toContain(
+      i18n.t('hosted.header.start_local_go')
+    );
+    expect(harness.routeNativeElement?.textContent).toContain(
+      i18n.t('hosted.header.start_local_gomoku')
+    );
 
     goLink.click();
     await harness.fixture.whenStable();

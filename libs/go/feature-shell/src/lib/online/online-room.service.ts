@@ -9,6 +9,7 @@ import {
   RoomSnapshot,
 } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 import {
   EMPTY,
   Observable,
@@ -59,7 +60,7 @@ type OnlineRoomRealtimeEvent =
   | 'host.kick';
 
 const JOIN_ROOM_REQUIRED_MESSAGE =
-  'Join the room before sending realtime commands.';
+  'room.client.join_required';
 
 /**
  * Frontend facade for a single hosted multiplayer room.
@@ -67,6 +68,7 @@ const JOIN_ROOM_REQUIRED_MESSAGE =
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomService {
   private readonly api = inject(OnlineRoomsHttpService);
+  private readonly i18n = inject(GoI18nService);
   private readonly storage = inject(OnlineRoomStorageService);
   private readonly socket = inject(OnlineRoomSocketService);
   private bootstrapSubscription: Subscription | null = null;
@@ -167,7 +169,7 @@ export class OnlineRoomService {
 
           this.bootstrapStateSignal.set('ready');
           this.lastErrorSignal.set(
-            this.api.describeHttpError(error, 'Unexpected network error.')
+            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
           );
           return EMPTY;
         }),
@@ -189,7 +191,7 @@ export class OnlineRoomService {
         }),
         catchError(error => {
           this.lastErrorSignal.set(
-            this.api.describeHttpError(error, 'Unexpected network error.')
+            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
           );
           return throwError(() => error);
         }),
@@ -217,7 +219,7 @@ export class OnlineRoomService {
           map(() => void 0),
           catchError(error => {
             this.lastErrorSignal.set(
-              this.api.describeHttpError(error, 'Unexpected network error.')
+              this.api.describeHttpError(error, 'room.client.unexpected_network_error')
             );
             return throwError(() => error);
           }),
@@ -297,10 +299,10 @@ export class OnlineRoomService {
       this.updateSnapshot(snapshot => applyChatMessage(snapshot, event));
     });
     this.socket.notice$.subscribe(event => {
-      this.lastNoticeSignal.set(event.notice.message);
+      this.lastNoticeSignal.set(this.i18n.translateMessage(event.notice.message));
     });
     this.socket.commandError$.subscribe(event => {
-      this.lastErrorSignal.set(event.message);
+      this.lastErrorSignal.set(this.i18n.translateMessage(event.message));
     });
   }
 
@@ -334,7 +336,7 @@ export class OnlineRoomService {
     const participantToken = this.participantTokenSignal();
 
     if (!roomId || !participantToken) {
-      this.lastErrorSignal.set(JOIN_ROOM_REQUIRED_MESSAGE);
+      this.lastErrorSignal.set(this.i18n.t(JOIN_ROOM_REQUIRED_MESSAGE));
       return;
     }
 
@@ -345,7 +347,7 @@ export class OnlineRoomService {
     });
 
     if (!emitted) {
-      this.lastErrorSignal.set(JOIN_ROOM_REQUIRED_MESSAGE);
+      this.lastErrorSignal.set(this.i18n.t(JOIN_ROOM_REQUIRED_MESSAGE));
     }
   }
 

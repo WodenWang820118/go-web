@@ -1,7 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
+
+test('uses zh-TW by default and persists an English override across reloads', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
+  await expect(page.getByText('線上多人大廳')).toBeVisible();
+
+  await page.getByTestId('locale-option-en').click();
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByText('Hosted multiplayer lobby')).toBeVisible();
+
+  await page.reload();
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByText('Hosted multiplayer lobby')).toBeVisible();
+});
 
 test('starts a Go match and completes a scoring flow', async ({ page }) => {
-  await page.goto('/');
+  await useEnglish(page);
 
   await page.getByRole('link', { name: 'Start local Go', exact: true }).click();
   await expect(page.getByTestId('setup-form')).toBeVisible();
@@ -21,7 +40,7 @@ test('starts a Go match and completes a scoring flow', async ({ page }) => {
 });
 
 test('starts a Gomoku match and creates five in a row', async ({ page }) => {
-  await page.goto('/');
+  await useEnglish(page);
 
   await page.getByRole('link', { name: 'Start local Gomoku', exact: true }).click();
   await page.getByRole('button', { name: /start local match/i }).click();
@@ -49,12 +68,20 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
 
 test('renders the flow on a mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await useEnglish(page);
 
-  await expect(page.getByRole('heading', { name: /go and gomoku/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /go and gomoku rooms, ready to join\./i })
+  ).toBeVisible();
   await page.getByRole('link', { name: 'Start local Go', exact: true }).click();
   await page.getByRole('button', { name: /start local match/i }).click();
 
   await expect(page.getByTestId('game-board')).toBeVisible();
   await expect(page.getByText(/current turn/i)).toBeVisible();
 });
+
+async function useEnglish(page: Page): Promise<void> {
+  await page.goto('/');
+  await page.getByTestId('locale-option-en').click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+}

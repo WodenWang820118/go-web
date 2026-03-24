@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BoardPoint, DEFAULT_GO_KOMI, GOMOKU_BOARD_SIZE, GO_BOARD_SIZES, GameMode, PlayerColor } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state';
 import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
@@ -36,6 +37,7 @@ import { OnlineRoomParticipantsPanelComponent } from './online-room-participants
 export class OnlineRoomPageComponent {
   protected readonly DEFAULT_GO_KOMI = DEFAULT_GO_KOMI;
   protected readonly onlineRoom = inject(OnlineRoomService);
+  protected readonly i18n = inject(GoI18nService);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -58,18 +60,16 @@ export class OnlineRoomPageComponent {
 
     if (snapshot.seatState.black && snapshot.seatState.white) {
       return {
-        label: 'Ready room',
-        title: 'Players are matched and waiting for the host.',
-        description:
-          'Both seats are filled, spectators can already chat, and the host can start the next match at any time.',
+        label: this.i18n.t('room.stage.ready.label'),
+        title: this.i18n.t('room.stage.ready.title'),
+        description: this.i18n.t('room.stage.ready.description'),
       };
     }
 
     return {
-      label: 'Waiting room',
-      title: 'Open seats are still available.',
-      description:
-        'Players can claim black and white while spectators join early and keep the room chat moving.',
+      label: this.i18n.t('room.stage.waiting.label'),
+      title: this.i18n.t('room.stage.waiting.title'),
+      description: this.i18n.t('room.stage.waiting.description'),
     };
   });
   protected readonly seats = computed<OnlineRoomSeatViewModel[]>(() => {
@@ -126,35 +126,37 @@ export class OnlineRoomPageComponent {
   );
   protected readonly shareUrl = this.onlineRoom.shareUrl;
   protected readonly joinCardTitle = computed(() =>
-    this.match() ? 'Join as spectator' : 'Enter as a spectator or player'
+    this.match()
+      ? this.i18n.t('room.join.title.spectator')
+      : this.i18n.t('room.join.title.pre_match')
   );
   protected readonly joinCardDescription = computed(() =>
     this.match()
-      ? 'Live rooms are watch-and-chat only until the current match ends.'
-      : 'Pick a display name to join the room before claiming a seat or chatting.'
+      ? this.i18n.t('room.join.description.spectator')
+      : this.i18n.t('room.join.description.pre_match')
   );
   protected readonly connectionLabel = computed(() => {
     switch (this.onlineRoom.connectionState()) {
       case 'connected':
-        return 'Connected';
+        return this.i18n.t('room.connection.connected');
       case 'connecting':
-        return 'Connecting';
+        return this.i18n.t('room.connection.connecting');
       case 'disconnected':
-        return 'Reconnecting';
+        return this.i18n.t('room.connection.reconnecting');
       default:
-        return 'Offline';
+        return this.i18n.t('room.connection.offline');
     }
   });
   protected readonly chatHelperText = computed(() => {
     if (!this.onlineRoom.participantId()) {
-      return 'Join the room to chat.';
+      return this.i18n.t('room.chat.helper.join');
     }
 
     if (this.onlineRoom.isMuted()) {
-      return 'The host muted your chat access.';
+      return this.i18n.t('room.chat.helper.muted');
     }
 
-    return 'Spectators and players can chat in real time.';
+    return this.i18n.t('room.chat.helper.default');
   });
 
   protected readonly joinForm = new FormGroup({

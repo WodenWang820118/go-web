@@ -9,18 +9,18 @@
           [routerLink]="['/setup', mode()]"
           class="text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
         >
-          &larr; Back to setup
+          &larr; {{ i18n.t('play.back_to_setup') }}
         </a>
         <h1 class="mt-3 text-3xl font-semibold text-stone-950 sm:text-4xl">
           {{ meta()!.title }}
         </h1>
         <p class="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-          {{ state()!.message }}
+          {{ translateMessage(state()!.message) }}
         </p>
       </div>
 
       <div class="rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-600 shadow-sm backdrop-blur">
-        Current turn:
+        {{ i18n.t('play.current_turn') }}:
         <span class="ml-2 inline-flex items-center gap-2 font-semibold text-stone-900">
           <lib-go-stone-badge [color]="state()!.nextPlayer" />
           {{ store.currentPlayerName() }}
@@ -30,8 +30,7 @@
 
     @if (state()!.phase === 'scoring') {
       <div class="mt-6 rounded-[1.5rem] border border-amber-300/50 bg-amber-100/80 px-5 py-4 text-sm text-amber-950 shadow-sm">
-        Click stones on the board to mark dead groups, then use the sidebar to
-        finalize the score.
+        {{ i18n.t('play.scoring_hint') }}
       </div>
     }
 
@@ -68,7 +67,7 @@
     [visible]="helpVisible()"
     (visibleChange)="helpVisible.set($event)"
     position="right"
-    header="Rules and reminders"
+    [header]="i18n.t('play.rules_and_reminders')"
   >
     <div class="space-y-4 text-sm leading-6 text-stone-700">
       <p>{{ meta()!.description }}</p>
@@ -90,21 +89,25 @@
     [dismissableMask]="true"
     [draggable]="false"
     [resizable]="false"
-    header="Match result"
+    [header]="i18n.t('play.match_result')"
   >
     <div class="space-y-4">
       <p class="text-base font-semibold text-stone-900">
-        {{ state()!.result?.summary }}
+        {{ translateMessage(state()!.result?.summary) }}
       </p>
 
       @if (state()!.result?.score) {
         <div class="grid grid-cols-2 gap-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm">
           <div>
-            <p class="font-semibold text-stone-900">Black</p>
+            <p class="font-semibold text-stone-900">
+              {{ i18n.playerLabel('black') }}
+            </p>
             <p>{{ state()!.result!.score!.black.toFixed(1) }}</p>
           </div>
           <div>
-            <p class="font-semibold text-stone-900">White</p>
+            <p class="font-semibold text-stone-900">
+              {{ i18n.playerLabel('white') }}
+            </p>
             <p>{{ state()!.result!.score!.white.toFixed(1) }}</p>
           </div>
         </div>
@@ -116,14 +119,14 @@
           class="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
           (click)="restartMatch()"
         >
-          Restart match
+          {{ i18n.t('play.restart_match') }}
         </button>
         <button
           type="button"
           class="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:text-stone-950"
           (click)="openNewMatchConfirm()"
         >
-          New setup
+          {{ i18n.t('play.new_setup') }}
         </button>
       </div>
     </div>
