@@ -24,14 +24,6 @@ export default [
               onlyDependOnLibsWithTags: ['scope:shared'],
             },
             {
-              sourceTag: 'scope:shop',
-              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared'],
-            },
-            {
-              sourceTag: 'scope:api',
-              onlyDependOnLibsWithTags: ['scope:api', 'scope:shared'],
-            },
-            {
               sourceTag: 'scope:go',
               onlyDependOnLibsWithTags: ['scope:go', 'scope:shared'],
             },

@@ -1,9 +1,6 @@
 # gx.go
 
-Nx workspace for two verticals:
-
-- The Go multiplayer stack, built from Angular, Nest, and shared TypeScript libraries
-- The existing shop/api sample apps that still live in the same monorepo
+Nx workspace for the Go multiplayer stack, built from Angular, Nest, and shared TypeScript libraries.
 
 ## Workspace overview
 
@@ -19,10 +16,6 @@ Nx workspace for two verticals:
 | `@gx/go/ui` | `libs/go/ui` | Standalone presentational Angular components |
 | `@gx/go/domain` | `libs/go/domain` | Pure rules engine, board utilities, and domain types |
 | `@gx/go/contracts` | `libs/go/contracts` | Shared room DTOs and socket payloads for frontend/backend |
-
-### Other workspace projects
-
-The workspace also contains the original `shop`, `api`, and related libraries. Those remain available, but the Go stack above is the actively refactored path.
 
 ## Local development
 
@@ -49,7 +42,10 @@ pnpm nx serve go-server
 Useful workspace commands:
 
 ```bash
-pnpm nx run-many -t lint,test,typecheck -p go-web,go-feature-shell,go-ui,go-state,go-domain,go-server
+pnpm nx run go-web:lint
+pnpm nx run go-web:test
+pnpm nx run go-server:lint
+pnpm nx run go-server:test
 pnpm nx run go-web:build:production
 pnpm nx run go-server:build
 pnpm nx graph
