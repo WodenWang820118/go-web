@@ -8,28 +8,40 @@
   ],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/rspack:rspack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
       "options": {
-        "command": "webpack-cli build",
-        "args": [
-          "--node-env=production"
+        "target": "node",
+        "outputPath": "dist/apps/go-server",
+        "outputFileName": "main.js",
+        "main": "apps/go-server/src/main.ts",
+        "tsConfig": "apps/go-server/tsconfig.app.json",
+        "assets": [
+          "apps/go-server/src/assets"
         ],
-        "cwd": "apps/go-server"
+        "generatePackageJson": false,
+        "sourceMap": true,
+        "optimization": false,
+        "outputHashing": "none",
+        "typeCheckOptions": {
+          "async": false
+        },
+        "rspackConfig": "apps/go-server/rspack.config.js"
       },
       "configurations": {
         "development": {
-          "args": [
-            "--node-env=development"
-          ]
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
         }
       }
     },
     "lint": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "apps/go-server",
-        "command": "eslint ."
-      }
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "nx:run-commands",
@@ -80,13 +92,17 @@
       "executor": "nx:noop"
     },
     "serve": {
-      "continuous": true,
-      "executor": "nx:run-commands",
-      "dependsOn": [
-        "build"
-      ],
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
       "options": {
-        "command": "node dist/apps/go-server/main.js"
+        "buildTarget": "go-server:build:development",
+        "runBuildTargetDependencies": true
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "go-server:build:production",
+          "watch": false
+        }
       }
     }
   }

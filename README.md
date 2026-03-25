@@ -18,7 +18,7 @@ Nx workspace for two verticals:
 | `@gx/go/state` | `libs/go/state` | Client state, guards, adapters, and frontend config tokens |
 | `@gx/go/ui` | `libs/go/ui` | Standalone presentational Angular components |
 | `@gx/go/domain` | `libs/go/domain` | Pure rules engine, board utilities, and domain types |
-| `@gx/go/contracts` | `go/contracts` | Shared room DTOs and socket payloads for frontend/backend |
+| `@gx/go/contracts` | `libs/go/contracts` | Shared room DTOs and socket payloads for frontend/backend |
 
 ### Other workspace projects
 
@@ -29,13 +29,13 @@ The workspace also contains the original `shop`, `api`, and related libraries. T
 Install dependencies from the repo root:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Start the Go frontend for day-to-day work:
 
 ```bash
-npm exec nx -- serve go-web
+pnpm nx serve go-web
 ```
 
 `go-web:serve` depends on `go-server:serve`, so the hosted-room backend starts with it.
@@ -43,16 +43,16 @@ npm exec nx -- serve go-web
 Run the backend by itself when you only need the API/socket server:
 
 ```bash
-npm exec nx -- serve go-server
+pnpm nx serve go-server
 ```
 
 Useful workspace commands:
 
 ```bash
-npm exec nx -- run-many -t lint,test,typecheck -p go-web,go-feature-shell,go-ui,go-state,go-domain,go-server
-npm exec nx -- run go-web:build:production
-npm exec nx -- run go-server:build
-npm exec nx -- graph
+pnpm nx run-many -t lint,test,typecheck -p go-web,go-feature-shell,go-ui,go-state,go-domain,go-server
+pnpm nx run go-web:build:production
+pnpm nx run go-server:build
+pnpm nx graph
 ```
 
 ## Go frontend architecture

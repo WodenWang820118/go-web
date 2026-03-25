@@ -1,4 +1,4 @@
-# contracts
+# go-contracts
 
 Shared multiplayer room contracts for the Go stack.
 
@@ -24,6 +24,6 @@ Keep these contracts aligned with both the Angular frontend and the Nest backend
 ## Validation
 
 ```bash
-npm exec nx -- run contracts:test
-npm exec nx -- run contracts:typecheck
+pnpm nx run go-contracts:test
+pnpm nx run go-contracts:typecheck
 ```

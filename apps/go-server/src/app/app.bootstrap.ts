@@ -55,8 +55,15 @@ function validationMessages(errors: ValidationError[]): GoMessageDescriptor[] {
   });
 }
 
+/**
+ * Applies the shared Nest bootstrap configuration for the hosted room API.
+ */
 export function configureApp(app: INestApplication): void {
+  // #region HTTP defaults
   app.setGlobalPrefix('api');
+  // #endregion
+
+  // #region Validation
   app.useGlobalPipes(
     new ValidationPipe({
       exceptionFactory: errors =>
@@ -68,10 +75,14 @@ export function configureApp(app: INestApplication): void {
       forbidNonWhitelisted: true,
     })
   );
+  // #endregion
+
+  // #region Transport
   app.enableCors({
     origin: true,
   });
 
   const instance = app.getHttpAdapter().getInstance();
   instance.set('trust proxy', true);
+  // #endregion
 }

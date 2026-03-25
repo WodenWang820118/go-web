@@ -27,7 +27,7 @@
       "@gx/go/state": ["libs/go/state/src/index.ts"],
       "@gx/go/ui": ["libs/go/ui/src/index.ts"],
       "@gx/go/feature-shell": ["libs/go/feature-shell/src/index.ts"],
-      "@gx/go/contracts": ["go/contracts/src/index.ts"]
+      "@gx/go/contracts": ["libs/go/contracts/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

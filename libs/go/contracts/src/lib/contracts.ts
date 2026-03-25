@@ -7,6 +7,7 @@ import {
   PlayerColor,
 } from '@gx/go/domain';
 
+// #region Snapshot models
 export interface ParticipantSummary {
   participantId: string;
   displayName: string;
@@ -72,7 +73,9 @@ export interface RoomSnapshot {
   match: HostedMatchSnapshot | null;
   chat: ChatMessage[];
 }
+// #endregion
 
+// #region REST DTOs
 export interface CreateRoomRequest {
   displayName: string;
 }
@@ -104,7 +107,9 @@ export interface GetRoomResponse {
 export interface ListRoomsResponse {
   rooms: LobbyRoomSummary[];
 }
+// #endregion
 
+// #region Socket payloads
 export interface RoomJoinPayload {
   roomId: string;
   participantToken: string;
@@ -160,7 +165,9 @@ export interface HostModerationPayload {
   participantToken: string;
   targetParticipantId: string;
 }
+// #endregion
 
+// #region Socket events
 export interface RoomPresenceEvent {
   roomId: string;
   participants: ParticipantSummary[];
@@ -186,7 +193,9 @@ export interface CommandErrorEvent {
   code: string;
   message: GoMessageDescriptor;
 }
+// #endregion
 
+// #region Helpers
 export interface LocalizedErrorResponse {
   message: GoMessageDescriptor | GoMessageDescriptor[];
 }
@@ -194,3 +203,4 @@ export interface LocalizedErrorResponse {
 export function cloneRoomSnapshot(snapshot: RoomSnapshot): RoomSnapshot {
   return structuredClone(snapshot);
 }
+// #endregion

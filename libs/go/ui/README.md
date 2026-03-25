@@ -23,6 +23,6 @@ Current exports include:
 ## Validation
 
 ```bash
-npm exec nx -- run go-ui:lint
-npm exec nx -- run go-ui:test
+pnpm nx run go-ui:lint
+pnpm nx run go-ui:test
 ```

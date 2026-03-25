@@ -28,6 +28,6 @@ Keep pure rules and board logic in `@gx/go/domain`; keep Angular-independent roo
 ## Validation
 
 ```bash
-npm exec nx -- run go-state:test
-npm exec nx -- run go-state:typecheck
+pnpm nx run go-state:test
+pnpm nx run go-state:typecheck
 ```

@@ -7,22 +7,24 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import {
+import type {
   CreateRoomResponse,
   GetRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
 } from '@gx/go/contracts';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
 import { RoomsService } from './rooms.service';
 
+/**
+ * Exposes the hosted room REST API used by the Angular frontend.
+ */
 @Controller('rooms')
 export class RoomsController {
-  constructor(
-    @Inject(RoomsService) private readonly roomsService: RoomsService
-  ) {}
+  constructor(@Inject(RoomsService) private readonly roomsService: RoomsService) {}
 
+  // #region Routes
   @Post()
   createRoom(
     @Body() body: CreateRoomDto,
@@ -57,8 +59,11 @@ export class RoomsController {
   getRoom(@Param('roomId') roomId: string): GetRoomResponse {
     return this.roomsService.getRoom(roomId);
   }
+  // #endregion
 
+  // #region Helpers
   private requesterKey(request: Request, action: string): string {
     return `${action}:${request.ip ?? request.socket.remoteAddress ?? 'unknown'}`;
   }
+  // #endregion
 }

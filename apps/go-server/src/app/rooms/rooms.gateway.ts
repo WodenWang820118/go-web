@@ -7,25 +7,28 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import {
-  ChatSendPayload,
-  CommandErrorEvent,
-  GameCommandPayload,
-  GameUpdatedEvent,
-  GameStartPayload,
-  HostModerationPayload,
-  RoomJoinPayload,
-  RoomPresenceEvent,
-  RoomSnapshot,
-  SeatClaimPayload,
-  SeatReleasePayload,
-  SystemNotice,
-  SystemNoticeEvent,
+  type ChatSendPayload,
+  type CommandErrorEvent,
+  type GameCommandPayload,
+  type GameUpdatedEvent,
+  type GameStartPayload,
+  type HostModerationPayload,
+  type RoomJoinPayload,
+  type RoomPresenceEvent,
+  type RoomSnapshot,
+  type SeatClaimPayload,
+  type SeatReleasePayload,
+  type SystemNotice,
+  type SystemNoticeEvent,
 } from '@gx/go/contracts';
 import { createMessage, isMessageDescriptor } from '@gx/go/domain';
 import { HttpException, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 
+/**
+ * Bridges hosted room websocket events to the room facade and broadcast helpers.
+ */
 @WebSocketGateway({
   path: '/socket.io',
   transports: ['websocket'],
@@ -37,10 +40,9 @@ export class RoomsGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(
-    @Inject(RoomsService) private readonly roomsService: RoomsService
-  ) {}
+  constructor(@Inject(RoomsService) private readonly roomsService: RoomsService) {}
 
+  // #region Connection lifecycle
   handleDisconnect(client: Socket): void {
     const snapshot = this.roomsService.disconnectSocket(client.id);
 
@@ -80,7 +82,9 @@ export class RoomsGateway implements OnGatewayDisconnect {
       this.emitCommandError(client, error);
     }
   }
+  // #endregion
 
+  // #region Seats and matches
   @SubscribeMessage('seat.claim')
   handleSeatClaim(
     @ConnectedSocket() client: Socket,
@@ -138,7 +142,9 @@ export class RoomsGateway implements OnGatewayDisconnect {
       true
     );
   }
+  // #endregion
 
+  // #region Chat and moderation
   @SubscribeMessage('chat.send')
   handleChatSend(
     @ConnectedSocket() client: Socket,
@@ -215,7 +221,9 @@ export class RoomsGateway implements OnGatewayDisconnect {
       this.emitCommandError(client, error);
     }
   }
+  // #endregion
 
+  // #region Broadcasting
   private handleMutation(
     client: Socket,
     operation: () => {
@@ -243,7 +251,10 @@ export class RoomsGateway implements OnGatewayDisconnect {
   }
 
   private broadcastRoomSnapshot(snapshot: RoomSnapshot): void {
-    this.server.to(this.roomChannel(snapshot.roomId)).emit('room.snapshot', snapshot);
+    this.server.to(this.roomChannel(snapshot.roomId)).emit(
+      'room.snapshot',
+      snapshot
+    );
   }
 
   private broadcastPresence(snapshot: RoomSnapshot): void {
@@ -253,7 +264,10 @@ export class RoomsGateway implements OnGatewayDisconnect {
       seatState: snapshot.seatState,
     };
 
-    this.server.to(this.roomChannel(snapshot.roomId)).emit('room.presence', payload);
+    this.server.to(this.roomChannel(snapshot.roomId)).emit(
+      'room.presence',
+      payload
+    );
   }
 
   private broadcastGameState(snapshot: RoomSnapshot): void {
@@ -262,7 +276,10 @@ export class RoomsGateway implements OnGatewayDisconnect {
       match: snapshot.match,
     };
 
-    this.server.to(this.roomChannel(snapshot.roomId)).emit('game.updated', payload);
+    this.server.to(this.roomChannel(snapshot.roomId)).emit(
+      'game.updated',
+      payload
+    );
   }
 
   private broadcastNotice(roomId: string, notice: SystemNotice): void {
@@ -273,7 +290,12 @@ export class RoomsGateway implements OnGatewayDisconnect {
 
     this.server.to(this.roomChannel(roomId)).emit('system.notice', payload);
   }
+  // #endregion
 
+  // #region Error handling
+  /**
+   * Converts Nest exceptions into the localized socket error payload expected by clients.
+   */
   private emitCommandError(client: Socket, error: unknown): void {
     const payload: CommandErrorEvent = {
       code: 'internal_error',
@@ -286,7 +308,8 @@ export class RoomsGateway implements OnGatewayDisconnect {
         typeof response === 'string'
           ? null
           : Array.isArray((response as { message?: unknown }).message)
-            ? (response as { message: unknown[] }).message.find(isMessageDescriptor) ?? null
+            ? (response as { message: unknown[] }).message.find(isMessageDescriptor) ??
+              null
             : isMessageDescriptor((response as { message?: unknown }).message)
               ? (response as { message: ReturnType<typeof createMessage> }).message
               : null;
@@ -304,4 +327,5 @@ export class RoomsGateway implements OnGatewayDisconnect {
   private roomChannel(roomId: string): string {
     return `room:${roomId}`;
   }
+  // #endregion
 }

@@ -31,6 +31,6 @@ Presenter components and room helper modules under `src/lib/pages` and `src/lib/
 ## Validation
 
 ```bash
-npm exec nx -- run go-feature-shell:lint
-npm exec nx -- run go-feature-shell:test
+pnpm nx run go-feature-shell:lint
+pnpm nx run go-feature-shell:test
 ```

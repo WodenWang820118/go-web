@@ -1,6 +1,6 @@
 import { cloneRoomSnapshot, RoomSnapshot } from './contracts';
 
-describe('contracts', () => {
+describe('go-contracts', () => {
   it('clones room snapshots defensively', () => {
     const snapshot: RoomSnapshot = {
       roomId: 'room-1',

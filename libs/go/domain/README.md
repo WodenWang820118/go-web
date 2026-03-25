@@ -24,6 +24,6 @@ Key exports include:
 ## Validation
 
 ```bash
-npm exec nx -- run go-domain:test
-npm exec nx -- run go-domain:typecheck
+pnpm nx run go-domain:test
+pnpm nx run go-domain:typecheck
 ```
