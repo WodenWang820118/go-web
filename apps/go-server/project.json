@@ -3,15 +3,11 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/go-server/src",
   "projectType": "application",
-  "tags": [
-    "scope:go"
-  ],
+  "tags": ["scope:go"],
   "targets": {
     "build": {
       "executor": "@nx/rspack:rspack",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
         "target": "node",
@@ -19,9 +15,7 @@
         "outputFileName": "main.js",
         "main": "apps/go-server/src/main.ts",
         "tsConfig": "apps/go-server/tsconfig.app.json",
-        "assets": [
-          "apps/go-server/src/assets"
-        ],
+        "assets": ["apps/go-server/src/assets"],
         "generatePackageJson": false,
         "sourceMap": true,
         "optimization": false,
@@ -58,37 +52,28 @@
       }
     },
     "prune-lockfile": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": true,
       "executor": "@nx/js:prune-lockfile",
       "outputs": [
         "{workspaceRoot}/dist/apps/go-server/package.json",
-        "{workspaceRoot}/dist/apps/go-server/package-lock.json"
+        "{workspaceRoot}/dist/apps/go-server/pnpm-lock.yaml"
       ],
       "options": {
         "buildTarget": "build"
       }
     },
     "copy-workspace-modules": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": true,
-      "outputs": [
-        "{workspaceRoot}/dist/apps/go-server/workspace_modules"
-      ],
+      "outputs": ["{workspaceRoot}/dist/apps/go-server/workspace_modules"],
       "executor": "@nx/js:copy-workspace-modules",
       "options": {
         "buildTarget": "build"
       }
     },
     "prune": {
-      "dependsOn": [
-        "prune-lockfile",
-        "copy-workspace-modules"
-      ],
+      "dependsOn": ["prune-lockfile", "copy-workspace-modules"],
       "executor": "nx:noop"
     },
     "serve": {
@@ -103,6 +88,22 @@
           "buildTarget": "go-server:build:production",
           "watch": false
         }
+      }
+    },
+    "docker:build": {
+      "dependsOn": ["build", "prune"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "docker build -f apps/go-server/Dockerfile --tag apps-go-server ."
+      }
+    },
+    "docker:run": {
+      "dependsOn": ["docker:build"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "docker run {args} apps-go-server"
       }
     }
   }

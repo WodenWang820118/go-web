@@ -1,0 +1,25 @@
+{
+  admin off
+  auto_https off
+}
+
+:80 {
+  root * /srv
+  encode zstd gzip
+
+  @backend path /api/* /socket.io/*
+  handle @backend {
+    reverse_proxy api:3000 {
+      flush_interval -1
+      stream_close_delay 5m
+      transport http {
+        versions 1.1
+      }
+    }
+  }
+
+  handle {
+    try_files {path} /index.html
+    file_server
+  }
+}
