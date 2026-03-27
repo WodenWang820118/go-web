@@ -1,4 +1,5 @@
-import { cloneRoomSnapshot, RoomSnapshot } from './contracts';
+import { RoomSnapshot, cloneRoomSnapshot } from './contracts';
+import { MAX_DISPLAY_NAME_LENGTH, createUniqueDisplayName } from './display-name.utils';
 
 describe('go-contracts', () => {
   it('clones room snapshots defensively', () => {
@@ -30,5 +31,19 @@ describe('go-contracts', () => {
     cloned.participants[0].displayName = 'Changed';
 
     expect(snapshot.participants[0].displayName).toBe('Host');
+  });
+
+  it('adds a numeric suffix when a display name is already taken', () => {
+    expect(
+      createUniqueDisplayName('Host', ['Host', 'Host (2)', 'Guest'])
+    ).toBe('Host (3)');
+  });
+
+  it('trims the base name so suffixed duplicates still fit the max length', () => {
+    expect(
+      createUniqueDisplayName('A'.repeat(MAX_DISPLAY_NAME_LENGTH), [
+        'A'.repeat(MAX_DISPLAY_NAME_LENGTH),
+      ])
+    ).toBe(`${'A'.repeat(MAX_DISPLAY_NAME_LENGTH - 4)} (2)`);
   });
 });

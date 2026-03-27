@@ -3,7 +3,15 @@
   "version": "0.0.0",
   "packageManager": "pnpm@10.22.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "deploy:windows:install": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\install-services.ps1",
+    "deploy:windows:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\restart-services.ps1",
+    "deploy:windows:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\uninstall-services.ps1",
+    "deploy:windows:tunnel": "lt --port 80 --local-host 127.0.0.1",
+    "deploy:windows:localhost-run": "ssh -o ServerAliveInterval=60 -R 80:127.0.0.1:80 nokey@localhost.run",
+    "deploy:windows:install-and-tunnel": "pnpm deploy:windows:install && pnpm deploy:windows:tunnel",
+    "deploy:windows:install-and-localhost-run": "pnpm deploy:windows:install && pnpm deploy:windows:localhost-run"
+  },
   "private": true,
   "dependencies": {
     "@angular-devkit/build-angular": "21.1.1",

@@ -70,4 +70,16 @@ Current Go routes:
 
 ## Windows hosting
 
-Windows laptop deployment notes live in [deploy/windows/README.md](deploy/windows/README.md). That document covers the WinSW services, Cloudflare Tunnel, Caddy, and the expected production build outputs.
+Windows laptop deployment notes live in [deploy/windows/README.md](deploy/windows/README.md). From the repo root, the main commands are:
+
+```bash
+pnpm deploy:windows:install
+pnpm deploy:windows:restart
+pnpm deploy:windows:uninstall
+pnpm deploy:windows:tunnel
+pnpm deploy:windows:localhost-run
+pnpm deploy:windows:install-and-tunnel
+pnpm deploy:windows:install-and-localhost-run
+```
+
+That document covers the WinSW services, Caddy, and the public tunnel options.

@@ -8,7 +8,7 @@ import {
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { OnlineRoomSeatViewModel } from './online-room-page.models';
 
@@ -127,8 +127,9 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               @if (seat.isViewerSeat && canChangeSeats()) {
                 <button
                   type="button"
-                  class="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-stone-100 transition hover:border-white/30 hover:bg-white/10"
+                  class="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-stone-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                   [attr.data-testid]="'release-' + seat.color"
+                  [disabled]="!realtimeConnected()"
                   (click)="releaseSeatRequested.emit()"
                 >
                   {{ i18n.t('room.participants.release') }}
@@ -136,8 +137,9 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               } @else if (seat.canClaim) {
                 <button
                   type="button"
-                  class="rounded-full bg-amber-300 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-amber-200"
+                  class="rounded-full bg-amber-300 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
                   [attr.data-testid]="'claim-' + seat.color"
+                  [disabled]="!realtimeConnected()"
                   (click)="claimSeatRequested.emit(seat.color)"
                 >
                   {{ i18n.t('room.participants.claim') }}
@@ -165,7 +167,8 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="rounded-full border border-white/15 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-stone-100 transition hover:border-white/30 hover:bg-white/10"
+                    class="rounded-full border border-white/15 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-stone-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    [disabled]="!realtimeConnected()"
                     (click)="
                       participant.muted
                         ? unmuteParticipantRequested.emit(participant.participantId)
@@ -180,7 +183,8 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
                   </button>
                   <button
                     type="button"
-                    class="rounded-full border border-rose-300/30 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-rose-100 transition hover:border-rose-200/50 hover:bg-rose-400/10"
+                    class="rounded-full border border-rose-300/30 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-rose-100 transition hover:border-rose-200/50 hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    [disabled]="!realtimeConnected()"
                     (click)="kickParticipantRequested.emit(participant.participantId)"
                   >
                     {{ i18n.t('room.participants.kick') }}
@@ -248,7 +252,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
               type="submit"
               class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
               data-testid="start-hosted-match"
-              [disabled]="!canStartMatch()"
+              [disabled]="!canStartMatch() || !realtimeConnected()"
             >
               {{ i18n.t('room.participants.start_hosted_match') }}
             </button>
@@ -267,7 +271,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
           <button
             type="button"
             class="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            [disabled]="!canPass()"
+            [disabled]="!canPass() || !realtimeConnected()"
             (click)="passRequested.emit()"
           >
             {{ i18n.t('common.move.pass') }}
@@ -275,7 +279,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
           <button
             type="button"
             class="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            [disabled]="!canResign()"
+            [disabled]="!canResign() || !realtimeConnected()"
             (click)="resignRequested.emit()"
           >
             {{ i18n.t('common.move.resign') }}
@@ -283,7 +287,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
           <button
             type="button"
             class="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            [disabled]="!canFinalizeScoring()"
+            [disabled]="!canFinalizeScoring() || !realtimeConnected()"
             (click)="finalizeScoringRequested.emit()"
           >
             {{ i18n.t('room.participants.finalize_score') }}
@@ -343,6 +347,7 @@ export class OnlineRoomParticipantsPanelComponent {
   readonly viewer = input<ParticipantSummary | null>(null);
   readonly viewerSeat = input<PlayerColor | null>(null);
   readonly isHost = input.required<boolean>();
+  readonly realtimeConnected = input.required<boolean>();
   readonly canChangeSeats = input.required<boolean>();
   readonly canStartMatch = input.required<boolean>();
   readonly canPass = input.required<boolean>();

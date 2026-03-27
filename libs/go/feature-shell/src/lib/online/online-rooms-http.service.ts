@@ -7,8 +7,9 @@ import {
   LocalizedErrorResponse,
   ListRoomsResponse,
 } from '@gx/go/contracts';
-import { GO_SERVER_ORIGIN, GoI18nService } from '@gx/go/state';
 import { isMessageDescriptor } from '@gx/go/domain';
+import { GoI18nService } from '@gx/go/state/i18n';
+import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { Observable } from 'rxjs';
 
 /**

@@ -31,7 +31,6 @@ import { RoomsService } from './rooms.service';
  */
 @WebSocketGateway({
   path: '/socket.io',
-  transports: ['websocket'],
   cors: {
     origin: true,
   },

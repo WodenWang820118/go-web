@@ -5,7 +5,8 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { RoomSnapshot } from '@gx/go/contracts';
-import { GO_SERVER_ORIGIN } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
+import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { vi } from 'vitest';
 import { OnlineRoomService } from './online-room.service';
 import {
@@ -154,6 +155,30 @@ describe('OnlineRoomService', () => {
 
     expect(service.viewerSeat()).toBe('black');
     expect(service.snapshot()?.seatState.black).toBe('guest-1');
+  });
+
+  it('surfaces a realtime error when commands are attempted while disconnected', () => {
+    const i18n = TestBed.inject(GoI18nService);
+
+    service.joinRoom('ROOM42', 'Guest').subscribe();
+
+    const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
+    joinRequest.flush({
+      roomId: 'ROOM42',
+      participantId: 'guest-1',
+      participantToken: 'token-2',
+      resumed: false,
+      snapshot: createSnapshot('ROOM42'),
+    });
+
+    socket.disconnect();
+    service.claimSeat('black');
+
+    expect(service.connectionState()).toBe('disconnected');
+    expect(service.lastError()).toBe(
+      i18n.t('room.client.realtime_unavailable')
+    );
+    expect(socket.emitted.some(event => event.event === 'seat.claim')).toBe(false);
   });
 });
 

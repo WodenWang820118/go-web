@@ -3,8 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MAX_DISPLAY_NAME_LENGTH, createUniqueDisplayName } from '@gx/go/contracts';
 import { BoardPoint, DEFAULT_GO_KOMI, GOMOKU_BOARD_SIZE, GO_BOARD_SIZES, GameMode, PlayerColor } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
@@ -51,6 +52,9 @@ export class OnlineRoomPageComponent {
   protected readonly match = this.onlineRoom.match;
   protected readonly participants = this.onlineRoom.participants;
   protected readonly viewer = this.onlineRoom.viewer;
+  protected readonly realtimeConnected = computed(
+    () => this.onlineRoom.connectionState() === 'connected'
+  );
   protected readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
     const snapshot = this.snapshot();
 
@@ -106,13 +110,20 @@ export class OnlineRoomPageComponent {
     this.startMode() === 'go' ? [...GO_BOARD_SIZES] : [GOMOKU_BOARD_SIZE]
   );
   protected readonly canPass = computed(
-    () => this.match()?.settings.mode === 'go' && this.onlineRoom.isActivePlayer()
+    () =>
+      this.realtimeConnected() &&
+      this.match()?.settings.mode === 'go' &&
+      this.onlineRoom.isActivePlayer()
   );
   protected readonly canResign = computed(
-    () => !!this.onlineRoom.viewerSeat() && this.match()?.state.phase === 'playing'
+    () =>
+      this.realtimeConnected() &&
+      !!this.onlineRoom.viewerSeat() &&
+      this.match()?.state.phase === 'playing'
   );
   protected readonly canFinalizeScoring = computed(
     () =>
+      this.realtimeConnected() &&
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.settings.mode === 'go' &&
       this.match()?.state.phase === 'scoring'
@@ -120,6 +131,7 @@ export class OnlineRoomPageComponent {
   protected readonly canStartMatch = computed(
     () =>
       this.onlineRoom.isHost() &&
+      this.realtimeConnected() &&
       this.onlineRoom.canChangeSeats() &&
       !!this.snapshot()?.seatState.black &&
       !!this.snapshot()?.seatState.white
@@ -152,12 +164,21 @@ export class OnlineRoomPageComponent {
       return this.i18n.t('room.chat.helper.join');
     }
 
+    if (!this.realtimeConnected()) {
+      return this.i18n.t('room.client.realtime_unavailable');
+    }
+
     if (this.onlineRoom.isMuted()) {
       return this.i18n.t('room.chat.helper.muted');
     }
 
     return this.i18n.t('room.chat.helper.default');
   });
+  protected readonly connectionWarning = computed(() =>
+    this.onlineRoom.participantId() && !this.realtimeConnected()
+      ? this.i18n.t('room.client.realtime_unavailable')
+      : null
+  );
 
   protected readonly joinForm = new FormGroup({
     displayName: new FormControl('', {
@@ -220,13 +241,28 @@ export class OnlineRoomPageComponent {
 
   protected joinRoom(): void {
     const roomId = this.roomId();
+    const requestedDisplayName = this.joinForm.controls.displayName.value;
 
     if (!roomId) {
       return;
     }
 
+    const resolvedDisplayName = createUniqueDisplayName(
+      requestedDisplayName,
+      this.snapshot()?.participants.map(participant => participant.displayName) ?? [],
+      {
+        maxLength: MAX_DISPLAY_NAME_LENGTH,
+      }
+    );
+
+    if (resolvedDisplayName !== requestedDisplayName) {
+      this.joinForm.controls.displayName.setValue(resolvedDisplayName, {
+        emitEvent: false,
+      });
+    }
+
     this.onlineRoom
-      .joinRoom(roomId, this.joinForm.controls.displayName.value)
+      .joinRoom(roomId, resolvedDisplayName)
       .pipe(
         catchError(() => EMPTY),
         take(1)

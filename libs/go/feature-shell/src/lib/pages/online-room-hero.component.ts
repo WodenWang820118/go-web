@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'lib-go-online-room-hero',

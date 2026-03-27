@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { activeMatchGuard, validModeGuard } from '@gx/go/state';
+import { activeMatchGuard, validModeGuard } from '@gx/go/state/guards';
 
 export const goFeatureShellRoutes: Route[] = [
   {

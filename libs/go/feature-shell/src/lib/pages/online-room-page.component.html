@@ -31,6 +31,12 @@
     </div>
   }
 
+  @if (connectionWarning()) {
+    <div class="mt-4 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+      {{ connectionWarning() }}
+    </div>
+  }
+
   @switch (onlineRoom.bootstrapState()) {
     @case ('loading') {
       <div class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
@@ -92,7 +98,7 @@
                   [lastMove]="lastPlacedPoint()"
                   [winningLine]="match()!.state.winnerLine"
                   [deadStones]="match()!.state.scoring?.deadStones ?? []"
-                  [interactive]="onlineRoom.canInteractBoard()"
+                  [interactive]="onlineRoom.canInteractBoard() && realtimeConnected()"
                   (pointSelected)="onBoardPoint($event)"
                 />
               </section>
@@ -121,6 +127,7 @@
               [viewer]="viewer()"
               [viewerSeat]="onlineRoom.viewerSeat()"
               [isHost]="onlineRoom.isHost()"
+              [realtimeConnected]="realtimeConnected()"
               [canChangeSeats]="onlineRoom.canChangeSeats()"
               [canStartMatch]="canStartMatch()"
               [canPass]="canPass()"
@@ -148,6 +155,7 @@
               [chatForm]="chatForm"
               [participantId]="onlineRoom.participantId()"
               [isMuted]="onlineRoom.isMuted()"
+              [realtimeConnected]="realtimeConnected()"
               [messages]="onlineRoom.chat()"
               [helperText]="chatHelperText()"
               (sendRequested)="sendChat()"

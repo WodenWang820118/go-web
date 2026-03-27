@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { GoI18nService, GoLocale } from '@gx/go/state';
+import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'app-go-locale-switcher',

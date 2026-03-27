@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GAME_MODE_LIST } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 

@@ -21,7 +21,7 @@ import {
   pointEquals,
   pointKey,
 } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { BoardCoordinatesComponent } from '../board-coordinates/board-coordinates.component';
 
 @Component({

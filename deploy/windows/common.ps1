@@ -54,9 +54,9 @@ function Invoke-NxCommand {
 
   Push-Location $script:WorkspaceRoot
   try {
-    & npm exec -- nx @Arguments
+    & pnpm exec nx @Arguments
     if ($LASTEXITCODE -ne 0) {
-      throw "Nx command failed: npm exec -- nx $($Arguments -join ' ')"
+      throw "Nx command failed: pnpm exec nx $($Arguments -join ' ')"
     }
   } finally {
     Pop-Location
@@ -116,6 +116,21 @@ function Get-ServiceObject {
   return Get-Service -Name $Name -ErrorAction SilentlyContinue
 }
 
+function Test-WinSWSupportsCommand {
+  param(
+    [string] $WrapperPath,
+    [string] $Command
+  )
+
+  $helpOutput = & $WrapperPath help 2>&1 | Out-String
+  if ($LASTEXITCODE -ne 0) {
+    return $false
+  }
+
+  $escapedCommand = [Regex]::Escape($Command)
+  return $helpOutput -match "(?m)^\s+$escapedCommand\s+"
+}
+
 function Ensure-ServiceInstalled {
   param(
     [string] $Name,
@@ -124,10 +139,14 @@ function Ensure-ServiceInstalled {
 
   if (Get-ServiceObject -Name $Name) {
     Write-Step "$Name is already installed"
-    Write-Step "Refreshing $Name configuration"
-    & $WrapperPath refresh
-    if ($LASTEXITCODE -ne 0) {
-      throw "Failed to refresh $Name via $WrapperPath."
+    if (Test-WinSWSupportsCommand -WrapperPath $WrapperPath -Command 'refresh') {
+      Write-Step "Refreshing $Name configuration"
+      & $WrapperPath refresh
+      if ($LASTEXITCODE -ne 0) {
+        throw "Failed to refresh $Name via $WrapperPath."
+      }
+    } else {
+      Write-Step "Skipping refresh for $Name because this WinSW build does not support it"
     }
     return
   }

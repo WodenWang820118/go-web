@@ -14,7 +14,7 @@ import {
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import { OnlineLobbyService } from '../online/online-lobby.service';
 import { OnlineRoomService } from '../online/online-room.service';

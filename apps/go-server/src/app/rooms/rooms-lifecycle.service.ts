@@ -4,6 +4,7 @@ import {
   JoinRoomResponse,
   ListRoomsResponse,
   RoomSnapshot,
+  createUniqueDisplayName,
 } from '@gx/go/contracts';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import {
@@ -76,11 +77,18 @@ export class RoomsLifecycleService implements OnModuleDestroy {
         : null;
     const resumed = participant !== null;
 
+    const uniqueDisplayName = createUniqueDisplayName(
+      sanitizedName,
+      [...room.participants.values()]
+        .filter(currentParticipant => currentParticipant.id !== participant?.id)
+        .map(currentParticipant => currentParticipant.displayName)
+    );
+
     if (participant) {
-      participant.displayName = sanitizedName;
+      participant.displayName = uniqueDisplayName;
     } else {
       participant = this.store.createParticipant(
-        sanitizedName,
+        uniqueDisplayName,
         false,
         this.store.timestamp()
       );

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ChatMessage } from '@gx/go/contracts';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'lib-go-online-room-chat-panel',
@@ -60,6 +60,7 @@ import { GoI18nService } from '@gx/go/state';
           class="w-full rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-stone-50 outline-none transition focus:border-amber-300/50"
           [placeholder]="i18n.t('room.chat.placeholder')"
           [readOnly]="!canSend()"
+          (keydown)="onMessageKeydown($event)"
         ></textarea>
 
         <div class="flex items-center justify-between gap-3">
@@ -86,12 +87,30 @@ export class OnlineRoomChatPanelComponent {
   readonly chatForm = input.required<FormGroup>();
   readonly participantId = input<string | null>(null);
   readonly isMuted = input.required<boolean>();
+  readonly realtimeConnected = input.required<boolean>();
   readonly messages = input.required<readonly ChatMessage[]>();
   readonly helperText = input.required<string>();
   readonly sendRequested = output<void>();
 
   protected readonly chatMessageInputId = 'room-chat-message';
   protected readonly canSend = computed(
-    () => !!this.participantId() && !this.isMuted()
+    () => !!this.participantId() && !this.isMuted() && this.realtimeConnected()
   );
+
+  protected onMessageKeydown(event: KeyboardEvent): void {
+    if (
+      event.key !== 'Enter' ||
+      event.shiftKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.isComposing ||
+      !this.canSend()
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    this.sendRequested.emit();
+  }
 }

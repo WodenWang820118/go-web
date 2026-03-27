@@ -3,9 +3,10 @@
 This folder contains the Windows laptop hosting assets for the multiplayer stack:
 
 - `Cloudflare Tunnel -> Caddy -> Angular static app + Nest go-server`
+- `localtunnel -> Caddy -> Angular static app + Nest go-server`
 - Public URL: `https://go.<your-domain>/`
 - Shared room URL: `https://go.<your-domain>/online/room/:roomId`
-- Local-only origin path: `cloudflared -> http://localhost:80 -> Caddy -> 127.0.0.1:3000`
+- Local-only origin path: `public tunnel -> http://localhost:80 -> Caddy -> 127.0.0.1:3000`
 
 ## Source layout
 
@@ -18,7 +19,7 @@ This folder contains the Windows laptop hosting assets for the multiplayer stack
 
 - `go-server` stays bound to `127.0.0.1:3000`
 - Caddy binds to `127.0.0.1:80` and is the only local HTTP entrypoint
-- No inbound port forwarding is required; `cloudflared` makes the outbound tunnel connection to Cloudflare
+- No inbound port forwarding is required; the public tunnel makes the outbound connection to this laptop
 - Room state is ephemeral: the Nest `RoomsService` stores rooms in memory, so a `gx-go-server` restart clears active rooms
 - Fully offline rooms are pruned after 1 hour
 
@@ -27,14 +28,15 @@ This folder contains the Windows laptop hosting assets for the multiplayer stack
 - The repo remains at `C:\software-dev\gx.go`
 - The domain is already managed in Cloudflare
 - Run PowerShell as Administrator for all service install/uninstall steps
-- Install Node.js so `C:\Program Files\nodejs\node.exe` exists
+- Install Node.js so `C:\nvm4w\nodejs\node.exe` exists, or update `go-server-service.xml` and `common.ps1` to match your local install path
 - Place `caddy.exe` at `C:\Services\caddy\caddy.exe`
 - Download `WinSW-x64.exe` into this folder as `deploy\windows\WinSW-x64.exe`
 - Install `cloudflared` on the laptop
+- Or install `localtunnel` globally so the `lt` command is available
 - Install workspace dependencies from the repo root:
 
 ```powershell
-npm install
+pnpm install
 ```
 
 ## Included files
@@ -51,17 +53,17 @@ npm install
 From an elevated PowerShell window:
 
 ```powershell
-Set-Location C:\software-dev\gx.go\deploy\windows
-.\install-services.ps1
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:install
 ```
 
 What the script does:
 
-- Builds `go-web` in production mode with `npm exec -- nx build go-web --configuration=production`
-- Builds `go-server` with `npm exec -- nx build go-server`
+- Builds `go-web` in production mode with `pnpm exec nx build go-web --configuration=production`
+- Builds `go-server` with `pnpm exec nx build go-server`
 - Verifies `dist/apps/go-web/browser/index.html` and `dist/apps/go-server/main.js`
 - Copies `WinSW-x64.exe` into `gx-go-server.exe` and `gx-go-caddy.exe` if those wrappers do not already exist
-- Installs or refreshes the `gx-go-server` and `gx-go-caddy` services
+- Installs the `gx-go-server` and `gx-go-caddy` services, or updates their config files if they already exist
 - Starts or restarts both services
 - Waits for local health checks to respond
 
@@ -101,13 +103,77 @@ Once that service is running, the application should be live at the hostname you
 
 Quick Tunnels are intentionally out of scope here. They are for testing only, not a durable public game URL.
 
+## Publish a quick public URL through localtunnel
+
+The globally installed npm package on this laptop appears to be `localtunnel`, which exposes the `lt` command.
+
+From the repo root:
+
+```powershell
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:tunnel
+```
+
+That command forwards public traffic to the local Caddy entrypoint on `127.0.0.1:80`.
+
+Important limitation:
+
+- `localtunnel` may show a consent/password interstitial for fresh browser sessions
+- when that happens, JS and CSS requests can fail for guests or incognito windows even though the root HTML loads
+- if you hit a `502 Bad Gateway` or the page loads without scripts/styles, the issue is likely `localtunnel`, not Angular or Caddy
+
+For localtunnel-hosted pages, the consent password is the tunnel creator's public IP address.
+
+If you need a stable vanity name and `localtunnel` supports it on your chosen upstream, add `--subdomain <name>` to the script or run `lt` manually.
+
+## Publish a quick public URL through localhost.run
+
+Windows already includes `ssh`, so this option does not need an extra tunnel client install.
+
+From the repo root:
+
+```powershell
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:localhost-run
+```
+
+That command opens an SSH reverse tunnel from `localhost.run` to the local Caddy listener on `127.0.0.1:80`.
+
+What to expect:
+
+- the first run may ask you to trust the SSH host key for `localhost.run`
+- once the tunnel is connected, the terminal prints the public `https://*.localhost.run` URL to share
+- keep that terminal window open while others are using the app
+- free localhost.run domains are short-lived and can change between sessions
+- free tunnels use `nokey@localhost.run`; only custom-domain or keyed setups should use plain `localhost.run`
+
+Compared with `localtunnel`, this path avoids the consent/password interstitial that can break JS and CSS requests for guests.
+
+## Install services and open the tunnel in one command
+
+From an elevated PowerShell window:
+
+```powershell
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:install-and-tunnel
+```
+
+That command runs the WinSW install/start flow first, then launches the `localtunnel` process against the local Caddy listener on port `80`.
+
+If you want the same install/start flow with `localhost.run`, run:
+
+```powershell
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:install-and-localhost-run
+```
+
 ## Rebuild and restart after code changes
 
 After changing app code, rebuild and restart the two local services:
 
 ```powershell
-Set-Location C:\software-dev\gx.go\deploy\windows
-.\restart-services.ps1
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:restart
 ```
 
 This rebuilds `go-web` and `go-server`, verifies the build outputs, restarts `gx-go-server`, restarts `gx-go-caddy`, and waits for the local health checks again.
@@ -117,8 +183,8 @@ This rebuilds `go-web` and `go-server`, verifies the build outputs, restarts `gx
 To remove the WinSW-managed services from Windows:
 
 ```powershell
-Set-Location C:\software-dev\gx.go\deploy\windows
-.\uninstall-services.ps1
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:uninstall
 ```
 
 If the laptop also runs `cloudflared`, remove that service separately:
@@ -160,8 +226,8 @@ Invoke-WebRequest http://127.0.0.1/api/health
 3. Restart the local stack:
 
 ```powershell
-Set-Location C:\software-dev\gx.go\deploy\windows
-.\restart-services.ps1
+Set-Location C:\software-dev\gx.go
+pnpm deploy:windows:restart
 ```
 
 4. Restart `cloudflared` if the hostname route or tunnel state changed:

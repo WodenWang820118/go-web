@@ -14,6 +14,7 @@ const EN_CORE = {
   'common.mode.gomoku': 'Gomoku',
   'common.move.pass': 'Pass',
   'common.move.resign': 'Resign',
+  'common.action.close': 'Close',
 } as const;
 
 const EN_GAME = {
@@ -127,6 +128,8 @@ const EN_ROOM_SHARED = {
   'room.validation.komi_invalid': 'Komi must be within the allowed range.',
   'room.validation.invalid_payload': 'The request payload is invalid.',
   'room.client.join_required': 'Join the room before using room actions.',
+  'room.client.realtime_unavailable':
+    'Wait for the room connection to finish before using room actions.',
   'room.client.unexpected_network_error': 'Unexpected network error.',
   'lobby.error.load_failed': 'Unable to load hosted rooms.',
 } as const;
@@ -418,6 +421,7 @@ const ZH_CORE = {
   'common.mode.gomoku': '五子棋',
   'common.move.pass': '虛手',
   'common.move.resign': '認輸',
+  'common.action.close': '關閉',
 } as const;
 
 const ZH_GAME = {
@@ -516,6 +520,7 @@ const ZH_ROOM_SHARED = {
   'room.validation.komi_invalid': '貼目必須在允許範圍內。',
   'room.validation.invalid_payload': '請求內容格式無效。',
   'room.client.join_required': '請先加入房間，再使用房內操作。',
+  'room.client.realtime_unavailable': '請先等待房間即時連線完成，再使用房內操作。',
   'room.client.unexpected_network_error': '網路連線發生未預期的錯誤。',
   'lobby.error.load_failed': '無法載入線上房間。',
 } as const;

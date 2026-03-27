@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 import { MatchPhase, PlayerColor, ResultSummary } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'lib-go-game-status-chip',

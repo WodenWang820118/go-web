@@ -8,24 +8,14 @@ import {
   output,
 } from '@angular/core';
 import { MatchSettings, MatchState, MoveRecord } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
-import { ButtonModule } from 'primeng/button';
-import { DividerModule } from 'primeng/divider';
-import { TagModule } from 'primeng/tag';
+import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent } from '../game-status-chip/game-status-chip.component';
 import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
 
 @Component({
   selector: 'lib-go-match-sidebar',
   standalone: true,
-  imports: [
-    CommonModule,
-    ButtonModule,
-    DividerModule,
-    TagModule,
-    GameStatusChipComponent,
-    StoneBadgeComponent,
-  ],
+  imports: [CommonModule, GameStatusChipComponent, StoneBadgeComponent],
   template: `
     @if (settings() && state()) {
       <aside class="flex h-full flex-col gap-4 rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-5 text-stone-100 shadow-2xl shadow-slate-950/40 backdrop-blur">
@@ -70,14 +60,15 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
                 </div>
 
                 @if (settings()!.mode === 'go') {
-                  <p-tag
-                    severity="contrast"
-                    [value]="
+                  <span
+                    class="inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-stone-100"
+                  >
+                    {{
                       i18n.t('ui.match_sidebar.captures', {
                         count: state()!.captures[player.color],
                       })
-                    "
-                  />
+                    }}
+                  </span>
                 }
               </div>
             </section>
@@ -104,64 +95,53 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
 
         <section class="flex flex-wrap gap-2">
           <button
-            pButton
             type="button"
-            class="p-button-sm"
+            class="rounded-full bg-white/12 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-40"
             [disabled]="!canPass()"
             (click)="passRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.pass') }}
           </button>
           <button
-            pButton
             type="button"
-            severity="warn"
-            class="p-button-sm"
+            class="rounded-full bg-rose-500/18 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/28 disabled:cursor-not-allowed disabled:opacity-40"
             [disabled]="!canResign()"
             (click)="resignRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.resign') }}
           </button>
           <button
-            pButton
             type="button"
-            severity="success"
-            class="p-button-sm"
+            class="rounded-full bg-emerald-500/18 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/28 disabled:cursor-not-allowed disabled:opacity-40"
             [disabled]="!canFinalizeScoring()"
             (click)="finalizeScoringRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.finalize_score') }}
           </button>
           <button
-            pButton
             type="button"
-            severity="secondary"
-            class="p-button-sm"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
             (click)="helpRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.rules') }}
           </button>
           <button
-            pButton
             type="button"
-            severity="secondary"
-            class="p-button-sm"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
             (click)="restartRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.restart') }}
           </button>
           <button
-            pButton
             type="button"
-            severity="secondary"
-            class="p-button-sm"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
             (click)="newMatchRequested.emit()"
           >
             {{ i18n.t('ui.match_sidebar.new_match') }}
           </button>
         </section>
 
-        <p-divider />
+        <div class="h-px w-full bg-white/10"></div>
 
         <section class="flex min-h-0 flex-1 flex-col">
           <div class="mb-3 flex items-center justify-between">
@@ -250,5 +230,4 @@ export class MatchSidebarComponent {
   readonly canFinalizeScoring = computed(
     () => this.settings()?.mode === 'go' && this.state()?.phase === 'scoring'
   );
-
 }

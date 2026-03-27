@@ -3,12 +3,9 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { GO_SERVER_ORIGIN, resolveGoServerOrigin } from '@gx/go/state';
 import { provideHttpClient } from '@angular/common/http';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
-import Aura from '@primeuix/themes/aura';
-import { providePrimeNG } from 'primeng/config';
+import { GO_SERVER_ORIGIN, resolveGoServerOrigin } from '@gx/go/state/server-origin';
 import { appRoutes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
@@ -21,12 +18,5 @@ export const appConfig: ApplicationConfig = {
     },
     provideHttpClient(),
     provideRouter(appRoutes),
-    provideAnimationsAsync(),
-    providePrimeNG({
-      ripple: true,
-      theme: {
-        preset: Aura,
-      },
-    }),
   ],
 };

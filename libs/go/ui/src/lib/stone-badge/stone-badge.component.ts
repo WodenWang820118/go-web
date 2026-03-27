@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 import { PlayerColor } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'lib-go-stone-badge',

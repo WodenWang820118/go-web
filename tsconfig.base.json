@@ -18,8 +18,13 @@
       "@org/models": ["libs/shared/models/src/index.ts"],
       "@gx/go/domain": ["libs/go/domain/src/index.ts"],
       "@gx/go/state": ["libs/go/state/src/index.ts"],
+      "@gx/go/state/guards": ["libs/go/state/src/lib/active-match.guard.ts"],
+      "@gx/go/state/i18n": ["libs/go/state/src/lib/go-i18n.service.ts"],
+      "@gx/go/state/server-origin": ["libs/go/state/src/lib/go-server-origin.token.ts"],
+      "@gx/go/state/session": ["libs/go/state/src/lib/game-session.store.ts"],
       "@gx/go/ui": ["libs/go/ui/src/index.ts"],
       "@gx/go/feature-shell": ["libs/go/feature-shell/src/index.ts"],
+      "@gx/go/feature-shell/routes": ["libs/go/feature-shell/src/lib/go-feature-shell.routes.ts"],
       "@gx/go/contracts": ["libs/go/contracts/src/index.ts"]
     }
   },

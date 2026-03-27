@@ -14,13 +14,9 @@ import {
   type GoMessageDescriptor,
   type BoardPoint,
 } from '@gx/go/domain';
-import { GameSessionStore, GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
+import { GameSessionStore } from '@gx/go/state/session';
 import { GameBoardComponent, MatchSidebarComponent, StoneBadgeComponent } from '@gx/go/ui';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { DialogModule } from 'primeng/dialog';
-import { DrawerModule } from 'primeng/drawer';
-import { ToastModule } from 'primeng/toast';
 import { map } from 'rxjs';
 
 interface ConfirmationCopy {
@@ -30,23 +26,28 @@ interface ConfirmationCopy {
   rejectLabel: string;
 }
 
+interface ConfirmationDialogState extends ConfirmationCopy {
+  accept: () => void | Promise<void>;
+}
+
+interface PlayBanner {
+  tone: 'success' | 'warn';
+  summary: string;
+  detail: string;
+}
+
 @Component({
   selector: 'lib-go-play-page',
   standalone: true,
   imports: [
     CommonModule,
     RouterLink,
-    ConfirmDialogModule,
-    DialogModule,
-    DrawerModule,
-    ToastModule,
     GameBoardComponent,
     MatchSidebarComponent,
     StoneBadgeComponent,
   ],
   templateUrl: './play-page.component.html',
   styleUrl: './play-page.component.css',
-  providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlayPageComponent {
@@ -54,11 +55,11 @@ export class PlayPageComponent {
   protected readonly store = inject(GameSessionStore);
   protected readonly helpVisible = signal(false);
   protected readonly resultVisible = signal(false);
+  protected readonly confirmationState = signal<ConfirmationDialogState | null>(null);
+  protected readonly banner = signal<PlayBanner | null>(null);
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly confirmation = inject(ConfirmationService);
-  private readonly messages = inject(MessageService);
 
   protected readonly mode = toSignal(
     this.route.paramMap.pipe(
@@ -127,44 +128,62 @@ export class PlayPageComponent {
   }
 
   protected resignMatch(): void {
-    this.confirmation.confirm({
-      ...this.copy().resign,
-      accept: () => {
-        this.reportAction(
-          this.store.resign(),
-          'play.toast.resignation_unavailable'
-        );
-      },
+    this.openConfirmation('resign', () => {
+      this.reportAction(
+        this.store.resign(),
+        'play.toast.resignation_unavailable'
+      );
     });
   }
 
   protected restartMatch(): void {
-    this.confirmation.confirm({
-      ...this.copy().restart,
-      accept: () => {
-        if (this.store.restartMatch()) {
-          this.resultVisible.set(false);
-          this.messages.add({
-            severity: 'success',
-            summary: this.i18n.t('play.toast.match_restarted.summary'),
-            detail: this.i18n.t('play.toast.match_restarted.detail'),
-          });
-        }
-      },
+    this.openConfirmation('restart', () => {
+      if (this.store.restartMatch()) {
+        this.resultVisible.set(false);
+        this.setBanner(
+          'success',
+          this.i18n.t('play.toast.match_restarted.summary'),
+          this.i18n.t('play.toast.match_restarted.detail')
+        );
+      }
     });
   }
 
   protected openNewMatchConfirm(): void {
     const mode = this.mode();
 
-    this.confirmation.confirm({
-      ...this.copy().newSetup,
-      accept: async () => {
+    this.openConfirmation('newSetup', async () => {
         this.store.clearMatch();
         this.resultVisible.set(false);
         await this.router.navigate(['/setup', mode ?? 'go']);
-      },
     });
+  }
+
+  protected closeHelp(): void {
+    this.helpVisible.set(false);
+  }
+
+  protected closeResult(): void {
+    this.resultVisible.set(false);
+  }
+
+  protected cancelConfirmation(): void {
+    this.confirmationState.set(null);
+  }
+
+  protected confirmAction(): void {
+    const confirmation = this.confirmationState();
+
+    if (!confirmation) {
+      return;
+    }
+
+    this.confirmationState.set(null);
+    void confirmation.accept();
+  }
+
+  protected clearBanner(): void {
+    this.banner.set(null);
   }
 
   protected translateMessage(
@@ -181,10 +200,32 @@ export class PlayPageComponent {
       return;
     }
 
-    this.messages.add({
-      severity: 'warn',
-      summary: this.i18n.t(summaryKey),
-      detail: this.i18n.translateMessage(error),
+    this.setBanner(
+      'warn',
+      this.i18n.t(summaryKey),
+      this.i18n.translateMessage(error)
+    );
+  }
+
+  private openConfirmation(
+    key: 'resign' | 'restart' | 'newSetup',
+    accept: () => void | Promise<void>
+  ): void {
+    this.confirmationState.set({
+      ...this.copy()[key],
+      accept,
+    });
+  }
+
+  private setBanner(
+    tone: PlayBanner['tone'],
+    summary: string,
+    detail: string
+  ): void {
+    this.banner.set({
+      tone,
+      summary,
+      detail,
     });
   }
 }

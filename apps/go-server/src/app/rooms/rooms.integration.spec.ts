@@ -4,6 +4,7 @@ import {
   CreateRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
+  RoomPresenceEvent,
   RoomSnapshot,
 } from '@gx/go/contracts';
 import request from 'supertest';
@@ -158,6 +159,119 @@ describe('rooms integration', () => {
     30000
   );
 
+  it(
+    'allows a polling guest to claim white after the host claims black',
+    async () => {
+      const createdResponse = await request(app.getHttpServer())
+        .post('/api/rooms')
+        .send({ displayName: 'Host' })
+        .expect(201);
+      const host = createdResponse.body as CreateRoomResponse;
+
+      const joinedResponse = await request(app.getHttpServer())
+        .post(`/api/rooms/${host.roomId}/join`)
+        .send({ displayName: 'Guest' })
+        .expect(201);
+      const guest = joinedResponse.body as JoinRoomResponse;
+
+      const hostSocket = io(baseUrl, {
+        path: '/socket.io',
+        transports: ['websocket'],
+        forceNew: true,
+      });
+      const guestSocket = io(baseUrl, {
+        path: '/socket.io',
+        transports: ['polling'],
+        forceNew: true,
+      });
+
+      sockets.push(hostSocket, guestSocket);
+
+      await waitForConnect(hostSocket);
+      await waitForConnect(guestSocket);
+
+      expect(guestSocket.io.engine.transport.name).toBe('polling');
+
+      const hostJoined = onceWhere<RoomSnapshot>(
+        hostSocket,
+        'room.snapshot',
+        snapshot => snapshot.roomId === host.roomId
+      );
+      hostSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+      });
+      await hostJoined;
+
+      const guestJoined = onceWhere<RoomSnapshot>(
+        guestSocket,
+        'room.snapshot',
+        snapshot => snapshot.roomId === host.roomId
+      );
+      guestSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+      });
+      await guestJoined;
+
+      const guestSawHostClaim = onceWhere<RoomPresenceEvent>(
+        guestSocket,
+        'room.presence',
+        event => event.seatState.black === host.participantId
+      );
+      const hostClaimSnapshot = onceWhere<RoomSnapshot>(
+        hostSocket,
+        'room.snapshot',
+        snapshot => snapshot.seatState.black === host.participantId
+      );
+      hostSocket.emit('seat.claim', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+        color: 'black',
+      });
+      await Promise.all([guestSawHostClaim, hostClaimSnapshot]);
+
+      const hostSawGuestClaim = onceWhere<RoomPresenceEvent>(
+        hostSocket,
+        'room.presence',
+        event =>
+          event.seatState.black === host.participantId &&
+          event.seatState.white === guest.participantId
+      );
+      const guestClaimSnapshot = onceWhere<RoomSnapshot>(
+        guestSocket,
+        'room.snapshot',
+        snapshot =>
+          snapshot.seatState.black === host.participantId &&
+          snapshot.seatState.white === guest.participantId
+      );
+      guestSocket.emit('seat.claim', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+        color: 'white',
+      });
+
+      const [, finalSnapshot] = await Promise.all([
+        hostSawGuestClaim,
+        guestClaimSnapshot,
+      ]);
+
+      expect(finalSnapshot.seatState).toEqual({
+        black: host.participantId,
+        white: guest.participantId,
+      });
+      expect(
+        finalSnapshot.participants.find(
+          participant => participant.participantId === guest.participantId
+        )
+      ).toMatchObject({
+        online: true,
+        seat: 'white',
+      });
+    },
+    30000
+  );
+
   it('lists public lobby rooms through the REST API', async () => {
     const waitingResponse = await request(app.getHttpServer())
       .post('/api/rooms')
@@ -215,5 +329,31 @@ function waitForConnect(socket: Socket): Promise<void> {
 function once<T>(socket: Socket, event: string): Promise<T> {
   return new Promise(resolve => {
     socket.once(event, resolve);
+  });
+}
+
+function onceWhere<T>(
+  socket: Socket,
+  event: string,
+  predicate: (payload: T) => boolean,
+  timeoutMs = 5000
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      socket.off(event, handler);
+      reject(new Error(`Timed out waiting for ${event}`));
+    }, timeoutMs);
+
+    const handler = (payload: T) => {
+      if (!predicate(payload)) {
+        return;
+      }
+
+      clearTimeout(timeout);
+      socket.off(event, handler);
+      resolve(payload);
+    };
+
+    socket.on(event, handler);
   });
 }

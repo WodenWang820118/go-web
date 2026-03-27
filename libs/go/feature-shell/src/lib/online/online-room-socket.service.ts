@@ -7,7 +7,7 @@ import {
   RoomSnapshot,
   SystemNoticeEvent,
 } from '@gx/go/contracts';
-import { GO_SERVER_ORIGIN } from '@gx/go/state';
+import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { Subject } from 'rxjs';
 import { Socket, io } from 'socket.io-client';
 
@@ -42,8 +42,9 @@ export class OnlineRoomSocketService {
 
     const socket = io(this.serverOrigin || undefined, {
       path: '/socket.io',
-      transports: ['websocket'],
       autoConnect: false,
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
     });
 
     socket.on('connect', () => {
@@ -54,6 +55,9 @@ export class OnlineRoomSocketService {
       });
     });
     socket.on('disconnect', () => {
+      this.connectionStateSignal.set('disconnected');
+    });
+    socket.on('connect_error', () => {
       this.connectionStateSignal.set('disconnected');
     });
     socket.on('room.snapshot', (snapshot: RoomSnapshot) => {
@@ -81,7 +85,7 @@ export class OnlineRoomSocketService {
   }
 
   emit(event: string, payload: Record<string, unknown>): boolean {
-    if (!this.socket) {
+    if (!this.socket || !this.socket.connected) {
       return false;
     }
 

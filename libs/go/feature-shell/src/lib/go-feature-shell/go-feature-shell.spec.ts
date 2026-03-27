@@ -2,9 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService, ConfirmationService } from 'primeng/api';
 import { RoomSnapshot } from '@gx/go/contracts';
-import { GameSessionStore, GoI18nService } from '@gx/go/state';
+import { GoI18nService } from '@gx/go/state/i18n';
+import { GameSessionStore } from '@gx/go/state/session';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyService } from '../online/online-lobby.service';
@@ -17,8 +17,6 @@ describe('goFeatureShellRoutes', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(goFeatureShellRoutes),
-        MessageService,
-        ConfirmationService,
         {
           provide: OnlineLobbyService,
           useValue: {

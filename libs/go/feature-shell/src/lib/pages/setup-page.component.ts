@@ -10,23 +10,14 @@ import {
   isGameMode,
   type GoBoardSize,
 } from '@gx/go/domain';
-import { GameSessionStore, GoI18nService } from '@gx/go/state';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { GoI18nService } from '@gx/go/state/i18n';
+import { GameSessionStore } from '@gx/go/state/session';
 import { map } from 'rxjs';
 
 @Component({
   selector: 'lib-go-setup-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    CardModule,
-    InputTextModule,
-    SelectButtonModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     @if (meta()) {
       <section class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10 sm:px-6 lg:px-8">
@@ -39,23 +30,21 @@ import { map } from 'rxjs';
         </a>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <p-card styleClass="rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10">
-            <ng-template pTemplate="header">
-              <div class="border-b border-stone-200/80 bg-[linear-gradient(135deg,_rgba(254,249,240,0.98),_rgba(255,255,255,0.92))] px-6 py-6">
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
-                  {{ i18n.t('setup.match_setup') }}
-                </p>
-                <h1 class="mt-2 text-3xl font-semibold text-stone-950">
-                  {{ meta()!.title }}
-                </h1>
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-                  {{ meta()!.setupHint }}
-                </p>
-              </div>
-            </ng-template>
+          <section class="overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10">
+            <div class="border-b border-stone-200/80 bg-[linear-gradient(135deg,_rgba(254,249,240,0.98),_rgba(255,255,255,0.92))] px-6 py-6">
+              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+                {{ i18n.t('setup.match_setup') }}
+              </p>
+              <h1 class="mt-2 text-3xl font-semibold text-stone-950">
+                {{ meta()!.title }}
+              </h1>
+              <p class="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
+                {{ meta()!.setupHint }}
+              </p>
+            </div>
 
             <form
-              class="space-y-6 px-1 pb-2 pt-1"
+              class="space-y-6 px-6 py-6"
               data-testid="setup-form"
               [formGroup]="form"
               (ngSubmit)="startMatch()"
@@ -63,12 +52,18 @@ import { map } from 'rxjs';
               <div class="grid gap-4 sm:grid-cols-2">
                 <label class="space-y-2 text-sm font-medium text-stone-700">
                   <span>{{ i18n.t('setup.black_player') }}</span>
-                  <input pInputText formControlName="blackName" class="w-full" />
+                  <input
+                    formControlName="blackName"
+                    class="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400 focus:bg-white"
+                  />
                 </label>
 
                 <label class="space-y-2 text-sm font-medium text-stone-700">
                   <span>{{ i18n.t('setup.white_player') }}</span>
-                  <input pInputText formControlName="whiteName" class="w-full" />
+                  <input
+                    formControlName="whiteName"
+                    class="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-stone-400 focus:bg-white"
+                  />
                 </label>
               </div>
 
@@ -77,12 +72,24 @@ import { map } from 'rxjs';
                   <p class="text-sm font-medium text-stone-700">
                     {{ i18n.t('setup.board_size') }}
                   </p>
-                  <p-selectbutton
-                    [options]="boardSizeOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    formControlName="boardSize"
-                  />
+                  <div class="flex flex-wrap gap-3">
+                    @for (option of boardSizeOptions; track option.value) {
+                      <button
+                        type="button"
+                        class="rounded-full border px-4 py-2 text-sm font-semibold transition"
+                        [class.border-stone-950]="form.controls.boardSize.value === option.value"
+                        [class.bg-stone-950]="form.controls.boardSize.value === option.value"
+                        [class.text-stone-50]="form.controls.boardSize.value === option.value"
+                        [class.border-stone-200]="form.controls.boardSize.value !== option.value"
+                        [class.bg-white]="form.controls.boardSize.value !== option.value"
+                        [class.text-stone-700]="form.controls.boardSize.value !== option.value"
+                        [class.hover:border-stone-400]="form.controls.boardSize.value !== option.value"
+                        (click)="form.controls.boardSize.setValue(option.value)"
+                      >
+                        {{ option.label }}
+                      </button>
+                    }
+                  </div>
                   <p class="text-sm text-stone-500">
                     {{ i18n.t('setup.go_komi_note', { komi: DEFAULT_GO_KOMI }) }}
                   </p>
@@ -104,19 +111,17 @@ import { map } from 'rxjs';
                 {{ i18n.t('setup.start_local_match') }}
               </button>
             </form>
-          </p-card>
+          </section>
 
-          <p-card styleClass="rounded-[1.75rem] border border-white/10 bg-slate-950/85 text-stone-50 shadow-2xl shadow-slate-950/30">
-            <ng-template pTemplate="header">
-              <div class="border-b border-white/10 px-6 py-6">
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/60">
-                  {{ i18n.t('setup.rules_refresher') }}
-                </p>
-                <h2 class="mt-2 text-2xl font-semibold">{{ meta()!.strapline }}</h2>
-              </div>
-            </ng-template>
+          <section class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/85 text-stone-50 shadow-2xl shadow-slate-950/30">
+            <div class="border-b border-white/10 px-6 py-6">
+              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/60">
+                {{ i18n.t('setup.rules_refresher') }}
+              </p>
+              <h2 class="mt-2 text-2xl font-semibold">{{ meta()!.strapline }}</h2>
+            </div>
 
-            <div class="space-y-4 px-1 pb-2 pt-1 text-sm leading-6 text-stone-300">
+            <div class="space-y-4 px-6 py-6 text-sm leading-6 text-stone-300">
               <p>{{ meta()!.description }}</p>
               <ul class="space-y-3">
                 @for (fact of meta()!.help; track fact) {
@@ -127,7 +132,7 @@ import { map } from 'rxjs';
                 }
               </ul>
             </div>
-          </p-card>
+          </section>
         </div>
       </section>
     }

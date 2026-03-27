@@ -36,6 +36,17 @@ describe('RoomsLifecycleService', () => {
     ).toBe('Guest Renamed');
   });
 
+  it('suffixes duplicate display names for different participants', () => {
+    const host = lifecycle.createRoom('Host', 'create:test');
+    const guest = lifecycle.joinRoom(host.roomId, 'Host', undefined, 'join:test');
+
+    expect(
+      guest.snapshot.participants.find(
+        participant => participant.participantId === guest.participantId
+      )?.displayName
+    ).toBe('Host (2)');
+  });
+
   it('tracks socket presence across connect and disconnect', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
 
