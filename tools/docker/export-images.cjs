@@ -7,11 +7,11 @@ const outputDirectory = path.join(workspaceRoot, 'dist', 'docker');
 
 const images = [
   {
-    tag: 'gx-go-web:local',
+    tag: 'gx-go-web:latest',
     filename: 'gx-go-web.tar',
   },
   {
-    tag: 'gx-go-server:local',
+    tag: 'gx-go-server:latest',
     filename: 'gx-go-server.tar',
   },
 ];
