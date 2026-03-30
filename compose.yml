@@ -1,5 +1,6 @@
 services:
   api:
+    image: gx-go-server:local
     build:
       context: .
       dockerfile: apps/go-server/Dockerfile
@@ -21,6 +22,7 @@ services:
     restart: unless-stopped
 
   web:
+    image: gx-go-web:local
     build:
       context: .
       dockerfile: apps/go-web/Dockerfile

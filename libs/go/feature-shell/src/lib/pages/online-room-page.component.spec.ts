@@ -167,6 +167,99 @@ describe('OnlineRoomPageComponent', () => {
     expect(text).toContain(i18n.t('room.join.description.spectator'));
   });
 
+  it('renders chat, participants, and move log as separate room panels', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null)
+            ),
+            phase: 'playing',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [
+              {
+                id: 'move-1',
+                moveNumber: 1,
+                player: 'black',
+                command: {
+                  type: 'place',
+                  point: { x: 7, y: 7 },
+                },
+                notation: 'H8',
+                boardHashAfterMove: 'hash-1',
+                phaseAfterMove: 'playing',
+                capturedPoints: [],
+                capturesAfterMove: {
+                  black: 0,
+                  white: 0,
+                },
+              },
+            ],
+            previousBoardHashes: [],
+            result: null,
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.state.next_turn', {
+              player: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'guest-1',
+      participantToken: 'token-guest',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="room-chat-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-participants-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-move-log-panel"]')).not.toBeNull();
+  });
+
   it('warns joined viewers when realtime is disconnected and disables seat claims', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({

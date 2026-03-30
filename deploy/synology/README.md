@@ -14,6 +14,24 @@ Synology's reverse proxy is responsible for the public hostname and HTTPS. The c
 - The NAS has enough CPU and memory to build the Angular and Nest images locally
 - Synology reverse proxy is available if you want public HTTPS
 
+## Local build and export workflow
+
+From the repo root on your development machine:
+
+```bash
+pnpm docker:build
+pnpm docker:export
+```
+
+That workflow:
+
+- builds `gx-go-web:local`
+- builds `gx-go-server:local`
+- exports `dist/docker/gx-go-web.tar`
+- exports `dist/docker/gx-go-server.tar`
+
+Import those tarballs into Synology Container Manager when you want to move prebuilt images onto the NAS.
+
 ## Files involved
 
 - Root Compose stack: `compose.yml`
@@ -26,7 +44,7 @@ Synology's reverse proxy is responsible for the public hostname and HTTPS. The c
 From the repo root on the NAS:
 
 ```bash
-docker compose up -d --build
+pnpm docker:up
 ```
 
 That command:
@@ -39,13 +57,13 @@ That command:
 To stop the stack:
 
 ```bash
-docker compose down
+pnpm docker:down
 ```
 
 To rebuild after code changes:
 
 ```bash
-docker compose up -d --build
+pnpm docker:up
 ```
 
 ## Local verification on the NAS

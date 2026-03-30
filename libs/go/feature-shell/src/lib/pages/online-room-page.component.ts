@@ -11,6 +11,7 @@ import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { OnlineRoomService } from '../online/online-room.service';
 import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';
 import { OnlineRoomHeroComponent } from './online-room-hero.component';
+import { OnlineRoomMoveLogPanelComponent } from './online-room-move-log-panel.component';
 import { HostedShellHeaderComponent } from './hosted-shell-header.component';
 import {
   OnlineRoomSeatViewModel,
@@ -30,6 +31,7 @@ import { OnlineRoomParticipantsPanelComponent } from './online-room-participants
     OnlineRoomHeroComponent,
     OnlineRoomParticipantsPanelComponent,
     OnlineRoomChatPanelComponent,
+    OnlineRoomMoveLogPanelComponent,
   ],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',

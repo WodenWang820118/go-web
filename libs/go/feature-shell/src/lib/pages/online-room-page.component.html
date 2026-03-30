@@ -57,7 +57,7 @@
         </p>
         <a
           routerLink="/"
-          class="mt-6 inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
+          class="mt-6 inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-stone-950/20 ring-1 ring-stone-950/10 transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
         >
           {{ i18n.t('room.page.missing.action') }}
         </a>
@@ -66,8 +66,8 @@
 
     @default {
       @if (snapshot()) {
-        <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
-          <div class="space-y-6">
+        <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
+          <div class="min-w-0">
             @if (match()) {
               <section class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-4 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6">
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -117,40 +117,7 @@
             }
           </div>
 
-          <aside class="flex min-h-0 flex-col gap-4 rounded-[1.75rem] border border-white/10 bg-slate-950/85 p-5 text-stone-100 shadow-2xl shadow-slate-950/35">
-            <lib-go-online-room-participants-panel
-              [joinForm]="joinForm"
-              [startForm]="startForm"
-              [boardSizeOptions]="boardSizeOptions()"
-              [participantId]="onlineRoom.participantId()"
-              [joining]="onlineRoom.joining()"
-              [viewer]="viewer()"
-              [viewerSeat]="onlineRoom.viewerSeat()"
-              [isHost]="onlineRoom.isHost()"
-              [realtimeConnected]="realtimeConnected()"
-              [canChangeSeats]="onlineRoom.canChangeSeats()"
-              [canStartMatch]="canStartMatch()"
-              [canPass]="canPass()"
-              [canResign]="canResign()"
-              [canFinalizeScoring]="canFinalizeScoring()"
-              [joinCardTitle]="joinCardTitle()"
-              [joinCardDescription]="joinCardDescription()"
-              [participants]="participants()"
-              [seats]="seats()"
-              [match]="match()"
-              [moveHistory]="recentMoves()"
-              (joinRequested)="joinRoom()"
-              (claimSeatRequested)="claimSeat($event)"
-              (releaseSeatRequested)="releaseSeat()"
-              (startMatchRequested)="startMatch()"
-              (passRequested)="passTurn()"
-              (resignRequested)="resign()"
-              (finalizeScoringRequested)="finalizeScoring()"
-              (muteParticipantRequested)="muteParticipant($event)"
-              (unmuteParticipantRequested)="unmuteParticipant($event)"
-              (kickParticipantRequested)="kickParticipant($event)"
-            />
-
+          <div class="xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-3rem)]">
             <lib-go-online-room-chat-panel
               [chatForm]="chatForm"
               [participantId]="onlineRoom.participantId()"
@@ -160,7 +127,43 @@
               [helperText]="chatHelperText()"
               (sendRequested)="sendChat()"
             />
-          </aside>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <lib-go-online-room-participants-panel
+            [joinForm]="joinForm"
+            [startForm]="startForm"
+            [boardSizeOptions]="boardSizeOptions()"
+            [participantId]="onlineRoom.participantId()"
+            [joining]="onlineRoom.joining()"
+            [viewer]="viewer()"
+            [viewerSeat]="onlineRoom.viewerSeat()"
+            [isHost]="onlineRoom.isHost()"
+            [realtimeConnected]="realtimeConnected()"
+            [canChangeSeats]="onlineRoom.canChangeSeats()"
+            [canStartMatch]="canStartMatch()"
+            [canPass]="canPass()"
+            [canResign]="canResign()"
+            [canFinalizeScoring]="canFinalizeScoring()"
+            [joinCardTitle]="joinCardTitle()"
+            [joinCardDescription]="joinCardDescription()"
+            [participants]="participants()"
+            [seats]="seats()"
+            [match]="match()"
+            (joinRequested)="joinRoom()"
+            (claimSeatRequested)="claimSeat($event)"
+            (releaseSeatRequested)="releaseSeat()"
+            (startMatchRequested)="startMatch()"
+            (passRequested)="passTurn()"
+            (resignRequested)="resign()"
+            (finalizeScoringRequested)="finalizeScoring()"
+            (muteParticipantRequested)="muteParticipant($event)"
+            (unmuteParticipantRequested)="unmuteParticipant($event)"
+            (kickParticipantRequested)="kickParticipant($event)"
+          />
+
+          <lib-go-online-room-move-log-panel [moveHistory]="recentMoves()" />
         </div>
       }
     }

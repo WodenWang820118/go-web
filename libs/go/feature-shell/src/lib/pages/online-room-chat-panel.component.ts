@@ -16,36 +16,54 @@ import { GoI18nService } from '@gx/go/state/i18n';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <section class="flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
+    <section
+      data-testid="room-chat-panel"
+      class="flex h-full min-h-[22rem] flex-col rounded-[1.5rem] border border-white/10 bg-white/5 p-4"
+    >
+      <p
+        class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400"
+      >
         {{ i18n.t('room.chat.title') }}
       </p>
 
       <div class="chat-feed mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
         @if (messages().length > 0) {
           @for (message of messages(); track message.id) {
-            <article class="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+            <article
+              class="rounded-2xl border border-white/10 bg-white/8 px-4 py-3"
+            >
               <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-stone-50">
+                <p class="text-sm font-semibold text-black">
                   {{ message.displayName }}
                 </p>
-                <p class="text-[0.7rem] uppercase tracking-[0.16em] text-stone-500">
-                  {{ message.sentAt | date: 'shortTime' : undefined : i18n.locale() }}
+                <p
+                  class="text-[0.7rem] uppercase tracking-[0.16em] text-stone-400"
+                >
+                  {{
+                    message.sentAt
+                      | date: 'shortTime' : undefined : i18n.locale()
+                  }}
                 </p>
               </div>
-              <p class="mt-2 text-sm leading-6 text-stone-300">
+              <p class="mt-2 text-sm leading-6 text-black">
                 {{ message.message }}
               </p>
             </article>
           }
         } @else {
-          <p class="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
+          <p
+            class="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400"
+          >
             {{ i18n.t('room.chat.empty') }}
           </p>
         }
       </div>
 
-      <form class="mt-4 space-y-3" [formGroup]="chatForm()" (ngSubmit)="sendRequested.emit()">
+      <form
+        class="mt-4 space-y-3"
+        [formGroup]="chatForm()"
+        (ngSubmit)="sendRequested.emit()"
+      >
         <label
           [for]="chatMessageInputId"
           class="block text-xs font-semibold uppercase tracking-[0.24em] text-stone-400"
@@ -79,6 +97,11 @@ import { GoI18nService } from '@gx/go/state/i18n';
       </form>
     </section>
   `,
+  styles: `
+    .chat-feed {
+      scrollbar-gutter: stable;
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomChatPanelComponent {
@@ -94,7 +117,7 @@ export class OnlineRoomChatPanelComponent {
 
   protected readonly chatMessageInputId = 'room-chat-message';
   protected readonly canSend = computed(
-    () => !!this.participantId() && !this.isMuted() && this.realtimeConnected()
+    () => !!this.participantId() && !this.isMuted() && this.realtimeConnected(),
   );
 
   protected onMessageKeydown(event: KeyboardEvent): void {

@@ -51,6 +51,17 @@ pnpm nx run go-server:build
 pnpm nx graph
 ```
 
+Docker workflow:
+
+```bash
+pnpm docker:build
+pnpm docker:export
+pnpm docker:up
+pnpm docker:down
+```
+
+`pnpm docker:export` writes Synology-ready image tarballs to `dist/docker/gx-go-web.tar` and `dist/docker/gx-go-server.tar`.
+
 ## Go frontend architecture
 
 - `apps/go-web` provides `GO_SERVER_ORIGIN` at the composition root and lazy-loads `@gx/go/feature-shell`
@@ -67,6 +78,13 @@ Current Go routes:
 - `/online/room/:roomId`
 - `/setup/:mode`
 - `/play/:mode`
+
+## Docker deployment
+
+- `go-web:docker:build` builds the frontend image as `gx-go-web:local`
+- `go-server:docker:build` builds the backend image as `gx-go-server:local`
+- `compose.yml` uses the same image names for local compose runs and exported tarballs
+- Synology deployment notes live in `deploy/synology/README.md`
 
 ## Windows hosting
 

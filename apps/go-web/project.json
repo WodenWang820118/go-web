@@ -89,6 +89,13 @@
         "staticFilePath": "dist/apps/go-web/browser",
         "spa": true
       }
+    },
+    "docker:build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "docker build -f apps/go-web/Dockerfile --tag gx-go-web:local ."
+      }
     }
   }
 }

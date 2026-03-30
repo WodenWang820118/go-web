@@ -6,25 +6,37 @@ import { buildCoordinateLabels, BoardSize } from '@gx/go/domain';
   standalone: true,
   template: `
     <div class="pointer-events-none absolute inset-0">
-      <div class="absolute left-10 right-10 top-2 flex justify-between px-6 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-stone-700/80">
+      <div
+        data-testid="board-coordinates-top"
+        class="absolute left-8 right-8 top-2 hidden justify-between px-4 text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-stone-700/75 sm:flex sm:left-10 sm:right-10 sm:px-6 sm:text-[0.65rem] sm:tracking-[0.3em]"
+      >
         @for (label of labels(); track label) {
           <span>{{ label }}</span>
         }
       </div>
 
-      <div class="absolute bottom-2 left-10 right-10 flex justify-between px-6 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-stone-700/80">
+      <div
+        data-testid="board-coordinates-bottom"
+        class="absolute bottom-2 left-8 right-8 flex justify-between px-4 text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-stone-700/75 sm:left-10 sm:right-10 sm:px-6 sm:text-[0.65rem] sm:tracking-[0.3em]"
+      >
         @for (label of labels(); track label) {
           <span>{{ label }}</span>
         }
       </div>
 
-      <div class="absolute bottom-10 left-2 top-10 flex flex-col justify-between py-6 text-[0.65rem] font-semibold tracking-[0.3em] text-stone-700/80">
+      <div
+        data-testid="board-coordinates-left"
+        class="absolute bottom-8 left-2 top-8 flex flex-col justify-between py-4 text-[0.55rem] font-semibold tracking-[0.12em] text-stone-700/75 sm:bottom-10 sm:top-10 sm:py-6 sm:text-[0.65rem] sm:tracking-[0.3em]"
+      >
         @for (label of rows(); track label) {
           <span>{{ label }}</span>
         }
       </div>
 
-      <div class="absolute bottom-10 right-2 top-10 flex flex-col justify-between py-6 text-[0.65rem] font-semibold tracking-[0.3em] text-stone-700/80">
+      <div
+        data-testid="board-coordinates-right"
+        class="absolute bottom-8 right-2 top-8 hidden flex-col justify-between py-4 text-[0.55rem] font-semibold tracking-[0.12em] text-stone-700/75 sm:flex sm:bottom-10 sm:top-10 sm:py-6 sm:text-[0.65rem] sm:tracking-[0.3em]"
+      >
         @for (label of rows(); track label) {
           <span>{{ label }}</span>
         }

@@ -63,6 +63,9 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
     await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
+    await expect(spectatorPage.getByTestId('room-chat-panel')).toBeVisible();
+    await expect(spectatorPage.getByTestId('room-participants-panel')).toBeVisible();
+    await expect(spectatorPage.getByTestId('room-move-log-panel')).toBeVisible();
     await expect(spectatorPage.getByTestId('claim-black')).toHaveCount(0);
     await expect(spectatorPage.getByTestId('claim-white')).toHaveCount(0);
 
@@ -76,6 +79,20 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
 
     await expect(page.getByText('Watching live')).toBeVisible();
     await expect(guestPage.getByText('Watching live')).toBeVisible();
+
+    await spectatorPage.setViewportSize({ width: 390, height: 844 });
+
+    const boardBox = await spectatorPage.getByTestId('game-board').boundingBox();
+    const chatBox = await spectatorPage.getByTestId('room-chat-panel').boundingBox();
+
+    expect(boardBox).not.toBeNull();
+    expect(chatBox).not.toBeNull();
+    expect(chatBox!.y).toBeGreaterThanOrEqual(boardBox!.y + boardBox!.height - 1);
+
+    await expect(spectatorPage.getByTestId('board-coordinates-top')).not.toBeVisible();
+    await expect(spectatorPage.getByTestId('board-coordinates-right')).not.toBeVisible();
+    await expect(spectatorPage.getByTestId('board-coordinates-bottom')).toBeVisible();
+    await expect(spectatorPage.getByTestId('board-coordinates-left')).toBeVisible();
   } finally {
     await guestContext.close();
     await spectatorContext.close();

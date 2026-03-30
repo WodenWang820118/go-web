@@ -91,11 +91,10 @@
       }
     },
     "docker:build": {
-      "dependsOn": ["build", "prune"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "docker build -f apps/go-server/Dockerfile --tag apps-go-server ."
+        "command": "docker build -f apps/go-server/Dockerfile --tag gx-go-server:local ."
       }
     },
     "docker:run": {
@@ -103,7 +102,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "docker run {args} apps-go-server"
+        "command": "docker run {args} gx-go-server:local"
       }
     }
   }
