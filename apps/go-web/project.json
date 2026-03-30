@@ -4,21 +4,15 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/go-web/src",
-  "tags": [
-    "scope:go"
-  ],
+  "tags": ["scope:go"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/go-web",
         "browser": "apps/go-web/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/go-web/tsconfig.app.json",
         "assets": [
           {
@@ -26,9 +20,7 @@
             "input": "apps/go-web/public"
           }
         ],
-        "styles": [
-          "apps/go-web/src/styles.css"
-        ]
+        "styles": ["apps/go-web/src/styles.css"]
       },
       "configurations": {
         "production": {
@@ -66,9 +58,7 @@
         }
       },
       "defaultConfiguration": "development",
-      "dependsOn": [
-        "go-server:serve"
-      ],
+      "dependsOn": ["go-server:serve"],
       "options": {
         "proxyConfig": "apps/go-web/proxy.conf.json"
       }
@@ -94,7 +84,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "docker build -f apps/go-web/Dockerfile --tag gx-go-web:local ."
+        "command": "docker build -f apps/go-web/Dockerfile --tag gx-go-web:latest ."
       }
     }
   }

@@ -94,7 +94,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "docker build -f apps/go-server/Dockerfile --tag gx-go-server:local ."
+        "command": "docker build -f apps/go-server/Dockerfile --tag gx-go-server:latest ."
       }
     },
     "docker:run": {
@@ -102,7 +102,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "docker run {args} gx-go-server:local"
+        "command": "docker run {args} gx-go-server:latest"
       }
     }
   }
