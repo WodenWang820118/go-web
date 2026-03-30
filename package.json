@@ -7,14 +7,7 @@
     "docker:build": "pnpm nx run-many -t docker:build -p go-web,go-server",
     "docker:export": "pnpm docker:build && node tools/docker/export-images.cjs",
     "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down",
-    "deploy:windows:install": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\install-services.ps1",
-    "deploy:windows:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\restart-services.ps1",
-    "deploy:windows:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\deploy\\windows\\uninstall-services.ps1",
-    "deploy:windows:tunnel": "lt --port 80 --local-host 127.0.0.1",
-    "deploy:windows:localhost-run": "ssh -o ServerAliveInterval=60 -R 80:127.0.0.1:80 nokey@localhost.run",
-    "deploy:windows:install-and-tunnel": "pnpm deploy:windows:install && pnpm deploy:windows:tunnel",
-    "deploy:windows:install-and-localhost-run": "pnpm deploy:windows:install && pnpm deploy:windows:localhost-run"
+    "docker:down": "docker compose down"
   },
   "private": true,
   "dependencies": {
