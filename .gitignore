@@ -47,6 +47,16 @@ Thumbs.db
 .claude
 .playwright-mcp
 
+# Local secrets and machine-specific credentials
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.jks
+
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
