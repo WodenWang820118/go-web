@@ -62,9 +62,6 @@ vitest.config.*.timestamp*
 
 __screenshots__/
 
-# Windows service runtime logs
-deploy/windows/*.log
-
 # Project logs
 serve.log
 changes.log

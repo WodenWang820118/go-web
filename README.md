@@ -51,7 +51,9 @@ pnpm nx run go-server:build
 pnpm nx graph
 ```
 
-Docker workflow:
+## Docker + Synology deployment
+
+Use the Docker workflow below as the primary deployment path:
 
 ```bash
 pnpm docker:build
@@ -60,7 +62,12 @@ pnpm docker:up
 pnpm docker:down
 ```
 
-`pnpm docker:export` writes Synology-ready image tarballs to `dist/docker/gx-go-web.tar` and `dist/docker/gx-go-server.tar`.
+- `pnpm docker:build` runs the Nx `docker:build` targets and tags the images as `gx-go-web:latest` and `gx-go-server:latest`
+- `pnpm docker:export` writes Synology-ready image tarballs to `dist/docker/gx-go-web.tar` and `dist/docker/gx-go-server.tar`
+- `pnpm docker:up` starts the `compose.yml` stack and publishes the web container on port `8080`
+- `pnpm docker:down` stops the Compose stack
+
+The supported Synology deployment guide lives in [deploy/synology/README.md](deploy/synology/README.md).
 
 ## Go frontend architecture
 
@@ -78,26 +85,3 @@ Current Go routes:
 - `/online/room/:roomId`
 - `/setup/:mode`
 - `/play/:mode`
-
-## Docker deployment
-
-- `go-web:docker:build` builds the frontend image as `gx-go-web:local`
-- `go-server:docker:build` builds the backend image as `gx-go-server:local`
-- `compose.yml` uses the same image names for local compose runs and exported tarballs
-- Synology deployment notes live in `deploy/synology/README.md`
-
-## Windows hosting
-
-Windows laptop deployment notes live in [deploy/windows/README.md](deploy/windows/README.md). From the repo root, the main commands are:
-
-```bash
-pnpm deploy:windows:install
-pnpm deploy:windows:restart
-pnpm deploy:windows:uninstall
-pnpm deploy:windows:tunnel
-pnpm deploy:windows:localhost-run
-pnpm deploy:windows:install-and-tunnel
-pnpm deploy:windows:install-and-localhost-run
-```
-
-That document covers the WinSW services, Caddy, and the public tunnel options.

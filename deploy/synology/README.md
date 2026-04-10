@@ -25,8 +25,8 @@ pnpm docker:export
 
 That workflow:
 
-- builds `gx-go-web:local`
-- builds `gx-go-server:local`
+- builds `gx-go-web:latest`
+- builds `gx-go-server:latest`
 - exports `dist/docker/gx-go-web.tar`
 - exports `dist/docker/gx-go-server.tar`
 
