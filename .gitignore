@@ -65,3 +65,4 @@ __screenshots__/
 # Project logs
 serve.log
 changes.log
+*.log
