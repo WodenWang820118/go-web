@@ -3,7 +3,7 @@ import {
   LobbyRoomSummary,
   RoomSnapshot,
 } from '@gx/go/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { RoomsStore } from './rooms.store';
 import { ParticipantRecord, RoomRecord } from './rooms.types';
 
@@ -12,7 +12,7 @@ import { ParticipantRecord, RoomRecord } from './rooms.types';
  */
 @Injectable()
 export class RoomsSnapshotMapper {
-  constructor(private readonly store: RoomsStore = new RoomsStore()) {}
+  constructor(@Inject(RoomsStore) private readonly store: RoomsStore) {}
 
   toSnapshot(room: RoomRecord): RoomSnapshot {
     const participants = [...room.participants.values()]

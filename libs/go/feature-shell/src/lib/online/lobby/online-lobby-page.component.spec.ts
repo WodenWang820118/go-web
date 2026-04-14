@@ -8,7 +8,7 @@ import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyPageComponent } from './online-lobby-page.component';
 import { OnlineLobbyService } from './online-lobby.service';
-import { OnlineRoomService } from '../room/online-room.service';
+import { OnlineRoomService } from '../room/services/online-room.service';
 
 @Component({
   standalone: true,

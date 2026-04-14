@@ -15,7 +15,7 @@ import type {
 } from '@gx/go/contracts';
 import type { Request } from 'express';
 import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
-import { RoomsService } from './rooms.service';
+import { RoomsService } from './services/rooms.service';
 
 /**
  * Exposes the hosted room REST API used by the Angular frontend.

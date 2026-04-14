@@ -1,12 +1,19 @@
 import { BadRequestException, ForbiddenException, HttpException } from '@nestjs/common';
 import { vi } from 'vitest';
+import { RoomsChatService } from './rooms-chat.service';
+import { RoomsLifecycleService } from './rooms-lifecycle.service';
+import { RoomsMatchService } from './rooms-match.service';
+import { RoomsModerationService } from './rooms-moderation.service';
+import { RoomsRulesEngineService } from './rooms-rules-engine.service';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
 import { RoomsService } from './rooms.service';
 
 describe('RoomsService', () => {
   let service: RoomsService;
 
   beforeEach(() => {
-    service = new RoomsService();
+    service = createRoomsService();
   });
 
   afterEach(() => {
@@ -99,7 +106,7 @@ describe('RoomsService', () => {
   it('lists live, ready, and waiting rooms for the public lobby', () => {
     vi.useFakeTimers();
 
-    const lobbyService = new RoomsService();
+    const lobbyService = createRoomsService();
 
     try {
       vi.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
@@ -315,4 +322,16 @@ function finishHostedGomokuMatch(
       point: move.point,
     });
   }
+}
+
+function createRoomsService(): RoomsService {
+  const store = new RoomsStore();
+  const snapshotMapper = new RoomsSnapshotMapper(store);
+  const rulesEngines = new RoomsRulesEngineService();
+  const lifecycle = new RoomsLifecycleService(store, snapshotMapper);
+  const match = new RoomsMatchService(store, snapshotMapper, rulesEngines);
+  const chat = new RoomsChatService(store, snapshotMapper);
+  const moderation = new RoomsModerationService(store, snapshotMapper);
+
+  return new RoomsService(lifecycle, match, chat, moderation);
 }

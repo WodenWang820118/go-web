@@ -2,6 +2,7 @@ export * from './lib/session/game-session.types';
 export * from './lib/session/game-session.port';
 export * from './lib/session/local-game-session.adapter';
 export * from './lib/session/game-session.store';
+export * from './lib/session/services/game-rules-engine.service';
 export * from './lib/guards/active-match.guard';
 export * from './lib/server-origin/go-server-origin.token';
 export * from './lib/i18n/go-i18n.catalog';

@@ -7,48 +7,28 @@ import {
   ListRoomsResponse,
   RoomSnapshot,
 } from '@gx/go/contracts';
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PlayerColor } from '@gx/go/domain';
 import { RoomsChatService } from './rooms-chat.service';
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
 import { RoomsMatchService } from './rooms-match.service';
 import { RoomsModerationService } from './rooms-moderation.service';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
 
 /**
  * Public facade for hosted room operations used by the REST and websocket layers.
  */
 @Injectable()
 export class RoomsService implements OnModuleDestroy {
-  private readonly lifecycle: RoomsLifecycleService;
-  private readonly match: RoomsMatchService;
-  private readonly chat: RoomsChatService;
-  private readonly moderation: RoomsModerationService;
-
   constructor(
-    lifecycle?: RoomsLifecycleService,
-    match?: RoomsMatchService,
-    chat?: RoomsChatService,
-    moderation?: RoomsModerationService,
-    store?: RoomsStore,
-    snapshotMapper?: RoomsSnapshotMapper
-  ) {
-    const resolvedStore = store ?? new RoomsStore();
-    const resolvedSnapshotMapper =
-      snapshotMapper ?? new RoomsSnapshotMapper(resolvedStore);
-
-    this.lifecycle =
-      lifecycle ??
-      new RoomsLifecycleService(resolvedStore, resolvedSnapshotMapper);
-    this.match =
-      match ?? new RoomsMatchService(resolvedStore, resolvedSnapshotMapper);
-    this.chat =
-      chat ?? new RoomsChatService(resolvedStore, resolvedSnapshotMapper);
-    this.moderation =
-      moderation ??
-      new RoomsModerationService(resolvedStore, resolvedSnapshotMapper);
-  }
+    @Inject(RoomsLifecycleService)
+    private readonly lifecycle: RoomsLifecycleService,
+    @Inject(RoomsMatchService)
+    private readonly match: RoomsMatchService,
+    @Inject(RoomsChatService)
+    private readonly chat: RoomsChatService,
+    @Inject(RoomsModerationService)
+    private readonly moderation: RoomsModerationService
+  ) {}
 
   // #region Lifecycle
   createRoom(displayName: string, requesterKey: string): CreateRoomResponse {

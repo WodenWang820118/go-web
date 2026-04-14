@@ -2,23 +2,20 @@ import {
   CreateRoomResponse,
   RoomSnapshot,
 } from '@gx/go/contracts';
-import {
-  createStoredRoomIdentity,
-  normalizeRoomId,
-  resolveJoinDisplayName,
-  resolveResponseDisplayName,
-} from './online-room.service.helpers';
+import { OnlineRoomIdentityService } from './online-room-identity.service';
 
-describe('online-room.service.helpers', () => {
+describe('OnlineRoomIdentityService', () => {
+  const identity = new OnlineRoomIdentityService();
+
   it('normalizes room ids to uppercase', () => {
-    expect(normalizeRoomId('room42')).toBe('ROOM42');
+    expect(identity.normalizeRoomId('room42')).toBe('ROOM42');
   });
 
   it('keeps the current participant name when rejoining with a stored identity', () => {
     const snapshot = createSnapshot();
 
     expect(
-      resolveJoinDisplayName('Host', snapshot, {
+      identity.resolveJoinDisplayName('Host', snapshot, {
         displayName: 'Host',
         participantId: 'host-1',
         participantToken: 'token-1',
@@ -48,8 +45,8 @@ describe('online-room.service.helpers', () => {
       },
     };
 
-    expect(resolveResponseDisplayName('Guest', response)).toBe('Guest (2)');
-    expect(createStoredRoomIdentity('Guest (2)', response)).toEqual({
+    expect(identity.resolveResponseDisplayName('Guest', response)).toBe('Guest (2)');
+    expect(identity.createStoredRoomIdentity('Guest (2)', response)).toEqual({
       displayName: 'Guest (2)',
       participantId: 'guest-1',
       participantToken: 'token-2',

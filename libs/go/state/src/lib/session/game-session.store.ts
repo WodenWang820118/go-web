@@ -1,7 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   createMessage,
-  getRulesEngine,
   GoMessageDescriptor,
   type BoardPoint,
   type GameMode,
@@ -9,6 +8,7 @@ import {
   type PlayerColor,
 } from '@gx/go/domain';
 import { GAME_SESSION_PORT } from './game-session.port';
+import { GameRulesEngineService } from './services/game-rules-engine.service';
 import { cloneSnapshot, GameSessionSnapshot } from './game-session.types';
 
 type LocalMatchCommand =
@@ -30,6 +30,7 @@ type LocalMatchCommand =
 @Injectable({ providedIn: 'root' })
 export class GameSessionStore {
   private readonly port = inject(GAME_SESSION_PORT);
+  private readonly rulesEngines = inject(GameRulesEngineService);
   private readonly snapshotSignal = signal<GameSessionSnapshot | null>(this.port.read());
 
   readonly snapshot = this.snapshotSignal.asReadonly();
@@ -53,7 +54,7 @@ export class GameSessionStore {
   startMatch(settings: MatchSettings): GameSessionSnapshot {
     const snapshot = {
       settings,
-      state: getRulesEngine(settings.mode).createInitialState(settings),
+      state: this.rulesEngines.get(settings.mode).createInitialState(settings),
     };
 
     this.commit(snapshot);
@@ -91,7 +92,7 @@ export class GameSessionStore {
     }
 
     if (snapshot.settings.mode === 'go' && snapshot.state.phase === 'scoring') {
-      const engine = getRulesEngine('go');
+      const engine = this.rulesEngines.get('go');
       const nextState = engine.toggleDeadGroup?.(
         snapshot.state,
         snapshot.settings,
@@ -138,7 +139,7 @@ export class GameSessionStore {
       return createMessage('local.play.error.finalize_scoring_unavailable');
     }
 
-    const engine = getRulesEngine('go');
+    const engine = this.rulesEngines.get('go');
     const nextState = engine.finalizeScoring?.(snapshot.state, snapshot.settings);
 
     if (!nextState) {
@@ -160,7 +161,7 @@ export class GameSessionStore {
       return createMessage('local.play.error.start_before_move');
     }
 
-    const result = getRulesEngine(snapshot.settings.mode).applyMove(
+    const result = this.rulesEngines.get(snapshot.settings.mode).applyMove(
       snapshot.state,
       snapshot.settings,
       command

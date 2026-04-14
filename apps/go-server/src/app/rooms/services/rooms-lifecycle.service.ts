@@ -6,16 +6,16 @@ import {
   RoomSnapshot,
   createUniqueDisplayName,
 } from '@gx/go/contracts';
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import {
   CREATE_ATTEMPTS_PER_WINDOW,
   JOIN_ATTEMPTS_PER_WINDOW,
   MAX_DISPLAY_NAME_LENGTH,
   THROTTLE_WINDOW_MS,
-} from './rooms.constants';
-import { badRequestMessage, throttledMessage } from './rooms.errors';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
+} from '../rooms.constants';
+import { badRequestMessage, throttledMessage } from '../rooms.errors';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
 
 /**
  * Handles room creation, joining, presence sockets, and lifecycle cleanup.
@@ -25,10 +25,9 @@ export class RoomsLifecycleService implements OnModuleDestroy {
   private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
   constructor(
-    private readonly store: RoomsStore = new RoomsStore(),
-    private readonly snapshotMapper: RoomsSnapshotMapper = new RoomsSnapshotMapper(
-      store
-    )
+    @Inject(RoomsStore) private readonly store: RoomsStore,
+    @Inject(RoomsSnapshotMapper)
+    private readonly snapshotMapper: RoomsSnapshotMapper
   ) {
     this.cleanupTimer = setInterval(
       () => this.store.pruneExpiredRooms(),

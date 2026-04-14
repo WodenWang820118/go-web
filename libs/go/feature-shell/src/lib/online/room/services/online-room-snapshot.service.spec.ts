@@ -1,10 +1,9 @@
 import { RoomSnapshot } from '@gx/go/contracts';
-import {
-  applyChatMessage,
-  buildRoomShareUrl,
-} from './online-room-snapshot.utils';
+import { OnlineRoomSnapshotService } from './online-room-snapshot.service';
 
-describe('online-room-snapshot.utils', () => {
+describe('OnlineRoomSnapshotService', () => {
+  const snapshots = new OnlineRoomSnapshotService();
+
   it('caps the chat history to the latest 100 messages', () => {
     const snapshot = createSnapshot(
       Array.from({ length: 100 }, (_, index) => ({
@@ -17,7 +16,7 @@ describe('online-room-snapshot.utils', () => {
       }))
     );
 
-    const updated = applyChatMessage(snapshot, {
+    const updated = snapshots.applyChatMessage(snapshot, {
       roomId: 'ROOM42',
       message: {
         id: 'chat-100',
@@ -35,11 +34,11 @@ describe('online-room-snapshot.utils', () => {
   });
 
   it('builds a share url only when room id and origin are available', () => {
-    expect(buildRoomShareUrl('ROOM42', 'https://gx.go')).toBe(
+    expect(snapshots.buildRoomShareUrl('ROOM42', 'https://gx.go')).toBe(
       'https://gx.go/online/room/ROOM42'
     );
-    expect(buildRoomShareUrl(null, 'https://gx.go')).toBe('');
-    expect(buildRoomShareUrl('ROOM42', '')).toBe('');
+    expect(snapshots.buildRoomShareUrl(null, 'https://gx.go')).toBe('');
+    expect(snapshots.buildRoomShareUrl('ROOM42', '')).toBe('');
   });
 });
 

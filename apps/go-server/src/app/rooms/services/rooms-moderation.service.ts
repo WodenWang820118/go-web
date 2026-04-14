@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { roomMessage, badRequestMessage } from './rooms.errors';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
-import { KickResult, MutationResult } from './rooms.types';
+import { Inject, Injectable } from '@nestjs/common';
+import { roomMessage, badRequestMessage } from '../rooms.errors';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
+import { KickResult, MutationResult } from '../rooms.types';
 
 /**
  * Handles host-only moderation actions for hosted rooms.
@@ -10,10 +10,9 @@ import { KickResult, MutationResult } from './rooms.types';
 @Injectable()
 export class RoomsModerationService {
   constructor(
-    private readonly store: RoomsStore = new RoomsStore(),
-    private readonly snapshotMapper: RoomsSnapshotMapper = new RoomsSnapshotMapper(
-      store
-    )
+    @Inject(RoomsStore) private readonly store: RoomsStore,
+    @Inject(RoomsSnapshotMapper)
+    private readonly snapshotMapper: RoomsSnapshotMapper
   ) {}
 
   muteParticipant(

@@ -3,17 +3,16 @@ import { GomokuRulesEngine } from './engines/gomoku-rules-engine';
 import { RulesEngine } from './rules/rules-engine';
 import { GameMode } from './types';
 
-const GO_RULES_ENGINE = new GoRulesEngine();
-const GOMOKU_RULES_ENGINE = new GomokuRulesEngine();
-
-const RULES_ENGINES: Record<GameMode, RulesEngine> = {
-  go: GO_RULES_ENGINE,
-  gomoku: GOMOKU_RULES_ENGINE,
-};
-
 /**
- * Returns the singleton rules engine for a supported game mode.
+ * Framework-free registry for singleton rules engines.
  */
-export function getRulesEngine(mode: GameMode): RulesEngine {
-  return RULES_ENGINES[mode];
+export class RulesEngineRegistryService {
+  private readonly rulesEngines: Record<GameMode, RulesEngine> = {
+    go: new GoRulesEngine(),
+    gomoku: new GomokuRulesEngine(),
+  };
+
+  get(mode: GameMode): RulesEngine {
+    return this.rulesEngines[mode];
+  }
 }

@@ -28,12 +28,8 @@ import { OnlineRoomsHttpService } from './online-rooms-http.service';
 import {
   OnlineRoomStorageService,
 } from './online-room-storage.service';
-import {
-  applyChatMessage,
-  applyGameUpdated,
-  applyRoomPresence,
-  buildRoomShareUrl,
-} from './online-room-snapshot.utils';
+import { OnlineRoomIdentityService } from './online-room-identity.service';
+import { OnlineRoomSnapshotService } from './online-room-snapshot.service';
 import {
   selectCanChangeSeats,
   selectCanInteractBoard,
@@ -45,19 +41,13 @@ import {
   selectViewerIsHost,
   selectViewerIsMuted,
   selectViewerSeat,
-} from './online-room-selectors';
-import {
-  createStoredRoomIdentity,
-  normalizeRoomId,
-  resolveJoinDisplayName,
-  resolveResponseDisplayName,
-} from './online-room.service.helpers';
+} from '../online-room-selectors';
 import {
   BootstrapState,
   JOIN_ROOM_REQUIRED_MESSAGE,
   OnlineRoomRealtimeEvent,
   REALTIME_UNAVAILABLE_MESSAGE,
-} from './online-room.service.models';
+} from '../online-room.service.models';
 
 /**
  * Frontend facade for a single hosted multiplayer room.
@@ -68,6 +58,8 @@ export class OnlineRoomService {
   private readonly i18n = inject(GoI18nService);
   private readonly storage = inject(OnlineRoomStorageService);
   private readonly socket = inject(OnlineRoomSocketService);
+  private readonly identity = inject(OnlineRoomIdentityService);
+  private readonly snapshots = inject(OnlineRoomSnapshotService);
   private bootstrapSubscription: Subscription | null = null;
   private readonly browserOrigin =
     typeof window === 'undefined' ? '' : window.location.origin;
@@ -119,7 +111,7 @@ export class OnlineRoomService {
   );
   readonly canChangeSeats = computed(() => selectCanChangeSeats(this.match()));
   readonly shareUrl = computed(() =>
-    buildRoomShareUrl(this.activeRoomIdSignal(), this.browserOrigin)
+    this.snapshots.buildRoomShareUrl(this.activeRoomIdSignal(), this.browserOrigin)
   );
 
   constructor() {
@@ -130,7 +122,7 @@ export class OnlineRoomService {
    * Loads a hosted room and restores a saved participant identity when possible.
    */
   bootstrapRoom(roomId: string): void {
-    const normalizedRoomId = normalizeRoomId(roomId);
+    const normalizedRoomId = this.identity.normalizeRoomId(roomId);
 
     this.bootstrapSubscription?.unsubscribe();
     this.resetForRoom(normalizedRoomId);
@@ -211,9 +203,9 @@ export class OnlineRoomService {
       this.joiningSignal.set(true);
       this.lastErrorSignal.set(null);
 
-      const normalizedRoomId = normalizeRoomId(roomId);
+      const normalizedRoomId = this.identity.normalizeRoomId(roomId);
       const stored = this.storage.get(normalizedRoomId);
-      const resolvedDisplayName = resolveJoinDisplayName(
+      const resolvedDisplayName = this.identity.resolveJoinDisplayName(
         displayName,
         this.snapshotSignal(),
         stored
@@ -305,13 +297,13 @@ export class OnlineRoomService {
       this.snapshotSignal.set(cloneRoomSnapshot(snapshot));
     });
     this.socket.roomPresence$.subscribe(event => {
-      this.updateSnapshot(snapshot => applyRoomPresence(snapshot, event));
+      this.updateSnapshot(snapshot => this.snapshots.applyRoomPresence(snapshot, event));
     });
     this.socket.gameUpdated$.subscribe(event => {
-      this.updateSnapshot(snapshot => applyGameUpdated(snapshot, event));
+      this.updateSnapshot(snapshot => this.snapshots.applyGameUpdated(snapshot, event));
     });
     this.socket.chatMessage$.subscribe(event => {
-      this.updateSnapshot(snapshot => applyChatMessage(snapshot, event));
+      this.updateSnapshot(snapshot => this.snapshots.applyChatMessage(snapshot, event));
     });
     this.socket.notice$.subscribe(event => {
       this.lastNoticeSignal.set(this.i18n.translateMessage(event.notice.message));
@@ -326,19 +318,19 @@ export class OnlineRoomService {
     requestedDisplayName: string,
     response: CreateRoomResponse | JoinRoomResponse
   ): void {
-    const resolvedDisplayName = resolveResponseDisplayName(
+    const resolvedDisplayName = this.identity.resolveResponseDisplayName(
       requestedDisplayName,
       response
     );
 
-    this.activeRoomIdSignal.set(normalizeRoomId(roomId));
+    this.activeRoomIdSignal.set(this.identity.normalizeRoomId(roomId));
     this.snapshotSignal.set(cloneRoomSnapshot(response.snapshot));
     this.participantIdSignal.set(response.participantId);
     this.participantTokenSignal.set(response.participantToken);
     this.displayNameSignal.set(resolvedDisplayName);
     this.bootstrapStateSignal.set('ready');
 
-    const identity = createStoredRoomIdentity(resolvedDisplayName, response);
+    const identity = this.identity.createStoredRoomIdentity(resolvedDisplayName, response);
     this.storage.set(roomId, identity);
     this.socket.connect(roomId, response.participantToken);
   }

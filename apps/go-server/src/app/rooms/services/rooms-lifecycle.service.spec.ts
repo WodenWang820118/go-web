@@ -1,6 +1,6 @@
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
 
 describe('RoomsLifecycleService', () => {
   let lifecycle: RoomsLifecycleService;

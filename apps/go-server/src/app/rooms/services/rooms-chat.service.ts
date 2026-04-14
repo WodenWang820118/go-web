@@ -1,19 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ChatMessage } from '@gx/go/contracts';
 import {
   CHAT_MESSAGES_PER_WINDOW,
   CHAT_WINDOW_MS,
   MAX_CHAT_LENGTH,
   MAX_CHAT_MESSAGES,
-} from './rooms.constants';
+} from '../rooms.constants';
 import {
   badRequestMessage,
   forbiddenMessage,
   throttledMessage,
-} from './rooms.errors';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
-import { ChatResult } from './rooms.types';
+} from '../rooms.errors';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
+import { ChatResult } from '../rooms.types';
 
 /**
  * Handles chat validation, throttling, and message persistence.
@@ -21,10 +21,9 @@ import { ChatResult } from './rooms.types';
 @Injectable()
 export class RoomsChatService {
   constructor(
-    private readonly store: RoomsStore = new RoomsStore(),
-    private readonly snapshotMapper: RoomsSnapshotMapper = new RoomsSnapshotMapper(
-      store
-    )
+    @Inject(RoomsStore) private readonly store: RoomsStore,
+    @Inject(RoomsSnapshotMapper)
+    private readonly snapshotMapper: RoomsSnapshotMapper
   ) {}
 
   sendChatMessage(

@@ -10,18 +10,18 @@ import {
   GO_BOARD_SIZES,
   MatchSettings,
   PlayerColor,
-  getRulesEngine,
 } from '@gx/go/domain';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
   badRequestMessage,
   conflictMessage,
   forbiddenMessage,
   roomMessage,
-} from './rooms.errors';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
-import { MutationResult, RoomRecord } from './rooms.types';
+} from '../rooms.errors';
+import { RoomsRulesEngineService } from './rooms-rules-engine.service';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
+import { MutationResult, RoomRecord } from '../rooms.types';
 
 /**
  * Encapsulates seat management, hosted match defaults, and match state transitions.
@@ -29,10 +29,11 @@ import { MutationResult, RoomRecord } from './rooms.types';
 @Injectable()
 export class RoomsMatchService {
   constructor(
-    private readonly store: RoomsStore = new RoomsStore(),
-    private readonly snapshotMapper: RoomsSnapshotMapper = new RoomsSnapshotMapper(
-      store
-    )
+    @Inject(RoomsStore) private readonly store: RoomsStore,
+    @Inject(RoomsSnapshotMapper)
+    private readonly snapshotMapper: RoomsSnapshotMapper,
+    @Inject(RoomsRulesEngineService)
+    private readonly rulesEngines: RoomsRulesEngineService
   ) {}
 
   claimSeat(
@@ -212,7 +213,7 @@ export class RoomsMatchService {
         throw badRequestMessage('room.error.dead_group_toggle_unavailable');
       }
 
-      const nextState = getRulesEngine('go').toggleDeadGroup?.(
+      const nextState = this.rulesEngines.get('go').toggleDeadGroup?.(
         match.state,
         match.settings,
         command.point
@@ -235,7 +236,7 @@ export class RoomsMatchService {
         throw badRequestMessage('room.error.score_finalization_unavailable');
       }
 
-      const nextState = getRulesEngine('go').finalizeScoring?.(
+      const nextState = this.rulesEngines.get('go').finalizeScoring?.(
         match.state,
         match.settings
       );
@@ -268,7 +269,7 @@ export class RoomsMatchService {
             player: participant.seat,
           }
         : command;
-    const result = getRulesEngine(match.settings.mode).applyMove(
+    const result = this.rulesEngines.get(match.settings.mode).applyMove(
       match.state,
       match.settings,
       normalizedCommand
@@ -364,7 +365,7 @@ export class RoomsMatchService {
 
     room.match = {
       settings: matchSettings,
-      state: getRulesEngine(matchSettings.mode).createInitialState(matchSettings),
+      state: this.rulesEngines.get(matchSettings.mode).createInitialState(matchSettings),
       startedAt: this.store.timestamp(),
     };
     room.rematch = null;

@@ -24,7 +24,7 @@ import {
   OnlineRoomStageViewModel,
 } from './online-room-page.models';
 import { OnlineRoomParticipantsPanelComponent } from './online-room-participants-panel.component';
-import { OnlineRoomService } from './online-room.service';
+import { OnlineRoomService } from './services/online-room.service';
 
 interface OnlineRoomRematchStatusViewModel {
   color: PlayerColor;

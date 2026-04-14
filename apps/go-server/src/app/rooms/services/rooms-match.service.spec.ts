@@ -1,8 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
 import { RoomsMatchService } from './rooms-match.service';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
+import { RoomsRulesEngineService } from './rooms-rules-engine.service';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
 
 describe('RoomsMatchService', () => {
   let lifecycle: RoomsLifecycleService;
@@ -11,9 +12,10 @@ describe('RoomsMatchService', () => {
   beforeEach(() => {
     const store = new RoomsStore();
     const snapshotMapper = new RoomsSnapshotMapper(store);
+    const rulesEngines = new RoomsRulesEngineService();
 
     lifecycle = new RoomsLifecycleService(store, snapshotMapper);
-    match = new RoomsMatchService(store, snapshotMapper);
+    match = new RoomsMatchService(store, snapshotMapper, rulesEngines);
   });
 
   afterEach(() => {

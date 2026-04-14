@@ -1,8 +1,8 @@
 import { BadRequestException, HttpException } from '@nestjs/common';
 import { RoomsChatService } from './rooms-chat.service';
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
-import { RoomsSnapshotMapper } from './rooms.snapshot.mapper';
-import { RoomsStore } from './rooms.store';
+import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
+import { RoomsStore } from '../rooms.store';
 
 describe('RoomsChatService', () => {
   let lifecycle: RoomsLifecycleService;

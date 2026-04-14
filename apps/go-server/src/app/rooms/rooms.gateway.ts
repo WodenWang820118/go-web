@@ -26,7 +26,7 @@ import {
 import { createMessage, isMessageDescriptor } from '@gx/go/domain';
 import { HttpException, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { RoomsService } from './rooms.service';
+import { RoomsService } from './services/rooms.service';
 
 /**
  * Bridges hosted room websocket events to the room facade and broadcast helpers.
