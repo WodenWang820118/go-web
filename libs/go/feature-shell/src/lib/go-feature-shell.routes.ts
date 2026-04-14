@@ -5,7 +5,7 @@ export const goFeatureShellRoutes: Route[] = [
   {
     path: '',
     async loadComponent() {
-      return (await import('./pages/online-lobby-page.component')).OnlineLobbyPageComponent;
+      return (await import('./online/lobby/online-lobby-page.component')).OnlineLobbyPageComponent;
     },
   },
   {
@@ -28,7 +28,7 @@ export const goFeatureShellRoutes: Route[] = [
   {
     path: 'online/room/:roomId',
     async loadComponent() {
-      const m = await import('./pages/online-room-page.component');
+      const m = await import('./online/room/online-room-page.component');
       return m.OnlineRoomPageComponent;
     }
   },

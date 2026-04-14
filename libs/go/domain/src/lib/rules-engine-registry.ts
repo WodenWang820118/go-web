@@ -1,6 +1,6 @@
-import { GoRulesEngine } from './go-rules-engine';
-import { GomokuRulesEngine } from './gomoku-rules-engine';
-import { RulesEngine } from './rules-engine';
+import { GoRulesEngine } from './engines/go-rules-engine';
+import { GomokuRulesEngine } from './engines/gomoku-rules-engine';
+import { RulesEngine } from './rules/rules-engine';
 import { GameMode } from './types';
 
 const GO_RULES_ENGINE = new GoRulesEngine();
@@ -11,6 +11,9 @@ const RULES_ENGINES: Record<GameMode, RulesEngine> = {
   gomoku: GOMOKU_RULES_ENGINE,
 };
 
+/**
+ * Returns the singleton rules engine for a supported game mode.
+ */
 export function getRulesEngine(mode: GameMode): RulesEngine {
   return RULES_ENGINES[mode];
 }

@@ -1,5 +1,5 @@
-import { boardHash, cloneBoard, createBoard, setCell } from './board-utils';
-import { GoRulesEngine } from './go-rules-engine';
+import { boardHash, cloneBoard, createBoard, setCell } from './board/board-state';
+import { GoRulesEngine } from './engines/go-rules-engine';
 import { DEFAULT_GO_KOMI, MatchSettings, MatchState } from './types';
 
 describe('GoRulesEngine', () => {

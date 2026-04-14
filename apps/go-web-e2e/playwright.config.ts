@@ -24,7 +24,7 @@ export default defineConfig({
   },
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'node tools/e2e/start-go-web-stack.cjs',
+    command: 'node tools/scripts/e2e/start-go-web-stack.ts',
     url: 'http://localhost:4200',
     reuseExistingServer: !process.env['CI'],
     timeout: 180 * 1000,

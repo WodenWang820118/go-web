@@ -15,10 +15,10 @@ Import from `@gx/go/domain`.
 Key exports include:
 
 - domain `types`
-- `board-utils`
-- `game-mode-meta`
-- `go-rules-engine`
-- `gomoku-rules-engine`
+- board helpers from `board/` (`board-state`, `group-analysis`, `move-notation`, `player-utils`, `point-utils`, `winning-line`)
+- metadata helpers from `metadata/game-mode-meta`
+- rules engine contracts from `rules/rules-engine`
+- engine implementations from `engines/go-rules-engine` and `engines/gomoku-rules-engine`
 - `rules-engine-registry`
 
 ## Validation

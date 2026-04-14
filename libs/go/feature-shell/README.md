@@ -17,16 +17,8 @@ Import from `@gx/go/feature-shell`.
 Public entrypoints currently include:
 
 - `goFeatureShellRoutes`
-- `LandingPageComponent`
-- `OnlineCreatePageComponent`
-- `OnlineLobbyPageComponent`
-- `OnlineRoomPageComponent`
-- `SetupPageComponent`
-- `PlayPageComponent`
 
-`LandingPageComponent` and `OnlineCreatePageComponent` remain exported, but they are no longer part of the active hosted-room route flow.
-
-Presenter components and room helper modules under `src/lib/pages` and `src/lib/online` are internal implementation details.
+Route-local page components, presenter components, and hosted-room helper modules under `src/lib/pages` and `src/lib/online` are internal implementation details.
 
 ## Validation
 

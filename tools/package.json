@@ -1,0 +1,5 @@
+{
+  "name": "@org/tools",
+  "private": true,
+  "type": "module"
+}

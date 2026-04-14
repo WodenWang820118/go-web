@@ -1,4 +1,4 @@
-import { GomokuRulesEngine } from './gomoku-rules-engine';
+import { GomokuRulesEngine } from './engines/gomoku-rules-engine';
 import { MatchSettings } from './types';
 
 describe('GomokuRulesEngine', () => {
