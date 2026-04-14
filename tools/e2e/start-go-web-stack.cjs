@@ -7,6 +7,12 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const startupTimeoutMs = 300_000;
 const children = [];
 let shuttingDown = false;
+let keepAliveTimer = null;
+const baseUrl = process.env.BASE_URL || 'http://localhost:4200';
+const goServerOrigin = process.env.GO_SERVER_ORIGIN || 'http://127.0.0.1:3000';
+const webPort = new URL(baseUrl).port || '4200';
+const goServerPort = new URL(goServerOrigin).port || '3000';
+const goServerHealthUrl = new URL('/api/health', goServerOrigin).toString();
 
 async function isUrlReady(url) {
   try {
@@ -66,16 +72,23 @@ async function shutdown(exitCode) {
   }
 
   shuttingDown = true;
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
   await Promise.allSettled(children.map(terminateChild));
   process.exit(exitCode);
 }
 
-function startNxTarget(label, args) {
+function startNxTarget(label, args, env = {}) {
   const child = spawn(`${npmCommand} exec -- nx run ${args.join(' ')}`, {
     cwd: workspaceRoot,
     stdio: 'inherit',
     shell: true,
-    env: process.env,
+    env: {
+      ...process.env,
+      ...env,
+    },
   });
 
   children.push(child);
@@ -101,14 +114,14 @@ function startNxTarget(label, args) {
   return child;
 }
 
-async function ensureServer(label, url, nxTarget) {
+async function ensureServer(label, url, nxTarget, env = {}) {
   if (await isUrlReady(url)) {
     console.log(`${label} already available at ${url}`);
     return;
   }
 
   console.log(`Starting ${label}...`);
-  startNxTarget(label, [nxTarget]);
+  startNxTarget(label, [nxTarget], env);
   await waitForUrl(url, label);
   console.log(`${label} ready at ${url}`);
 }
@@ -122,10 +135,13 @@ process.on('SIGTERM', () => {
 });
 
 async function main() {
-  await ensureServer('go-server', 'http://127.0.0.1:3000/api/health', 'go-server:serve');
-  await ensureServer('go-web', 'http://localhost:4200', 'go-web:serve-static');
+  await ensureServer('go-server', goServerHealthUrl, 'go-server:serve', {
+    PORT: goServerPort,
+  });
+  await ensureServer('go-web', baseUrl, `go-web:serve-static --port=${webPort}`);
 
   console.log('Go web e2e stack is ready.');
+  keepAliveTimer = setInterval(() => {}, 60_000);
   await new Promise(() => {});
 }
 

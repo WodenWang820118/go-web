@@ -180,6 +180,45 @@ describe('OnlineRoomService', () => {
     );
     expect(socket.emitted.some(event => event.event === 'seat.claim')).toBe(false);
   });
+
+  it('emits settings updates and rematch responses over realtime once joined', () => {
+    service.joinRoom('ROOM42', 'Guest').subscribe();
+
+    const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
+    joinRequest.flush({
+      roomId: 'ROOM42',
+      participantId: 'guest-1',
+      participantToken: 'token-2',
+      resumed: false,
+      snapshot: createSnapshot('ROOM42'),
+    });
+
+    service.updateNextMatchSettings({
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    service.respondToRematch(true);
+
+    expect(socket.emitted).toContainEqual({
+      event: 'room.settings.update',
+      payload: {
+        roomId: 'ROOM42',
+        participantToken: 'token-2',
+        settings: {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
+      },
+    });
+    expect(socket.emitted).toContainEqual({
+      event: 'game.rematch.respond',
+      payload: {
+        roomId: 'ROOM42',
+        participantToken: 'token-2',
+        accepted: true,
+      },
+    });
+  });
 });
 
 function createSnapshot(roomId: string): RoomSnapshot {
@@ -203,6 +242,13 @@ function createSnapshot(roomId: string): RoomSnapshot {
       black: null,
       white: null,
     },
+    nextMatchSettings: {
+      mode: 'go',
+      boardSize: 19,
+      komi: 6.5,
+    },
+    rematch: null,
+    autoStartBlockedUntilSeatChange: false,
     match: null,
     chat: [],
   };

@@ -22,7 +22,7 @@ describe('OnlineRoomParticipantsPanelComponent', () => {
       })
     );
     fixture.componentRef.setInput(
-      'startForm',
+      'settingsForm',
       new FormGroup({
         mode: new FormControl('go', {
           nonNullable: true,
@@ -40,7 +40,8 @@ describe('OnlineRoomParticipantsPanelComponent', () => {
     fixture.componentRef.setInput('isHost', true);
     fixture.componentRef.setInput('realtimeConnected', true);
     fixture.componentRef.setInput('canChangeSeats', true);
-    fixture.componentRef.setInput('canStartMatch', true);
+    fixture.componentRef.setInput('canEditNextMatchSettings', true);
+    fixture.componentRef.setInput('settingsLockedMessage', null);
     fixture.componentRef.setInput('canPass', false);
     fixture.componentRef.setInput('canResign', false);
     fixture.componentRef.setInput('canFinalizeScoring', false);
@@ -72,6 +73,7 @@ describe('OnlineRoomParticipantsPanelComponent', () => {
 
     expect(root.querySelector('[data-testid="room-participants-panel"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="room-move-log-panel"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-next-match-form"]')).not.toBeNull();
     expect(root.textContent).toContain(i18n.t('common.role.host'));
     expect(root.textContent).toContain(i18n.t('common.status.offline'));
     expect(root.textContent).toContain(i18n.t('common.status.muted'));

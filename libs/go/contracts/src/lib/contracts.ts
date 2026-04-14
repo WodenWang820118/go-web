@@ -44,6 +44,13 @@ export interface HostedMatchSnapshot {
   startedAt: string;
 }
 
+export type RematchResponseState = 'pending' | 'accepted' | 'declined';
+
+export interface HostedRematchState {
+  participants: Record<PlayerColor, string>;
+  responses: Record<PlayerColor, RematchResponseState>;
+}
+
 export type LobbyRoomStatus = 'live' | 'ready' | 'waiting';
 
 export interface LobbyRoomSummary {
@@ -70,6 +77,9 @@ export interface RoomSnapshot {
   hostParticipantId: string;
   participants: ParticipantSummary[];
   seatState: SeatState;
+  nextMatchSettings: GameStartSettings;
+  rematch: HostedRematchState | null;
+  autoStartBlockedUntilSeatChange: boolean;
   match: HostedMatchSnapshot | null;
   chat: ChatMessage[];
 }
@@ -138,6 +148,12 @@ export interface GameStartPayload {
   settings: GameStartSettings;
 }
 
+export interface RoomSettingsUpdatePayload {
+  roomId: string;
+  participantToken: string;
+  settings: GameStartSettings;
+}
+
 export type GameCommand =
   | MoveCommand
   | {
@@ -152,6 +168,12 @@ export interface GameCommandPayload {
   roomId: string;
   participantToken: string;
   command: GameCommand;
+}
+
+export interface GameRematchResponsePayload {
+  roomId: string;
+  participantToken: string;
+  accepted: boolean;
 }
 
 export interface ChatSendPayload {

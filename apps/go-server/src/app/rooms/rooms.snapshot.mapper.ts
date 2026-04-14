@@ -43,6 +43,9 @@ export class RoomsSnapshotMapper {
         black: this.store.getSeatHolder(room, 'black')?.id ?? null,
         white: this.store.getSeatHolder(room, 'white')?.id ?? null,
       },
+      nextMatchSettings: structuredClone(room.nextMatchSettings),
+      rematch: room.rematch ? structuredClone(room.rematch) : null,
+      autoStartBlockedUntilSeatChange: room.autoStartBlockedUntilSeatChange,
       match: room.match ? structuredClone(room.match) : null,
       chat: structuredClone(room.chat),
     };
@@ -62,8 +65,14 @@ export class RoomsSnapshotMapper {
       updatedAt: room.updatedAt,
       hostDisplayName: host?.displayName ?? 'Host',
       status: this.getLobbyStatus(room, black, white),
-      mode: room.match?.settings.mode ?? null,
-      boardSize: room.match?.settings.boardSize ?? null,
+      mode:
+        room.match && room.match.state.phase !== 'finished'
+          ? room.match.settings.mode
+          : room.nextMatchSettings.mode,
+      boardSize:
+        room.match && room.match.state.phase !== 'finished'
+          ? room.match.settings.boardSize
+          : room.nextMatchSettings.boardSize,
       players: {
         black: black?.displayName ?? null,
         white: white?.displayName ?? null,

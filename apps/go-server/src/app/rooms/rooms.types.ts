@@ -1,4 +1,11 @@
-import { ChatMessage, HostedMatchSnapshot, RoomSnapshot, SystemNotice } from '@gx/go/contracts';
+import {
+  ChatMessage,
+  GameStartSettings,
+  HostedMatchSnapshot,
+  HostedRematchState,
+  RoomSnapshot,
+  SystemNotice,
+} from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 
 export interface ParticipantRecord {
@@ -21,6 +28,9 @@ export interface RoomRecord {
   hostParticipantId: string;
   participants: Map<string, ParticipantRecord>;
   tokenIndex: Map<string, string>;
+  nextMatchSettings: GameStartSettings;
+  rematch: HostedRematchState | null;
+  autoStartBlockedUntilSeatChange: boolean;
   match: HostedMatchSnapshot | null;
   chat: ChatMessage[];
   emptySince: number | null;

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GoMessageDescriptor, PlayerColor } from '@gx/go/domain';
+import { DEFAULT_GO_KOMI, GoMessageDescriptor, PlayerColor } from '@gx/go/domain';
 import { SystemNotice } from '@gx/go/contracts';
 import {
   ROOM_ID_ALPHABET,
@@ -46,6 +46,13 @@ export class RoomsStore {
       hostParticipantId: host.id,
       participants: new Map([[host.id, host]]),
       tokenIndex: new Map([[host.token, host.id]]),
+      nextMatchSettings: {
+        mode: 'go',
+        boardSize: 19,
+        komi: DEFAULT_GO_KOMI,
+      },
+      rematch: null,
+      autoStartBlockedUntilSeatChange: false,
       match: null,
       chat: [],
       emptySince: null,

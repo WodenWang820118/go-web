@@ -53,8 +53,9 @@ type BootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
 type OnlineRoomRealtimeEvent =
   | 'seat.claim'
   | 'seat.release'
-  | 'game.start'
+  | 'room.settings.update'
   | 'game.command'
+  | 'game.rematch.respond'
   | 'chat.send'
   | 'host.mute'
   | 'host.unmute'
@@ -106,6 +107,13 @@ export class OnlineRoomService {
   readonly chat = computed(() => selectChatMessages(this.snapshotSignal()));
   readonly viewer = computed(() =>
     selectViewer(this.participants(), this.participantIdSignal())
+  );
+  readonly nextMatchSettings = computed(
+    () => this.snapshotSignal()?.nextMatchSettings ?? null
+  );
+  readonly rematch = computed(() => this.snapshotSignal()?.rematch ?? null);
+  readonly autoStartBlockedUntilSeatChange = computed(
+    () => this.snapshotSignal()?.autoStartBlockedUntilSeatChange ?? false
   );
   readonly viewerSeat = computed(() => selectViewerSeat(this.viewer()));
   readonly isHost = computed(() => selectViewerIsHost(this.viewer()));
@@ -255,8 +263,8 @@ export class OnlineRoomService {
     this.emit('seat.release');
   }
 
-  startMatch(settings: GameStartSettings): void {
-    this.emit('game.start', {
+  updateNextMatchSettings(settings: GameStartSettings): void {
+    this.emit('room.settings.update', {
       settings,
     });
   }
@@ -288,6 +296,12 @@ export class OnlineRoomService {
   kickParticipant(targetParticipantId: string): void {
     this.emit('host.kick', {
       targetParticipantId,
+    });
+  }
+
+  respondToRematch(accepted: boolean): void {
+    this.emit('game.rematch.respond', {
+      accepted,
     });
   }
 

@@ -116,6 +116,11 @@ function createOnlineRoomServiceStub() {
   const lastNotice = signal<string | null>(null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
+  const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
+  const rematch = computed(() => snapshot()?.rematch ?? null);
+  const autoStartBlockedUntilSeatChange = computed(
+    () => snapshot()?.autoStartBlockedUntilSeatChange ?? false
+  );
   const viewer = computed(
     () => participants().find(item => item.participantId === participantId()) ?? null
   );
@@ -141,6 +146,9 @@ function createOnlineRoomServiceStub() {
     lastNotice,
     participants,
     match,
+    nextMatchSettings,
+    rematch,
+    autoStartBlockedUntilSeatChange,
     viewer,
     viewerSeat,
     isHost,
@@ -162,7 +170,8 @@ function createOnlineRoomServiceStub() {
     ),
     claimSeat: vi.fn(),
     releaseSeat: vi.fn(),
-    startMatch: vi.fn(),
+    updateNextMatchSettings: vi.fn(),
+    respondToRematch: vi.fn(),
     sendGameCommand: vi.fn(),
     sendChat: vi.fn(),
     muteParticipant: vi.fn(),
@@ -193,6 +202,13 @@ function createSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
       black: null,
       white: null,
     },
+    nextMatchSettings: {
+      mode: 'go',
+      boardSize: 19,
+      komi: 6.5,
+    },
+    rematch: null,
+    autoStartBlockedUntilSeatChange: false,
     match: null,
     chat: [],
     ...overrides,
