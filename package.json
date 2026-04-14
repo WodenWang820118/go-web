@@ -2,17 +2,20 @@
   "name": "@org/source",
   "version": "0.0.0",
   "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "license": "MIT",
   "scripts": {
-    "proofshot:check": "node --experimental-strip-types scripts/proofshot.ts check",
-    "proofshot:start:web": "node --experimental-strip-types scripts/proofshot.ts start-web",
-    "proofshot:stop": "node --experimental-strip-types scripts/proofshot.ts stop",
-    "proofshot:clean": "node --experimental-strip-types scripts/proofshot.ts clean",
-    "review:status": "node scripts/review-gate/status.mjs",
-    "review:approve-pre-implementation": "node scripts/review-gate/approve-pre-implementation.mjs",
-    "review:reset": "node scripts/review-gate/reset.mjs",
+    "review:status": "node tools/scripts/review-gate/status.ts",
+    "review:approve-pre-implementation": "node tools/scripts/review-gate/approve-pre-implementation.ts",
+    "review:reset": "node tools/scripts/review-gate/reset.ts",
+    "proofshot:check": "node tools/scripts/proofshot.ts check",
+    "proofshot:start:web": "node tools/scripts/proofshot.ts start-web",
+    "proofshot:stop": "node tools/scripts/proofshot.ts stop",
+    "proofshot:clean": "node tools/scripts/proofshot.ts clean",
     "docker:build": "pnpm nx run-many -t docker:build -p go-web,go-server",
-    "docker:export": "pnpm docker:build && node tools/docker/export-images.cjs",
+    "docker:export": "pnpm docker:build && node tools/scripts/docker/export-images.ts",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down"
   },

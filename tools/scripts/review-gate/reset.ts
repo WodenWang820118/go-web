@@ -1,4 +1,4 @@
-import { getRepoContext, resetState } from './shared.mjs';
+import { getRepoContext, resetState } from './shared.ts';
 
 const repoContext = getRepoContext();
 resetState(repoContext.root);

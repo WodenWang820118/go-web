@@ -3,7 +3,7 @@ import {
   getRepoContext,
   parseArgs,
   saveState,
-} from './shared.mjs';
+} from './shared.ts';
 
 const options = parseArgs(process.argv.slice(2));
 const repoContext = getRepoContext();

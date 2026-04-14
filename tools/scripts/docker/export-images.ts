@@ -1,9 +1,11 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const workspaceRoot = path.resolve(__dirname, '..', '..');
-const outputDirectory = path.join(workspaceRoot, 'dist', 'docker');
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = resolve(scriptDir, '..', '..', '..');
+const outputDirectory = join(workspaceRoot, 'dist', 'docker');
 
 const images = [
   {
@@ -21,7 +23,7 @@ fs.mkdirSync(outputDirectory, { recursive: true });
 for (const image of images) {
   runDockerCommand(['image', 'inspect', image.tag]);
 
-  const destination = path.join(outputDirectory, image.filename);
+  const destination = join(outputDirectory, image.filename);
 
   if (fs.existsSync(destination)) {
     fs.rmSync(destination);
@@ -31,7 +33,7 @@ for (const image of images) {
   console.log(`Exported ${image.tag} -> ${destination}`);
 }
 
-function runDockerCommand(args) {
+function runDockerCommand(args: string[]): void {
   const result = spawnSync('docker', args, {
     cwd: workspaceRoot,
     stdio: 'inherit',

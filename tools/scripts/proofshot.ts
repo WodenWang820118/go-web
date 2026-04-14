@@ -1,11 +1,12 @@
 /// <reference types="node" />
 
 import { existsSync, rmSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-const workspaceRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = resolve(scriptDir, '..', '..');
 const artifactsDir = resolve(workspaceRoot, 'proofshot-artifacts');
 const subcommand = process.argv[2];
 const rawExtraArgs = process.argv.slice(3);
@@ -14,7 +15,7 @@ const extraArgs =
 
 if (!subcommand) {
   throw new Error(
-    'Usage: node --experimental-strip-types scripts/proofshot.ts <check|start-web|stop|clean> [proofshot args]'
+    'Usage: node tools/scripts/proofshot.ts <check|start-web|stop|clean> [proofshot args]'
   );
 }
 

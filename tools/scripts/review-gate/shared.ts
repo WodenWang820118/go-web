@@ -4,7 +4,51 @@ import { spawnSync } from 'node:child_process';
 
 const REVIEW_TTL_MS = 2 * 60 * 60 * 1000;
 
-function trySpawn(command, args, cwd) {
+export type RepoContext = {
+  root: string;
+  branch: string | null;
+  head: string | null;
+  dirty: boolean | null;
+  gitCommand: string | null;
+};
+
+type ApprovalRecord = {
+  type: 'pre-implementation-review';
+  reviewer: string;
+  focus: string;
+  summary: string;
+  approvedAt: string;
+  expiresAt: string;
+  branch: string | null;
+  head: string | null;
+  root: string;
+};
+
+export type ApprovalState = {
+  version: number;
+  approval: ApprovalRecord;
+};
+
+type ParsedArgs = {
+  reviewer: string;
+  focus: string;
+  summary: string;
+  force: boolean;
+};
+
+type ToolArgs = string | { command?: string } | null | undefined;
+
+export type HookInput = {
+  toolName?: string;
+  toolArgs?: ToolArgs;
+  cwd?: string;
+};
+
+export function trySpawn(
+  command: string,
+  args: string[],
+  cwd: string
+): string | null {
   const result = spawnSync(command, args, {
     cwd,
     encoding: 'utf8',
@@ -18,7 +62,7 @@ function trySpawn(command, args, cwd) {
   return result.stdout.trim();
 }
 
-export function resolveGitCommand() {
+export function resolveGitCommand(): string | null {
   const candidates =
     process.platform === 'win32'
       ? [
@@ -38,7 +82,7 @@ export function resolveGitCommand() {
   return null;
 }
 
-export function getRepoContext(cwd = process.cwd()) {
+export function getRepoContext(cwd = process.cwd()): RepoContext {
   const gitCommand = resolveGitCommand();
 
   if (!gitCommand) {
@@ -53,11 +97,7 @@ export function getRepoContext(cwd = process.cwd()) {
 
   const root =
     trySpawn(gitCommand, ['rev-parse', '--show-toplevel'], cwd) ?? cwd;
-  const branch = trySpawn(
-    gitCommand,
-    ['rev-parse', '--abbrev-ref', 'HEAD'],
-    root
-  );
+  const branch = trySpawn(gitCommand, ['rev-parse', '--abbrev-ref', 'HEAD'], root);
   const head = trySpawn(gitCommand, ['rev-parse', 'HEAD'], root);
   const dirtyOutput = trySpawn(
     gitCommand,
@@ -74,11 +114,11 @@ export function getRepoContext(cwd = process.cwd()) {
   };
 }
 
-export function getStatePath(repoRoot = process.cwd()) {
+export function getStatePath(repoRoot = process.cwd()): string {
   return path.join(repoRoot, '.cache', 'review-gate', 'state.json');
 }
 
-export function loadState(repoRoot = process.cwd()) {
+export function loadState(repoRoot = process.cwd()): ApprovalState | null {
   const statePath = getStatePath(repoRoot);
 
   if (!fs.existsSync(statePath)) {
@@ -86,26 +126,39 @@ export function loadState(repoRoot = process.cwd()) {
   }
 
   try {
-    return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    return JSON.parse(fs.readFileSync(statePath, 'utf8')) as ApprovalState;
   } catch {
     return null;
   }
 }
 
-export function saveState(state, repoRoot = process.cwd()) {
+export function saveState(
+  state: ApprovalState,
+  repoRoot = process.cwd()
+): void {
   const statePath = getStatePath(repoRoot);
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 }
 
-export function resetState(repoRoot = process.cwd()) {
+export function resetState(repoRoot = process.cwd()): void {
   const statePath = getStatePath(repoRoot);
   if (fs.existsSync(statePath)) {
     fs.rmSync(statePath, { force: true });
   }
 }
 
-export function createApproval({ reviewer, focus, summary, repoContext }) {
+export function createApproval({
+  reviewer,
+  focus,
+  summary,
+  repoContext,
+}: {
+  reviewer: string;
+  focus: string;
+  summary: string;
+  repoContext: RepoContext;
+}): ApprovalState {
   const approvedAt = new Date().toISOString();
   return {
     version: 1,
@@ -123,7 +176,12 @@ export function createApproval({ reviewer, focus, summary, repoContext }) {
   };
 }
 
-export function evaluateApproval(state, repoContext) {
+export function evaluateApproval(
+  state: ApprovalState | null,
+  repoContext: RepoContext
+):
+  | { valid: true; approval: ApprovalRecord }
+  | { valid: false; reason: string } {
   const approval = state?.approval;
 
   if (!approval) {
@@ -170,8 +228,8 @@ export function evaluateApproval(state, repoContext) {
   return { valid: true, approval };
 }
 
-export function parseArgs(argv) {
-  const parsed = {
+export function parseArgs(argv: string[]): ParsedArgs {
+  const parsed: ParsedArgs = {
     reviewer: 'copilot-claude',
     focus: 'general',
     summary: 'Approved after pre-implementation review.',
@@ -207,7 +265,7 @@ export function parseArgs(argv) {
   return parsed;
 }
 
-export function isMutatingToolUse({ toolName, toolArgs }) {
+export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
   const normalizedToolName = String(toolName ?? '').toLowerCase();
 
   if (
@@ -221,11 +279,13 @@ export function isMutatingToolUse({ toolName, toolArgs }) {
   }
 
   const command =
-    typeof toolArgs?.command === 'string'
+    typeof toolArgs === 'object' &&
+    toolArgs !== null &&
+    typeof toolArgs.command === 'string'
       ? toolArgs.command
       : typeof toolArgs === 'string'
-      ? toolArgs
-      : '';
+        ? toolArgs
+        : '';
 
   if (isReviewGateCommand(command)) {
     return false;
@@ -244,35 +304,37 @@ export function isMutatingToolUse({ toolName, toolArgs }) {
   return patterns.some((pattern) => pattern.test(command));
 }
 
-export function isReviewGateCommand(command) {
+export function isReviewGateCommand(command: string): boolean {
   return (
-    /review-gate[\\/](approve-pre-implementation|status|reset)\.mjs/i.test(
+    /review-gate[\\/](approve-pre-implementation|status|reset)\.ts/i.test(
       command
     ) || /\breview:(approve-pre-implementation|status|reset)\b/i.test(command)
   );
 }
 
-export function parseHookInput(rawInput) {
-  const input = JSON.parse(rawInput || '{}');
-  let toolArgs = input.toolArgs;
+export function parseHookInput(rawInput: string): HookInput {
+  const input = JSON.parse(rawInput || '{}') as HookInput & {
+    toolArgs?: unknown;
+  };
+  let toolArgs: ToolArgs = input.toolArgs as ToolArgs;
 
   if (typeof toolArgs === 'string') {
     try {
-      toolArgs = JSON.parse(toolArgs);
+      toolArgs = JSON.parse(toolArgs) as ToolArgs;
     } catch {
-      toolArgs = { command: toolArgs };
+      toolArgs = { command: toolArgs as string };
     }
   }
 
   return {
     ...input,
-    toolArgs,
+    toolArgs: toolArgs as ToolArgs,
   };
 }
 
-export function buildDenyPayload(reason) {
+export function buildDenyPayload(reason: string): string {
   return JSON.stringify({
     permissionDecision: 'deny',
-    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan, then run: node scripts/review-gate/approve-pre-implementation.mjs --reviewer copilot-claude --focus general --summary "Approved after plan review".`,
+    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan, then run: pnpm review:approve-pre-implementation -- --reviewer copilot-claude --focus general --summary "Approved after plan review".`,
   });
 }

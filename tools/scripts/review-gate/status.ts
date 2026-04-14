@@ -1,4 +1,4 @@
-import { evaluateApproval, getRepoContext, loadState } from './shared.mjs';
+import { evaluateApproval, getRepoContext, loadState } from './shared.ts';
 
 const repoContext = getRepoContext();
 const state = loadState(repoContext.root);

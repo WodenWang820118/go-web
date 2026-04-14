@@ -5,9 +5,9 @@ import {
   isMutatingToolUse,
   loadState,
   parseHookInput,
-} from './shared.mjs';
+} from './shared.ts';
 
-const rawInput = await new Promise((resolve) => {
+const rawInput = await new Promise<string>((resolve) => {
   let buffer = '';
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', (chunk) => {
