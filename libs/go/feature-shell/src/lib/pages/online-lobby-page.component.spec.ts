@@ -293,6 +293,13 @@ function createSnapshot(roomId: string): RoomSnapshot {
       black: null,
       white: null,
     },
+    nextMatchSettings: {
+      mode: 'go',
+      boardSize: 19,
+      komi: 6.5,
+    },
+    rematch: null,
+    autoStartBlockedUntilSeatChange: false,
     match: null,
     chat: [],
   };

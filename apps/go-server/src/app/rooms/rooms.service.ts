@@ -103,6 +103,14 @@ export class RoomsService implements OnModuleDestroy {
     return this.match.releaseSeat(roomId, participantToken);
   }
 
+  updateNextMatchSettings(
+    roomId: string,
+    participantToken: string,
+    settings: GameStartSettings
+  ) {
+    return this.match.updateNextMatchSettings(roomId, participantToken, settings);
+  }
+
   startMatch(
     roomId: string,
     participantToken: string,
@@ -117,6 +125,14 @@ export class RoomsService implements OnModuleDestroy {
     command: GameCommand
   ) {
     return this.match.applyGameCommand(roomId, participantToken, command);
+  }
+
+  respondToRematch(
+    roomId: string,
+    participantToken: string,
+    accepted: boolean
+  ) {
+    return this.match.respondToRematch(roomId, participantToken, accepted);
   }
   // #endregion
 

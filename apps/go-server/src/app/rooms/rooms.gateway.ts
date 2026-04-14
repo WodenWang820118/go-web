@@ -10,9 +10,11 @@ import {
   type ChatSendPayload,
   type CommandErrorEvent,
   type GameCommandPayload,
+  type GameRematchResponsePayload,
   type GameUpdatedEvent,
   type GameStartPayload,
   type HostModerationPayload,
+  type RoomSettingsUpdatePayload,
   type RoomJoinPayload,
   type RoomPresenceEvent,
   type RoomSnapshot,
@@ -89,12 +91,15 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SeatClaimPayload
   ): void {
-    this.handleMutation(client, () =>
-      this.roomsService.claimSeat(
-        payload.roomId,
-        payload.participantToken,
-        payload.color
-      )
+    this.handleMutation(
+      client,
+      () =>
+        this.roomsService.claimSeat(
+          payload.roomId,
+          payload.participantToken,
+          payload.color
+        ),
+      true
     );
   }
 
@@ -137,6 +142,37 @@ export class RoomsGateway implements OnGatewayDisconnect {
           payload.roomId,
           payload.participantToken,
           payload.command
+        ),
+      true
+    );
+  }
+
+  @SubscribeMessage('room.settings.update')
+  handleRoomSettingsUpdate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: RoomSettingsUpdatePayload
+  ): void {
+    this.handleMutation(client, () =>
+      this.roomsService.updateNextMatchSettings(
+        payload.roomId,
+        payload.participantToken,
+        payload.settings
+      )
+    );
+  }
+
+  @SubscribeMessage('game.rematch.respond')
+  handleGameRematchResponse(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: GameRematchResponsePayload
+  ): void {
+    this.handleMutation(
+      client,
+      () =>
+        this.roomsService.respondToRematch(
+          payload.roomId,
+          payload.participantToken,
+          payload.accepted
         ),
       true
     );

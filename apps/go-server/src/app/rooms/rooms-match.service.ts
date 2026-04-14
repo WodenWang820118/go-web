@@ -1,4 +1,9 @@
-import { GameCommand, GameStartSettings } from '@gx/go/contracts';
+import {
+  GameCommand,
+  GameStartSettings,
+  HostedRematchState,
+  RoomSettingsUpdatePayload,
+} from '@gx/go/contracts';
 import {
   DEFAULT_GO_KOMI,
   GOMOKU_BOARD_SIZE,
@@ -19,7 +24,7 @@ import { RoomsStore } from './rooms.store';
 import { MutationResult, RoomRecord } from './rooms.types';
 
 /**
- * Encapsulates seat management and match state transitions.
+ * Encapsulates seat management, hosted match defaults, and match state transitions.
  */
 @Injectable()
 export class RoomsMatchService {
@@ -51,22 +56,20 @@ export class RoomsMatchService {
 
     const previousSeat = participant.seat;
     participant.seat = color;
-    this.store.touchRoom(room);
+    this.handleSeatChange(room);
 
-    return {
-      snapshot: this.snapshotMapper.toSnapshot(room),
-      notice: this.store.createNotice(
-        previousSeat
-          ? roomMessage('room.notice.seat_moved', {
-              displayName: participant.displayName,
-              seat: roomMessage(`common.seat.${color}`),
-            })
-          : roomMessage('room.notice.seat_claimed', {
-              displayName: participant.displayName,
-              seat: roomMessage(`common.seat.${color}`),
-            })
-      ),
-    };
+    return this.finalizeMutation(
+      room,
+      previousSeat
+        ? roomMessage('room.notice.seat_moved', {
+            displayName: participant.displayName,
+            seat: roomMessage(`common.seat.${color}`),
+          })
+        : roomMessage('room.notice.seat_claimed', {
+            displayName: participant.displayName,
+            seat: roomMessage(`common.seat.${color}`),
+          })
+    );
   }
 
   releaseSeat(roomId: string, participantToken: string): MutationResult {
@@ -81,17 +84,40 @@ export class RoomsMatchService {
 
     const releasedSeat = participant.seat;
     participant.seat = null;
-    this.store.touchRoom(room);
+    this.handleSeatChange(room);
 
-    return {
-      snapshot: this.snapshotMapper.toSnapshot(room),
-      notice: this.store.createNotice(
-        roomMessage('room.notice.seat_released', {
-          displayName: participant.displayName,
-          seat: roomMessage(`common.seat.${releasedSeat}`),
-        })
-      ),
-    };
+    return this.finalizeMutation(
+      room,
+      roomMessage('room.notice.seat_released', {
+        displayName: participant.displayName,
+        seat: roomMessage(`common.seat.${releasedSeat}`),
+      })
+    );
+  }
+
+  updateNextMatchSettings(
+    roomId: string,
+    participantToken: string,
+    settings: RoomSettingsUpdatePayload['settings']
+  ): MutationResult {
+    const room = this.store.getRoomRecord(roomId);
+
+    this.store.assertHostParticipant(room, participantToken);
+
+    if (!this.canEditNextMatchSettings(room)) {
+      throw badRequestMessage('room.error.next_match_settings_locked');
+    }
+
+    const normalizedSettings = this.normalizeStartSettings(settings);
+    room.nextMatchSettings = normalizedSettings;
+
+    return this.finalizeMutation(
+      room,
+      roomMessage('room.notice.next_match_settings_updated', {
+        mode: roomMessage(`common.mode.${normalizedSettings.mode}`),
+        size: normalizedSettings.boardSize,
+      })
+    );
   }
 
   startMatch(
@@ -102,40 +128,70 @@ export class RoomsMatchService {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
 
+    if (room.autoStartBlockedUntilSeatChange) {
+      throw badRequestMessage('room.error.rematch_declined_wait_for_seat_change');
+    }
+
+    if (room.rematch) {
+      throw badRequestMessage('room.error.rematch_response_unavailable');
+    }
+
     if (room.match && room.match.state.phase !== 'finished') {
       throw badRequestMessage('room.error.match_must_finish');
     }
 
-    const black = this.store.getSeatHolder(room, 'black');
-    const white = this.store.getSeatHolder(room, 'white');
+    const normalizedSettings = this.normalizeStartSettings(settings);
+    room.nextMatchSettings = normalizedSettings;
+    const matchSettings = this.startMatchWithCurrentSeats(room, normalizedSettings);
 
-    if (!black || !white) {
-      throw badRequestMessage('room.error.both_seats_required');
+    return this.finalizeMutation(
+      room,
+      roomMessage('room.notice.match_started', {
+        displayName: host.displayName,
+        mode: roomMessage(`common.mode.${matchSettings.mode}`),
+      })
+    );
+  }
+
+  respondToRematch(
+    roomId: string,
+    participantToken: string,
+    accepted: boolean
+  ): MutationResult {
+    const room = this.store.getRoomRecord(roomId);
+    const participant = this.store.getParticipantByToken(room, participantToken);
+    const rematch = room.rematch;
+
+    if (!rematch || room.match?.state.phase !== 'finished') {
+      throw badRequestMessage('room.error.rematch_response_unavailable');
     }
 
-    const normalizedSettings = this.normalizeSettings(
-      settings,
-      black.displayName,
-      white.displayName
-    );
-    room.match = {
-      settings: normalizedSettings,
-      state: getRulesEngine(normalizedSettings.mode).createInitialState(
-        normalizedSettings
-      ),
-      startedAt: this.store.timestamp(),
-    };
-    this.store.touchRoom(room);
+    const color = this.findRematchSeat(rematch, participant.id);
+    if (!color) {
+      throw forbiddenMessage('room.error.rematch_players_only');
+    }
 
-    return {
-      snapshot: this.snapshotMapper.toSnapshot(room),
-      notice: this.store.createNotice(
-        roomMessage('room.notice.match_started', {
-          displayName: host.displayName,
-          mode: roomMessage(`common.mode.${normalizedSettings.mode}`),
+    if (!accepted) {
+      room.rematch = null;
+      room.autoStartBlockedUntilSeatChange = true;
+
+      return this.finalizeMutation(
+        room,
+        roomMessage('room.notice.rematch_declined', {
+          displayName: participant.displayName,
         })
-      ),
+      );
+    }
+
+    room.rematch = {
+      ...rematch,
+      responses: {
+        ...rematch.responses,
+        [color]: 'accepted',
+      },
     };
+
+    return this.finalizeMutation(room);
   }
 
   applyGameCommand(
@@ -170,11 +226,8 @@ export class RoomsMatchService {
         ...match,
         state: nextState,
       };
-      this.store.touchRoom(room);
 
-      return {
-        snapshot: this.snapshotMapper.toSnapshot(room),
-      };
+      return this.finalizeMutation(room);
     }
 
     if (command.type === 'finalize-scoring') {
@@ -191,15 +244,9 @@ export class RoomsMatchService {
         throw badRequestMessage('room.error.finalize_scoring_failed');
       }
 
-      room.match = {
-        ...match,
-        state: nextState,
-      };
-      this.store.touchRoom(room);
+      this.updateFinishedMatchState(room, match, nextState);
 
-      return {
-        snapshot: this.snapshotMapper.toSnapshot(room),
-      };
+      return this.finalizeMutation(room);
     }
 
     if (match.state.phase !== 'playing') {
@@ -233,15 +280,169 @@ export class RoomsMatchService {
       });
     }
 
-    room.match = {
-      ...match,
-      state: result.state,
-    };
+    this.updateFinishedMatchState(room, match, result.state);
+
+    return this.finalizeMutation(room);
+  }
+
+  private finalizeMutation(
+    room: RoomRecord,
+    noticeMessage: ReturnType<typeof roomMessage> | null = null
+  ): MutationResult {
+    const automaticNotice = this.maybeStartNextMatch(room);
+
     this.store.touchRoom(room);
 
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
+      notice: automaticNotice ?? noticeMessage
+        ? this.store.createNotice(automaticNotice ?? noticeMessage!)
+        : undefined,
     };
+  }
+
+  private maybeStartNextMatch(
+    room: RoomRecord
+  ): ReturnType<typeof roomMessage> | null {
+    if (room.autoStartBlockedUntilSeatChange) {
+      return null;
+    }
+
+    if (room.match && room.match.state.phase !== 'finished') {
+      return null;
+    }
+
+    const black = this.store.getSeatHolder(room, 'black');
+    const white = this.store.getSeatHolder(room, 'white');
+
+    if (!black || !white) {
+      return null;
+    }
+
+    if (
+      room.rematch &&
+      (room.rematch.responses.black !== 'accepted' ||
+        room.rematch.responses.white !== 'accepted')
+    ) {
+      return null;
+    }
+
+    if (
+      room.rematch &&
+      (room.rematch.participants.black !== black.id ||
+        room.rematch.participants.white !== white.id)
+    ) {
+        return null;
+    }
+
+    const matchSettings = this.startMatchWithCurrentSeats(room, room.nextMatchSettings);
+
+    return roomMessage('room.notice.match_started_auto', {
+      mode: roomMessage(`common.mode.${matchSettings.mode}`),
+    });
+  }
+
+  private startMatchWithCurrentSeats(
+    room: RoomRecord,
+    settings: GameStartSettings
+  ): MatchSettings {
+    const black = this.store.getSeatHolder(room, 'black');
+    const white = this.store.getSeatHolder(room, 'white');
+
+    if (!black || !white) {
+      throw badRequestMessage('room.error.both_seats_required');
+    }
+
+    const normalizedSettings = this.normalizeStartSettings(settings);
+    room.nextMatchSettings = normalizedSettings;
+
+    const matchSettings = this.buildMatchSettings(
+      normalizedSettings,
+      black.displayName,
+      white.displayName
+    );
+
+    room.match = {
+      settings: matchSettings,
+      state: getRulesEngine(matchSettings.mode).createInitialState(matchSettings),
+      startedAt: this.store.timestamp(),
+    };
+    room.rematch = null;
+    room.autoStartBlockedUntilSeatChange = false;
+
+    return matchSettings;
+  }
+
+  private updateFinishedMatchState(
+    room: RoomRecord,
+    match: NonNullable<RoomRecord['match']>,
+    nextState: NonNullable<RoomRecord['match']>['state']
+  ): void {
+    room.match = {
+      ...match,
+      state: nextState,
+    };
+
+    if (match.state.phase === 'finished' || nextState.phase !== 'finished') {
+      return;
+    }
+
+    const black = this.store.getSeatHolder(room, 'black');
+    const white = this.store.getSeatHolder(room, 'white');
+
+    room.rematch =
+      black && white
+        ? this.createRematchState(black.id, white.id)
+        : null;
+    room.autoStartBlockedUntilSeatChange = false;
+  }
+
+  private createRematchState(
+    blackParticipantId: string,
+    whiteParticipantId: string
+  ): HostedRematchState {
+    return {
+      participants: {
+        black: blackParticipantId,
+        white: whiteParticipantId,
+      },
+      responses: {
+        black: 'pending',
+        white: 'pending',
+      },
+    };
+  }
+
+  private handleSeatChange(room: RoomRecord): void {
+    room.rematch = null;
+    room.autoStartBlockedUntilSeatChange = false;
+  }
+
+  private findRematchSeat(
+    rematch: HostedRematchState,
+    participantId: string
+  ): PlayerColor | null {
+    if (rematch.participants.black === participantId) {
+      return 'black';
+    }
+
+    if (rematch.participants.white === participantId) {
+      return 'white';
+    }
+
+    return null;
+  }
+
+  private canEditNextMatchSettings(room: RoomRecord): boolean {
+    if (room.rematch) {
+      return false;
+    }
+
+    if (room.match && room.match.state.phase !== 'finished') {
+      return false;
+    }
+
+    return !this.store.getSeatHolder(room, 'black') || !this.store.getSeatHolder(room, 'white');
   }
 
   private assertSeatChangeAllowed(room: RoomRecord): void {
@@ -258,11 +459,7 @@ export class RoomsMatchService {
     return room.match;
   }
 
-  private normalizeSettings(
-    settings: GameStartSettings,
-    blackName: string,
-    whiteName: string
-  ): MatchSettings {
+  private normalizeStartSettings(settings: GameStartSettings): GameStartSettings {
     if (settings.mode !== 'go' && settings.mode !== 'gomoku') {
       throw badRequestMessage('room.error.unsupported_mode');
     }
@@ -279,10 +476,6 @@ export class RoomsMatchService {
           typeof settings.komi === 'number' && Number.isFinite(settings.komi)
             ? settings.komi
             : DEFAULT_GO_KOMI,
-        players: {
-          black: blackName,
-          white: whiteName,
-        },
       };
     }
 
@@ -294,6 +487,18 @@ export class RoomsMatchService {
       mode: 'gomoku',
       boardSize: GOMOKU_BOARD_SIZE,
       komi: 0,
+    };
+  }
+
+  private buildMatchSettings(
+    settings: GameStartSettings,
+    blackName: string,
+    whiteName: string
+  ): MatchSettings {
+    return {
+      mode: settings.mode,
+      boardSize: settings.boardSize as MatchSettings['boardSize'],
+      komi: settings.mode === 'go' ? settings.komi ?? DEFAULT_GO_KOMI : 0,
       players: {
         black: blackName,
         white: whiteName,

@@ -13,20 +13,24 @@ describe('RoomsService', () => {
     service.onModuleDestroy();
   });
 
-  it('creates rooms and lets the host start a match once seats are filled', () => {
+  it('auto-starts once both seats are filled and uses the saved next-match settings', () => {
     const host = service.createRoom('Host', 'create:test');
     const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
 
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    service.claimSeat(host.roomId, guest.participantToken, 'white');
-
-    const started = service.startMatch(host.roomId, host.participantToken, {
-      mode: 'go',
-      boardSize: 9,
-      komi: 6.5,
+    service.updateNextMatchSettings(host.roomId, host.participantToken, {
+      mode: 'gomoku',
+      boardSize: 15,
     });
 
-    expect(started.snapshot.match?.settings.mode).toBe('go');
+    service.claimSeat(host.roomId, host.participantToken, 'black');
+    const started = service.claimSeat(host.roomId, guest.participantToken, 'white');
+
+    expect(started.snapshot.nextMatchSettings).toEqual({
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+    });
+    expect(started.snapshot.match?.state.phase).toBe('playing');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');
     expect(started.snapshot.match?.settings.players.white).toBe('Guest');
   });
@@ -36,12 +40,12 @@ describe('RoomsService', () => {
     const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
     const spectator = service.joinRoom(host.roomId, 'Watcher', undefined, 'join:test');
 
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    service.claimSeat(host.roomId, guest.participantToken, 'white');
-    service.startMatch(host.roomId, host.participantToken, {
+    service.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
       boardSize: 15,
     });
+    service.claimSeat(host.roomId, host.participantToken, 'black');
+    service.claimSeat(host.roomId, guest.participantToken, 'white');
 
     expect(() =>
       service.applyGameCommand(host.roomId, spectator.participantToken, {
@@ -118,12 +122,16 @@ describe('RoomsService', () => {
         liveGuest.participantToken,
         'live-guest-socket'
       );
+      lobbyService.updateNextMatchSettings(
+        liveHost.roomId,
+        liveHost.participantToken,
+        {
+          mode: 'gomoku',
+          boardSize: 15,
+        }
+      );
       lobbyService.claimSeat(liveHost.roomId, liveHost.participantToken, 'black');
       lobbyService.claimSeat(liveHost.roomId, liveGuest.participantToken, 'white');
-      lobbyService.startMatch(liveHost.roomId, liveHost.participantToken, {
-        mode: 'gomoku',
-        boardSize: 15,
-      });
 
       vi.setSystemTime(new Date('2026-03-20T00:00:02.000Z'));
       const readyHost = lobbyService.createRoom('Host Ready', 'create:ready');
@@ -156,11 +164,33 @@ describe('RoomsService', () => {
         readySpectator.participantToken,
         'ready-spectator-socket'
       );
+      lobbyService.updateNextMatchSettings(
+        readyHost.roomId,
+        readyHost.participantToken,
+        {
+          mode: 'gomoku',
+          boardSize: 15,
+        }
+      );
       lobbyService.claimSeat(readyHost.roomId, readyHost.participantToken, 'black');
       lobbyService.claimSeat(readyHost.roomId, readyGuest.participantToken, 'white');
+      finishHostedGomokuMatch(
+        lobbyService,
+        readyHost.roomId,
+        readyHost.participantToken,
+        readyGuest.participantToken
+      );
+      lobbyService.respondToRematch(
+        readyHost.roomId,
+        readyHost.participantToken,
+        false
+      );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:04.000Z'));
-      const waitingOlder = lobbyService.createRoom('Host Waiting Older', 'create:wait-1');
+      const waitingOlder = lobbyService.createRoom(
+        'Host Waiting Older',
+        'create:wait-1'
+      );
       lobbyService.connectParticipantSocket(
         waitingOlder.roomId,
         waitingOlder.participantToken,
@@ -168,7 +198,10 @@ describe('RoomsService', () => {
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:05.000Z'));
-      const waitingNewer = lobbyService.createRoom('Host Waiting Newer', 'create:wait-2');
+      const waitingNewer = lobbyService.createRoom(
+        'Host Waiting Newer',
+        'create:wait-2'
+      );
       lobbyService.connectParticipantSocket(
         waitingNewer.roomId,
         waitingNewer.participantToken,
@@ -206,6 +239,8 @@ describe('RoomsService', () => {
             roomId: readyHost.roomId,
             hostDisplayName: 'Host Ready',
             status: 'ready',
+            mode: 'gomoku',
+            boardSize: 15,
             players: {
               black: 'Host Ready',
               white: 'Guest Ready',
@@ -218,6 +253,8 @@ describe('RoomsService', () => {
             roomId: waitingNewer.roomId,
             hostDisplayName: 'Host Waiting Newer',
             status: 'waiting',
+            mode: 'go',
+            boardSize: 19,
             players: {
               black: null,
               white: null,
@@ -238,12 +275,12 @@ describe('RoomsService', () => {
     const host = service.createRoom('Host', 'create:test');
     const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
 
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    service.claimSeat(host.roomId, guest.participantToken, 'white');
-    service.startMatch(host.roomId, host.participantToken, {
+    service.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
       boardSize: 15,
     });
+    service.claimSeat(host.roomId, host.participantToken, 'black');
+    service.claimSeat(host.roomId, guest.participantToken, 'white');
 
     expect(() =>
       service.releaseSeat(host.roomId, host.participantToken)
@@ -253,3 +290,29 @@ describe('RoomsService', () => {
     ).toThrow(BadRequestException);
   });
 });
+
+function finishHostedGomokuMatch(
+  service: RoomsService,
+  roomId: string,
+  hostToken: string,
+  guestToken: string
+): void {
+  const sequence = [
+    { token: hostToken, point: { x: 0, y: 0 } },
+    { token: guestToken, point: { x: 0, y: 1 } },
+    { token: hostToken, point: { x: 1, y: 0 } },
+    { token: guestToken, point: { x: 1, y: 1 } },
+    { token: hostToken, point: { x: 2, y: 0 } },
+    { token: guestToken, point: { x: 2, y: 1 } },
+    { token: hostToken, point: { x: 3, y: 0 } },
+    { token: guestToken, point: { x: 3, y: 1 } },
+    { token: hostToken, point: { x: 4, y: 0 } },
+  ];
+
+  for (const move of sequence) {
+    service.applyGameCommand(roomId, move.token, {
+      type: 'place',
+      point: move.point,
+    });
+  }
+}

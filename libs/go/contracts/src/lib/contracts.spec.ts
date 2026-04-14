@@ -23,6 +23,13 @@ describe('go-contracts', () => {
         black: 'host-1',
         white: null,
       },
+      nextMatchSettings: {
+        mode: 'go',
+        boardSize: 19,
+        komi: 6.5,
+      },
+      rematch: null,
+      autoStartBlockedUntilSeatChange: false,
       match: null,
       chat: [],
     };

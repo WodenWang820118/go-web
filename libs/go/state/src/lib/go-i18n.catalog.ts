@@ -107,11 +107,23 @@ const EN_ROOM_SHARED = {
   'room.error.chat_required': 'Chat messages cannot be empty.',
   'room.error.chat_too_long':
     'Chat messages must be {{max}} characters or fewer.',
+  'room.error.next_match_settings_locked':
+    'Next-match settings can only be changed while at least one seat is still open.',
+  'room.error.rematch_response_unavailable':
+    'There is no active rematch prompt to answer right now.',
+  'room.error.rematch_players_only':
+    'Only the two seated players from the finished match can answer the rematch prompt.',
+  'room.error.rematch_declined_wait_for_seat_change':
+    'A seat must change before the room can auto-start another match.',
   'room.error.unexpected_server_error': 'Unexpected server error.',
   'room.notice.seat_moved': '{{displayName}} moved to the {{seat}}.',
   'room.notice.seat_claimed': '{{displayName}} claimed the {{seat}}.',
   'room.notice.seat_released': '{{displayName}} released the {{seat}}.',
   'room.notice.match_started': '{{displayName}} started a {{mode}} match.',
+  'room.notice.match_started_auto': 'The next {{mode}} match started automatically.',
+  'room.notice.next_match_settings_updated':
+    'Next match updated to {{mode}} on a {{size}} x {{size}} board.',
+  'room.notice.rematch_declined': '{{displayName}} passed on another game.',
   'room.notice.participant_muted':
     '{{actorDisplayName}} muted {{targetDisplayName}}.',
   'room.notice.participant_unmuted':
@@ -194,6 +206,10 @@ const EN_LOCAL_UI = {
   'play.match_result': 'Match result',
   'play.restart_match': 'Restart match',
   'play.new_setup': 'New setup',
+  'play.play_again_prompt':
+    'Want another one with the same players and rules, or would you rather change the setup first?',
+  'play.play_again_action': 'Play again',
+  'play.change_setup_action': 'Change setup',
   'play.confirm.resign.header': 'Resign match?',
   'play.confirm.resign.message': 'This ends the current match immediately.',
   'play.confirm.resign.accept': 'Resign',
@@ -269,13 +285,17 @@ const EN_HOSTED_UI = {
   'room.page.live_board': 'Live board',
   'room.page.turn': 'Turn',
   'room.stage.ready.label': 'Ready room',
-  'room.stage.ready.title': 'Players are matched and waiting for the host.',
+  'room.stage.ready.title': 'Both seats are filled and the next match is about to auto-start.',
   'room.stage.ready.description':
-    'Both seats are filled, spectators can already chat, and the host can start the next match at any time.',
+    'Players are seated, spectators can already chat, and the room will launch the saved next-match settings automatically.',
+  'room.stage.blocked.label': 'Lineup paused',
+  'room.stage.blocked.title': 'A seat change is needed before auto-start resumes.',
+  'room.stage.blocked.description':
+    'The last rematch was declined. Release or change a seat to unlock the next automatic start.',
   'room.stage.waiting.label': 'Waiting room',
   'room.stage.waiting.title': 'Open seats are still available.',
   'room.stage.waiting.description':
-    'Players can claim black and white while spectators join early and keep the room chat moving.',
+    'Players can claim black and white while the host tunes the next-match settings and spectators keep the room chat moving.',
   'room.join.title.spectator': 'Join as spectator',
   'room.join.title.pre_match': 'Enter as a spectator or player',
   'room.join.description.spectator':
@@ -302,18 +322,38 @@ const EN_HOSTED_UI = {
   'room.participants.unmute': 'Unmute',
   'room.participants.kick': 'Kick',
   'room.participants.host_controls': 'Host controls',
-  'room.participants.start_match': 'Start a match',
-  'room.participants.finish_current_before_start':
-    'Finish the current match before reshuffling seats or starting a new game.',
   'room.participants.mode': 'Mode',
   'room.participants.board_size': 'Board size',
-  'room.participants.start_hosted_match': 'Start hosted match',
   'room.participants.match_actions': 'Match actions',
   'room.participants.finalize_score': 'Finalize score',
   'room.participants.move_log': 'Move log',
   'room.participants.empty_move_log':
     'Moves will appear here once the game begins.',
   'room.participants.viewer_role.player': '{{player}} player',
+  'room.next_match.eyebrow': 'Next up',
+  'room.next_match.title': 'Next match settings',
+  'room.next_match.description':
+    'These saved settings are used whenever the room auto-starts another game.',
+  'room.next_match.save': 'Save next match',
+  'room.next_match.locked.rematch':
+    'Settings are locked while the rematch prompt is waiting for player responses.',
+  'room.next_match.locked.live':
+    'Settings unlock again after the current live match finishes.',
+  'room.next_match.locked.filled':
+    'Settings lock as soon as both seats are filled and the room is ready to auto-start.',
+  'room.rematch.eyebrow': 'Rematch',
+  'room.rematch.title': 'Play another one?',
+  'room.rematch.description.player':
+    'Both seated players need to answer before the room can auto-start the next game.',
+  'room.rematch.description.spectator':
+    'Only the two seated players can answer. Everyone else can watch the responses come in.',
+  'room.rematch.accept': 'Play again',
+  'room.rematch.decline': 'Not now',
+  'room.rematch.response.pending': 'Waiting',
+  'room.rematch.response.accepted': 'Ready',
+  'room.rematch.response.declined': 'Passed',
+  'room.rematch.blocked':
+    'A player passed on the rematch. Change a seat to unlock auto-start for the next game.',
   'room.chat.title': 'Room chat',
   'room.chat.empty': 'Join the room to start the conversation.',
   'room.chat.message': 'Message',
@@ -338,7 +378,7 @@ const EN_HOSTED_UI = {
     'Games in progress stay open for spectators who want to watch and chat.',
   'lobby.section.ready.title': 'Ready rooms',
   'lobby.section.ready.caption':
-    'Both seats are filled and the host can start the match as soon as everyone is set.',
+    'These rooms already have two players seated and will auto-start with their saved next-match settings.',
   'lobby.section.waiting.title': 'Waiting rooms',
   'lobby.section.waiting.caption':
     'Open seats are still available, so these are the best rooms for fresh players to join.',
@@ -351,9 +391,9 @@ const EN_HOSTED_UI = {
   'lobby.room.status.live.copy':
     'Joining from the lobby takes you straight into spectator chat while the active game stays locked.',
   'lobby.room.status.ready.headline':
-    'Players are seated, and the host can start as soon as everyone is ready.',
+    'Players are seated and the room is primed to auto-start the next match.',
   'lobby.room.status.ready.copy':
-    'Enter the room to chat, confirm the lineup, or spectate the start countdown.',
+    'Enter the room to chat, confirm the saved settings, or watch the automatic start and rematch flow.',
   'lobby.room.status.waiting.headline':
     'Join the room, claim a seat inside, and get the next match moving.',
   'lobby.room.status.waiting.copy':
@@ -523,6 +563,17 @@ const ZH_ROOM_SHARED = {
   'room.client.realtime_unavailable': '請先等待房間即時連線完成，再使用房內操作。',
   'room.client.unexpected_network_error': '網路連線發生未預期的錯誤。',
   'lobby.error.load_failed': '無法載入線上房間。',
+  'room.error.next_match_settings_locked':
+    '至少保留一個空座位時，才能調整下一局設定。',
+  'room.error.rematch_response_unavailable': '目前沒有可回應的再來一局提示。',
+  'room.error.rematch_players_only':
+    '只有剛結束對局的兩位入座玩家可以回應再來一局。',
+  'room.error.rematch_declined_wait_for_seat_change':
+    '需要先變更座位，房間才能再次自動開始新對局。',
+  'room.notice.match_started_auto': '下一場 {{mode}} 對局已自動開始。',
+  'room.notice.next_match_settings_updated':
+    '下一局已更新為 {{mode}}，棋盤 {{size}} x {{size}}。',
+  'room.notice.rematch_declined': '{{displayName}} 這次先不再來一局。',
 } as const;
 const ZH_MODES = {
   'mode.go.title': '圍棋',
@@ -626,6 +677,9 @@ const ZH_LOCAL_UI = {
   'create.display_name': '你的顯示名稱',
   'create.creating_room': '建立房間中...',
   'create.create_room': '建立房間',
+  'play.play_again_prompt': '想用同樣的玩家與規則再來一局，還是先調整設定？',
+  'play.play_again_action': '再來一局',
+  'play.change_setup_action': '調整設定',
 } as const;
 const ZH_HOSTED_UI = {
   'room.hero.eyebrow': '線上多人房間',
@@ -750,6 +804,32 @@ const ZH_HOSTED_UI = {
   'lobby.count.online.other': '{{count}} 在線',
   'lobby.count.spectator.one': '{{count}} 位觀戰者',
   'lobby.count.spectator.other': '{{count}} 位觀戰者',
+  'room.stage.blocked.label': '陣容暫停',
+  'room.stage.blocked.title': '需要先變更座位，自動開始才會恢復。',
+  'room.stage.blocked.description':
+    '上一場再來一局被婉拒了。請先釋放或調整座位，再重新啟用自動開始。',
+  'room.next_match.eyebrow': '下一場',
+  'room.next_match.title': '下一局設定',
+  'room.next_match.description': '房間自動開始新對局時，會使用這組已儲存的設定。',
+  'room.next_match.save': '儲存下一局',
+  'room.next_match.locked.rematch':
+    '再來一局提示還在等待玩家回應時，設定會暫時鎖定。',
+  'room.next_match.locked.live': '目前對局進行中，結束後才能再次調整設定。',
+  'room.next_match.locked.filled':
+    '黑白雙方都入座後，房間準備自動開始，設定也會先鎖定。',
+  'room.rematch.eyebrow': '再來一局',
+  'room.rematch.title': '還要再下一場嗎？',
+  'room.rematch.description.player':
+    '兩位入座玩家都要回應後，房間才會自動開始下一局。',
+  'room.rematch.description.spectator':
+    '只有兩位入座玩家可以回應，其他人可以在這裡看到目前的回覆狀態。',
+  'room.rematch.accept': '再來一局',
+  'room.rematch.decline': '先不要',
+  'room.rematch.response.pending': '等待中',
+  'room.rematch.response.accepted': '已同意',
+  'room.rematch.response.declined': '先跳過',
+  'room.rematch.blocked':
+    '有玩家先不再來一局。請先變更座位，房間才會重新啟用自動開始。',
 } as const;
 
 const ZH_TW_TRANSLATIONS: Record<GoTranslationKey, string> = {

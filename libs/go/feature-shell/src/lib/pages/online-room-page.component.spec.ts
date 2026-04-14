@@ -23,10 +23,10 @@ describe('OnlineRoomPageComponent', () => {
 
     expect(roomService.bootstrapRoom).toHaveBeenCalledWith('ROOM42');
     expect(text).toContain(i18n.t('room.participants.join_room'));
-    expect(text).not.toContain(i18n.t('room.participants.host_controls'));
+    expect(text).not.toContain(i18n.t('room.next_match.save'));
   });
 
-  it('shows host controls when the current viewer is the host', async () => {
+  it('shows next-match settings when the current viewer is the host', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
@@ -36,7 +36,8 @@ describe('OnlineRoomPageComponent', () => {
     const text = await renderText(roomService);
     const i18n = TestBed.inject(GoI18nService);
 
-    expect(text).toContain(i18n.t('room.participants.host_controls'));
+    expect(text).toContain(i18n.t('room.next_match.title'));
+    expect(text).toContain(i18n.t('room.next_match.save'));
     expect(text).toContain(i18n.t('room.participants.you_are_here_as'));
   });
 
@@ -165,6 +166,98 @@ describe('OnlineRoomPageComponent', () => {
 
     expect(text).toContain(i18n.t('room.join.title.spectator'));
     expect(text).toContain(i18n.t('room.join.description.spectator'));
+  });
+
+  it('shows the rematch banner for seated players after a finished match', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        rematch: {
+          participants: {
+            black: 'host-1',
+            white: 'guest-1',
+          },
+          responses: {
+            black: 'pending',
+            white: 'accepted',
+          },
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null)
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(root.querySelector('[data-testid="room-rematch-banner"]')).not.toBeNull();
+    expect(root.textContent).toContain(i18n.t('room.rematch.title'));
+    expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
   });
 
   it('renders chat, participants, and move log as separate room panels', async () => {
@@ -385,6 +478,11 @@ function createRoomServiceStub(options: {
   const lastNotice = signal<string | null>(null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
+  const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
+  const rematch = computed(() => snapshot()?.rematch ?? null);
+  const autoStartBlockedUntilSeatChange = computed(
+    () => snapshot()?.autoStartBlockedUntilSeatChange ?? false
+  );
   const viewer = computed(() =>
     participants().find(item => item.participantId === participantId()) ?? null
   );
@@ -410,6 +508,9 @@ function createRoomServiceStub(options: {
     lastNotice,
     participants,
     match,
+    nextMatchSettings,
+    rematch,
+    autoStartBlockedUntilSeatChange,
     viewer,
     viewerSeat,
     isHost,
@@ -423,7 +524,8 @@ function createRoomServiceStub(options: {
     joinRoom: vi.fn().mockReturnValue(of(void 0)),
     claimSeat: vi.fn(),
     releaseSeat: vi.fn(),
-    startMatch: vi.fn(),
+    updateNextMatchSettings: vi.fn(),
+    respondToRematch: vi.fn(),
     sendGameCommand: vi.fn(),
     sendChat: vi.fn(),
     muteParticipant: vi.fn(),
@@ -454,6 +556,13 @@ function createSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
       black: null,
       white: null,
     },
+    nextMatchSettings: {
+      mode: 'go',
+      boardSize: 19,
+      komi: 6.5,
+    },
+    rematch: null,
+    autoStartBlockedUntilSeatChange: false,
     match: null,
     chat: [],
     ...overrides,

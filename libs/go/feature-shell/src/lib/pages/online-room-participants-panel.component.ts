@@ -5,12 +5,21 @@ import {
   input,
   output,
 } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
-import { PlayerColor } from '@gx/go/domain';
+import { GameMode, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { OnlineRoomSeatViewModel } from './online-room-page.models';
+
+type OnlineRoomJoinFormGroup = FormGroup<{
+  displayName: FormControl<string>;
+}>;
+
+type OnlineRoomSettingsFormGroup = FormGroup<{
+  mode: FormControl<GameMode>;
+  boardSize: FormControl<number>;
+}>;
 
 @Component({
   selector: 'lib-go-online-room-participants-panel',
@@ -89,6 +98,88 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
           </div>
         </section>
       }
+
+      <section class="rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-stone-100 shadow-xl shadow-slate-950/20">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
+          {{ i18n.t('room.next_match.eyebrow') }}
+        </p>
+        <div class="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-semibold text-stone-50">
+              {{ i18n.t('room.next_match.title') }}
+            </h2>
+            <p class="mt-3 text-sm leading-6 text-stone-300">
+              {{ i18n.t('room.next_match.description') }}
+            </p>
+          </div>
+
+          <div
+            class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-stone-300"
+            data-testid="room-next-match-summary"
+          >
+            {{
+              i18n.t('common.mode.' + settingsForm().controls['mode'].value)
+            }}
+            •
+            {{ settingsForm().controls.boardSize.value }} x {{ settingsForm().controls.boardSize.value }}
+          </div>
+        </div>
+
+        @if (isHost()) {
+          @if (canEditNextMatchSettings()) {
+            <form
+              class="mt-4 space-y-4"
+              data-testid="room-next-match-form"
+              [formGroup]="settingsForm()"
+              (ngSubmit)="settingsSavedRequested.emit()"
+            >
+              <label
+                [for]="settingsModeSelectId"
+                class="block space-y-2 text-sm font-medium text-stone-200"
+              >
+                <span>{{ i18n.t('room.participants.mode') }}</span>
+              </label>
+              <select
+                [id]="settingsModeSelectId"
+                formControlName="mode"
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
+              >
+                <option value="go">{{ i18n.t('common.mode.go') }}</option>
+                <option value="gomoku">{{ i18n.t('common.mode.gomoku') }}</option>
+              </select>
+
+              <label
+                [for]="settingsBoardSizeSelectId"
+                class="block space-y-2 text-sm font-medium text-stone-200"
+              >
+                <span>{{ i18n.t('room.participants.board_size') }}</span>
+              </label>
+              <select
+                [id]="settingsBoardSizeSelectId"
+                formControlName="boardSize"
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
+              >
+                @for (size of boardSizeOptions(); track size) {
+                  <option [value]="size">{{ size }} x {{ size }}</option>
+                }
+              </select>
+
+              <button
+                type="submit"
+                class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+                data-testid="save-next-match-settings"
+                [disabled]="!realtimeConnected()"
+              >
+                {{ i18n.t('room.next_match.save') }}
+              </button>
+            </form>
+          } @else if (settingsLockedMessage()) {
+            <p class="mt-4 text-sm leading-6 text-stone-300">
+              {{ settingsLockedMessage() }}
+            </p>
+          }
+        }
+      </section>
 
       <section class="rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-stone-100 shadow-xl shadow-slate-950/20">
         <div class="flex items-center justify-between gap-3">
@@ -237,71 +328,7 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
         </div>
       </section>
 
-      @if (isHost()) {
-        <section class="rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-stone-100 shadow-xl shadow-slate-950/20">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-            {{ i18n.t('room.participants.host_controls') }}
-          </p>
-          <h2 class="mt-2 text-xl font-semibold text-stone-50">
-            {{ i18n.t('room.participants.start_match') }}
-          </h2>
-
-          @if (!canChangeSeats()) {
-            <p class="mt-3 text-sm leading-6 text-stone-300">
-              {{ i18n.t('room.participants.finish_current_before_start') }}
-            </p>
-          } @else {
-            <form
-              class="mt-4 space-y-4"
-              data-testid="start-match-form"
-              [formGroup]="startForm()"
-              (ngSubmit)="startMatchRequested.emit()"
-            >
-              <label
-                [for]="startModeSelectId"
-                class="block space-y-2 text-sm font-medium text-stone-200"
-              >
-                <span>{{ i18n.t('room.participants.mode') }}</span>
-              </label>
-              <select
-                [id]="startModeSelectId"
-                formControlName="mode"
-                class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
-              >
-                <option value="go">{{ i18n.t('common.mode.go') }}</option>
-                <option value="gomoku">{{ i18n.t('common.mode.gomoku') }}</option>
-              </select>
-
-              <label
-                [for]="startBoardSizeSelectId"
-                class="block space-y-2 text-sm font-medium text-stone-200"
-              >
-                <span>{{ i18n.t('room.participants.board_size') }}</span>
-              </label>
-              <select
-                [id]="startBoardSizeSelectId"
-                formControlName="boardSize"
-                class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-stone-50 outline-none transition focus:border-amber-300/50"
-              >
-                @for (size of boardSizeOptions(); track size) {
-                  <option [value]="size">{{ size }} x {{ size }}</option>
-                }
-              </select>
-
-              <button
-                type="submit"
-                class="inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
-                data-testid="start-hosted-match"
-                [disabled]="!canStartMatch() || !realtimeConnected()"
-              >
-                {{ i18n.t('room.participants.start_hosted_match') }}
-              </button>
-            </form>
-          }
-        </section>
-      }
-
-      @if (match()) {
+      @if (match() && match()!.state.phase !== 'finished') {
         <section class="rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-stone-100 shadow-xl shadow-slate-950/20">
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
             {{ i18n.t('room.participants.match_actions') }}
@@ -342,8 +369,8 @@ import { OnlineRoomSeatViewModel } from './online-room-page.models';
 export class OnlineRoomParticipantsPanelComponent {
   protected readonly i18n = inject(GoI18nService);
 
-  readonly joinForm = input.required<FormGroup>();
-  readonly startForm = input.required<FormGroup>();
+  readonly joinForm = input.required<OnlineRoomJoinFormGroup>();
+  readonly settingsForm = input.required<OnlineRoomSettingsFormGroup>();
   readonly boardSizeOptions = input.required<readonly number[]>();
   readonly participantId = input<string | null>(null);
   readonly joining = input.required<boolean>();
@@ -352,7 +379,8 @@ export class OnlineRoomParticipantsPanelComponent {
   readonly isHost = input.required<boolean>();
   readonly realtimeConnected = input.required<boolean>();
   readonly canChangeSeats = input.required<boolean>();
-  readonly canStartMatch = input.required<boolean>();
+  readonly canEditNextMatchSettings = input.required<boolean>();
+  readonly settingsLockedMessage = input<string | null>(null);
   readonly canPass = input.required<boolean>();
   readonly canResign = input.required<boolean>();
   readonly canFinalizeScoring = input.required<boolean>();
@@ -365,7 +393,7 @@ export class OnlineRoomParticipantsPanelComponent {
   readonly joinRequested = output<void>();
   readonly claimSeatRequested = output<PlayerColor>();
   readonly releaseSeatRequested = output<void>();
-  readonly startMatchRequested = output<void>();
+  readonly settingsSavedRequested = output<void>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
   readonly finalizeScoringRequested = output<void>();
@@ -374,8 +402,8 @@ export class OnlineRoomParticipantsPanelComponent {
   readonly kickParticipantRequested = output<string>();
 
   protected readonly joinDisplayNameInputId = 'room-join-display-name';
-  protected readonly startModeSelectId = 'room-start-mode';
-  protected readonly startBoardSizeSelectId = 'room-start-board-size';
+  protected readonly settingsModeSelectId = 'room-settings-mode';
+  protected readonly settingsBoardSizeSelectId = 'room-settings-board-size';
 
   protected viewerRoleLabel(): string {
     if (this.isHost()) {

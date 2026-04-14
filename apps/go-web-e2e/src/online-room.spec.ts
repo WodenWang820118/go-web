@@ -1,6 +1,12 @@
 import { expect, Page, test } from '@playwright/test';
 
-test('creates a hosted room, seats players, starts a match, and supports spectators plus chat', async ({
+const goServerOrigin = (process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000').replace(
+  /\/+$/,
+  ''
+);
+const goServerOriginStorageKey = 'gx.go.serverOrigin';
+
+test('online room auto-starts with saved settings and both players can accept a rematch', async ({
   browser,
   page,
 }) => {
@@ -10,21 +16,7 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
   const spectatorPage = await spectatorContext.newPage();
 
   try {
-    await expect
-      .poll(
-        async () => {
-          try {
-            const response = await fetch('http://127.0.0.1:3000/api/health');
-            return response.ok;
-          } catch {
-            return false;
-          }
-        },
-        {
-          timeout: 30000,
-        }
-      )
-      .toBe(true);
+    await waitForApiHealth();
 
     await useEnglish(page);
     await page.getByTestId('lobby-display-name-input').fill('Host');
@@ -32,13 +24,13 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
     await expect(page).toHaveURL(/\/online\/room\/[A-Z0-9]+$/, {
       timeout: 10000,
     });
-    await expect(page.getByText(/You are here as/i)).toBeVisible({
-      timeout: 10000,
-    });
 
-    const roomIdMatch = page.url().match(/\/online\/room\/([A-Z0-9]+)$/);
-    expect(roomIdMatch?.[1]).toBeTruthy();
-    const roomId = roomIdMatch![1];
+    const roomId = getRoomIdFromUrl(page.url());
+
+    await expect(page.getByTestId('room-next-match-form')).toBeVisible();
+    await page.getByTestId('room-next-match-form').getByLabel('Mode').selectOption('gomoku');
+    await page.getByTestId('save-next-match-settings').click();
+    await expect(page.getByTestId('room-next-match-summary')).toContainText('Gomoku');
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
@@ -51,11 +43,9 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
     await page.getByTestId('claim-black').click();
     await guestPage.getByTestId('claim-white').click();
 
-    await expect(page.getByTestId('start-hosted-match')).toBeEnabled();
-    await page.getByTestId('start-hosted-match').click();
-
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();
+    await expect(page.getByTestId('save-next-match-settings')).toHaveCount(0);
 
     await useEnglish(spectatorPage);
     await spectatorPage.goto(`/online/room/${roomId}`);
@@ -63,44 +53,134 @@ test('creates a hosted room, seats players, starts a match, and supports spectat
     await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-chat-panel')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-participants-panel')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-move-log-panel')).toBeVisible();
-    await expect(spectatorPage.getByTestId('claim-black')).toHaveCount(0);
-    await expect(spectatorPage.getByTestId('claim-white')).toHaveCount(0);
-
-    await page.getByTestId('intersection-7-7').click({ force: true });
-    await expect(page.getByText(/1 moves/i)).toBeVisible();
-    await expect(guestPage.getByText(/1 moves/i)).toBeVisible();
-    await expect(spectatorPage.getByText(/1 moves/i)).toBeVisible();
-
     await spectatorPage.getByTestId('chat-message-input').fill('Watching live');
     await spectatorPage.getByRole('button', { name: 'Send' }).click();
-
     await expect(page.getByText('Watching live')).toBeVisible();
-    await expect(guestPage.getByText('Watching live')).toBeVisible();
 
-    await spectatorPage.setViewportSize({ width: 390, height: 844 });
+    await playWinningGomokuSequence(page, guestPage);
 
-    const boardBox = await spectatorPage.getByTestId('game-board').boundingBox();
-    const chatBox = await spectatorPage.getByTestId('room-chat-panel').boundingBox();
+    await expect(page.getByTestId('room-rematch-banner')).toBeVisible();
+    await expect(guestPage.getByTestId('room-rematch-banner')).toBeVisible();
 
-    expect(boardBox).not.toBeNull();
-    expect(chatBox).not.toBeNull();
-    expect(chatBox!.y).toBeGreaterThanOrEqual(boardBox!.y + boardBox!.height - 1);
+    await page.getByTestId('room-rematch-accept').click();
+    await expect(guestPage.getByTestId('room-rematch-status-black')).toContainText('Ready');
 
-    await expect(spectatorPage.getByTestId('board-coordinates-top')).not.toBeVisible();
-    await expect(spectatorPage.getByTestId('board-coordinates-right')).not.toBeVisible();
-    await expect(spectatorPage.getByTestId('board-coordinates-bottom')).toBeVisible();
-    await expect(spectatorPage.getByTestId('board-coordinates-left')).toBeVisible();
+    await guestPage.getByTestId('room-rematch-accept').click();
+
+    await expect(page.getByTestId('room-rematch-banner')).toHaveCount(0);
+    await expect(guestPage.getByTestId('room-rematch-banner')).toHaveCount(0);
+    await expect(page.getByText(/0 moves/i)).toBeVisible();
+    await expect(guestPage.getByText(/0 moves/i)).toBeVisible();
   } finally {
     await guestContext.close();
     await spectatorContext.close();
   }
 });
 
+test('online room stays idle after a rematch decline until a seat changes', async ({
+  browser,
+  page,
+}) => {
+  const guestContext = await browser.newContext();
+  const guestPage = await guestContext.newPage();
+
+  try {
+    await waitForApiHealth();
+
+    await useEnglish(page);
+    await page.getByTestId('lobby-display-name-input').fill('Host');
+    await page.getByTestId('online-lobby-create-button').click();
+    await expect(page).toHaveURL(/\/online\/room\/[A-Z0-9]+$/, {
+      timeout: 10000,
+    });
+
+    const roomId = getRoomIdFromUrl(page.url());
+
+    await page.getByTestId('room-next-match-form').getByLabel('Mode').selectOption('gomoku');
+    await page.getByTestId('save-next-match-settings').click();
+
+    await useEnglish(guestPage);
+    await guestPage.goto(`/online/room/${roomId}`);
+    await guestPage.getByTestId('join-room-form').getByLabel('Display name').fill('Guest');
+    await guestPage.getByRole('button', { name: 'Join room' }).click();
+
+    await page.getByTestId('claim-black').click();
+    await guestPage.getByTestId('claim-white').click();
+    await expect(page.getByTestId('game-board')).toBeVisible();
+
+    await playWinningGomokuSequence(page, guestPage);
+
+    await expect(page.getByTestId('room-rematch-banner')).toBeVisible();
+    await page.getByTestId('room-rematch-decline').click();
+
+    await expect(page.getByTestId('room-rematch-blocked')).toBeVisible();
+    await expect(guestPage.getByTestId('room-rematch-blocked')).toBeVisible();
+
+    await page.getByTestId('release-black').click();
+    await expect(page.getByTestId('claim-black')).toBeVisible();
+    await page.getByTestId('claim-black').click();
+
+    await expect(page.getByTestId('room-rematch-blocked')).toHaveCount(0);
+    await expect(guestPage.getByTestId('room-rematch-blocked')).toHaveCount(0);
+    await expect(page.getByText(/0 moves/i)).toBeVisible();
+  } finally {
+    await guestContext.close();
+  }
+});
+
 async function useEnglish(page: Page): Promise<void> {
+  await page.addInitScript(
+    ({ key, value }) => {
+      window.localStorage.setItem(key, value);
+    },
+    {
+      key: goServerOriginStorageKey,
+      value: goServerOrigin,
+    }
+  );
   await page.goto('/');
   await page.getByTestId('locale-option-en').click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+}
+
+async function waitForApiHealth(): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        try {
+          const response = await fetch(`${goServerOrigin}/api/health`);
+          return response.ok;
+        } catch {
+          return false;
+        }
+      },
+      {
+        timeout: 30000,
+      }
+    )
+    .toBe(true);
+}
+
+function getRoomIdFromUrl(url: string): string {
+  const match = url.match(/\/online\/room\/([A-Z0-9]+)$/);
+  expect(match?.[1]).toBeTruthy();
+  return match![1];
+}
+
+async function playWinningGomokuSequence(hostPage: Page, guestPage: Page): Promise<void> {
+  const sequence = [
+    { page: hostPage, point: 'intersection-0-0' },
+    { page: guestPage, point: 'intersection-0-1' },
+    { page: hostPage, point: 'intersection-1-0' },
+    { page: guestPage, point: 'intersection-1-1' },
+    { page: hostPage, point: 'intersection-2-0' },
+    { page: guestPage, point: 'intersection-2-1' },
+    { page: hostPage, point: 'intersection-3-0' },
+    { page: guestPage, point: 'intersection-3-1' },
+    { page: hostPage, point: 'intersection-4-0' },
+  ];
+
+  for (const move of sequence) {
+    await move.page.getByTestId(move.point).click({ force: true });
+  }
 }

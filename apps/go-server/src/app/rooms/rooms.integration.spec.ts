@@ -41,7 +41,7 @@ describe('rooms integration', () => {
   }, 30000);
 
   it(
-    'creates, joins, starts, plays, and chats through REST plus websocket',
+    'creates, joins, auto-starts, plays, and chats through REST plus websocket',
     async () => {
     const createdResponse = await request(app.getHttpServer())
       .post('/api/rooms')
@@ -93,19 +93,14 @@ describe('rooms integration', () => {
     });
     await hostSeatClaim;
 
-    const guestSeatClaim = once<RoomSnapshot>(guestSocket, 'room.snapshot');
-    guestSocket.emit('seat.claim', {
-      roomId: host.roomId,
-      participantToken: guest.participantToken,
-      color: 'white',
-    });
-    await guestSeatClaim;
-
-    const started = once<{ match: { state: { phase: string } } }>(
-      guestSocket,
-      'game.updated'
+    const settingsUpdated = onceWhere<RoomSnapshot>(
+      hostSocket,
+      'room.snapshot',
+      snapshot =>
+        snapshot.nextMatchSettings.mode === 'gomoku' &&
+        snapshot.nextMatchSettings.boardSize === 15
     );
-    hostSocket.emit('game.start', {
+    hostSocket.emit('room.settings.update', {
       roomId: host.roomId,
       participantToken: host.participantToken,
       settings: {
@@ -113,10 +108,22 @@ describe('rooms integration', () => {
         boardSize: 15,
       },
     });
+    await settingsUpdated;
+
+    const started = once<{ match: { state: { phase: string; boardSize: number } } }>(
+      guestSocket,
+      'game.updated'
+    );
+    guestSocket.emit('seat.claim', {
+      roomId: host.roomId,
+      participantToken: guest.participantToken,
+      color: 'white',
+    });
     await expect(started).resolves.toMatchObject({
       match: {
         state: {
           phase: 'playing',
+          boardSize: 15,
         },
       },
     });
@@ -155,6 +162,133 @@ describe('rooms integration', () => {
         message: 'Good luck!',
       },
     });
+    },
+    30000
+  );
+
+  it(
+    'waits for both seated players to accept a rematch before auto-starting again',
+    async () => {
+      const createdResponse = await request(app.getHttpServer())
+        .post('/api/rooms')
+        .send({ displayName: 'Host' })
+        .expect(201);
+      const host = createdResponse.body as CreateRoomResponse;
+
+      const joinedResponse = await request(app.getHttpServer())
+        .post(`/api/rooms/${host.roomId}/join`)
+        .send({ displayName: 'Guest' })
+        .expect(201);
+      const guest = joinedResponse.body as JoinRoomResponse;
+
+      const hostSocket = io(baseUrl, {
+        path: '/socket.io',
+        transports: ['websocket'],
+        forceNew: true,
+      });
+      const guestSocket = io(baseUrl, {
+        path: '/socket.io',
+        transports: ['websocket'],
+        forceNew: true,
+      });
+
+      sockets.push(hostSocket, guestSocket);
+
+      await waitForConnect(hostSocket);
+      await waitForConnect(guestSocket);
+
+      const hostJoined = once<RoomSnapshot>(hostSocket, 'room.snapshot');
+      hostSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+      });
+      await hostJoined;
+
+      const guestJoined = once<RoomSnapshot>(guestSocket, 'room.snapshot');
+      guestSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+      });
+      await guestJoined;
+
+      const settingsUpdated = onceWhere<RoomSnapshot>(
+        hostSocket,
+        'room.snapshot',
+        snapshot =>
+          snapshot.nextMatchSettings.mode === 'gomoku' &&
+          snapshot.nextMatchSettings.boardSize === 15
+      );
+      hostSocket.emit('room.settings.update', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+        settings: {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
+      });
+      await settingsUpdated;
+
+      const hostClaimSnapshot = onceWhere<RoomSnapshot>(
+        hostSocket,
+        'room.snapshot',
+        snapshot => snapshot.seatState.black === host.participantId
+      );
+      hostSocket.emit('seat.claim', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+        color: 'black',
+      });
+      await hostClaimSnapshot;
+
+      const started = onceWhere<{ match: { state: { phase: string } } }>(
+        guestSocket,
+        'game.updated',
+        event => event.match?.state.phase === 'playing'
+      );
+      guestSocket.emit('seat.claim', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+        color: 'white',
+      });
+      await started;
+
+      const rematchReadyPromise = onceWhere<RoomSnapshot>(
+        hostSocket,
+        'room.snapshot',
+        snapshot =>
+          snapshot.rematch?.responses.black === 'pending' &&
+          snapshot.rematch?.responses.white === 'pending' &&
+          snapshot.match?.state.phase === 'finished'
+      );
+      await finishGomokuMatchOverSocket(hostSocket, guestSocket, host, guest);
+      const rematchReady = await rematchReadyPromise;
+      expect(rematchReady.rematch).not.toBeNull();
+
+      const hostAccepted = onceWhere<RoomSnapshot>(
+        guestSocket,
+        'room.snapshot',
+        snapshot => snapshot.rematch?.responses.black === 'accepted'
+      );
+      hostSocket.emit('game.rematch.respond', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+        accepted: true,
+      });
+      await hostAccepted;
+
+      const restarted = onceWhere<{ match: { state: { phase: string; moveHistory: unknown[] } } }>(
+        hostSocket,
+        'game.updated',
+        event =>
+          event.match?.state.phase === 'playing' &&
+          event.match.state.moveHistory.length === 0
+      );
+      guestSocket.emit('game.rematch.respond', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+        accepted: true,
+      });
+      await restarted;
     },
     30000
   );
@@ -356,4 +490,79 @@ function onceWhere<T>(
 
     socket.on(event, handler);
   });
+}
+
+async function finishGomokuMatchOverSocket(
+  hostSocket: Socket,
+  guestSocket: Socket,
+  host: CreateRoomResponse,
+  guest: JoinRoomResponse
+): Promise<void> {
+  const sequence = [
+    {
+      socket: hostSocket,
+      token: host.participantToken,
+      point: { x: 0, y: 0 },
+    },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 0, y: 1 },
+    },
+    {
+      socket: hostSocket,
+      token: host.participantToken,
+      point: { x: 1, y: 0 },
+    },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 1, y: 1 },
+    },
+    {
+      socket: hostSocket,
+      token: host.participantToken,
+      point: { x: 2, y: 0 },
+    },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 2, y: 1 },
+    },
+    {
+      socket: hostSocket,
+      token: host.participantToken,
+      point: { x: 3, y: 0 },
+    },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 3, y: 1 },
+    },
+    {
+      socket: hostSocket,
+      token: host.participantToken,
+      point: { x: 4, y: 0 },
+    },
+  ];
+
+  for (const [index, move] of sequence.entries()) {
+    const finishedMove = index === sequence.length - 1;
+    const nextUpdate = onceWhere<{ match: { state: { phase: string } } }>(
+      move.socket === hostSocket ? guestSocket : hostSocket,
+      'game.updated',
+      event => event.match.state.phase === (finishedMove ? 'finished' : 'playing')
+    );
+
+    move.socket.emit('game.command', {
+      roomId: host.roomId,
+      participantToken: move.token,
+      command: {
+        type: 'place',
+        point: move.point,
+      },
+    });
+
+    await nextUpdate;
+  }
 }
