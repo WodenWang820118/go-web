@@ -2,7 +2,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { computed, Injectable, inject, signal } from '@angular/core';
 import {
   cloneRoomSnapshot,
-  createUniqueDisplayName,
   CreateRoomResponse,
   GameCommand,
   GameStartSettings,
@@ -28,7 +27,6 @@ import { OnlineRoomSocketService } from './online-room-socket.service';
 import { OnlineRoomsHttpService } from './online-rooms-http.service';
 import {
   OnlineRoomStorageService,
-  StoredRoomIdentity,
 } from './online-room-storage.service';
 import {
   applyChatMessage,
@@ -48,23 +46,18 @@ import {
   selectViewerIsMuted,
   selectViewerSeat,
 } from './online-room-selectors';
-
-type BootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
-type OnlineRoomRealtimeEvent =
-  | 'seat.claim'
-  | 'seat.release'
-  | 'room.settings.update'
-  | 'game.command'
-  | 'game.rematch.respond'
-  | 'chat.send'
-  | 'host.mute'
-  | 'host.unmute'
-  | 'host.kick';
-
-const JOIN_ROOM_REQUIRED_MESSAGE =
-  'room.client.join_required';
-const REALTIME_UNAVAILABLE_MESSAGE =
-  'room.client.realtime_unavailable';
+import {
+  createStoredRoomIdentity,
+  normalizeRoomId,
+  resolveJoinDisplayName,
+  resolveResponseDisplayName,
+} from './online-room.service.helpers';
+import {
+  BootstrapState,
+  JOIN_ROOM_REQUIRED_MESSAGE,
+  OnlineRoomRealtimeEvent,
+  REALTIME_UNAVAILABLE_MESSAGE,
+} from './online-room.service.models';
 
 /**
  * Frontend facade for a single hosted multiplayer room.
@@ -137,7 +130,7 @@ export class OnlineRoomService {
    * Loads a hosted room and restores a saved participant identity when possible.
    */
   bootstrapRoom(roomId: string): void {
-    const normalizedRoomId = roomId.toUpperCase();
+    const normalizedRoomId = normalizeRoomId(roomId);
 
     this.bootstrapSubscription?.unsubscribe();
     this.resetForRoom(normalizedRoomId);
@@ -218,19 +211,12 @@ export class OnlineRoomService {
       this.joiningSignal.set(true);
       this.lastErrorSignal.set(null);
 
-      const normalizedRoomId = roomId.toUpperCase();
+      const normalizedRoomId = normalizeRoomId(roomId);
       const stored = this.storage.get(normalizedRoomId);
-      const resolvedDisplayName = createUniqueDisplayName(
+      const resolvedDisplayName = resolveJoinDisplayName(
         displayName,
-        this.snapshotSignal()?.participants.map(participant => participant.displayName) ?? [],
-        {
-          currentName:
-            stored?.participantId && this.snapshotSignal()
-              ? this.snapshotSignal()?.participants.find(
-                  participant => participant.participantId === stored.participantId
-                )?.displayName ?? null
-              : null,
-        }
+        this.snapshotSignal(),
+        stored
       );
 
       return this.api
@@ -340,24 +326,19 @@ export class OnlineRoomService {
     requestedDisplayName: string,
     response: CreateRoomResponse | JoinRoomResponse
   ): void {
-    const resolvedDisplayName =
-      response.snapshot.participants.find(
-        participant => participant.participantId === response.participantId
-      )?.displayName ?? requestedDisplayName.trim();
+    const resolvedDisplayName = resolveResponseDisplayName(
+      requestedDisplayName,
+      response
+    );
 
-    this.activeRoomIdSignal.set(roomId.toUpperCase());
+    this.activeRoomIdSignal.set(normalizeRoomId(roomId));
     this.snapshotSignal.set(cloneRoomSnapshot(response.snapshot));
     this.participantIdSignal.set(response.participantId);
     this.participantTokenSignal.set(response.participantToken);
     this.displayNameSignal.set(resolvedDisplayName);
     this.bootstrapStateSignal.set('ready');
 
-    const identity: StoredRoomIdentity = {
-      displayName: resolvedDisplayName,
-      participantId: response.participantId,
-      participantToken: response.participantToken,
-    };
-
+    const identity = createStoredRoomIdentity(resolvedDisplayName, response);
     this.storage.set(roomId, identity);
     this.socket.connect(roomId, response.participantToken);
   }

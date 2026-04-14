@@ -15,16 +15,16 @@ import {
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
-import { OnlineRoomService } from '../online/online-room.service';
+import { HostedShellHeaderComponent } from '../shared/hosted-shell-header.component';
 import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';
 import { OnlineRoomHeroComponent } from './online-room-hero.component';
 import { OnlineRoomMoveLogPanelComponent } from './online-room-move-log-panel.component';
-import { HostedShellHeaderComponent } from './hosted-shell-header.component';
 import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
 } from './online-room-page.models';
 import { OnlineRoomParticipantsPanelComponent } from './online-room-participants-panel.component';
+import { OnlineRoomService } from './online-room.service';
 
 interface OnlineRoomRematchStatusViewModel {
   color: PlayerColor;
@@ -73,9 +73,7 @@ export class OnlineRoomPageComponent {
   protected readonly realtimeConnected = computed(
     () => this.onlineRoom.connectionState() === 'connected'
   );
-  protected readonly isLiveMatch = computed(
-    () => !!this.match() && this.match()!.state.phase !== 'finished'
-  );
+  protected readonly isLiveMatch = computed(() => this.match()?.state.phase !== 'finished');
   protected readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
     const snapshot = this.snapshot();
 
@@ -198,10 +196,15 @@ export class OnlineRoomPageComponent {
     return null;
   });
   protected readonly canRespondToRematch = computed(
-    () =>
-      this.realtimeConnected() &&
-      !!this.rematchViewerSeat() &&
-      this.rematch()?.responses[this.rematchViewerSeat()!] === 'pending'
+    () => {
+      const viewerSeat = this.rematchViewerSeat();
+
+      return (
+        this.realtimeConnected() &&
+        !!viewerSeat &&
+        this.rematch()?.responses[viewerSeat] === 'pending'
+      );
+    }
   );
   protected readonly rematchStatuses = computed<OnlineRoomRematchStatusViewModel[]>(() => {
     const rematch = this.rematch();

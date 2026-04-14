@@ -3,22 +3,24 @@ import {
   boardIsFull,
   cloneBoard,
   createBoard,
-  findWinningLine,
-  formatMoveNotation,
   getCell,
-  otherPlayer,
   setCell,
-} from './board-utils';
-import { failure, RulesEngine, success } from './rules-engine';
+} from '../board/board-state';
+import { otherPlayer } from '../board/player-utils';
+import { findWinningLine } from '../board/winning-line';
+import { createMoveRecord } from './shared/move-record';
+import { failure, RulesEngine, success } from '../rules/rules-engine';
 import {
   createMessage,
   MatchSettings,
   MatchState,
   MoveCommand,
-  MoveRecord,
   PlayerColor,
-} from './types';
+} from '../types';
 
+/**
+ * Rules engine implementation for Gomoku.
+ */
 export class GomokuRulesEngine implements RulesEngine {
   readonly mode = 'gomoku' as const;
 
@@ -139,7 +141,11 @@ export class GomokuRulesEngine implements RulesEngine {
       state,
       resignedBy,
       { type: 'resign', player: resignedBy },
-      state.board
+      state.board,
+      {
+        phaseAfterMove: 'finished',
+        capturesAfterMove: state.captures,
+      }
     );
     const summary = createMessage('game.result.win_by_resignation', {
       winner: createMessage(`common.player.${winner}`),
@@ -162,25 +168,4 @@ export class GomokuRulesEngine implements RulesEngine {
       },
     };
   }
-}
-
-function createMoveRecord(
-  state: MatchState,
-  player: PlayerColor,
-  command: MoveCommand,
-  board: MatchState['board']
-): MoveRecord {
-  const moveNumber = state.moveHistory.length + 1;
-
-  return {
-    id: `move-${moveNumber}-${player}-${command.type}`,
-    moveNumber,
-    player,
-    command,
-    notation: formatMoveNotation(command, state.boardSize),
-    boardHashAfterMove: boardHash(board),
-    phaseAfterMove: state.phase,
-    capturedPoints: [],
-    capturesAfterMove: { ...state.captures },
-  };
 }

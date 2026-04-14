@@ -6,9 +6,9 @@ import { CreateRoomResponse, LobbyRoomSummary, RoomSnapshot } from '@gx/go/contr
 import { GoI18nService } from '@gx/go/state';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-import { OnlineLobbyService } from '../online/online-lobby.service';
-import { OnlineRoomService } from '../online/online-room.service';
 import { OnlineLobbyPageComponent } from './online-lobby-page.component';
+import { OnlineLobbyService } from './online-lobby.service';
+import { OnlineRoomService } from '../room/online-room.service';
 
 @Component({
   standalone: true,

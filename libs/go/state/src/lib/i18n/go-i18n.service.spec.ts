@@ -7,6 +7,8 @@ import {
 } from '@angular/platform-browser/testing';
 import { createMessage } from '@gx/go/domain';
 import { GoI18nService } from './go-i18n.service';
+import { EN_TRANSLATIONS } from './go-i18n.catalog.en';
+import { ZH_TW_TRANSLATIONS } from './go-i18n.catalog.zh-tw';
 
 class MockStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -86,6 +88,17 @@ describe('GoI18nService', () => {
     expect(service.t('common.player.black')).toBe('Black');
   });
 
+  it('falls back to zh-TW when the persisted locale is unsupported', async () => {
+    const storage = installBrowserGlobals({
+      'gx.go.locale': 'fr-FR',
+    });
+    const service = createService();
+    flushEffects();
+
+    expect(service.locale()).toBe('zh-TW');
+    expect(storage.getItem('gx.go.locale')).toBe('zh-TW');
+  });
+
   it('interpolates params and nested message descriptors', async () => {
     installBrowserGlobals({
       'gx.go.locale': 'en',
@@ -117,6 +130,12 @@ describe('GoI18nService', () => {
     expect(globalThis.document.documentElement.lang).toBe('en');
     expect(storage.getItem('gx.go.locale')).toBe('en');
     expect(zhTime).not.toBe(enTime);
+  });
+
+  it('keeps the en and zh-TW catalogs in parity', () => {
+    expect(Object.keys(ZH_TW_TRANSLATIONS).sort()).toEqual(
+      Object.keys(EN_TRANSLATIONS).sort()
+    );
   });
 });
 

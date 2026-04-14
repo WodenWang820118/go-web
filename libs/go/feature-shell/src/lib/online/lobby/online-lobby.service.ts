@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { LobbyRoomSummary } from '@gx/go/contracts';
 import { EMPTY, Subscription, catchError, finalize, tap } from 'rxjs';
-import { OnlineRoomsHttpService } from './online-rooms-http.service';
+import { OnlineRoomsHttpService } from '../room/online-rooms-http.service';
 
 /**
  * Facade for the public hosted-room lobby.

@@ -5,8 +5,11 @@ import {
   MatchState,
   MoveCommand,
   RuleResult,
-} from './types';
+} from '../types';
 
+/**
+ * Shared interface implemented by each rules engine.
+ */
 export interface RulesEngine {
   readonly mode: GameMode;
   createInitialState(settings: MatchSettings): MatchState;
@@ -15,10 +18,16 @@ export interface RulesEngine {
   finalizeScoring?(state: MatchState, settings: MatchSettings): MatchState;
 }
 
+/**
+ * Wraps a successful rules-engine transition result.
+ */
 export function success(state: MatchState): RuleResult {
   return { ok: true, state };
 }
 
+/**
+ * Wraps a failed rules-engine transition result with a localized message descriptor.
+ */
 export function failure(
   state: MatchState,
   key: string,

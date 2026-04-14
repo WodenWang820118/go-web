@@ -1,33 +1,29 @@
 import {
   boardHash,
   cloneBoard,
-  collectGroup,
-  countStones,
   createBoard,
-  formatMoveNotation,
-  getAllPoints,
   getCell,
   getNeighbors,
-  otherPlayer,
-  parsePointKey,
-  pointKey,
   setCell,
-} from './board-utils';
-import { failure, RulesEngine, success } from './rules-engine';
+} from '../board/board-state';
+import { collectGroup } from '../board/group-analysis';
+import { otherPlayer } from '../board/player-utils';
+import { pointKey } from '../board/point-utils';
+import { buildScoringState } from './go/go-scoring';
+import { createMoveRecord } from './shared/move-record';
+import { failure, RulesEngine, success } from '../rules/rules-engine';
 import {
-  BoardMatrix,
   BoardPoint,
   createMessage,
   MatchSettings,
   MatchState,
   MoveCommand,
-  MoveRecord,
   PlayerColor,
-  ScoreBreakdown,
-  ScoringState,
-  TerritoryRegion,
-} from './types';
+} from '../types';
 
+/**
+ * Rules engine implementation for Go.
+ */
 export class GoRulesEngine implements RulesEngine {
   readonly mode = 'go' as const;
 
@@ -113,12 +109,12 @@ export class GoRulesEngine implements RulesEngine {
     };
   }
 
-  finalizeScoring(state: MatchState, _settings: MatchSettings): MatchState {
+  finalizeScoring(state: MatchState, settings: MatchSettings): MatchState {
     if (state.phase !== 'scoring' || !state.scoring) {
       return state;
     }
 
-    void _settings;
+    void settings;
 
     const { score } = state.scoring;
     const winner =
@@ -196,15 +192,11 @@ export class GoRulesEngine implements RulesEngine {
       [player]: state.captures[player] + capturedPoints.length,
     };
 
-    const moveRecord = createMoveRecord(
-      state,
-      player,
-      { type: 'place', point },
-      nextBoard,
-      'playing',
-      nextCaptures,
-      capturedPoints
-    );
+    const moveRecord = createMoveRecord(state, player, { type: 'place', point }, nextBoard, {
+      phaseAfterMove: 'playing',
+      capturesAfterMove: nextCaptures,
+      capturedPoints,
+    });
 
     return success({
       ...state,
@@ -238,14 +230,10 @@ export class GoRulesEngine implements RulesEngine {
       phaseAfterMove === 'scoring'
         ? buildScoringState(state.board, new Set<string>(), settings.komi)
         : null;
-    const moveRecord = createMoveRecord(
-      state,
-      player,
-      { type: 'pass' },
-      state.board,
+    const moveRecord = createMoveRecord(state, player, { type: 'pass' }, state.board, {
       phaseAfterMove,
-      state.captures
-    );
+      capturesAfterMove: state.captures,
+    });
 
     return {
       ...state,
@@ -272,8 +260,10 @@ export class GoRulesEngine implements RulesEngine {
       resignedBy,
       { type: 'resign', player: resignedBy },
       state.board,
-      'finished',
-      state.captures
+      {
+        phaseAfterMove: 'finished',
+        capturesAfterMove: state.captures,
+      }
     );
     const summary = createMessage('game.result.win_by_resignation', {
       winner: createMessage(`common.player.${winner}`),
@@ -295,123 +285,4 @@ export class GoRulesEngine implements RulesEngine {
       message: summary,
     };
   }
-}
-
-function createMoveRecord(
-  state: MatchState,
-  player: PlayerColor,
-  command: MoveCommand,
-  board: BoardMatrix,
-  phaseAfterMove: MatchState['phase'],
-  capturesAfterMove: Record<PlayerColor, number>,
-  capturedPoints: BoardPoint[] = []
-): MoveRecord {
-  const moveNumber = state.moveHistory.length + 1;
-
-  return {
-    id: `move-${moveNumber}-${player}-${command.type}`,
-    moveNumber,
-    player,
-    command,
-    notation: formatMoveNotation(command, state.boardSize),
-    boardHashAfterMove: boardHash(board),
-    phaseAfterMove,
-    capturedPoints,
-    capturesAfterMove: { ...capturesAfterMove },
-  };
-}
-
-function buildScoringState(
-  board: BoardMatrix,
-  deadStoneKeys: Set<string>,
-  komi: number
-): ScoringState {
-  const adjustedBoard = cloneBoard(board);
-  const boardSize = board.length as MatchState['boardSize'];
-
-  for (const key of deadStoneKeys) {
-    const point = parsePointKey(key);
-    setCell(adjustedBoard, point, null);
-  }
-
-  const territory: TerritoryRegion[] = [];
-  const visited = new Set<string>();
-
-  for (const point of getAllPoints(boardSize)) {
-    if (getCell(adjustedBoard, point) !== null || visited.has(pointKey(point))) {
-      continue;
-    }
-
-    const pending = [point];
-    const regionPoints: BoardPoint[] = [];
-    const borderingColors = new Set<PlayerColor>();
-
-    while (pending.length > 0) {
-      const current = pending.pop();
-
-      if (!current) {
-        continue;
-      }
-
-      const currentKey = pointKey(current);
-
-      if (visited.has(currentKey)) {
-        continue;
-      }
-
-      visited.add(currentKey);
-      regionPoints.push(current);
-
-      for (const neighbor of getNeighbors(current, boardSize)) {
-        const neighborValue = getCell(adjustedBoard, neighbor);
-
-        if (neighborValue === null) {
-          if (!visited.has(pointKey(neighbor))) {
-            pending.push(neighbor);
-          }
-
-          continue;
-        }
-
-        borderingColors.add(neighborValue);
-      }
-    }
-
-    territory.push({
-      owner: borderingColors.size === 1 ? [...borderingColors][0] : null,
-      points: regionPoints,
-    });
-  }
-
-  const stoneCounts = countStones(adjustedBoard);
-  const score = territory.reduce<ScoreBreakdown>(
-    (currentScore, region) => {
-      if (region.owner === 'black') {
-        currentScore.blackTerritory += region.points.length;
-      } else if (region.owner === 'white') {
-        currentScore.whiteTerritory += region.points.length;
-      }
-
-      currentScore.black = currentScore.blackStones + currentScore.blackTerritory;
-      currentScore.white =
-        currentScore.whiteStones + currentScore.whiteTerritory + currentScore.komi;
-
-      return currentScore;
-    },
-    {
-      black: stoneCounts.black,
-      white: stoneCounts.white + komi,
-      blackStones: stoneCounts.black,
-      whiteStones: stoneCounts.white,
-      blackTerritory: 0,
-      whiteTerritory: 0,
-      komi,
-    }
-  );
-
-  return {
-    deadStones: [...deadStoneKeys],
-    territory,
-    score,
-  };
 }
