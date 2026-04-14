@@ -46,6 +46,8 @@ Thumbs.db
 .angular
 .claude
 .playwright-mcp
+.cache/
+proofshot-artifacts/
 
 # Local secrets and machine-specific credentials
 .env

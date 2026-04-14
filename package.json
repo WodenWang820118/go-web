@@ -4,6 +4,13 @@
   "packageManager": "pnpm@10.22.0",
   "license": "MIT",
   "scripts": {
+    "proofshot:check": "node --experimental-strip-types scripts/proofshot.ts check",
+    "proofshot:start:web": "node --experimental-strip-types scripts/proofshot.ts start-web",
+    "proofshot:stop": "node --experimental-strip-types scripts/proofshot.ts stop",
+    "proofshot:clean": "node --experimental-strip-types scripts/proofshot.ts clean",
+    "review:status": "node scripts/review-gate/status.mjs",
+    "review:approve-pre-implementation": "node scripts/review-gate/approve-pre-implementation.mjs",
+    "review:reset": "node scripts/review-gate/reset.mjs",
     "docker:build": "pnpm nx run-many -t docker:build -p go-web,go-server",
     "docker:export": "pnpm docker:build && node tools/docker/export-images.cjs",
     "docker:up": "docker compose up -d --build",
