@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DEFAULT_GO_KOMI, GoMessageDescriptor, PlayerColor } from '@gx/go/domain';
 import { SystemNotice } from '@gx/go/contracts';
 import {
@@ -6,9 +6,15 @@ import {
   ROOM_ID_LENGTH,
   ROOM_IDLE_TTL_MS,
   THROTTLE_WINDOW_MS,
-} from './rooms.constants';
-import { forbiddenMessage, notFoundMessage } from './rooms.errors';
-import { ParticipantRecord, RoomRecord, SocketIndexEntry } from './rooms.types';
+} from '../rooms-config/rooms.constants';
+import {
+  RoomsErrorsService,
+} from '../rooms-errors/rooms-errors.service';
+import {
+  ParticipantRecord,
+  RoomRecord,
+  SocketIndexEntry,
+} from '../../contracts/rooms.types';
 
 /**
  * Owns the in-memory room state and low-level lookup helpers for hosted rooms.
@@ -18,6 +24,11 @@ export class RoomsStore {
   readonly rooms = new Map<string, RoomRecord>();
   readonly socketIndex = new Map<string, SocketIndexEntry>();
   readonly attemptWindows = new Map<string, number[]>();
+
+  constructor(
+    @Inject(RoomsErrorsService)
+    private readonly roomsErrors: RoomsErrorsService
+  ) {}
 
   createParticipant(
     displayName: string,
@@ -72,7 +83,7 @@ export class RoomsStore {
     const room = this.rooms.get(normalized);
 
     if (!room) {
-      throw notFoundMessage('room.error.not_found', {
+      throw this.roomsErrors.notFound('room.error.not_found', {
         roomId: normalized,
       });
     }
@@ -96,7 +107,7 @@ export class RoomsStore {
     const participant = this.tryGetParticipantByToken(room, participantToken);
 
     if (!participant) {
-      throw forbiddenMessage('room.error.invalid_participant_token');
+      throw this.roomsErrors.forbidden('room.error.invalid_participant_token');
     }
 
     return participant;
@@ -109,7 +120,7 @@ export class RoomsStore {
     const participant = room.participants.get(participantId);
 
     if (!participant) {
-      throw notFoundMessage('room.error.participant_not_found');
+      throw this.roomsErrors.notFound('room.error.participant_not_found');
     }
 
     return participant;
@@ -122,7 +133,7 @@ export class RoomsStore {
     const participant = this.getParticipantByToken(room, participantToken);
 
     if (!participant.isHost) {
-      throw forbiddenMessage('room.error.host_only_action');
+      throw this.roomsErrors.forbidden('room.error.host_only_action');
     }
 
     return participant;

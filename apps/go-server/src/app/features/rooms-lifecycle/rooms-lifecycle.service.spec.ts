@@ -1,15 +1,17 @@
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 
 describe('RoomsLifecycleService', () => {
   let lifecycle: RoomsLifecycleService;
 
   beforeEach(() => {
-    const store = new RoomsStore();
+    const roomsErrors = new RoomsErrorsService();
+    const store = new RoomsStore(roomsErrors);
     const snapshotMapper = new RoomsSnapshotMapper(store);
 
-    lifecycle = new RoomsLifecycleService(store, snapshotMapper);
+    lifecycle = new RoomsLifecycleService(store, snapshotMapper, roomsErrors);
   });
 
   afterEach(() => {

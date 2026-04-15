@@ -1,19 +1,21 @@
 import { BadRequestException, HttpException } from '@nestjs/common';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsChatService } from './rooms-chat.service';
-import { RoomsLifecycleService } from './rooms-lifecycle.service';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { RoomsLifecycleService } from '../rooms-lifecycle/rooms-lifecycle.service';
 
 describe('RoomsChatService', () => {
   let lifecycle: RoomsLifecycleService;
   let chat: RoomsChatService;
 
   beforeEach(() => {
-    const store = new RoomsStore();
+    const roomsErrors = new RoomsErrorsService();
+    const store = new RoomsStore(roomsErrors);
     const snapshotMapper = new RoomsSnapshotMapper(store);
 
-    lifecycle = new RoomsLifecycleService(store, snapshotMapper);
-    chat = new RoomsChatService(store, snapshotMapper);
+    lifecycle = new RoomsLifecycleService(store, snapshotMapper, roomsErrors);
+    chat = new RoomsChatService(store, snapshotMapper, roomsErrors);
   });
 
   afterEach(() => {

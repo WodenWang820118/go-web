@@ -5,15 +5,11 @@ import {
   CHAT_WINDOW_MS,
   MAX_CHAT_LENGTH,
   MAX_CHAT_MESSAGES,
-} from '../rooms.constants';
-import {
-  badRequestMessage,
-  forbiddenMessage,
-  throttledMessage,
-} from '../rooms.errors';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
-import { ChatResult } from '../rooms.types';
+} from '../../core/rooms-config/rooms.constants';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { ChatResult } from '../../contracts/rooms.types';
 
 /**
  * Handles chat validation, throttling, and message persistence.
@@ -23,7 +19,9 @@ export class RoomsChatService {
   constructor(
     @Inject(RoomsStore) private readonly store: RoomsStore,
     @Inject(RoomsSnapshotMapper)
-    private readonly snapshotMapper: RoomsSnapshotMapper
+    private readonly snapshotMapper: RoomsSnapshotMapper,
+    @Inject(RoomsErrorsService)
+    private readonly roomsErrors: RoomsErrorsService
   ) {}
 
   sendChatMessage(
@@ -35,7 +33,7 @@ export class RoomsChatService {
     const participant = this.store.getParticipantByToken(room, participantToken);
 
     if (participant.muted) {
-      throw forbiddenMessage('room.error.you_are_muted');
+      throw this.roomsErrors.forbidden('room.error.you_are_muted');
     }
 
     const sanitizedMessage = this.sanitizeChatMessage(message);
@@ -45,7 +43,7 @@ export class RoomsChatService {
     );
 
     if (participant.chatTimestamps.length >= CHAT_MESSAGES_PER_WINDOW) {
-      throw throttledMessage('room.error.chat_rate_limited');
+      throw this.roomsErrors.throttled('room.error.chat_rate_limited');
     }
 
     participant.chatTimestamps.push(now);
@@ -73,11 +71,11 @@ export class RoomsChatService {
     const normalized = value.trim().replace(/\s+/g, ' ');
 
     if (normalized.length === 0) {
-      throw badRequestMessage('room.error.chat_required');
+      throw this.roomsErrors.badRequest('room.error.chat_required');
     }
 
     if (normalized.length > MAX_CHAT_LENGTH) {
-      throw badRequestMessage('room.error.chat_too_long', {
+      throw this.roomsErrors.badRequest('room.error.chat_too_long', {
         max: MAX_CHAT_LENGTH,
       });
     }

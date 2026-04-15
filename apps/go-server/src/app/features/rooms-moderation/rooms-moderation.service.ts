@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { roomMessage, badRequestMessage } from '../rooms.errors';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
-import { KickResult, MutationResult } from '../rooms.types';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { KickResult, MutationResult } from '../../contracts/rooms.types';
 
 /**
  * Handles host-only moderation actions for hosted rooms.
@@ -12,7 +12,9 @@ export class RoomsModerationService {
   constructor(
     @Inject(RoomsStore) private readonly store: RoomsStore,
     @Inject(RoomsSnapshotMapper)
-    private readonly snapshotMapper: RoomsSnapshotMapper
+    private readonly snapshotMapper: RoomsSnapshotMapper,
+    @Inject(RoomsErrorsService)
+    private readonly roomsErrors: RoomsErrorsService
   ) {}
 
   muteParticipant(
@@ -25,7 +27,7 @@ export class RoomsModerationService {
     const target = this.store.getParticipantById(room, targetParticipantId);
 
     if (target.isHost) {
-      throw badRequestMessage('room.error.host_cannot_be_muted');
+      throw this.roomsErrors.badRequest('room.error.host_cannot_be_muted');
     }
 
     target.muted = true;
@@ -34,7 +36,7 @@ export class RoomsModerationService {
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
       notice: this.store.createNotice(
-        roomMessage('room.notice.participant_muted', {
+        this.roomsErrors.roomMessage('room.notice.participant_muted', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
         })
@@ -57,7 +59,7 @@ export class RoomsModerationService {
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
       notice: this.store.createNotice(
-        roomMessage('room.notice.participant_unmuted', {
+        this.roomsErrors.roomMessage('room.notice.participant_unmuted', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
         })
@@ -75,11 +77,11 @@ export class RoomsModerationService {
     const target = this.store.getParticipantById(room, targetParticipantId);
 
     if (target.isHost) {
-      throw badRequestMessage('room.error.host_cannot_be_kicked');
+      throw this.roomsErrors.badRequest('room.error.host_cannot_be_kicked');
     }
 
     if (target.seat && room.match && room.match.state.phase !== 'finished') {
-      throw badRequestMessage('room.error.cannot_kick_active_player');
+      throw this.roomsErrors.badRequest('room.error.cannot_kick_active_player');
     }
 
     const kickedSocketIds = [...target.socketIds];
@@ -100,7 +102,7 @@ export class RoomsModerationService {
       snapshot: this.snapshotMapper.toSnapshot(room),
       kickedSocketIds,
       notice: this.store.createNotice(
-        roomMessage('room.notice.participant_removed', {
+        this.roomsErrors.roomMessage('room.notice.participant_removed', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
         })

@@ -1,21 +1,28 @@
 import { BadRequestException } from '@nestjs/common';
-import { RoomsLifecycleService } from './rooms-lifecycle.service';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsMatchService } from './rooms-match.service';
-import { RoomsRulesEngineService } from './rooms-rules-engine.service';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
+import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rules-engine.service';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { RoomsLifecycleService } from '../rooms-lifecycle/rooms-lifecycle.service';
 
 describe('RoomsMatchService', () => {
   let lifecycle: RoomsLifecycleService;
   let match: RoomsMatchService;
 
   beforeEach(() => {
-    const store = new RoomsStore();
+    const roomsErrors = new RoomsErrorsService();
+    const store = new RoomsStore(roomsErrors);
     const snapshotMapper = new RoomsSnapshotMapper(store);
     const rulesEngines = new RoomsRulesEngineService();
 
-    lifecycle = new RoomsLifecycleService(store, snapshotMapper);
-    match = new RoomsMatchService(store, snapshotMapper, rulesEngines);
+    lifecycle = new RoomsLifecycleService(store, snapshotMapper, roomsErrors);
+    match = new RoomsMatchService(
+      store,
+      snapshotMapper,
+      rulesEngines,
+      roomsErrors
+    );
   });
 
   afterEach(() => {

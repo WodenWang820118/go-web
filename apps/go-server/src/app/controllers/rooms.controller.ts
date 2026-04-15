@@ -15,14 +15,17 @@ import type {
 } from '@gx/go/contracts';
 import type { Request } from 'express';
 import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
-import { RoomsService } from './services/rooms.service';
+import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
 
 /**
  * Exposes the hosted room REST API used by the Angular frontend.
  */
 @Controller('rooms')
 export class RoomsController {
-  constructor(@Inject(RoomsService) private readonly roomsService: RoomsService) {}
+  constructor(
+    @Inject(RoomsLifecycleService)
+    private readonly roomsLifecycleService: RoomsLifecycleService
+  ) {}
 
   // #region Routes
   @Post()
@@ -30,7 +33,7 @@ export class RoomsController {
     @Body() body: CreateRoomDto,
     @Req() request: Request
   ): CreateRoomResponse {
-    return this.roomsService.createRoom(
+    return this.roomsLifecycleService.createRoom(
       body.displayName,
       this.requesterKey(request, 'create')
     );
@@ -42,7 +45,7 @@ export class RoomsController {
     @Body() body: JoinRoomDto,
     @Req() request: Request
   ): JoinRoomResponse {
-    return this.roomsService.joinRoom(
+    return this.roomsLifecycleService.joinRoom(
       roomId,
       body.displayName,
       body.participantToken,
@@ -52,12 +55,12 @@ export class RoomsController {
 
   @Get()
   listRooms(): ListRoomsResponse {
-    return this.roomsService.listRooms();
+    return this.roomsLifecycleService.listRooms();
   }
 
   @Get(':roomId')
   getRoom(@Param('roomId') roomId: string): GetRoomResponse {
-    return this.roomsService.getRoom(roomId);
+    return this.roomsLifecycleService.getRoom(roomId);
   }
   // #endregion
 

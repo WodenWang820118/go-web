@@ -26,7 +26,10 @@ import {
 import { createMessage, isMessageDescriptor } from '@gx/go/domain';
 import { HttpException, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { RoomsService } from './services/rooms.service';
+import { RoomsChatService } from '../features/rooms-chat/rooms-chat.service';
+import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
+import { RoomsMatchService } from '../features/rooms-match/rooms-match.service';
+import { RoomsModerationService } from '../features/rooms-moderation/rooms-moderation.service';
 
 /**
  * Bridges hosted room websocket events to the room facade and broadcast helpers.
@@ -41,11 +44,20 @@ export class RoomsGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(@Inject(RoomsService) private readonly roomsService: RoomsService) {}
+  constructor(
+    @Inject(RoomsLifecycleService)
+    private readonly roomsLifecycleService: RoomsLifecycleService,
+    @Inject(RoomsMatchService)
+    private readonly roomsMatchService: RoomsMatchService,
+    @Inject(RoomsChatService)
+    private readonly roomsChatService: RoomsChatService,
+    @Inject(RoomsModerationService)
+    private readonly roomsModerationService: RoomsModerationService
+  ) {}
 
   // #region Connection lifecycle
   handleDisconnect(client: Socket): void {
-    const snapshot = this.roomsService.disconnectSocket(client.id);
+    const snapshot = this.roomsLifecycleService.disconnectSocket(client.id);
 
     if (snapshot) {
       this.broadcastPresence(snapshot);
@@ -58,7 +70,9 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: RoomJoinPayload
   ): void {
     try {
-      const previousSnapshot = this.roomsService.disconnectSocket(client.id);
+      const previousSnapshot = this.roomsLifecycleService.disconnectSocket(
+        client.id
+      );
 
       if (previousSnapshot) {
         this.broadcastPresence(previousSnapshot);
@@ -70,7 +84,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
         }
       }
 
-      const snapshot = this.roomsService.connectParticipantSocket(
+      const snapshot = this.roomsLifecycleService.connectParticipantSocket(
         payload.roomId,
         payload.participantToken,
         client.id
@@ -94,7 +108,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     this.handleMutation(
       client,
       () =>
-        this.roomsService.claimSeat(
+        this.roomsMatchService.claimSeat(
           payload.roomId,
           payload.participantToken,
           payload.color
@@ -109,7 +123,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: SeatReleasePayload
   ): void {
     this.handleMutation(client, () =>
-      this.roomsService.releaseSeat(payload.roomId, payload.participantToken)
+      this.roomsMatchService.releaseSeat(payload.roomId, payload.participantToken)
     );
   }
 
@@ -121,7 +135,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     this.handleMutation(
       client,
       () =>
-        this.roomsService.startMatch(
+        this.roomsMatchService.startMatch(
           payload.roomId,
           payload.participantToken,
           payload.settings
@@ -138,7 +152,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     this.handleMutation(
       client,
       () =>
-        this.roomsService.applyGameCommand(
+        this.roomsMatchService.applyGameCommand(
           payload.roomId,
           payload.participantToken,
           payload.command
@@ -153,7 +167,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: RoomSettingsUpdatePayload
   ): void {
     this.handleMutation(client, () =>
-      this.roomsService.updateNextMatchSettings(
+      this.roomsMatchService.updateNextMatchSettings(
         payload.roomId,
         payload.participantToken,
         payload.settings
@@ -169,7 +183,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     this.handleMutation(
       client,
       () =>
-        this.roomsService.respondToRematch(
+        this.roomsMatchService.respondToRematch(
           payload.roomId,
           payload.participantToken,
           payload.accepted
@@ -186,7 +200,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: ChatSendPayload
   ): void {
     try {
-      const result = this.roomsService.sendChatMessage(
+      const result = this.roomsChatService.sendChatMessage(
         payload.roomId,
         payload.participantToken,
         payload.message
@@ -208,7 +222,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: HostModerationPayload
   ): void {
     this.handleMutation(client, () =>
-      this.roomsService.muteParticipant(
+      this.roomsModerationService.muteParticipant(
         payload.roomId,
         payload.participantToken,
         payload.targetParticipantId
@@ -222,7 +236,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: HostModerationPayload
   ): void {
     this.handleMutation(client, () =>
-      this.roomsService.unmuteParticipant(
+      this.roomsModerationService.unmuteParticipant(
         payload.roomId,
         payload.participantToken,
         payload.targetParticipantId
@@ -236,7 +250,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @MessageBody() payload: HostModerationPayload
   ): void {
     try {
-      const result = this.roomsService.kickParticipant(
+      const result = this.roomsModerationService.kickParticipant(
         payload.roomId,
         payload.participantToken,
         payload.targetParticipantId

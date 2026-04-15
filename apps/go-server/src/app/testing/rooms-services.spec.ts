@@ -1,36 +1,42 @@
 import { BadRequestException, ForbiddenException, HttpException } from '@nestjs/common';
 import { vi } from 'vitest';
-import { RoomsChatService } from './rooms-chat.service';
-import { RoomsLifecycleService } from './rooms-lifecycle.service';
-import { RoomsMatchService } from './rooms-match.service';
-import { RoomsModerationService } from './rooms-moderation.service';
-import { RoomsRulesEngineService } from './rooms-rules-engine.service';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
-import { RoomsService } from './rooms.service';
 
-describe('RoomsService', () => {
-  let service: RoomsService;
+import {
+  createRoomsServicesTestContext,
+  finishGomokuMatch,
+} from './test-fixtures';
+
+describe('rooms services composition', () => {
+  let context: ReturnType<typeof createRoomsServicesTestContext>;
 
   beforeEach(() => {
-    service = createRoomsService();
+    context = createRoomsServicesTestContext();
   });
 
   afterEach(() => {
-    service.onModuleDestroy();
+    context.destroy();
   });
 
   it('auto-starts once both seats are filled and uses the saved next-match settings', () => {
-    const host = service.createRoom('Host', 'create:test');
-    const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test'
+    );
 
-    service.updateNextMatchSettings(host.roomId, host.participantToken, {
+    context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
       boardSize: 15,
     });
 
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    const started = service.claimSeat(host.roomId, guest.participantToken, 'white');
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    const started = context.match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white'
+    );
 
     expect(started.snapshot.nextMatchSettings).toEqual({
       mode: 'gomoku',
@@ -43,19 +49,29 @@ describe('RoomsService', () => {
   });
 
   it('rejects game commands from spectators', () => {
-    const host = service.createRoom('Host', 'create:test');
-    const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
-    const spectator = service.joinRoom(host.roomId, 'Watcher', undefined, 'join:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test'
+    );
+    const spectator = context.lifecycle.joinRoom(
+      host.roomId,
+      'Watcher',
+      undefined,
+      'join:test'
+    );
 
-    service.updateNextMatchSettings(host.roomId, host.participantToken, {
+    context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
       boardSize: 15,
     });
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    service.claimSeat(host.roomId, guest.participantToken, 'white');
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    context.match.claimSeat(host.roomId, guest.participantToken, 'white');
 
     expect(() =>
-      service.applyGameCommand(host.roomId, spectator.participantToken, {
+      context.match.applyGameCommand(host.roomId, spectator.participantToken, {
         type: 'place',
         point: { x: 7, y: 7 },
       })
@@ -63,10 +79,15 @@ describe('RoomsService', () => {
   });
 
   it('lets the host mute and kick spectators', () => {
-    const host = service.createRoom('Host', 'create:test');
-    const spectator = service.joinRoom(host.roomId, 'Watcher', undefined, 'join:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const spectator = context.lifecycle.joinRoom(
+      host.roomId,
+      'Watcher',
+      undefined,
+      'join:test'
+    );
 
-    const muted = service.muteParticipant(
+    const muted = context.moderation.muteParticipant(
       host.roomId,
       host.participantToken,
       spectator.participantId
@@ -78,7 +99,7 @@ describe('RoomsService', () => {
       )?.muted
     ).toBe(true);
 
-    const kicked = service.kickParticipant(
+    const kicked = context.moderation.kickParticipant(
       host.roomId,
       host.participantToken,
       spectator.participantId
@@ -92,44 +113,46 @@ describe('RoomsService', () => {
   });
 
   it('throttles chat spam', () => {
-    const host = service.createRoom('Host', 'create:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test');
 
     for (let index = 0; index < 5; index += 1) {
-      service.sendChatMessage(host.roomId, host.participantToken, `Hello ${index}`);
+      context.chat.sendChatMessage(
+        host.roomId,
+        host.participantToken,
+        `Hello ${index}`
+      );
     }
 
     expect(() =>
-      service.sendChatMessage(host.roomId, host.participantToken, 'Too much')
+      context.chat.sendChatMessage(host.roomId, host.participantToken, 'Too much')
     ).toThrow(HttpException);
   });
 
   it('lists live, ready, and waiting rooms for the public lobby', () => {
     vi.useFakeTimers();
 
-    const lobbyService = createRoomsService();
-
     try {
       vi.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
-      const liveHost = lobbyService.createRoom('Host Live', 'create:live');
-      lobbyService.connectParticipantSocket(
+      const liveHost = context.lifecycle.createRoom('Host Live', 'create:live');
+      context.lifecycle.connectParticipantSocket(
         liveHost.roomId,
         liveHost.participantToken,
         'live-host-socket'
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:01.000Z'));
-      const liveGuest = lobbyService.joinRoom(
+      const liveGuest = context.lifecycle.joinRoom(
         liveHost.roomId,
         'Guest Live',
         undefined,
         'join:live'
       );
-      lobbyService.connectParticipantSocket(
+      context.lifecycle.connectParticipantSocket(
         liveHost.roomId,
         liveGuest.participantToken,
         'live-guest-socket'
       );
-      lobbyService.updateNextMatchSettings(
+      context.match.updateNextMatchSettings(
         liveHost.roomId,
         liveHost.participantToken,
         {
@@ -137,41 +160,41 @@ describe('RoomsService', () => {
           boardSize: 15,
         }
       );
-      lobbyService.claimSeat(liveHost.roomId, liveHost.participantToken, 'black');
-      lobbyService.claimSeat(liveHost.roomId, liveGuest.participantToken, 'white');
+      context.match.claimSeat(liveHost.roomId, liveHost.participantToken, 'black');
+      context.match.claimSeat(liveHost.roomId, liveGuest.participantToken, 'white');
 
       vi.setSystemTime(new Date('2026-03-20T00:00:02.000Z'));
-      const readyHost = lobbyService.createRoom('Host Ready', 'create:ready');
-      lobbyService.connectParticipantSocket(
+      const readyHost = context.lifecycle.createRoom('Host Ready', 'create:ready');
+      context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readyHost.participantToken,
         'ready-host-socket'
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:03.000Z'));
-      const readyGuest = lobbyService.joinRoom(
+      const readyGuest = context.lifecycle.joinRoom(
         readyHost.roomId,
         'Guest Ready',
         undefined,
         'join:ready'
       );
-      const readySpectator = lobbyService.joinRoom(
+      const readySpectator = context.lifecycle.joinRoom(
         readyHost.roomId,
         'Watcher Ready',
         undefined,
         'join:ready'
       );
-      lobbyService.connectParticipantSocket(
+      context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readyGuest.participantToken,
         'ready-guest-socket'
       );
-      lobbyService.connectParticipantSocket(
+      context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readySpectator.participantToken,
         'ready-spectator-socket'
       );
-      lobbyService.updateNextMatchSettings(
+      context.match.updateNextMatchSettings(
         readyHost.roomId,
         readyHost.participantToken,
         {
@@ -179,46 +202,46 @@ describe('RoomsService', () => {
           boardSize: 15,
         }
       );
-      lobbyService.claimSeat(readyHost.roomId, readyHost.participantToken, 'black');
-      lobbyService.claimSeat(readyHost.roomId, readyGuest.participantToken, 'white');
-      finishHostedGomokuMatch(
-        lobbyService,
+      context.match.claimSeat(readyHost.roomId, readyHost.participantToken, 'black');
+      context.match.claimSeat(readyHost.roomId, readyGuest.participantToken, 'white');
+      finishGomokuMatch(
+        context.match,
         readyHost.roomId,
         readyHost.participantToken,
         readyGuest.participantToken
       );
-      lobbyService.respondToRematch(
+      context.match.respondToRematch(
         readyHost.roomId,
         readyHost.participantToken,
         false
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:04.000Z'));
-      const waitingOlder = lobbyService.createRoom(
+      const waitingOlder = context.lifecycle.createRoom(
         'Host Waiting Older',
         'create:wait-1'
       );
-      lobbyService.connectParticipantSocket(
+      context.lifecycle.connectParticipantSocket(
         waitingOlder.roomId,
         waitingOlder.participantToken,
         'waiting-older-socket'
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:05.000Z'));
-      const waitingNewer = lobbyService.createRoom(
+      const waitingNewer = context.lifecycle.createRoom(
         'Host Waiting Newer',
         'create:wait-2'
       );
-      lobbyService.connectParticipantSocket(
+      context.lifecycle.connectParticipantSocket(
         waitingNewer.roomId,
         waitingNewer.participantToken,
         'waiting-newer-socket'
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:06.000Z'));
-      lobbyService.createRoom('Host Offline', 'create:offline');
+      context.lifecycle.createRoom('Host Offline', 'create:offline');
 
-      const response = lobbyService.listRooms();
+      const response = context.lifecycle.listRooms();
 
       expect(response.rooms.map(room => room.roomId)).toEqual([
         liveHost.roomId,
@@ -273,65 +296,31 @@ describe('RoomsService', () => {
         ])
       );
     } finally {
-      lobbyService.onModuleDestroy();
       vi.useRealTimers();
     }
   });
 
   it('prevents seat changes while a hosted match is active', () => {
-    const host = service.createRoom('Host', 'create:test');
-    const guest = service.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test'
+    );
 
-    service.updateNextMatchSettings(host.roomId, host.participantToken, {
+    context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
       boardSize: 15,
     });
-    service.claimSeat(host.roomId, host.participantToken, 'black');
-    service.claimSeat(host.roomId, guest.participantToken, 'white');
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    context.match.claimSeat(host.roomId, guest.participantToken, 'white');
 
     expect(() =>
-      service.releaseSeat(host.roomId, host.participantToken)
+      context.match.releaseSeat(host.roomId, host.participantToken)
     ).toThrow(BadRequestException);
     expect(() =>
-      service.claimSeat(host.roomId, guest.participantToken, 'black')
+      context.match.claimSeat(host.roomId, guest.participantToken, 'black')
     ).toThrow(BadRequestException);
   });
 });
-
-function finishHostedGomokuMatch(
-  service: RoomsService,
-  roomId: string,
-  hostToken: string,
-  guestToken: string
-): void {
-  const sequence = [
-    { token: hostToken, point: { x: 0, y: 0 } },
-    { token: guestToken, point: { x: 0, y: 1 } },
-    { token: hostToken, point: { x: 1, y: 0 } },
-    { token: guestToken, point: { x: 1, y: 1 } },
-    { token: hostToken, point: { x: 2, y: 0 } },
-    { token: guestToken, point: { x: 2, y: 1 } },
-    { token: hostToken, point: { x: 3, y: 0 } },
-    { token: guestToken, point: { x: 3, y: 1 } },
-    { token: hostToken, point: { x: 4, y: 0 } },
-  ];
-
-  for (const move of sequence) {
-    service.applyGameCommand(roomId, move.token, {
-      type: 'place',
-      point: move.point,
-    });
-  }
-}
-
-function createRoomsService(): RoomsService {
-  const store = new RoomsStore();
-  const snapshotMapper = new RoomsSnapshotMapper(store);
-  const rulesEngines = new RoomsRulesEngineService();
-  const lifecycle = new RoomsLifecycleService(store, snapshotMapper);
-  const match = new RoomsMatchService(store, snapshotMapper, rulesEngines);
-  const chat = new RoomsChatService(store, snapshotMapper);
-  const moderation = new RoomsModerationService(store, snapshotMapper);
-
-  return new RoomsService(lifecycle, match, chat, moderation);
-}

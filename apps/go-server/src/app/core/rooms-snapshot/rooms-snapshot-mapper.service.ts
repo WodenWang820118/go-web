@@ -4,8 +4,8 @@ import {
   RoomSnapshot,
 } from '@gx/go/contracts';
 import { Inject, Injectable } from '@nestjs/common';
-import { RoomsStore } from './rooms.store';
-import { ParticipantRecord, RoomRecord } from './rooms.types';
+import { ParticipantRecord, RoomRecord } from '../../contracts/rooms.types';
+import { RoomsStore } from '../rooms-store/rooms-store.service';
 
 /**
  * Maps mutable room records to immutable API payloads.

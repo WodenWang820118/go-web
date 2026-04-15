@@ -1,19 +1,21 @@
 import { BadRequestException } from '@nestjs/common';
-import { RoomsLifecycleService } from './rooms-lifecycle.service';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsModerationService } from './rooms-moderation.service';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { RoomsLifecycleService } from '../rooms-lifecycle/rooms-lifecycle.service';
 
 describe('RoomsModerationService', () => {
   let lifecycle: RoomsLifecycleService;
   let moderation: RoomsModerationService;
 
   beforeEach(() => {
-    const store = new RoomsStore();
+    const roomsErrors = new RoomsErrorsService();
+    const store = new RoomsStore(roomsErrors);
     const snapshotMapper = new RoomsSnapshotMapper(store);
 
-    lifecycle = new RoomsLifecycleService(store, snapshotMapper);
-    moderation = new RoomsModerationService(store, snapshotMapper);
+    lifecycle = new RoomsLifecycleService(store, snapshotMapper, roomsErrors);
+    moderation = new RoomsModerationService(store, snapshotMapper, roomsErrors);
   });
 
   afterEach(() => {

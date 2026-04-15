@@ -12,10 +12,10 @@ import {
   JOIN_ATTEMPTS_PER_WINDOW,
   MAX_DISPLAY_NAME_LENGTH,
   THROTTLE_WINDOW_MS,
-} from '../rooms.constants';
-import { badRequestMessage, throttledMessage } from '../rooms.errors';
-import { RoomsSnapshotMapper } from '../rooms.snapshot.mapper';
-import { RoomsStore } from '../rooms.store';
+} from '../../core/rooms-config/rooms.constants';
+import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
+import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 
 /**
  * Handles room creation, joining, presence sockets, and lifecycle cleanup.
@@ -27,7 +27,9 @@ export class RoomsLifecycleService implements OnModuleDestroy {
   constructor(
     @Inject(RoomsStore) private readonly store: RoomsStore,
     @Inject(RoomsSnapshotMapper)
-    private readonly snapshotMapper: RoomsSnapshotMapper
+    private readonly snapshotMapper: RoomsSnapshotMapper,
+    @Inject(RoomsErrorsService)
+    private readonly roomsErrors: RoomsErrorsService
   ) {
     this.cleanupTimer = setInterval(
       () => this.store.pruneExpiredRooms(),
@@ -190,7 +192,7 @@ export class RoomsLifecycleService implements OnModuleDestroy {
 
     if (timestamps.length >= limit) {
       this.store.attemptWindows.set(key, timestamps);
-      throw throttledMessage(messageKey);
+      throw this.roomsErrors.throttled(messageKey);
     }
 
     timestamps.push(now);
@@ -201,11 +203,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     const normalized = value.trim().replace(/\s+/g, ' ');
 
     if (normalized.length === 0) {
-      throw badRequestMessage('room.error.display_name_required');
+      throw this.roomsErrors.badRequest('room.error.display_name_required');
     }
 
     if (normalized.length > MAX_DISPLAY_NAME_LENGTH) {
-      throw badRequestMessage('room.error.display_name_too_long', {
+      throw this.roomsErrors.badRequest('room.error.display_name_too_long', {
         max: MAX_DISPLAY_NAME_LENGTH,
       });
     }

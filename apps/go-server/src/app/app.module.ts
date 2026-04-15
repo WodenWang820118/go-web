@@ -1,11 +1,28 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { RoomsModule } from './rooms/rooms.module';
+import { RoomsErrorsService } from './core/rooms-errors/rooms-errors.service';
+import { RoomsRulesEngineService } from './core/rooms-rules-engine/rooms-rules-engine.service';
+import { RoomsSnapshotMapper } from './core/rooms-snapshot/rooms-snapshot-mapper.service';
+import { RoomsStore } from './core/rooms-store/rooms-store.service';
+import { AppController } from './controllers/app.controller';
+import { RoomsController } from './controllers/rooms.controller';
+import { RoomsGateway } from './controllers/rooms.gateway';
+import { RoomsChatService } from './features/rooms-chat/rooms-chat.service';
+import { RoomsLifecycleService } from './features/rooms-lifecycle/rooms-lifecycle.service';
+import { RoomsMatchService } from './features/rooms-match/rooms-match.service';
+import { RoomsModerationService } from './features/rooms-moderation/rooms-moderation.service';
 
 @Module({
-  imports: [RoomsModule],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, RoomsController],
+  providers: [
+    RoomsErrorsService,
+    RoomsStore,
+    RoomsSnapshotMapper,
+    RoomsRulesEngineService,
+    RoomsLifecycleService,
+    RoomsMatchService,
+    RoomsChatService,
+    RoomsModerationService,
+    RoomsGateway,
+  ],
 })
 export class AppModule {}
