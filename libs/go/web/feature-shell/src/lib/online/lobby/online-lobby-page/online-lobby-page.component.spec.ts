@@ -7,8 +7,8 @@ import { GoI18nService } from '@gx/go/state';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineLobbyPageComponent } from './online-lobby-page.component';
-import { OnlineLobbyService } from './online-lobby.service';
-import { OnlineRoomService } from '../room/services/online-room.service';
+import { OnlineLobbyService } from '../services/online-lobby/online-lobby.service';
+import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
 
 @Component({
   standalone: true,

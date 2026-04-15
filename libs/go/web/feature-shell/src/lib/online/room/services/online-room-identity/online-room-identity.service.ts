@@ -5,7 +5,7 @@ import {
   JoinRoomResponse,
   RoomSnapshot,
 } from '@gx/go/contracts';
-import { StoredRoomIdentity } from './online-room-storage.service';
+import { StoredRoomIdentity } from '../online-room-storage/online-room-storage.service';
 
 /**
  * Handles hosted-room identity normalization and join/create identity resolution.

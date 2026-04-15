@@ -13,7 +13,7 @@ import { OnlineRoomService } from './online-room.service';
 import {
   OnlineRoomStorageService,
   StoredRoomIdentity,
-} from './online-room-storage.service';
+} from '../online-room-storage/online-room-storage.service';
 
 class MockSocket {
   readonly emitted: Array<{ event: string; payload?: unknown }> = [];

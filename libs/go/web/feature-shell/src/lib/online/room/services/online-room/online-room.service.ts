@@ -23,13 +23,13 @@ import {
   tap,
   throwError,
 } from 'rxjs';
-import { OnlineRoomSocketService } from './online-room-socket.service';
-import { OnlineRoomsHttpService } from './online-rooms-http.service';
+import { OnlineRoomSocketService } from '../online-room-socket/online-room-socket.service';
+import { OnlineRoomsHttpService } from '../online-rooms-http/online-rooms-http.service';
 import {
   OnlineRoomStorageService,
-} from './online-room-storage.service';
-import { OnlineRoomIdentityService } from './online-room-identity.service';
-import { OnlineRoomSnapshotService } from './online-room-snapshot.service';
+} from '../online-room-storage/online-room-storage.service';
+import { OnlineRoomIdentityService } from '../online-room-identity/online-room-identity.service';
+import { OnlineRoomSnapshotService } from '../online-room-snapshot/online-room-snapshot.service';
 import {
   selectCanChangeSeats,
   selectCanInteractBoard,
@@ -41,13 +41,13 @@ import {
   selectViewerIsHost,
   selectViewerIsMuted,
   selectViewerSeat,
-} from '../online-room-selectors';
+} from '../../online-room-selectors';
 import {
   BootstrapState,
   JOIN_ROOM_REQUIRED_MESSAGE,
   OnlineRoomRealtimeEvent,
   REALTIME_UNAVAILABLE_MESSAGE,
-} from '../online-room.service.models';
+} from '../../online-room.service.models';
 
 /**
  * Frontend facade for a single hosted multiplayer room.

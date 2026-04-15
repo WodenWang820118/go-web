@@ -8,7 +8,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';
-import { OnlineRoomService } from './services/online-room.service';
+import { OnlineRoomService } from '../services/online-room/online-room.service';
 
 describe('OnlineRoomPageComponent', () => {
   it('shows the join form for visitors who have not joined the room', async () => {

@@ -31,10 +31,10 @@ import {
   seatLabel,
   selectLobbyRoom,
   updatedLabel,
-} from './online-lobby.presentation';
-import { HostedShellHeaderComponent } from '../shared/hosted-shell-header.component';
-import { OnlineRoomService } from '../room/services/online-room.service';
-import { OnlineLobbyService } from './online-lobby.service';
+} from '../online-lobby.presentation';
+import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
+import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
+import { OnlineLobbyService } from '../services/online-lobby/online-lobby.service';
 
 @Component({
   selector: 'lib-go-online-lobby-page',

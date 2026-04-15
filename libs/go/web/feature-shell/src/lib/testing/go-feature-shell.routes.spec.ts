@@ -7,10 +7,10 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-import { OnlineLobbyService } from '../online/lobby/online-lobby.service';
-import { OnlineRoomService } from '../online/room/services/online-room.service';
+import { OnlineLobbyService } from '../online/lobby/services/online-lobby/online-lobby.service';
+import { OnlineRoomService } from '../online/room/services/online-room/online-room.service';
 import { goFeatureShellRoutes } from '../go-feature-shell.routes';
-import { OnlineLobbyPageComponent } from '../online/lobby/online-lobby-page.component';
+import { OnlineLobbyPageComponent } from '../online/lobby/online-lobby-page/online-lobby-page.component';
 
 describe('goFeatureShellRoutes', () => {
   beforeEach(() => {

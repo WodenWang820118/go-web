@@ -15,16 +15,16 @@ import {
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
-import { HostedShellHeaderComponent } from '../shared/hosted-shell-header.component';
-import { OnlineRoomChatPanelComponent } from './online-room-chat-panel.component';
-import { OnlineRoomHeroComponent } from './online-room-hero.component';
-import { OnlineRoomMoveLogPanelComponent } from './online-room-move-log-panel.component';
+import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
+import { OnlineRoomChatPanelComponent } from '../online-room-chat-panel/online-room-chat-panel.component';
+import { OnlineRoomHeroComponent } from '../online-room-hero/online-room-hero.component';
+import { OnlineRoomMoveLogPanelComponent } from '../online-room-move-log-panel/online-room-move-log-panel.component';
 import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
-} from './online-room-page.models';
-import { OnlineRoomParticipantsPanelComponent } from './online-room-participants-panel.component';
-import { OnlineRoomService } from './services/online-room.service';
+} from '../online-room-page.models';
+import { OnlineRoomParticipantsPanelComponent } from '../online-room-participants-panel/online-room-participants-panel.component';
+import { OnlineRoomService } from '../services/online-room/online-room.service';
 
 interface OnlineRoomRematchStatusViewModel {
   color: PlayerColor;

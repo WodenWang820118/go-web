@@ -10,7 +10,7 @@ import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
 import { GameMode, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
-import { OnlineRoomSeatViewModel } from './online-room-page.models';
+import { OnlineRoomSeatViewModel } from '../online-room-page.models';
 
 type OnlineRoomJoinFormGroup = FormGroup<{
   displayName: FormControl<string>;
