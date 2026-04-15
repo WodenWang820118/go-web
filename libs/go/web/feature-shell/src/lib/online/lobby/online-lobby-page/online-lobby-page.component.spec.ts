@@ -136,6 +136,39 @@ describe('OnlineLobbyPageComponent', () => {
     );
   });
 
+  it('switches lobby status tabs without losing quick-select behavior', async () => {
+    const lobbyService = createLobbyServiceStub([
+      createRoomSummary({
+        roomId: 'LIVE42',
+        status: 'live',
+        hostDisplayName: 'Live Host',
+      }),
+      createRoomSummary({
+        roomId: 'READY7',
+        status: 'ready',
+        hostDisplayName: 'Ready Host',
+        players: {
+          black: 'Ready Host',
+          white: 'Guest Ready',
+        },
+        participantCount: 2,
+        onlineCount: 2,
+      }),
+    ]);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const readyTab = root.querySelector('[data-testid="lobby-tab-ready"]') as HTMLButtonElement;
+
+    readyTab.click();
+    await harness.fixture.whenStable();
+
+    expect(root.querySelector('[data-testid="lobby-room-READY7"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-room-LIVE42"]')).toBeNull();
+    expect(root.textContent).toContain('Ready Host');
+  });
+
   it('keeps local play links visible from the lobby-first home page', async () => {
     const lobbyService = createLobbyServiceStub([]);
     const roomService = createRoomServiceStub();

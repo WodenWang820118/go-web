@@ -17,13 +17,14 @@ import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
 import { OnlineRoomChatPanelComponent } from '../online-room-chat-panel/online-room-chat-panel.component';
-import { OnlineRoomHeroComponent } from '../online-room-hero/online-room-hero.component';
 import { OnlineRoomMoveLogPanelComponent } from '../online-room-move-log-panel/online-room-move-log-panel.component';
+import { OnlineRoomNextMatchPanelComponent } from '../online-room-next-match-panel/online-room-next-match-panel.component';
 import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
 } from '../online-room-page.models';
-import { OnlineRoomParticipantsPanelComponent } from '../online-room-participants-panel/online-room-participants-panel.component';
+import { OnlineRoomRosterPanelComponent } from '../online-room-roster-panel/online-room-roster-panel.component';
+import { OnlineRoomViewerPanelComponent } from '../online-room-viewer-panel/online-room-viewer-panel.component';
 import { OnlineRoomService } from '../services/online-room/online-room.service';
 
 interface OnlineRoomRematchStatusViewModel {
@@ -42,8 +43,9 @@ interface OnlineRoomRematchStatusViewModel {
     GameBoardComponent,
     StoneBadgeComponent,
     HostedShellHeaderComponent,
-    OnlineRoomHeroComponent,
-    OnlineRoomParticipantsPanelComponent,
+    OnlineRoomViewerPanelComponent,
+    OnlineRoomNextMatchPanelComponent,
+    OnlineRoomRosterPanelComponent,
     OnlineRoomChatPanelComponent,
     OnlineRoomMoveLogPanelComponent,
   ],

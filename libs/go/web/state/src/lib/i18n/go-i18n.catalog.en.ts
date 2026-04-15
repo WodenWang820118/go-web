@@ -415,6 +415,13 @@ const EN_HOSTED_UI = {
   'lobby.room.card.title': "{{host}}'s room",
   'lobby.room.card.label': 'Room {{roomId}}',
   'lobby.room.selected': 'Selected',
+  'lobby.table.room': 'Room',
+  'lobby.table.mode': 'Mode',
+  'lobby.table.black': 'Black',
+  'lobby.table.white': 'White',
+  'lobby.table.people_online': 'People / online',
+  'lobby.table.status': 'Status',
+  'lobby.table.updated': 'Updated',
   'lobby.identity.label': 'Your identity',
   'lobby.identity.title': 'Enter your name once',
   'lobby.identity.description':

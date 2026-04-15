@@ -94,6 +94,46 @@ describe('OnlineRoomPageComponent', () => {
     expect(text).toContain(i18n.t('room.stage.ready.title'));
   });
 
+  it('shows blocked copy when auto-start is paused after a declined rematch', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        autoStartBlockedUntilSeatChange: true,
+      }),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const text = await renderText(roomService);
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(text).toContain(i18n.t('room.stage.blocked.label'));
+    expect(text).toContain(i18n.t('room.stage.blocked.title'));
+  });
+
   it('shows spectator join copy for live rooms', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
@@ -348,8 +388,11 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
 
+    expect(root.querySelector('[data-testid="room-compact-header"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-viewer-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-roster-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-next-match-panel"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="room-chat-panel"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-participants-panel"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="room-move-log-panel"]')).not.toBeNull();
   });
 

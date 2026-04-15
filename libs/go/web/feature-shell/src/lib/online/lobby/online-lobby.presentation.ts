@@ -12,6 +12,32 @@ export interface LobbySectionViewModel {
   rooms: LobbyRoomSummary[];
 }
 
+export interface LobbyOverviewStatsViewModel {
+  roomCount: number;
+  onlineCount: number;
+  participantCount: number;
+  spectatorCount: number;
+  liveCount: number;
+  readyCount: number;
+  waitingCount: number;
+}
+
+export interface LobbyRoomTableRowViewModel {
+  room: LobbyRoomSummary;
+  roomId: string;
+  roomLabel: string;
+  title: string;
+  modeLabel: string;
+  blackSeat: string;
+  whiteSeat: string;
+  participantLabel: string;
+  onlineLabel: string;
+  spectatorLabel: string;
+  statusLabel: string;
+  headline: string;
+  updatedLabel: string;
+}
+
 const LOBBY_SECTION_ORDER: readonly LobbyRoomStatus[] = ['live', 'ready', 'waiting'];
 
 /**
@@ -26,6 +52,55 @@ export function buildLobbySections(
     title: i18n.t(`lobby.section.${status}.title`),
     caption: i18n.t(`lobby.section.${status}.caption`),
     rooms: rooms.filter(room => room.status === status),
+  }));
+}
+
+export function buildLobbyOverviewStats(
+  rooms: readonly LobbyRoomSummary[]
+): LobbyOverviewStatsViewModel {
+  return rooms.reduce<LobbyOverviewStatsViewModel>(
+    (stats, room) => {
+      stats.roomCount += 1;
+      stats.onlineCount += room.onlineCount;
+      stats.participantCount += room.participantCount;
+      stats.spectatorCount += room.spectatorCount;
+      const statusCountKey = `${room.status}Count` as
+        | 'liveCount'
+        | 'readyCount'
+        | 'waitingCount';
+      stats[statusCountKey] += 1;
+      return stats;
+    },
+    {
+      roomCount: 0,
+      onlineCount: 0,
+      participantCount: 0,
+      spectatorCount: 0,
+      liveCount: 0,
+      readyCount: 0,
+      waitingCount: 0,
+    }
+  );
+}
+
+export function buildLobbyTableRows(
+  i18n: TranslationReader,
+  rooms: readonly LobbyRoomSummary[]
+): LobbyRoomTableRowViewModel[] {
+  return rooms.map(room => ({
+    room,
+    roomId: room.roomId,
+    roomLabel: roomCardLabel(i18n, room.roomId),
+    title: roomCardTitle(i18n, room.hostDisplayName),
+    modeLabel: roomModeLabel(i18n, room),
+    blackSeat: seatLabel(i18n, room.players.black, 'black'),
+    whiteSeat: seatLabel(i18n, room.players.white, 'white'),
+    participantLabel: countLabel(i18n, room.participantCount, 'person'),
+    onlineLabel: countLabel(i18n, room.onlineCount, 'online'),
+    spectatorLabel: countLabel(i18n, room.spectatorCount, 'spectator'),
+    statusLabel: roomStatusLabel(i18n, room.status),
+    headline: roomStatusHeadline(i18n, room),
+    updatedLabel: updatedLabel(i18n, room.updatedAt),
   }));
 }
 

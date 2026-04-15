@@ -18,7 +18,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
   template: `
     <section
       data-testid="room-chat-panel"
-      class="flex h-full min-h-[22rem] flex-col rounded-[1.5rem] border border-white/10 bg-white/5 p-4"
+      class="flex h-full min-h-[22rem] flex-col rounded-[1.35rem] border border-white/10 bg-slate-950/84 p-4 text-stone-100 shadow-xl shadow-slate-950/20"
     >
       <p
         class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400"
@@ -30,10 +30,10 @@ import { GoI18nService } from '@gx/go/state/i18n';
         @if (messages().length > 0) {
           @for (message of messages(); track message.id) {
             <article
-              class="rounded-2xl border border-white/10 bg-white/8 px-4 py-3"
+              class="rounded-xl border border-white/10 bg-white/5 px-4 py-3"
             >
               <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-black">
+                <p class="text-sm font-semibold text-stone-50">
                   {{ message.displayName }}
                 </p>
                 <p
@@ -45,7 +45,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
                   }}
                 </p>
               </div>
-              <p class="mt-2 text-sm leading-6 text-black">
+              <p class="mt-2 text-sm leading-6 text-stone-200">
                 {{ message.message }}
               </p>
             </article>

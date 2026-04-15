@@ -15,7 +15,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
   template: `
     <section
       data-testid="room-move-log-panel"
-      class="rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-stone-100 shadow-xl shadow-slate-950/20"
+      class="rounded-[1.35rem] border border-white/10 bg-slate-950/84 p-4 text-stone-100 shadow-xl shadow-slate-950/20"
     >
       <div class="flex items-center justify-between gap-3">
         <div>

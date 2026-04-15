@@ -4,60 +4,96 @@
     [pageLabel]="i18n.t('hosted.header.page.room')"
   />
 
-  <a
-    routerLink="/"
-    class="mt-6 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
+  <section
+    class="mt-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(34,39,46,0.98),_rgba(16,18,22,0.98))] text-stone-100 shadow-2xl shadow-slate-950/30"
+    data-testid="room-compact-header"
   >
-    <span class="text-lg">&larr;</span>
-    {{ i18n.t('room.page.back_to_lobby') }}
-  </a>
+    <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
+      <div class="min-w-0">
+        <a
+          routerLink="/"
+          class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-stone-400 transition hover:text-stone-100"
+        >
+          <span class="text-base">&larr;</span>
+          {{ i18n.t('room.page.back_to_lobby') }}
+        </a>
 
-  <lib-go-online-room-hero
-    [roomId]="roomId()"
-    [connectionLabel]="connectionLabel()"
-    [shareUrl]="shareUrl()"
-    (copyRequested)="copyShareUrl()"
-  />
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <h1 class="text-2xl font-semibold text-stone-50 sm:text-3xl">
+            @if (roomId()) {
+              {{ i18n.t('room.hero.title', { roomId: roomId()! }) }}
+            } @else {
+              {{ i18n.t('room.hero.loading_title') }}
+            }
+          </h1>
+          <span class="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-100">
+            {{ connectionLabel() }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:min-w-[26rem]">
+        <label class="min-w-0">
+          <span class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-500">
+            {{ i18n.t('room.hero.share_url') }}
+          </span>
+          <input
+            [value]="shareUrl()"
+            readonly
+            class="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-stone-200 outline-none"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="self-end rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:border-white/30 hover:bg-white/10"
+          (click)="copyShareUrl()"
+        >
+          {{ i18n.t('room.hero.copy') }}
+        </button>
+      </div>
+    </div>
+  </section>
 
   @if (onlineRoom.lastError()) {
-    <div class="mt-6 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+    <div class="mt-6 rounded-[1.25rem] border border-rose-300/40 bg-rose-50 px-5 py-4 text-sm text-rose-700">
       {{ onlineRoom.lastError() }}
     </div>
   }
 
   @if (onlineRoom.lastNotice()) {
-    <div class="mt-4 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+    <div class="mt-4 rounded-[1.25rem] border border-emerald-300/40 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
       {{ onlineRoom.lastNotice() }}
     </div>
   }
 
   @if (connectionWarning()) {
-    <div class="mt-4 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+    <div class="mt-4 rounded-[1.25rem] border border-amber-300/40 bg-amber-50 px-5 py-4 text-sm text-amber-800">
       {{ connectionWarning() }}
     </div>
   }
 
   @switch (onlineRoom.bootstrapState()) {
     @case ('loading') {
-      <div class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 text-center text-sm text-stone-600 shadow-xl shadow-stone-950/5">
+      <div class="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/85 px-6 py-10 text-center text-sm text-stone-300 shadow-xl shadow-slate-950/20">
         {{ i18n.t('room.page.loading') }}
       </div>
     }
 
     @case ('missing') {
-      <div class="mt-6 rounded-[2rem] border border-stone-200 bg-white/85 px-6 py-10 shadow-xl shadow-stone-950/5">
+      <div class="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/88 px-6 py-10 shadow-xl shadow-slate-950/20">
         <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
           {{ i18n.t('room.page.missing.label') }}
         </p>
-        <h2 class="mt-3 text-3xl font-semibold text-stone-950">
+        <h2 class="mt-3 text-3xl font-semibold text-stone-50">
           {{ i18n.t('room.page.missing.title') }}
         </h2>
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
+        <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-300">
           {{ i18n.t('room.page.missing.description') }}
         </p>
         <a
           routerLink="/"
-          class="mt-6 inline-flex items-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-stone-950/20 ring-1 ring-stone-950/10 transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          class="mt-6 inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
         >
           {{ i18n.t('room.page.missing.action') }}
         </a>
@@ -66,11 +102,11 @@
 
     @default {
       @if (snapshot()) {
-        <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
+        <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
           <div class="min-w-0 space-y-4">
             @if (showRematchBanner()) {
               <section
-                class="rounded-[1.75rem] border border-amber-300/50 bg-amber-50 px-5 py-5 text-amber-950 shadow-sm"
+                class="rounded-[1.5rem] border border-amber-300/50 bg-amber-50 px-5 py-5 text-amber-950 shadow-sm"
                 data-testid="room-rematch-banner"
               >
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
@@ -154,7 +190,7 @@
 
             @if (showAutoStartBlockedBanner()) {
               <section
-                class="rounded-[1.75rem] border border-stone-300 bg-stone-100 px-5 py-4 text-sm text-stone-800 shadow-sm"
+                class="rounded-[1.5rem] border border-stone-300 bg-stone-100 px-5 py-4 text-sm text-stone-800 shadow-sm"
                 data-testid="room-rematch-blocked"
               >
                 {{ i18n.t('room.rematch.blocked') }}
@@ -162,19 +198,19 @@
             }
 
             @if (match()) {
-              <section class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-4 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6">
-                <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <section class="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(33,37,42,0.98),_rgba(16,18,22,0.98))] p-4 shadow-2xl shadow-slate-950/25 sm:p-5">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
                       {{ i18n.t('room.page.live_board') }}
                     </p>
-                    <h2 class="mt-2 text-2xl font-semibold text-stone-950">
+                    <h2 class="mt-2 text-2xl font-semibold text-stone-50">
                       {{ match()!.settings.players.black }} vs {{ match()!.settings.players.white }}
                     </h2>
                   </div>
 
                   @if (match()!.state.phase === 'finished') {
-                    <div class="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-semibold text-stone-800">
+                    <div class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100">
                       {{
                         i18n.translateMessage(
                           match()!.state.result?.summary ?? match()!.state.message
@@ -182,9 +218,9 @@
                       }}
                     </div>
                   } @else {
-                    <div class="flex items-center gap-3 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-700">
+                    <div class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-stone-300">
                       <span>{{ i18n.t('room.page.turn') }}:</span>
-                      <span class="inline-flex items-center gap-2 font-semibold text-stone-950">
+                      <span class="inline-flex items-center gap-2 font-semibold text-stone-50">
                         <lib-go-stone-badge [color]="match()!.state.nextPlayer" />
                         {{ match()!.settings.players[match()!.state.nextPlayer] }}
                       </span>
@@ -206,21 +242,65 @@
                 />
               </section>
             } @else {
-              <section class="rounded-[2rem] border border-dashed border-stone-300 bg-white/70 px-6 py-10 text-center shadow-xl shadow-stone-950/5">
+              <section class="rounded-[1.75rem] border border-dashed border-white/15 bg-slate-950/85 px-6 py-10 text-center shadow-xl shadow-slate-950/20">
                 <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
                   {{ roomStage()!.label }}
                 </p>
-                <h2 class="mt-3 text-3xl font-semibold text-stone-950">
+                <h2 class="mt-3 text-3xl font-semibold text-stone-50">
                   {{ roomStage()!.title }}
                 </h2>
-                <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-600">
+                <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-300">
                   {{ roomStage()!.description }}
                 </p>
               </section>
             }
+
+            <lib-go-online-room-move-log-panel [moveHistory]="recentMoves()" />
           </div>
 
-          <div class="xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-3rem)]">
+          <div class="room-side-rail space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <lib-go-online-room-viewer-panel
+              [joinForm]="joinForm"
+              [participantId]="onlineRoom.participantId()"
+              [joining]="onlineRoom.joining()"
+              [viewer]="viewer()"
+              [viewerSeat]="onlineRoom.viewerSeat()"
+              [isHost]="onlineRoom.isHost()"
+              [joinCardTitle]="joinCardTitle()"
+              [joinCardDescription]="joinCardDescription()"
+              (joinRequested)="joinRoom()"
+            />
+
+            <lib-go-online-room-roster-panel
+              [participants]="participants()"
+              [seats]="seats()"
+              [isHost]="onlineRoom.isHost()"
+              [realtimeConnected]="realtimeConnected()"
+              [canChangeSeats]="onlineRoom.canChangeSeats()"
+              [match]="match()"
+              [canPass]="canPass()"
+              [canResign]="canResign()"
+              [canFinalizeScoring]="canFinalizeScoring()"
+              (claimSeatRequested)="claimSeat($event)"
+              (releaseSeatRequested)="releaseSeat()"
+              (passRequested)="passTurn()"
+              (resignRequested)="resign()"
+              (finalizeScoringRequested)="finalizeScoring()"
+              (muteParticipantRequested)="muteParticipant($event)"
+              (unmuteParticipantRequested)="unmuteParticipant($event)"
+              (kickParticipantRequested)="kickParticipant($event)"
+            />
+
+            <lib-go-online-room-next-match-panel
+              [settingsForm]="settingsForm"
+              [boardSizeOptions]="boardSizeOptions()"
+              [isHost]="onlineRoom.isHost()"
+              [realtimeConnected]="realtimeConnected()"
+              [canEditNextMatchSettings]="canEditNextMatchSettings()"
+              [settingsLockedMessage]="settingsLockedMessage()"
+              (settingsSavedRequested)="saveNextMatchSettings()"
+            />
+
             <lib-go-online-room-chat-panel
               [chatForm]="chatForm"
               [participantId]="onlineRoom.participantId()"
@@ -231,43 +311,6 @@
               (sendRequested)="sendChat()"
             />
           </div>
-        </div>
-
-        <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <lib-go-online-room-participants-panel
-            [joinForm]="joinForm"
-            [settingsForm]="settingsForm"
-            [boardSizeOptions]="boardSizeOptions()"
-            [participantId]="onlineRoom.participantId()"
-            [joining]="onlineRoom.joining()"
-            [viewer]="viewer()"
-            [viewerSeat]="onlineRoom.viewerSeat()"
-            [isHost]="onlineRoom.isHost()"
-            [realtimeConnected]="realtimeConnected()"
-            [canChangeSeats]="onlineRoom.canChangeSeats()"
-            [canEditNextMatchSettings]="canEditNextMatchSettings()"
-            [settingsLockedMessage]="settingsLockedMessage()"
-            [canPass]="canPass()"
-            [canResign]="canResign()"
-            [canFinalizeScoring]="canFinalizeScoring()"
-            [joinCardTitle]="joinCardTitle()"
-            [joinCardDescription]="joinCardDescription()"
-            [participants]="participants()"
-            [seats]="seats()"
-            [match]="match()"
-            (joinRequested)="joinRoom()"
-            (claimSeatRequested)="claimSeat($event)"
-            (releaseSeatRequested)="releaseSeat()"
-            (settingsSavedRequested)="saveNextMatchSettings()"
-            (passRequested)="passTurn()"
-            (resignRequested)="resign()"
-            (finalizeScoringRequested)="finalizeScoring()"
-            (muteParticipantRequested)="muteParticipant($event)"
-            (unmuteParticipantRequested)="unmuteParticipant($event)"
-            (kickParticipantRequested)="kickParticipant($event)"
-          />
-
-          <lib-go-online-room-move-log-panel [moveHistory]="recentMoves()" />
         </div>
       }
     }

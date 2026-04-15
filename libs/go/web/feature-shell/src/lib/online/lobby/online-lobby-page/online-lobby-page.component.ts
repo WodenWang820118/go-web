@@ -15,11 +15,16 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
+import { TagModule } from 'primeng/tag';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
+  buildLobbyOverviewStats,
+  buildLobbyTableRows,
   buildLobbySections,
   countLabel,
   emptySectionLabel,
+  LobbyOverviewStatsViewModel,
+  LobbyRoomTableRowViewModel,
   roomActionHint,
   roomActionLabel,
   roomCardLabel,
@@ -39,7 +44,13 @@ import { OnlineLobbyService } from '../services/online-lobby/online-lobby.servic
 @Component({
   selector: 'lib-go-online-lobby-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, HostedShellHeaderComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    TagModule,
+    HostedShellHeaderComponent,
+  ],
   templateUrl: './online-lobby-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -50,6 +61,7 @@ export class OnlineLobbyPageComponent {
 
   private readonly router = inject(Router);
   private readonly selectedRoomIdSignal = signal<string | null>(null);
+  private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || this.i18n.t('common.role.host'),
@@ -66,6 +78,17 @@ export class OnlineLobbyPageComponent {
 
   protected readonly sections = computed(() =>
     buildLobbySections(this.i18n, this.onlineLobby.rooms())
+  );
+  protected readonly lobbyStats = computed<LobbyOverviewStatsViewModel>(() =>
+    buildLobbyOverviewStats(this.onlineLobby.rooms())
+  );
+  protected readonly activeSection = computed(() =>
+    this.sections().find(section => section.status === this.activeStatusSignal()) ??
+    this.sections()[0] ??
+    null
+  );
+  protected readonly activeRows = computed<LobbyRoomTableRowViewModel[]>(() =>
+    buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? [])
   );
   protected readonly selectedRoom = computed<LobbyRoomSummary | null>(() =>
     selectLobbyRoom(this.onlineLobby.rooms(), this.selectedRoomIdSignal())
@@ -118,14 +141,41 @@ export class OnlineLobbyPageComponent {
         });
       }
     });
+
+    effect(() => {
+      const sections = this.sections();
+      const activeStatus = this.activeStatusSignal();
+
+      if (sections.some(section => section.status === activeStatus && section.rooms.length > 0)) {
+        return;
+      }
+
+      const nextStatus = sections.find(section => section.rooms.length > 0)?.status;
+
+      if (nextStatus) {
+        this.activeStatusSignal.set(nextStatus);
+      }
+    });
   }
 
-  protected selectRoom(roomId: string): void {
+  protected selectRoom(roomId: string, status?: LobbyRoomStatus): void {
     this.selectedRoomIdSignal.set(roomId);
+
+    if (status) {
+      this.activeStatusSignal.set(status);
+    }
   }
 
   protected isSelectedRoom(roomId: string): boolean {
     return this.selectedRoom()?.roomId === roomId;
+  }
+
+  protected setActiveStatus(status: LobbyRoomStatus): void {
+    this.activeStatusSignal.set(status);
+  }
+
+  protected isActiveStatus(status: LobbyRoomStatus): boolean {
+    return this.activeStatusSignal() === status;
   }
 
   protected createRoom(): void {

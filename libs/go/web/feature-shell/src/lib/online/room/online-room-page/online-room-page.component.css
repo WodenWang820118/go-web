@@ -1,3 +1,15 @@
 :host {
   display: block;
 }
+
+.room-side-rail {
+  max-height: none;
+}
+
+@media (min-width: 1280px) {
+  .room-side-rail {
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    padding-right: 0.25rem;
+  }
+}

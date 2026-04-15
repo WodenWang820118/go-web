@@ -1,6 +1,9 @@
 import { LobbyRoomSummary } from '@gx/go/contracts';
 import {
+  buildLobbyOverviewStats,
   buildLobbySections,
+  buildLobbyTableRows,
+  emptySectionLabel,
   selectLobbyRoom,
   updatedLabel,
 } from './online-lobby.presentation';
@@ -37,6 +40,62 @@ describe('online-lobby.presentation', () => {
     expect(zh).toContain('Updated ');
     expect(en).not.toBe(zh);
   });
+
+  it('aggregates lobby overview stats from all rooms', () => {
+    const stats = buildLobbyOverviewStats([
+      createRoom('LIVE1', 'live'),
+      createRoom('READY1', 'ready'),
+      {
+        ...createRoom('WAIT1', 'waiting'),
+        participantCount: 4,
+        onlineCount: 3,
+        spectatorCount: 2,
+      },
+    ]);
+
+    expect(stats.roomCount).toBe(3);
+    expect(stats.onlineCount).toBe(7);
+    expect(stats.liveCount).toBe(1);
+    expect(stats.readyCount).toBe(1);
+    expect(stats.waitingCount).toBe(1);
+  });
+
+  it('builds table rows with seat and count labels', () => {
+    const [row] = buildLobbyTableRows(createI18n('en'), [
+      createRoom('ROOM9', 'waiting'),
+    ]);
+
+    expect(row?.roomId).toBe('ROOM9');
+    expect(row?.blackSeat).toBe('Host');
+    expect(row?.whiteSeat).toBe('Guest');
+    expect(row?.participantLabel).toBe('lobby.count.person.other');
+  });
+
+  it('builds pending-mode rows and singular count labels', () => {
+    const [row] = buildLobbyTableRows(createI18n('en'), [
+      {
+        ...createRoom('ROOM10', 'waiting'),
+        mode: null,
+        boardSize: null,
+        participantCount: 1,
+        onlineCount: 1,
+        spectatorCount: 1,
+        players: {
+          black: null,
+          white: null,
+        },
+      },
+    ]);
+
+    expect(row?.modeLabel).toBe('lobby.room.mode_pending');
+    expect(row?.participantLabel).toBe('lobby.count.person.one');
+    expect(row?.onlineLabel).toBe('lobby.count.online.one');
+    expect(row?.spectatorLabel).toBe('lobby.count.spectator.one');
+  });
+
+  it('returns an empty-section label for the requested status', () => {
+    expect(emptySectionLabel(createI18n('en'), 'ready')).toContain('lobby.section.empty');
+  });
 });
 
 function createI18n(locale: 'en' | 'zh-TW') {
@@ -45,6 +104,14 @@ function createI18n(locale: 'en' | 'zh-TW') {
     t: (key: string, params?: Record<string, unknown>) => {
       if (key === 'lobby.selected.updated') {
         return `Updated ${String(params?.time ?? '')}`;
+      }
+
+      if (key === 'lobby.room.card.label') {
+        return `Room ${String(params?.roomId ?? '')}`;
+      }
+
+      if (key === 'lobby.room.card.title') {
+        return `${String(params?.host ?? '')}'s room`;
       }
 
       return key;
