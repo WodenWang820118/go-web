@@ -4,27 +4,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MAX_DISPLAY_NAME_LENGTH, createUniqueDisplayName } from '@gx/go/contracts';
-import {
-  BoardPoint,
-  DEFAULT_GO_KOMI,
-  GOMOKU_BOARD_SIZE,
-  GO_BOARD_SIZES,
-  GameMode,
-  PlayerColor,
-} from '@gx/go/domain';
+import { BoardPoint, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { GameBoardComponent, StoneBadgeComponent } from '@gx/go/ui';
+import { GameBoardComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
-import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
-import { OnlineRoomChatPanelComponent } from '../online-room-chat-panel/online-room-chat-panel.component';
-import { OnlineRoomMoveLogPanelComponent } from '../online-room-move-log-panel/online-room-move-log-panel.component';
-import { OnlineRoomNextMatchPanelComponent } from '../online-room-next-match-panel/online-room-next-match-panel.component';
 import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
 } from '../online-room-page.models';
-import { OnlineRoomRosterPanelComponent } from '../online-room-roster-panel/online-room-roster-panel.component';
-import { OnlineRoomViewerPanelComponent } from '../online-room-viewer-panel/online-room-viewer-panel.component';
+import { OnlineRoomSidebarComponent } from '../online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomService } from '../services/online-room/online-room.service';
 
 interface OnlineRoomRematchStatusViewModel {
@@ -34,27 +22,21 @@ interface OnlineRoomRematchStatusViewModel {
   isViewer: boolean;
 }
 
+interface OnlineRoomSidebarMessageViewModel {
+  tone: 'error' | 'notice' | 'warning';
+  message: string;
+  testId: string;
+}
+
 @Component({
   selector: 'lib-go-online-room-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    GameBoardComponent,
-    StoneBadgeComponent,
-    HostedShellHeaderComponent,
-    OnlineRoomViewerPanelComponent,
-    OnlineRoomNextMatchPanelComponent,
-    OnlineRoomRosterPanelComponent,
-    OnlineRoomChatPanelComponent,
-    OnlineRoomMoveLogPanelComponent,
-  ],
+  imports: [CommonModule, RouterLink, GameBoardComponent, OnlineRoomSidebarComponent],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomPageComponent {
-  protected readonly DEFAULT_GO_KOMI = DEFAULT_GO_KOMI;
   protected readonly onlineRoom = inject(OnlineRoomService);
   protected readonly i18n = inject(GoI18nService);
 
@@ -69,13 +51,14 @@ export class OnlineRoomPageComponent {
   protected readonly snapshot = this.onlineRoom.snapshot;
   protected readonly match = this.onlineRoom.match;
   protected readonly participants = this.onlineRoom.participants;
-  protected readonly viewer = this.onlineRoom.viewer;
   protected readonly rematch = this.onlineRoom.rematch;
   protected readonly nextMatchSettings = this.onlineRoom.nextMatchSettings;
-  protected readonly realtimeConnected = computed(
-    () => this.onlineRoom.connectionState() === 'connected'
-  );
-  protected readonly isLiveMatch = computed(() => this.match()?.state.phase !== 'finished');
+  protected readonly connectionState = this.onlineRoom.connectionState;
+  protected readonly realtimeConnected = computed(() => this.connectionState() === 'connected');
+  protected readonly isLiveMatch = computed(() => {
+    const phase = this.match()?.state.phase;
+    return phase ? phase !== 'finished' : false;
+  });
   protected readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
     const snapshot = this.snapshot();
 
@@ -133,12 +116,6 @@ export class OnlineRoomPageComponent {
     const command = this.match()?.state.lastMove?.command;
     return command?.type === 'place' ? command.point : null;
   });
-  protected readonly recentMoves = computed(() =>
-    [...(this.match()?.state.moveHistory ?? [])].reverse()
-  );
-  protected readonly boardSizeOptions = computed(() =>
-    this.settingsMode() === 'go' ? [...GO_BOARD_SIZES] : [GOMOKU_BOARD_SIZE]
-  );
   protected readonly canPass = computed(
     () =>
       this.realtimeConnected() &&
@@ -158,27 +135,6 @@ export class OnlineRoomPageComponent {
       this.match()?.settings.mode === 'go' &&
       this.match()?.state.phase === 'scoring'
   );
-  protected readonly settingsLockedMessage = computed(() => {
-    if (this.rematch()) {
-      return this.i18n.t('room.next_match.locked.rematch');
-    }
-
-    if (this.match()?.state.phase !== 'finished' && this.match()) {
-      return this.i18n.t('room.next_match.locked.live');
-    }
-
-    if (this.snapshot()?.seatState.black && this.snapshot()?.seatState.white) {
-      return this.i18n.t('room.next_match.locked.filled');
-    }
-
-    return null;
-  });
-  protected readonly canEditNextMatchSettings = computed(
-    () =>
-      this.onlineRoom.isHost() &&
-      this.realtimeConnected() &&
-      !this.settingsLockedMessage()
-  );
   protected readonly rematchViewerSeat = computed<PlayerColor | null>(() => {
     const participantId = this.onlineRoom.participantId();
     const rematch = this.rematch();
@@ -197,17 +153,15 @@ export class OnlineRoomPageComponent {
 
     return null;
   });
-  protected readonly canRespondToRematch = computed(
-    () => {
-      const viewerSeat = this.rematchViewerSeat();
+  protected readonly canRespondToRematch = computed(() => {
+    const viewerSeat = this.rematchViewerSeat();
 
-      return (
-        this.realtimeConnected() &&
-        !!viewerSeat &&
-        this.rematch()?.responses[viewerSeat] === 'pending'
-      );
-    }
-  );
+    return (
+      this.realtimeConnected() &&
+      !!viewerSeat &&
+      this.rematch()?.responses[viewerSeat] === 'pending'
+    );
+  });
   protected readonly rematchStatuses = computed<OnlineRoomRematchStatusViewModel[]>(() => {
     const rematch = this.rematch();
 
@@ -232,12 +186,6 @@ export class OnlineRoomPageComponent {
   protected readonly showRematchBanner = computed(
     () => this.match()?.state.phase === 'finished' && !!this.rematch()
   );
-  protected readonly showAutoStartBlockedBanner = computed(
-    () =>
-      this.match()?.state.phase === 'finished' &&
-      !this.rematch() &&
-      this.onlineRoom.autoStartBlockedUntilSeatChange()
-  );
   protected readonly shareUrl = this.onlineRoom.shareUrl;
   protected readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
@@ -250,7 +198,7 @@ export class OnlineRoomPageComponent {
       : this.i18n.t('room.join.description.pre_match')
   );
   protected readonly connectionLabel = computed(() => {
-    switch (this.onlineRoom.connectionState()) {
+    switch (this.connectionState()) {
       case 'connected':
         return this.i18n.t('room.connection.connected');
       case 'connecting':
@@ -281,17 +229,72 @@ export class OnlineRoomPageComponent {
       ? this.i18n.t('room.client.realtime_unavailable')
       : null
   );
+  protected readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
+    const messages: OnlineRoomSidebarMessageViewModel[] = [];
+
+    if (this.onlineRoom.lastError()) {
+      messages.push({
+        tone: 'error',
+        message: this.onlineRoom.lastError()!,
+        testId: 'room-sidebar-message-error',
+      });
+    }
+
+    if (this.onlineRoom.lastNotice()) {
+      messages.push({
+        tone: 'notice',
+        message: this.onlineRoom.lastNotice()!,
+        testId: 'room-sidebar-message-notice',
+      });
+    }
+
+    if (this.connectionWarning()) {
+      messages.push({
+        tone: 'warning',
+        message: this.connectionWarning()!,
+        testId: 'room-sidebar-message-warning',
+      });
+    }
+
+    if (
+      this.match()?.state.phase === 'finished' &&
+      !this.rematch() &&
+      this.onlineRoom.autoStartBlockedUntilSeatChange()
+    ) {
+      messages.push({
+        tone: 'warning',
+        message: this.i18n.t('room.rematch.blocked'),
+        testId: 'room-sidebar-message-rematch-blocked',
+      });
+    }
+
+    return messages;
+  });
+  protected readonly modeSummary = computed(() => {
+    const settings = this.match()?.settings ?? this.nextMatchSettings();
+
+    if (!settings) {
+      return null;
+    }
+
+    return `${this.i18n.t(`common.mode.${settings.mode}`)} · ${settings.boardSize} x ${settings.boardSize}`;
+  });
+  protected readonly matchStatusLine = computed(() => {
+    const match = this.match();
+
+    if (!match) {
+      return null;
+    }
+
+    if (match.state.phase === 'playing') {
+      return null;
+    }
+
+    return this.i18n.translateMessage(match.state.result?.summary ?? match.state.message);
+  });
 
   protected readonly joinForm = new FormGroup({
     displayName: new FormControl('', {
-      nonNullable: true,
-    }),
-  });
-  protected readonly settingsForm = new FormGroup({
-    mode: new FormControl<GameMode>('go', {
-      nonNullable: true,
-    }),
-    boardSize: new FormControl<number>(19, {
       nonNullable: true,
     }),
   });
@@ -300,12 +303,6 @@ export class OnlineRoomPageComponent {
       nonNullable: true,
     }),
   });
-  protected readonly settingsMode = toSignal(
-    this.settingsForm.controls.mode.valueChanges,
-    {
-      initialValue: this.settingsForm.controls.mode.value,
-    }
-  );
 
   constructor() {
     effect(() => {
@@ -323,40 +320,6 @@ export class OnlineRoomPageComponent {
         this.joinForm.controls.displayName.setValue(displayName, {
           emitEvent: false,
         });
-      }
-    });
-
-    effect(() => {
-      const nextMatchSettings = this.nextMatchSettings();
-
-      if (!nextMatchSettings) {
-        return;
-      }
-
-      if (this.settingsForm.controls.mode.value !== nextMatchSettings.mode) {
-        this.settingsForm.controls.mode.setValue(nextMatchSettings.mode, {
-          emitEvent: false,
-        });
-      }
-
-      if (this.settingsForm.controls.boardSize.value !== nextMatchSettings.boardSize) {
-        this.settingsForm.controls.boardSize.setValue(nextMatchSettings.boardSize, {
-          emitEvent: false,
-        });
-      }
-    });
-
-    effect(() => {
-      const mode = this.settingsMode();
-      const currentBoardSize = this.settingsForm.controls.boardSize.value;
-
-      if (mode === 'gomoku' && currentBoardSize !== GOMOKU_BOARD_SIZE) {
-        this.settingsForm.controls.boardSize.setValue(GOMOKU_BOARD_SIZE);
-        return;
-      }
-
-      if (mode === 'go' && !GO_BOARD_SIZES.includes(currentBoardSize as 9 | 13 | 19)) {
-        this.settingsForm.controls.boardSize.setValue(19);
       }
     });
   }
@@ -422,20 +385,6 @@ export class OnlineRoomPageComponent {
     this.onlineRoom.releaseSeat();
   }
 
-  protected saveNextMatchSettings(): void {
-    const mode = this.settingsForm.controls.mode.value;
-    const boardSize =
-      mode === 'go'
-        ? (this.settingsForm.controls.boardSize.value as 9 | 13 | 19)
-        : GOMOKU_BOARD_SIZE;
-
-    this.onlineRoom.updateNextMatchSettings({
-      mode,
-      boardSize,
-      komi: mode === 'go' ? DEFAULT_GO_KOMI : 0,
-    });
-  }
-
   protected onBoardPoint(point: BoardPoint): void {
     if (this.match()?.state.phase === 'scoring') {
       this.onlineRoom.sendGameCommand({
@@ -486,17 +435,5 @@ export class OnlineRoomPageComponent {
 
     this.onlineRoom.sendChat(message);
     this.chatForm.controls.message.setValue('');
-  }
-
-  protected muteParticipant(participantId: string): void {
-    this.onlineRoom.muteParticipant(participantId);
-  }
-
-  protected unmuteParticipant(participantId: string): void {
-    this.onlineRoom.unmuteParticipant(participantId);
-  }
-
-  protected kickParticipant(participantId: string): void {
-    this.onlineRoom.kickParticipant(participantId);
   }
 }

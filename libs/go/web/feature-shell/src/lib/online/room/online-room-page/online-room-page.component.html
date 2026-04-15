@@ -1,318 +1,113 @@
-<section class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-  <lib-go-hosted-shell-header
-    activeSection="room"
-    [pageLabel]="i18n.t('hosted.header.page.room')"
-  />
+<section class="room-shell">
+  @if (onlineRoom.bootstrapState() === 'missing') {
+    <section class="room-fallback">
+      <a routerLink="/" class="room-fallback__back">
+        <span aria-hidden="true">&larr;</span>
+        {{ i18n.t('room.page.back_to_lobby') }}
+      </a>
 
-  <section
-    class="mt-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(34,39,46,0.98),_rgba(16,18,22,0.98))] text-stone-100 shadow-2xl shadow-slate-950/30"
-    data-testid="room-compact-header"
-  >
-    <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
-      <div class="min-w-0">
-        <a
-          routerLink="/"
-          class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-stone-400 transition hover:text-stone-100"
-        >
-          <span class="text-base">&larr;</span>
-          {{ i18n.t('room.page.back_to_lobby') }}
-        </a>
-
-        <div class="mt-3 flex flex-wrap items-center gap-3">
-          <h1 class="text-2xl font-semibold text-stone-50 sm:text-3xl">
-            @if (roomId()) {
-              {{ i18n.t('room.hero.title', { roomId: roomId()! }) }}
-            } @else {
-              {{ i18n.t('room.hero.loading_title') }}
-            }
-          </h1>
-          <span class="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-100">
-            {{ connectionLabel() }}
-          </span>
-        </div>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:min-w-[26rem]">
-        <label class="min-w-0">
-          <span class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-500">
-            {{ i18n.t('room.hero.share_url') }}
-          </span>
-          <input
-            [value]="shareUrl()"
-            readonly
-            class="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-stone-200 outline-none"
-          />
-        </label>
-
-        <button
-          type="button"
-          class="self-end rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:border-white/30 hover:bg-white/10"
-          (click)="copyShareUrl()"
-        >
-          {{ i18n.t('room.hero.copy') }}
-        </button>
-      </div>
-    </div>
-  </section>
-
-  @if (onlineRoom.lastError()) {
-    <div class="mt-6 rounded-[1.25rem] border border-rose-300/40 bg-rose-50 px-5 py-4 text-sm text-rose-700">
-      {{ onlineRoom.lastError() }}
-    </div>
-  }
-
-  @if (onlineRoom.lastNotice()) {
-    <div class="mt-4 rounded-[1.25rem] border border-emerald-300/40 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
-      {{ onlineRoom.lastNotice() }}
-    </div>
-  }
-
-  @if (connectionWarning()) {
-    <div class="mt-4 rounded-[1.25rem] border border-amber-300/40 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-      {{ connectionWarning() }}
-    </div>
-  }
-
-  @switch (onlineRoom.bootstrapState()) {
-    @case ('loading') {
-      <div class="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/85 px-6 py-10 text-center text-sm text-stone-300 shadow-xl shadow-slate-950/20">
-        {{ i18n.t('room.page.loading') }}
-      </div>
-    }
-
-    @case ('missing') {
-      <div class="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/88 px-6 py-10 shadow-xl shadow-slate-950/20">
-        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+      <div class="room-fallback__card">
+        <p class="room-fallback__eyebrow">
           {{ i18n.t('room.page.missing.label') }}
         </p>
-        <h2 class="mt-3 text-3xl font-semibold text-stone-50">
+        <h1 class="room-fallback__title">
           {{ i18n.t('room.page.missing.title') }}
-        </h2>
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-300">
+        </h1>
+        <p class="room-fallback__copy">
           {{ i18n.t('room.page.missing.description') }}
         </p>
-        <a
-          routerLink="/"
-          class="mt-6 inline-flex items-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
-        >
+        <a routerLink="/" class="room-fallback__action">
           {{ i18n.t('room.page.missing.action') }}
         </a>
       </div>
-    }
+    </section>
+  } @else if (onlineRoom.bootstrapState() === 'loading' || !snapshot()) {
+    <section class="room-fallback">
+      <a routerLink="/" class="room-fallback__back">
+        <span aria-hidden="true">&larr;</span>
+        {{ i18n.t('room.page.back_to_lobby') }}
+      </a>
 
-    @default {
-      @if (snapshot()) {
-        <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-          <div class="min-w-0 space-y-4">
-            @if (showRematchBanner()) {
-              <section
-                class="rounded-[1.5rem] border border-amber-300/50 bg-amber-50 px-5 py-5 text-amber-950 shadow-sm"
-                data-testid="room-rematch-banner"
-              >
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                  {{ i18n.t('room.rematch.eyebrow') }}
-                </p>
-                <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-                  <div class="max-w-3xl">
-                    <h2 class="text-2xl font-semibold">
-                      {{ i18n.t('room.rematch.title') }}
-                    </h2>
-                    <p class="mt-2 text-sm leading-6">
-                      {{
-                        canRespondToRematch()
-                          ? i18n.t('room.rematch.description.player')
-                          : i18n.t('room.rematch.description.spectator')
-                      }}
-                    </p>
-                  </div>
+      <div class="room-fallback__card">
+        <p class="room-fallback__eyebrow">
+          {{ roomId() ? i18n.t('room.hero.title', { roomId: roomId()! }) : i18n.t('room.hero.loading_title') }}
+        </p>
+        <h1 class="room-fallback__title">
+          {{ i18n.t('room.page.loading') }}
+        </h1>
+      </div>
+    </section>
+  } @else {
+    <div class="room-layout">
+      <section class="room-stage">
+        @if (match()) {
+          <div class="room-stage__board-wrap">
+            <div class="room-stage__board">
+              <lib-go-game-board
+                [mode]="match()!.settings.mode"
+                [boardSize]="match()!.state.boardSize"
+                [board]="match()!.state.board"
+                [phase]="match()!.state.phase"
+                [currentPlayer]="match()!.state.nextPlayer"
+                [lastMove]="lastPlacedPoint()"
+                [winningLine]="match()!.state.winnerLine"
+                [deadStones]="match()!.state.scoring?.deadStones ?? []"
+                [interactive]="onlineRoom.canInteractBoard() && realtimeConnected()"
+                (pointSelected)="onBoardPoint($event)"
+              />
+            </div>
 
-                  @if (canRespondToRematch()) {
-                    <div class="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        class="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
-                        data-testid="room-rematch-accept"
-                        (click)="acceptRematch()"
-                      >
-                        {{ i18n.t('room.rematch.accept') }}
-                      </button>
-                      <button
-                        type="button"
-                        class="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-800 transition hover:border-stone-600"
-                        data-testid="room-rematch-decline"
-                        (click)="declineRematch()"
-                      >
-                        {{ i18n.t('room.rematch.decline') }}
-                      </button>
-                    </div>
-                  }
-                </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                  @for (status of rematchStatuses(); track status.color) {
-                    <div
-                      class="rounded-[1.25rem] border border-amber-300/40 bg-white/70 px-4 py-3"
-                      [attr.data-testid]="'room-rematch-status-' + status.color"
-                    >
-                      <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                          <lib-go-stone-badge [color]="status.color" />
-                          <div>
-                            <p class="text-sm font-semibold text-stone-950">
-                              {{ status.name }}
-                            </p>
-                            <p class="text-xs uppercase tracking-[0.2em] text-stone-500">
-                              {{ i18n.playerLabel(status.color) }}
-                            </p>
-                          </div>
-                        </div>
-
-                        <span
-                          class="rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em]"
-                          [class.border-emerald-300/60]="status.response === 'accepted'"
-                          [class.bg-emerald-100]="status.response === 'accepted'"
-                          [class.text-emerald-900]="status.response === 'accepted'"
-                          [class.border-stone-300]="status.response === 'pending'"
-                          [class.bg-white]="status.response === 'pending'"
-                          [class.text-stone-700]="status.response === 'pending'"
-                          [class.border-rose-300/60]="status.response === 'declined'"
-                          [class.bg-rose-100]="status.response === 'declined'"
-                          [class.text-rose-900]="status.response === 'declined'"
-                        >
-                          {{ i18n.t('room.rematch.response.' + status.response) }}
-                        </span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </section>
-            }
-
-            @if (showAutoStartBlockedBanner()) {
-              <section
-                class="rounded-[1.5rem] border border-stone-300 bg-stone-100 px-5 py-4 text-sm text-stone-800 shadow-sm"
-                data-testid="room-rematch-blocked"
-              >
-                {{ i18n.t('room.rematch.blocked') }}
-              </section>
-            }
-
-            @if (match()) {
-              <section class="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(33,37,42,0.98),_rgba(16,18,22,0.98))] p-4 shadow-2xl shadow-slate-950/25 sm:p-5">
-                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                      {{ i18n.t('room.page.live_board') }}
-                    </p>
-                    <h2 class="mt-2 text-2xl font-semibold text-stone-50">
-                      {{ match()!.settings.players.black }} vs {{ match()!.settings.players.white }}
-                    </h2>
-                  </div>
-
-                  @if (match()!.state.phase === 'finished') {
-                    <div class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100">
-                      {{
-                        i18n.translateMessage(
-                          match()!.state.result?.summary ?? match()!.state.message
-                        )
-                      }}
-                    </div>
-                  } @else {
-                    <div class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-stone-300">
-                      <span>{{ i18n.t('room.page.turn') }}:</span>
-                      <span class="inline-flex items-center gap-2 font-semibold text-stone-50">
-                        <lib-go-stone-badge [color]="match()!.state.nextPlayer" />
-                        {{ match()!.settings.players[match()!.state.nextPlayer] }}
-                      </span>
-                    </div>
-                  }
-                </div>
-
-                <lib-go-game-board
-                  [mode]="match()!.settings.mode"
-                  [boardSize]="match()!.state.boardSize"
-                  [board]="match()!.state.board"
-                  [phase]="match()!.state.phase"
-                  [currentPlayer]="match()!.state.nextPlayer"
-                  [lastMove]="lastPlacedPoint()"
-                  [winningLine]="match()!.state.winnerLine"
-                  [deadStones]="match()!.state.scoring?.deadStones ?? []"
-                  [interactive]="onlineRoom.canInteractBoard() && realtimeConnected()"
-                  (pointSelected)="onBoardPoint($event)"
-                />
-              </section>
-            } @else {
-              <section class="rounded-[1.75rem] border border-dashed border-white/15 bg-slate-950/85 px-6 py-10 text-center shadow-xl shadow-slate-950/20">
-                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-                  {{ roomStage()!.label }}
-                </p>
-                <h2 class="mt-3 text-3xl font-semibold text-stone-50">
-                  {{ roomStage()!.title }}
-                </h2>
-                <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-stone-300">
-                  {{ roomStage()!.description }}
-                </p>
-              </section>
-            }
-
-            <lib-go-online-room-move-log-panel [moveHistory]="recentMoves()" />
+            <div class="room-stage__hud">
+              @if (matchStatusLine()) {
+                <p class="room-stage__status">{{ matchStatusLine() }}</p>
+              }
+            </div>
           </div>
-
-          <div class="room-side-rail space-y-4 xl:sticky xl:top-6 xl:self-start">
-            <lib-go-online-room-viewer-panel
-              [joinForm]="joinForm"
-              [participantId]="onlineRoom.participantId()"
-              [joining]="onlineRoom.joining()"
-              [viewer]="viewer()"
-              [viewerSeat]="onlineRoom.viewerSeat()"
-              [isHost]="onlineRoom.isHost()"
-              [joinCardTitle]="joinCardTitle()"
-              [joinCardDescription]="joinCardDescription()"
-              (joinRequested)="joinRoom()"
-            />
-
-            <lib-go-online-room-roster-panel
-              [participants]="participants()"
-              [seats]="seats()"
-              [isHost]="onlineRoom.isHost()"
-              [realtimeConnected]="realtimeConnected()"
-              [canChangeSeats]="onlineRoom.canChangeSeats()"
-              [match]="match()"
-              [canPass]="canPass()"
-              [canResign]="canResign()"
-              [canFinalizeScoring]="canFinalizeScoring()"
-              (claimSeatRequested)="claimSeat($event)"
-              (releaseSeatRequested)="releaseSeat()"
-              (passRequested)="passTurn()"
-              (resignRequested)="resign()"
-              (finalizeScoringRequested)="finalizeScoring()"
-              (muteParticipantRequested)="muteParticipant($event)"
-              (unmuteParticipantRequested)="unmuteParticipant($event)"
-              (kickParticipantRequested)="kickParticipant($event)"
-            />
-
-            <lib-go-online-room-next-match-panel
-              [settingsForm]="settingsForm"
-              [boardSizeOptions]="boardSizeOptions()"
-              [isHost]="onlineRoom.isHost()"
-              [realtimeConnected]="realtimeConnected()"
-              [canEditNextMatchSettings]="canEditNextMatchSettings()"
-              [settingsLockedMessage]="settingsLockedMessage()"
-              (settingsSavedRequested)="saveNextMatchSettings()"
-            />
-
-            <lib-go-online-room-chat-panel
-              [chatForm]="chatForm"
-              [participantId]="onlineRoom.participantId()"
-              [isMuted]="onlineRoom.isMuted()"
-              [realtimeConnected]="realtimeConnected()"
-              [messages]="onlineRoom.chat()"
-              [helperText]="chatHelperText()"
-              (sendRequested)="sendChat()"
-            />
+        } @else {
+          <div class="room-stage__empty">
+            <p class="room-stage__eyebrow">{{ roomStage()!.label }}</p>
+            <h1 class="room-stage__empty-title">{{ roomStage()!.title }}</h1>
+            <p class="room-stage__empty-copy">{{ roomStage()!.description }}</p>
           </div>
-        </div>
-      }
-    }
+        }
+      </section>
+
+      <lib-go-online-room-sidebar
+        [shareUrl]="shareUrl()"
+        [connectionState]="connectionState()"
+        [connectionLabel]="connectionLabel()"
+        [joinForm]="joinForm"
+        [chatForm]="chatForm"
+        [participantId]="onlineRoom.participantId()"
+        [joining]="onlineRoom.joining()"
+        [isMuted]="onlineRoom.isMuted()"
+        [realtimeConnected]="realtimeConnected()"
+        [canChangeSeats]="onlineRoom.canChangeSeats()"
+        [joinCardTitle]="joinCardTitle()"
+        [joinCardDescription]="joinCardDescription()"
+        [seats]="seats()"
+        [participants]="participants()"
+        [match]="match()"
+        [messages]="onlineRoom.chat()"
+        [helperText]="chatHelperText()"
+        [roomMessages]="roomMessages()"
+        [canPass]="canPass()"
+        [canResign]="canResign()"
+        [canFinalizeScoring]="canFinalizeScoring()"
+        [showRematch]="showRematchBanner()"
+        [canRespondToRematch]="canRespondToRematch()"
+        [rematchStatuses]="rematchStatuses()"
+        (copyShareUrlRequested)="copyShareUrl()"
+        (joinRequested)="joinRoom()"
+        (claimSeatRequested)="claimSeat($event)"
+        (releaseSeatRequested)="releaseSeat()"
+        (passRequested)="passTurn()"
+        (resignRequested)="resign()"
+        (finalizeScoringRequested)="finalizeScoring()"
+        (acceptRematchRequested)="acceptRematch()"
+        (declineRematchRequested)="declineRematch()"
+        (sendRequested)="sendChat()"
+      />
+    </div>
   }
 </section>

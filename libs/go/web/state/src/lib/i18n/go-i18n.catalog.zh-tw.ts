@@ -299,6 +299,8 @@ const ZH_HOSTED_UI = {
   'room.chat.message': '訊息',
   'room.chat.placeholder': '發送訊息給房間...',
   'room.chat.send': '送出',
+  'room.sidebar.decorative_avatar': '示意頭像',
+  'room.sidebar.decorative_clock': '示意計時',
   'lobby.hero.eyebrow': '線上多人大廳',
   'lobby.hero.title': '圍棋與五子棋房間，隨時可加入。',
   'lobby.hero.description':

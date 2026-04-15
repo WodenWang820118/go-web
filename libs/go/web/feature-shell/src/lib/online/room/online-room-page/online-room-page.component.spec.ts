@@ -26,19 +26,20 @@ describe('OnlineRoomPageComponent', () => {
     expect(text).not.toContain(i18n.t('room.next_match.save'));
   });
 
-  it('shows next-match settings when the current viewer is the host', async () => {
+  it('does not render a joined-viewer identity card in the sidebar when the viewer is the host', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
       participantToken: 'token-1',
     });
 
-    const text = await renderText(roomService);
-    const i18n = TestBed.inject(GoI18nService);
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
 
-    expect(text).toContain(i18n.t('room.next_match.title'));
-    expect(text).toContain(i18n.t('room.next_match.save'));
-    expect(text).toContain(i18n.t('room.participants.you_are_here_as'));
+    expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
+    expect(root.querySelector('.room-sidebar__identity')).toBeNull();
+    expect(root.querySelector('.room-sidebar__viewer-card')).toBeNull();
   });
 
   it('shows waiting copy when seats are still open', async () => {
@@ -208,7 +209,7 @@ describe('OnlineRoomPageComponent', () => {
     expect(text).toContain(i18n.t('room.join.description.spectator'));
   });
 
-  it('shows the rematch banner for seated players after a finished match', async () => {
+  it('shows the rematch controls for seated players inside the sidebar after a finished match', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         participants: [
@@ -295,12 +296,12 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
 
-    expect(root.querySelector('[data-testid="room-rematch-banner"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
     expect(root.textContent).toContain(i18n.t('room.rematch.title'));
     expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
   });
 
-  it('renders chat, participants, and move log as separate room panels', async () => {
+  it('renders the simplified sidebar with chat-integrated room info', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         participants: [
@@ -387,13 +388,28 @@ describe('OnlineRoomPageComponent', () => {
 
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
 
-    expect(root.querySelector('[data-testid="room-compact-header"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-viewer-panel"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-roster-panel"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-next-match-panel"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-chat-panel"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-move-log-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-room-id"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-connection"]')?.getAttribute('title')
+    ).toBe(i18n.t('room.connection.connected'));
+    expect(
+      root.querySelector('[data-testid="room-sidebar-connection"]')?.getAttribute('aria-label')
+    ).toBe(i18n.t('room.connection.connected'));
+    expect(
+      root.querySelector('[data-testid="room-sidebar-share-url"]')?.textContent
+    ).toContain('http://localhost/online/room/ROOM42');
+    expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-next-match-panel"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-move-log-panel"]')).toBeNull();
+    expect(root.querySelector('.room-sidebar__stats')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
+    expect(root.querySelectorAll('.room-sidebar__chat-metric')).toHaveLength(2);
+    expect(root.querySelector('[data-testid="room-player-black"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-player-white"]')).not.toBeNull();
   });
 
   it('warns joined viewers when realtime is disconnected and disables seat claims', async () => {
@@ -432,11 +448,212 @@ describe('OnlineRoomPageComponent', () => {
       '[data-testid="claim-black"]'
     ) as HTMLButtonElement | null;
 
-    expect(root.textContent).toContain(
-      i18n.t('room.client.realtime_unavailable')
-    );
+    expect(
+      root.querySelector('[data-testid="room-sidebar-message-warning"]')?.textContent
+    ).toContain(i18n.t('room.client.realtime_unavailable'));
     expect(claimBlackButton).not.toBeNull();
     expect(claimBlackButton?.disabled).toBe(true);
+  });
+
+  it('shows the join form inside the new sidebar for visitors who have not joined', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="join-room-form"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
+  });
+
+  it('renders the core match action controls inside the sidebar', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        match: {
+          settings: {
+            mode: 'go',
+            boardSize: 19,
+            komi: 6.5,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'go',
+            boardSize: 19,
+            board: Array.from({ length: 19 }, () =>
+              Array.from({ length: 19 }, () => null)
+            ),
+            phase: 'playing',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: null,
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.state.next_turn', {
+              player: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(root.querySelector('[data-testid="room-sidebar-actions"]')).not.toBeNull();
+    expect(root.textContent).toContain(i18n.t('common.move.pass'));
+    expect(root.textContent).toContain(i18n.t('common.move.resign'));
+    expect(root.textContent).toContain(i18n.t('room.participants.finalize_score'));
+  });
+
+  it('renders the missing-room state inside the new shell without the old header', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: null,
+      participantId: null,
+      participantToken: null,
+      bootstrapState: 'missing',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
+    expect(root.textContent).toContain(i18n.t('room.page.missing.title'));
+    expect(root.textContent).toContain(i18n.t('room.page.missing.action'));
+  });
+
+  it('keeps rematch controls inside the sidebar shell after a finished match', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        rematch: {
+          participants: {
+            black: 'host-1',
+            white: 'guest-1',
+          },
+          responses: {
+            black: 'pending',
+            white: 'accepted',
+          },
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null)
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
+    expect(root.textContent).toContain(i18n.t('room.rematch.title'));
+    expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
   });
 
   it('suffixes duplicate join names before submitting the room form', async () => {
@@ -507,13 +724,16 @@ function createRoomServiceStub(options: {
   snapshot: RoomSnapshot | null;
   participantId: string | null;
   participantToken: string | null;
+  bootstrapState?: 'idle' | 'loading' | 'ready' | 'missing';
   connectionState?: 'idle' | 'connecting' | 'connected' | 'disconnected';
 }) {
   const snapshot = signal(options.snapshot);
   const participantId = signal(options.participantId);
   const participantToken = signal(options.participantToken);
   const displayName = signal('Host');
-  const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>('ready');
+  const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>(
+    options.bootstrapState ?? 'ready'
+  );
   const connectionState = signal<'idle' | 'connecting' | 'connected' | 'disconnected'>(
     options.connectionState ?? 'connected'
   );

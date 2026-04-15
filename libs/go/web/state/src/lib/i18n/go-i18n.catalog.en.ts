@@ -363,6 +363,8 @@ const EN_HOSTED_UI = {
   'room.chat.message': 'Message',
   'room.chat.placeholder': 'Message the room...',
   'room.chat.send': 'Send',
+  'room.sidebar.decorative_avatar': 'Decorative avatar',
+  'room.sidebar.decorative_clock': 'Decorative clock',
   'lobby.hero.eyebrow': 'Hosted multiplayer lobby',
   'lobby.hero.title': 'Go and Gomoku rooms, ready to join.',
   'lobby.hero.description':
