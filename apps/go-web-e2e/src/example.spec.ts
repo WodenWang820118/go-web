@@ -33,10 +33,9 @@ test('starts a Go match and completes a scoring flow', async ({ page }) => {
   await expect(page.getByText(/scoring phase started/i)).toBeVisible();
 
   await page.getByRole('button', { name: /finalize score/i }).click();
-  await expect(page.getByRole('dialog', { name: /match result/i })).toBeVisible();
-  await expect(
-    page.getByRole('dialog', { name: /match result/i }).getByText(/wins by/i)
-  ).toBeVisible();
+  const resultDialog = page.getByTestId('match-result-dialog');
+  await expect(resultDialog).toBeVisible();
+  await expect(resultDialog.getByText(/wins by/i)).toBeVisible();
 });
 
 test('starts a Gomoku match and creates five in a row', async ({ page }) => {
@@ -60,10 +59,9 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
     await page.getByTestId(`intersection-${point}`).click({ force: true });
   }
 
-  await expect(page.getByRole('dialog', { name: /match result/i })).toBeVisible();
-  await expect(
-    page.getByRole('dialog', { name: /match result/i }).getByText(/five in a row/i)
-  ).toBeVisible();
+  const resultDialog = page.getByTestId('match-result-dialog');
+  await expect(resultDialog).toBeVisible();
+  await expect(resultDialog.getByText(/five in a row/i)).toBeVisible();
 });
 
 test('renders the flow on a mobile viewport', async ({ page }) => {

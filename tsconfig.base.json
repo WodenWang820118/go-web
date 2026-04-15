@@ -16,16 +16,16 @@
     "baseUrl": ".",
     "paths": {
       "@org/models": ["libs/shared/models/src/index.ts"],
-      "@gx/go/domain": ["libs/go/domain/src/index.ts"],
-      "@gx/go/state": ["libs/go/state/src/index.ts"],
-      "@gx/go/state/guards": ["libs/go/state/src/lib/guards/active-match.guard.ts"],
-      "@gx/go/state/i18n": ["libs/go/state/src/lib/i18n/go-i18n.service.ts"],
-      "@gx/go/state/server-origin": ["libs/go/state/src/lib/server-origin/go-server-origin.token.ts"],
-      "@gx/go/state/session": ["libs/go/state/src/lib/session/game-session.store.ts"],
-      "@gx/go/ui": ["libs/go/ui/src/index.ts"],
-      "@gx/go/feature-shell": ["libs/go/feature-shell/src/index.ts"],
-      "@gx/go/feature-shell/routes": ["libs/go/feature-shell/src/lib/go-feature-shell.routes.ts"],
-      "@gx/go/contracts": ["libs/go/contracts/src/index.ts"]
+      "@gx/go/domain": ["libs/go/shared/domain/src/index.ts"],
+      "@gx/go/state": ["libs/go/web/state/src/index.ts"],
+      "@gx/go/state/guards": ["libs/go/web/state/src/lib/guards/active-match.guard.ts"],
+      "@gx/go/state/i18n": ["libs/go/web/state/src/lib/i18n/go-i18n.service.ts"],
+      "@gx/go/state/server-origin": ["libs/go/web/state/src/lib/server-origin/go-server-origin.token.ts"],
+      "@gx/go/state/session": ["libs/go/web/state/src/lib/session/game-session.store.ts"],
+      "@gx/go/ui": ["libs/go/web/ui/src/index.ts"],
+      "@gx/go/feature-shell": ["libs/go/web/feature-shell/src/index.ts"],
+      "@gx/go/feature-shell/routes": ["libs/go/web/feature-shell/src/lib/go-feature-shell.routes.ts"],
+      "@gx/go/contracts": ["libs/go/shared/contracts/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
