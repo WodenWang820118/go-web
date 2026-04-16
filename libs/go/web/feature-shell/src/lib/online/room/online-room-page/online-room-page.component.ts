@@ -25,8 +25,8 @@ import {
   OnlineRoomShareChipComponent,
   OnlineRoomShareChipFeedbackState,
 } from '../online-room-share-chip/online-room-share-chip.component';
-import { OnlineRoomSidebarComponent } from '../online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomService } from '../services/online-room/online-room.service';
+import { OnlineRoomSidebarComponent } from '../views/online-room-sidebar/online-room-sidebar.component';
 
 interface OnlineRoomRematchStatusViewModel {
   color: PlayerColor;
