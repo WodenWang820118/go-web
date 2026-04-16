@@ -7,6 +7,7 @@ import {
   GameStartSettings,
   JoinRoomResponse,
   RoomSnapshot,
+  SystemNotice,
 } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -64,6 +65,7 @@ export class OnlineRoomService {
   private readonly creatingSignal = signal(false);
   private readonly lastErrorSignal = signal<string | null>(null);
   private readonly lastNoticeSignal = signal<string | null>(null);
+  private readonly lastSystemNoticeSignal = signal<SystemNotice | null>(null);
 
   readonly roomId = this.activeRoomIdSignal.asReadonly();
   readonly snapshot = this.snapshotSignal.asReadonly();
@@ -76,6 +78,7 @@ export class OnlineRoomService {
   readonly creating = this.creatingSignal.asReadonly();
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly lastNotice = this.lastNoticeSignal.asReadonly();
+  readonly lastSystemNotice = this.lastSystemNoticeSignal.asReadonly();
 
   readonly participants = computed(() =>
     this.selectors.selectRoomParticipants(this.snapshotSignal())
@@ -284,6 +287,7 @@ export class OnlineRoomService {
   clearTransientMessages(): void {
     this.lastErrorSignal.set(null);
     this.lastNoticeSignal.set(null);
+    this.lastSystemNoticeSignal.set(null);
   }
 
   disconnect(): void {
@@ -304,6 +308,7 @@ export class OnlineRoomService {
       this.updateSnapshot(snapshot => this.snapshots.applyChatMessage(snapshot, event));
     });
     this.socket.notice$.subscribe(event => {
+      this.lastSystemNoticeSignal.set(event.notice);
       this.lastNoticeSignal.set(this.i18n.translateMessage(event.notice.message));
     });
     this.socket.commandError$.subscribe(event => {
@@ -379,5 +384,6 @@ export class OnlineRoomService {
     this.participantTokenSignal.set(null);
     this.displayNameSignal.set('');
     this.lastNoticeSignal.set(null);
+    this.lastSystemNoticeSignal.set(null);
   }
 }

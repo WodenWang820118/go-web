@@ -318,7 +318,6 @@ const EN_HOSTED_UI = {
   'room.connection.offline': 'Offline',
   'room.chat.helper.join': 'Join the room to chat.',
   'room.chat.helper.muted': 'The host muted your chat access.',
-  'room.chat.helper.default': 'Spectators and players can chat in real time.',
   'room.participants.join_room': 'Join room',
   'room.participants.display_name': 'Display name',
   'room.participants.joining_room': 'Joining room...',
@@ -368,6 +367,8 @@ const EN_HOSTED_UI = {
   'room.rematch.response.declined': 'Passed',
   'room.rematch.blocked':
     'A player passed on the rematch. Change a seat to unlock auto-start for the next game.',
+  'room.dialog.auto_start.title': 'Next match started',
+  'room.dialog.match_result.title': 'Match result',
   'room.chat.title': 'Room chat',
   'room.chat.empty': 'Join the room to start the conversation.',
   'room.chat.message': 'Message',

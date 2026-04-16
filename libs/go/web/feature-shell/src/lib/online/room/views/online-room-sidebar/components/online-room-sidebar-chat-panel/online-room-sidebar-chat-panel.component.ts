@@ -140,10 +140,15 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
             ></textarea>
           </label>
 
-          <div class="flex items-center justify-between gap-3">
-            <p class="flex-1 text-sm leading-6 text-stone-700">
-              {{ helperText() }}
-            </p>
+          <div
+            class="flex items-center gap-3"
+            [class.justify-end]="!helperText()"
+          >
+            @if (helperText()) {
+              <p class="flex-1 text-sm leading-6 text-stone-700">
+                {{ helperText() }}
+              </p>
+            }
 
             <button
               pButton

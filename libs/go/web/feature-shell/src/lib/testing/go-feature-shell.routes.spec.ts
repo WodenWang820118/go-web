@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { RoomSnapshot } from '@gx/go/contracts';
+import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { of } from 'rxjs';
@@ -114,6 +114,7 @@ function createOnlineRoomServiceStub() {
   >('connected');
   const lastError = signal<string | null>(null);
   const lastNotice = signal<string | null>(null);
+  const lastSystemNotice = signal<SystemNotice | null>(null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
   const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
@@ -144,6 +145,7 @@ function createOnlineRoomServiceStub() {
     creating: signal(false),
     lastError,
     lastNotice,
+    lastSystemNotice,
     participants,
     match,
     nextMatchSettings,

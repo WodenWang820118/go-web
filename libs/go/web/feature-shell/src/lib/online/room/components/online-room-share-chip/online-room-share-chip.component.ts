@@ -11,8 +11,7 @@ import {
 import { ButtonModule } from 'primeng/button';
 import { ChipModule } from 'primeng/chip';
 import { InputTextModule } from 'primeng/inputtext';
-
-export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
+import { OnlineRoomShareChipFeedbackState } from '../../contracts/online-room-view.contracts';
 
 @Component({
   selector: 'lib-go-online-room-share-chip',

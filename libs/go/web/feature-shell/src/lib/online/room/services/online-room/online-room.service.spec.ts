@@ -361,6 +361,7 @@ describe('OnlineRoomService', () => {
         seat: i18n.t('common.seat.black'),
       })
     );
+    expect(service.lastSystemNotice()?.message.key).toBe('room.notice.seat_claimed');
     expect(service.lastError()).toBe(i18n.t('room.error.not_your_turn'));
   });
 });

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { computed, signal } from '@angular/core';
-import { RoomSnapshot } from '@gx/go/contracts';
+import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { of } from 'rxjs';
@@ -208,7 +208,7 @@ describe('OnlineRoomPageComponent', () => {
     expect(text).toContain(i18n.t('room.join.description.spectator'));
   });
 
-  it('shows the rematch controls for seated players inside the sidebar after a finished match', async () => {
+  it('opens the rematch prompt in a dialog after a finished match', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         participants: [
@@ -294,10 +294,22 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
+    const rematchDialog = document.body.querySelector(
+      '[data-testid="room-rematch-dialog"]'
+    ) as HTMLElement | null;
+    const acceptButton = document.body.querySelector(
+      '[data-testid="room-rematch-dialog-accept"]'
+    ) as HTMLButtonElement | null;
 
-    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
-    expect(root.textContent).toContain(i18n.t('room.rematch.title'));
-    expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
+    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).toBeNull();
+    expect(rematchDialog).not.toBeNull();
+    expect(document.body.textContent).toContain(i18n.t('room.rematch.title'));
+    expect(document.body.textContent).toContain(i18n.t('room.rematch.accept'));
+
+    acceptButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.respondToRematch).toHaveBeenCalledWith(true);
   });
 
   it('renders the simplified sidebar with chat-integrated room info', async () => {
@@ -813,7 +825,75 @@ describe('OnlineRoomPageComponent', () => {
     expect(root.textContent).toContain(i18n.t('room.page.missing.action'));
   });
 
-  it('keeps rematch controls inside the sidebar shell after a finished match', async () => {
+  it('shows the auto-start notice in a dialog instead of the sidebar notice list', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        match: {
+          settings: {
+            mode: 'go',
+            boardSize: 19,
+            komi: 6.5,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'go',
+            boardSize: 19,
+            board: Array.from({ length: 19 }, () =>
+              Array.from({ length: 19 }, () => null)
+            ),
+            phase: 'playing',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: null,
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.state.next_turn', {
+              player: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      lastNotice: '下一場 圍棋 對局已自動開始。',
+      lastSystemNotice: {
+        id: 'notice-auto-start',
+        message: createMessage('room.notice.match_started_auto', {
+          mode: createMessage('common.mode.go'),
+        }),
+        createdAt: '2026-03-20T00:06:00.000Z',
+      },
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+    const dialog = document.body.querySelector(
+      '[data-testid="room-auto-start-dialog"]'
+    ) as HTMLElement | null;
+
+    expect(dialog).not.toBeNull();
+    expect(document.body.textContent).toContain(i18n.t('room.dialog.auto_start.title'));
+    expect(dialog?.textContent).toContain(
+      i18n.t('room.notice.match_started_auto', {
+        mode: i18n.t('common.mode.go'),
+      })
+    );
+    expect(root.querySelector('[data-testid="room-sidebar-message-notice"]')).toBeNull();
+  });
+
+  it('shows resignation results in a dialog and removes the inline stage hud', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         participants: [
@@ -847,24 +927,24 @@ describe('OnlineRoomPageComponent', () => {
           },
           responses: {
             black: 'pending',
-            white: 'accepted',
+            white: 'pending',
           },
         },
         match: {
           settings: {
-            mode: 'gomoku',
-            boardSize: 15,
-            komi: 0,
+            mode: 'go',
+            boardSize: 19,
+            komi: 6.5,
             players: {
               black: 'Host',
               white: 'Guest',
             },
           },
           state: {
-            mode: 'gomoku',
-            boardSize: 15,
-            board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null)
+            mode: 'go',
+            boardSize: 19,
+            board: Array.from({ length: 19 }, () =>
+              Array.from({ length: 19 }, () => null)
             ),
             phase: 'finished',
             nextPlayer: 'black',
@@ -875,16 +955,18 @@ describe('OnlineRoomPageComponent', () => {
             moveHistory: [],
             previousBoardHashes: [],
             result: {
-              summary: createMessage('game.gomoku.result.five_in_row', {
+              summary: createMessage('game.result.win_by_resignation', {
                 winner: createMessage('common.player.black'),
               }),
               winner: 'black',
+              resignedBy: 'white',
+              reason: 'resign',
               score: null,
             },
             lastMove: null,
             consecutivePasses: 0,
             winnerLine: [],
-            message: createMessage('game.gomoku.result.five_in_row', {
+            message: createMessage('game.result.win_by_resignation', {
               winner: createMessage('common.player.black'),
             }),
             scoring: null,
@@ -899,15 +981,29 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
-    const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
+    const dialog = document.body.querySelector(
+      '[data-testid="room-resign-result-dialog"]'
+    ) as HTMLElement | null;
+    const closeButton = document.body.querySelector(
+      '[data-testid="room-resign-result-dialog-close"]'
+    ) as HTMLButtonElement | null;
 
-    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
-    expect(root.textContent).toContain(i18n.t('room.rematch.title'));
-    expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
-    expect(boardWrap).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-hud"]')).not.toBeNull();
+    expect(dialog).not.toBeNull();
+    expect(document.body.textContent).toContain(i18n.t('room.dialog.match_result.title'));
+    expect(dialog?.textContent).toContain(
+      i18n.t('game.result.win_by_resignation', {
+        winner: i18n.t('common.player.black'),
+      })
+    );
+    expect(root.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).toBeNull();
+
+    closeButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(
+      document.body.querySelector('[data-testid="room-rematch-dialog"]')
+    ).not.toBeNull();
   });
 
   it('suffixes duplicate join names before submitting the room form', async () => {
@@ -980,6 +1076,8 @@ function createRoomServiceStub(options: {
   participantToken: string | null;
   bootstrapState?: 'idle' | 'loading' | 'ready' | 'missing';
   connectionState?: 'idle' | 'connecting' | 'connected' | 'disconnected';
+  lastNotice?: string | null;
+  lastSystemNotice?: SystemNotice | null;
 }) {
   const snapshot = signal(options.snapshot);
   const participantId = signal(options.participantId);
@@ -992,7 +1090,8 @@ function createRoomServiceStub(options: {
     options.connectionState ?? 'connected'
   );
   const lastError = signal<string | null>(null);
-  const lastNotice = signal<string | null>(null);
+  const lastNotice = signal<string | null>(options.lastNotice ?? null);
+  const lastSystemNotice = signal<SystemNotice | null>(options.lastSystemNotice ?? null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
   const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
@@ -1023,6 +1122,7 @@ function createRoomServiceStub(options: {
     creating: signal(false),
     lastError,
     lastNotice,
+    lastSystemNotice,
     participants,
     match,
     nextMatchSettings,

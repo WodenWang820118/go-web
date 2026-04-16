@@ -277,7 +277,6 @@ const ZH_HOSTED_UI = {
   'room.connection.offline': '離線',
   'room.chat.helper.join': '加入房間後才能聊天。',
   'room.chat.helper.muted': '你的聊天權限已被房主禁言。',
-  'room.chat.helper.default': '玩家與觀戰者都可以即時聊天。',
   'room.participants.join_room': '加入房間',
   'room.participants.display_name': '顯示名稱',
   'room.participants.joining_room': '正在加入房間...',
@@ -400,6 +399,8 @@ const ZH_HOSTED_UI = {
   'room.rematch.response.declined': '先跳過',
   'room.rematch.blocked':
     '有玩家先不再來一局。請先變更座位，房間才會重新啟用自動開始。',
+  'room.dialog.auto_start.title': '下一局已開始',
+  'room.dialog.match_result.title': '對局結果',
 } as const;
 
 export const ZH_TW_TRANSLATIONS = {

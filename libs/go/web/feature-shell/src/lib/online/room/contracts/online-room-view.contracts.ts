@@ -1,10 +1,41 @@
 import { ParticipantSummary } from '@gx/go/contracts';
-import { PlayerColor } from '@gx/go/domain';
+import { BoardPoint, PlayerColor } from '@gx/go/domain';
+
+export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
 
 export interface OnlineRoomStageViewModel {
   readonly label: string;
   readonly title: string;
   readonly description: string;
+}
+
+export interface OnlineRoomPageStatusViewModel {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly actionLabel: string | null;
+}
+
+export interface OnlineRoomShareChipViewModel {
+  readonly shareUrl: string | null;
+  readonly shareLabel: string;
+  readonly copiedLabel: string;
+  readonly copyAriaLabel: string;
+  readonly retryAriaLabel: string;
+  readonly copiedMessage: string;
+  readonly copyFailedMessage: string;
+  readonly manualCopyInstruction: string;
+  readonly manualUrlAriaLabel: string;
+  readonly dismissLabel: string;
+  readonly connectionState: 'idle' | 'connecting' | 'connected' | 'disconnected';
+  readonly connectionLabel: string;
+  readonly feedbackState: OnlineRoomShareChipFeedbackState;
+}
+
+export interface OnlineRoomBoardSectionViewModel {
+  readonly lastPlacedPoint: BoardPoint | null;
+  readonly interactive: boolean;
+  readonly statusLine: string | null;
 }
 
 export interface OnlineRoomSeatViewModel {
