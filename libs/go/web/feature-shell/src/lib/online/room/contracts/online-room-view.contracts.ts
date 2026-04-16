@@ -1,13 +1,18 @@
-import { FormControl, FormGroup } from '@angular/forms';
+import { ParticipantSummary } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 
-export type OnlineRoomJoinFormGroup = FormGroup<{
-  displayName: FormControl<string>;
-}>;
+export interface OnlineRoomStageViewModel {
+  readonly label: string;
+  readonly title: string;
+  readonly description: string;
+}
 
-export type OnlineRoomChatFormGroup = FormGroup<{
-  message: FormControl<string>;
-}>;
+export interface OnlineRoomSeatViewModel {
+  readonly color: PlayerColor;
+  readonly occupant: ParticipantSummary | null;
+  readonly canClaim: boolean;
+  readonly isViewerSeat: boolean;
+}
 
 export interface OnlineRoomSidebarMessageViewModel {
   readonly tone: 'error' | 'notice' | 'warning';

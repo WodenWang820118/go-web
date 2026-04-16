@@ -23,6 +23,7 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { OnlineRoomSelectorsService } from '../online-room-selectors/online-room-selectors.service';
 import { OnlineRoomSocketService } from '../online-room-socket/online-room-socket.service';
 import { OnlineRoomsHttpService } from '../online-rooms-http/online-rooms-http.service';
 import {
@@ -31,23 +32,11 @@ import {
 import { OnlineRoomIdentityService } from '../online-room-identity/online-room-identity.service';
 import { OnlineRoomSnapshotService } from '../online-room-snapshot/online-room-snapshot.service';
 import {
-  selectCanChangeSeats,
-  selectCanInteractBoard,
-  selectChatMessages,
-  selectHostedMatch,
-  selectIsActivePlayer,
-  selectRoomParticipants,
-  selectViewer,
-  selectViewerIsHost,
-  selectViewerIsMuted,
-  selectViewerSeat,
-} from '../../online-room-selectors';
-import {
   BootstrapState,
   JOIN_ROOM_REQUIRED_MESSAGE,
   OnlineRoomRealtimeEvent,
   REALTIME_UNAVAILABLE_MESSAGE,
-} from '../../online-room.service.models';
+} from '../../contracts/online-room-service.contracts';
 
 /**
  * Frontend facade for a single hosted multiplayer room.
@@ -59,6 +48,7 @@ export class OnlineRoomService {
   private readonly storage = inject(OnlineRoomStorageService);
   private readonly socket = inject(OnlineRoomSocketService);
   private readonly identity = inject(OnlineRoomIdentityService);
+  private readonly selectors = inject(OnlineRoomSelectorsService);
   private readonly snapshots = inject(OnlineRoomSnapshotService);
   private bootstrapSubscription: Subscription | null = null;
   private readonly browserOrigin =
@@ -87,11 +77,17 @@ export class OnlineRoomService {
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly lastNotice = this.lastNoticeSignal.asReadonly();
 
-  readonly participants = computed(() => selectRoomParticipants(this.snapshotSignal()));
-  readonly match = computed(() => selectHostedMatch(this.snapshotSignal()));
-  readonly chat = computed(() => selectChatMessages(this.snapshotSignal()));
+  readonly participants = computed(() =>
+    this.selectors.selectRoomParticipants(this.snapshotSignal())
+  );
+  readonly match = computed(() =>
+    this.selectors.selectHostedMatch(this.snapshotSignal())
+  );
+  readonly chat = computed(() =>
+    this.selectors.selectChatMessages(this.snapshotSignal())
+  );
   readonly viewer = computed(() =>
-    selectViewer(this.participants(), this.participantIdSignal())
+    this.selectors.selectViewer(this.participants(), this.participantIdSignal())
   );
   readonly nextMatchSettings = computed(
     () => this.snapshotSignal()?.nextMatchSettings ?? null
@@ -100,16 +96,18 @@ export class OnlineRoomService {
   readonly autoStartBlockedUntilSeatChange = computed(
     () => this.snapshotSignal()?.autoStartBlockedUntilSeatChange ?? false
   );
-  readonly viewerSeat = computed(() => selectViewerSeat(this.viewer()));
-  readonly isHost = computed(() => selectViewerIsHost(this.viewer()));
-  readonly isMuted = computed(() => selectViewerIsMuted(this.viewer()));
+  readonly viewerSeat = computed(() => this.selectors.selectViewerSeat(this.viewer()));
+  readonly isHost = computed(() => this.selectors.selectViewerIsHost(this.viewer()));
+  readonly isMuted = computed(() => this.selectors.selectViewerIsMuted(this.viewer()));
   readonly isActivePlayer = computed(() =>
-    selectIsActivePlayer(this.match(), this.viewerSeat())
+    this.selectors.selectIsActivePlayer(this.match(), this.viewerSeat())
   );
   readonly canInteractBoard = computed(() =>
-    selectCanInteractBoard(this.match(), this.viewerSeat())
+    this.selectors.selectCanInteractBoard(this.match(), this.viewerSeat())
   );
-  readonly canChangeSeats = computed(() => selectCanChangeSeats(this.match()));
+  readonly canChangeSeats = computed(() =>
+    this.selectors.selectCanChangeSeats(this.match())
+  );
   readonly shareUrl = computed(() =>
     this.snapshots.buildRoomShareUrl(this.activeRoomIdSignal(), this.browserOrigin)
   );

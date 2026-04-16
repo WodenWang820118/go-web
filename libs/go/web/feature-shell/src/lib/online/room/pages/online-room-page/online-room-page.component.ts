@@ -18,28 +18,21 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { GameBoardComponent } from '@gx/go/ui';
 import { EMPTY, catchError, from, map, take, tap } from 'rxjs';
 import {
+  OnlineRoomChatFormGroup,
+  OnlineRoomJoinFormGroup,
+} from '../../contracts/online-room-form.contracts';
+import {
   OnlineRoomSeatViewModel,
+  OnlineRoomSidebarMessageViewModel,
+  OnlineRoomSidebarRematchStatusViewModel,
   OnlineRoomStageViewModel,
-} from '../online-room-page.models';
+} from '../../contracts/online-room-view.contracts';
 import {
   OnlineRoomShareChipComponent,
   OnlineRoomShareChipFeedbackState,
-} from '../online-room-share-chip/online-room-share-chip.component';
-import { OnlineRoomService } from '../services/online-room/online-room.service';
-import { OnlineRoomSidebarComponent } from '../views/online-room-sidebar/online-room-sidebar.component';
-
-interface OnlineRoomRematchStatusViewModel {
-  color: PlayerColor;
-  name: string;
-  response: 'pending' | 'accepted' | 'declined';
-  isViewer: boolean;
-}
-
-interface OnlineRoomSidebarMessageViewModel {
-  tone: 'error' | 'notice' | 'warning';
-  message: string;
-  testId: string;
-}
+} from '../../components/online-room-share-chip/online-room-share-chip.component';
+import { OnlineRoomService } from '../../services/online-room/online-room.service';
+import { OnlineRoomSidebarComponent } from '../../views/online-room-sidebar/online-room-sidebar.component';
 
 @Component({
   selector: 'lib-go-online-room-page',
@@ -180,7 +173,7 @@ export class OnlineRoomPageComponent {
       this.rematch()?.responses[viewerSeat] === 'pending'
     );
   });
-  protected readonly rematchStatuses = computed<OnlineRoomRematchStatusViewModel[]>(() => {
+  protected readonly rematchStatuses = computed<OnlineRoomSidebarRematchStatusViewModel[]>(() => {
     const rematch = this.rematch();
 
     if (!rematch) {
@@ -336,12 +329,12 @@ export class OnlineRoomPageComponent {
     return this.i18n.translateMessage(match.state.result?.summary ?? match.state.message);
   });
 
-  protected readonly joinForm = new FormGroup({
+  protected readonly joinForm: OnlineRoomJoinFormGroup = new FormGroup({
     displayName: new FormControl('', {
       nonNullable: true,
     }),
   });
-  protected readonly chatForm = new FormGroup({
+  protected readonly chatForm: OnlineRoomChatFormGroup = new FormGroup({
     message: new FormControl('', {
       nonNullable: true,
     }),

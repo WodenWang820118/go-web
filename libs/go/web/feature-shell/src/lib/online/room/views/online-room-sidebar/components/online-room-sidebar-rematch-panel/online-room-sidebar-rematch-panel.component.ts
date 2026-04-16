@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { OnlineRoomSidebarRematchStatusViewModel } from '../../online-room-sidebar.models';
+import { OnlineRoomSidebarRematchStatusViewModel } from '../../../../contracts/online-room-view.contracts';
 
 @Component({
   selector: 'lib-go-online-room-sidebar-rematch-panel',

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { HostedMatchSnapshot } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { OnlineRoomSeatViewModel } from '../../../../online-room-page.models';
+import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-card/online-room-sidebar-seat-card.component';
 
 @Component({

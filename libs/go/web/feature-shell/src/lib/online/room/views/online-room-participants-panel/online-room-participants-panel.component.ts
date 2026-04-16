@@ -1,20 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
 import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
-import { GameMode, PlayerColor } from '@gx/go/domain';
-import { OnlineRoomNextMatchPanelComponent } from '../online-room-next-match-panel/online-room-next-match-panel.component';
-import { OnlineRoomSeatViewModel } from '../online-room-page.models';
-import { OnlineRoomRosterPanelComponent } from '../online-room-roster-panel/online-room-roster-panel.component';
-import { OnlineRoomViewerPanelComponent } from '../online-room-viewer-panel/online-room-viewer-panel.component';
-
-type OnlineRoomJoinFormGroup = FormGroup<{
-  displayName: FormControl<string>;
-}>;
-
-type OnlineRoomSettingsFormGroup = FormGroup<{
-  mode: FormControl<GameMode>;
-  boardSize: FormControl<number>;
-}>;
+import { PlayerColor } from '@gx/go/domain';
+import {
+  OnlineRoomJoinFormGroup,
+  OnlineRoomSettingsFormGroup,
+} from '../../contracts/online-room-form.contracts';
+import { OnlineRoomSeatViewModel } from '../../contracts/online-room-view.contracts';
+import { OnlineRoomNextMatchPanelComponent } from './components/online-room-next-match-panel/online-room-next-match-panel.component';
+import { OnlineRoomRosterPanelComponent } from './components/online-room-roster-panel/online-room-roster-panel.component';
+import { OnlineRoomViewerPanelComponent } from './components/online-room-viewer-panel/online-room-viewer-panel.component';
 
 @Component({
   selector: 'lib-go-online-room-participants-panel',

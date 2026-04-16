@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MessageModule } from 'primeng/message';
-import { OnlineRoomSidebarMessageViewModel } from '../../online-room-sidebar.models';
+import { OnlineRoomSidebarMessageViewModel } from '../../../../contracts/online-room-view.contracts';
 
 @Component({
   selector: 'lib-go-online-room-sidebar-messages',

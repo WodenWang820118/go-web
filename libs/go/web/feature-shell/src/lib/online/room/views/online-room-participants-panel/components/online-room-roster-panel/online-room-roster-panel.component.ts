@@ -3,7 +3,7 @@ import { HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent, StoneBadgeComponent } from '@gx/go/ui';
-import { OnlineRoomSeatViewModel } from '../online-room-page.models';
+import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 
 @Component({
   selector: 'lib-go-online-room-roster-panel',

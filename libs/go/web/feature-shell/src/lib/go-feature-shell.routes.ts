@@ -28,7 +28,7 @@ export const goFeatureShellRoutes: Route[] = [
   {
     path: 'online/room/:roomId',
     async loadComponent() {
-      const m = await import('./online/room/online-room-page/online-room-page.component');
+      const m = await import('./online/room/pages/online-room-page/online-room-page.component');
       return m.OnlineRoomPageComponent;
     }
   },

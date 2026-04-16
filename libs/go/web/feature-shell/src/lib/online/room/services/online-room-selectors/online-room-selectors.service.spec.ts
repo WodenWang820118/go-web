@@ -1,34 +1,40 @@
+import { TestBed } from '@angular/core/testing';
 import { HostedMatchSnapshot, RoomSnapshot } from '@gx/go/contracts';
-import {
-  selectCanChangeSeats,
-  selectCanInteractBoard,
-  selectHostedMatch,
-  selectRoomParticipants,
-  selectViewer,
-  selectViewerSeat,
-} from './online-room-selectors';
+import { OnlineRoomSelectorsService } from './online-room-selectors.service';
 
-describe('online-room-selectors', () => {
+describe('OnlineRoomSelectorsService', () => {
+  let service: OnlineRoomSelectorsService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [OnlineRoomSelectorsService],
+    });
+
+    service = TestBed.inject(OnlineRoomSelectorsService);
+  });
+
   it('returns the participants, match, viewer, and viewer seat from a snapshot', () => {
     const snapshot = createSnapshot(createMatch('playing'));
 
-    expect(selectRoomParticipants(snapshot)).toHaveLength(2);
-    expect(selectHostedMatch(snapshot)?.state.phase).toBe('playing');
-    expect(selectViewer(snapshot.participants, 'host-1')?.displayName).toBe('Host');
-    expect(selectViewerSeat(selectViewer(snapshot.participants, 'host-1'))).toBe('black');
+    expect(service.selectRoomParticipants(snapshot)).toHaveLength(2);
+    expect(service.selectHostedMatch(snapshot)?.state.phase).toBe('playing');
+    expect(service.selectViewer(snapshot.participants, 'host-1')?.displayName).toBe('Host');
+    expect(
+      service.selectViewerSeat(service.selectViewer(snapshot.participants, 'host-1'))
+    ).toBe('black');
   });
 
   it('only allows board interaction when the phase rules permit it', () => {
-    expect(selectCanInteractBoard(createMatch('playing'), 'black')).toBe(true);
-    expect(selectCanInteractBoard(createMatch('playing'), 'white')).toBe(false);
-    expect(selectCanInteractBoard(createMatch('scoring'), 'white')).toBe(true);
-    expect(selectCanInteractBoard(createMatch('finished'), 'black')).toBe(false);
+    expect(service.selectCanInteractBoard(createMatch('playing'), 'black')).toBe(true);
+    expect(service.selectCanInteractBoard(createMatch('playing'), 'white')).toBe(false);
+    expect(service.selectCanInteractBoard(createMatch('scoring'), 'white')).toBe(true);
+    expect(service.selectCanInteractBoard(createMatch('finished'), 'black')).toBe(false);
   });
 
   it('allows seat changes only before a match starts or after it finishes', () => {
-    expect(selectCanChangeSeats(null)).toBe(true);
-    expect(selectCanChangeSeats(createMatch('playing'))).toBe(false);
-    expect(selectCanChangeSeats(createMatch('finished'))).toBe(true);
+    expect(service.selectCanChangeSeats(null)).toBe(true);
+    expect(service.selectCanChangeSeats(createMatch('playing'))).toBe(false);
+    expect(service.selectCanChangeSeats(createMatch('finished'))).toBe(true);
   });
 });
 

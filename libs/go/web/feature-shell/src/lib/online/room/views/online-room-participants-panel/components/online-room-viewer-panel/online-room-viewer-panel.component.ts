@@ -1,13 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { ParticipantSummary } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { StoneBadgeComponent } from '@gx/go/ui';
-
-type OnlineRoomJoinFormGroup = FormGroup<{
-  displayName: FormControl<string>;
-}>;
+import { OnlineRoomJoinFormGroup } from '../../../../contracts/online-room-form.contracts';
 
 @Component({
   selector: 'lib-go-online-room-viewer-panel',

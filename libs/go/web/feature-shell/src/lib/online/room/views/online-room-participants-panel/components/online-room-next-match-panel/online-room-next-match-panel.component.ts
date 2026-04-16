@@ -1,12 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { GameMode } from '@gx/go/domain';
+import { ReactiveFormsModule } from '@angular/forms';
 import { GoI18nService } from '@gx/go/state/i18n';
-
-type OnlineRoomSettingsFormGroup = FormGroup<{
-  mode: FormControl<GameMode>;
-  boardSize: FormControl<number>;
-}>;
+import { OnlineRoomSettingsFormGroup } from '../../../../contracts/online-room-form.contracts';
 
 @Component({
   selector: 'lib-go-online-room-next-match-panel',

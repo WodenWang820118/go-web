@@ -12,7 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { ChatMessage, ParticipantSummary } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { OnlineRoomChatFormGroup } from '../../online-room-sidebar.models';
+import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.contracts';
 
 @Component({
   selector: 'lib-go-online-room-sidebar-chat-panel',

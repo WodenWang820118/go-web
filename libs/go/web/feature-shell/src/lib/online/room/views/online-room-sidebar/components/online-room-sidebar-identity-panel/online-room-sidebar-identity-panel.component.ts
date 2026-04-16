@@ -3,7 +3,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { OnlineRoomJoinFormGroup } from '../../online-room-sidebar.models';
+import { OnlineRoomJoinFormGroup } from '../../../../contracts/online-room-form.contracts';
 
 @Component({
   selector: 'lib-go-online-room-sidebar-identity-panel',

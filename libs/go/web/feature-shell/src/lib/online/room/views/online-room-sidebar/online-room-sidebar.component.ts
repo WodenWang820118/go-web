@@ -5,17 +5,19 @@ import {
   ParticipantSummary,
 } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
-import { OnlineRoomSeatViewModel } from '../../online-room-page.models';
+import {
+  OnlineRoomChatFormGroup,
+  OnlineRoomJoinFormGroup,
+} from '../../contracts/online-room-form.contracts';
+import {
+  OnlineRoomSeatViewModel,
+  OnlineRoomSidebarMessageViewModel,
+  OnlineRoomSidebarRematchStatusViewModel,
+} from '../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarActionsComponent } from './components/online-room-sidebar-actions/online-room-sidebar-actions.component';
 import { OnlineRoomSidebarChatPanelComponent } from './components/online-room-sidebar-chat-panel/online-room-sidebar-chat-panel.component';
 import { OnlineRoomSidebarIdentityPanelComponent } from './components/online-room-sidebar-identity-panel/online-room-sidebar-identity-panel.component';
 import { OnlineRoomSidebarMessagesComponent } from './components/online-room-sidebar-messages/online-room-sidebar-messages.component';
-import {
-  OnlineRoomChatFormGroup,
-  OnlineRoomJoinFormGroup,
-  OnlineRoomSidebarMessageViewModel,
-  OnlineRoomSidebarRematchStatusViewModel,
-} from './online-room-sidebar.models';
 import { OnlineRoomSidebarRematchPanelComponent } from './components/online-room-sidebar-rematch-panel/online-room-sidebar-rematch-panel.component';
 import { OnlineRoomSidebarSeatsPanelComponent } from './components/online-room-sidebar-seats-panel/online-room-sidebar-seats-panel.component';
 
