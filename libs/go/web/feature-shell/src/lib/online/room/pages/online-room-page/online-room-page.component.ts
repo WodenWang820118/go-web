@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { OnlineRoomPageDialogsComponent } from '../../views/online-room-page-dialogs/online-room-page-dialogs.component';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
 import { OnlineRoomPageStatusComponent } from '../../views/online-room-page-status/online-room-page-status.component';
 import { OnlineRoomSidebarComponent } from '../../views/online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomStageSectionComponent } from '../../views/online-room-stage-section/online-room-stage-section.component';
@@ -15,10 +17,12 @@ import { OnlineRoomPageViewStateService } from './services/online-room-page-view
   standalone: true,
   imports: [
     CommonModule,
-    OnlineRoomPageDialogsComponent,
+    ButtonModule,
+    DialogModule,
     OnlineRoomPageStatusComponent,
     OnlineRoomSidebarComponent,
     OnlineRoomStageSectionComponent,
+    TagModule,
   ],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',
@@ -36,4 +40,16 @@ import { OnlineRoomPageViewStateService } from './services/online-room-page-view
 })
 export class OnlineRoomPageComponent {
   protected readonly presenter = inject(OnlineRoomPagePresenterService);
+
+  protected onRematchVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.presenter.dialogs.dismissRematchDialog();
+    }
+  }
+
+  protected onResignVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.presenter.dialogs.dismissResignResultDialog();
+    }
+  }
 }

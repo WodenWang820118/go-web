@@ -6,32 +6,25 @@ import { OnlineRoomPageViewStateService } from '../online-room-page-view-state/o
 export class OnlineRoomPageDialogsService {
   private readonly onlineRoom = inject(OnlineRoomService);
   private readonly view = inject(OnlineRoomPageViewStateService);
-  private lastAutoStartNoticeId: string | null = null;
   private lastRematchDialogKey: string | null = null;
   private lastResignDialogKey: string | null = null;
 
-  readonly autoStartDialogVisible = signal(false);
   readonly rematchDialogVisible = signal(false);
   readonly resignResultDialogVisible = signal(false);
-  readonly autoStartDialogMessage = computed(() => {
-    const notice = this.onlineRoom.lastSystemNotice();
-
-    if (notice?.message.key !== 'room.notice.match_started_auto') {
-      return null;
-    }
-
-    return this.onlineRoom.lastNotice();
-  });
   readonly shouldShowRematchDialog = computed(
     () =>
       this.view.match()?.state.phase === 'finished' &&
       !!this.view.rematch() &&
-      !this.resignResultDialogVisible()
+      !this.resignResultDialogVisible(),
   );
   readonly resignResultMessage = computed(() => {
     const match = this.view.match();
 
-    if (!match || match.state.phase !== 'finished' || match.state.result?.reason !== 'resign') {
+    if (
+      !match ||
+      match.state.phase !== 'finished' ||
+      match.state.result?.reason !== 'resign'
+    ) {
       return null;
     }
 
@@ -39,21 +32,6 @@ export class OnlineRoomPageDialogsService {
   });
 
   constructor() {
-    effect(() => {
-      const notice = this.onlineRoom.lastSystemNotice();
-
-      if (
-        !notice ||
-        notice.message.key !== 'room.notice.match_started_auto' ||
-        notice.id === this.lastAutoStartNoticeId
-      ) {
-        return;
-      }
-
-      this.lastAutoStartNoticeId = notice.id;
-      this.autoStartDialogVisible.set(true);
-    });
-
     effect(() => {
       const resignDialogKey = this.resignDialogKey();
 
@@ -98,10 +76,6 @@ export class OnlineRoomPageDialogsService {
     this.rematchDialogVisible.set(false);
   }
 
-  dismissAutoStartDialog(): void {
-    this.autoStartDialogVisible.set(false);
-  }
-
   dismissRematchDialog(): void {
     this.rematchDialogVisible.set(false);
   }
@@ -113,7 +87,11 @@ export class OnlineRoomPageDialogsService {
   private resignDialogKey(): string | null {
     const match = this.view.match();
 
-    if (!match || match.state.phase !== 'finished' || match.state.result?.reason !== 'resign') {
+    if (
+      !match ||
+      match.state.phase !== 'finished' ||
+      match.state.result?.reason !== 'resign'
+    ) {
       return null;
     }
 

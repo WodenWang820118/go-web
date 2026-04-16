@@ -1,10 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { computed, signal } from '@angular/core';
 import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
-import { GoI18nService } from '@gx/go/state/i18n';
+import { GoI18nService } from '@gx/go/state';
+import { provideGoPrimeNGTheme } from '@gx/go/ui';
+import { Theme } from '@primeuix/styled';
+import { Base } from 'primeng/base';
+import { Dialog } from 'primeng/dialog';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';
@@ -38,7 +43,9 @@ describe('OnlineRoomPageComponent', () => {
 
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-identity"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-identity"]'),
+    ).toBeNull();
   });
 
   it('shows waiting copy when seats are still open', async () => {
@@ -175,7 +182,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'gomoku',
             boardSize: 15,
             board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null)
+              Array.from({ length: 15 }, () => null),
             ),
             phase: 'playing',
             nextPlayer: 'black',
@@ -259,7 +266,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'gomoku',
             boardSize: 15,
             board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null)
+              Array.from({ length: 15 }, () => null),
             ),
             phase: 'finished',
             nextPlayer: 'black',
@@ -294,22 +301,328 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
-    const rematchDialog = document.body.querySelector(
-      '[data-testid="room-rematch-dialog"]'
-    ) as HTMLElement | null;
+    const rematchDialog = queryDialog('room-rematch-dialog');
     const acceptButton = document.body.querySelector(
-      '[data-testid="room-rematch-dialog-accept"]'
+      '[data-testid="room-rematch-dialog-accept"]',
     ) as HTMLButtonElement | null;
+    const closeButton = queryDialogHeaderClose(
+      'room-rematch-dialog',
+      i18n.t('common.action.close'),
+    );
+    const [visibleDialog] = queryVisibleDialogs(harness);
 
-    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-rematch"]'),
+    ).toBeNull();
     expect(rematchDialog).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-rematch-dialog"]'),
+    ).toBeNull();
     expect(document.body.textContent).toContain(i18n.t('room.rematch.title'));
     expect(document.body.textContent).toContain(i18n.t('room.rematch.accept'));
+    expect(closeButton).toBeNull();
+    expect(visibleDialog?.closable).toBe(false);
+    expect(visibleDialog?.dismissableMask).toBe(false);
+    expect(roomService.respondToRematch).not.toHaveBeenCalled();
 
-    acceptButton?.click();
+    const activeAcceptButton = document.body.querySelector(
+      '[data-testid="room-rematch-dialog-accept"]',
+    ) as HTMLButtonElement | null;
+
+    activeAcceptButton?.click();
     await harness.fixture.whenStable();
 
     expect(roomService.respondToRematch).toHaveBeenCalledWith(true);
+  });
+
+  it('makes the spectator rematch dialog closable and dismissable', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        rematch: {
+          participants: {
+            black: 'host-1',
+            white: 'guest-1',
+          },
+          responses: {
+            black: 'pending',
+            white: 'accepted',
+          },
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null),
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const harness = await renderPage(roomService);
+    const i18n = TestBed.inject(GoI18nService);
+    const closeButton = queryDialogHeaderClose(
+      'room-rematch-dialog',
+      i18n.t('common.action.close'),
+    );
+    const [visibleDialog] = queryVisibleDialogs(harness);
+
+    expect(queryDialog('room-rematch-dialog')).not.toBeNull();
+    expect(closeButton).not.toBeNull();
+    expect(visibleDialog?.closable).toBe(true);
+    expect(visibleDialog?.dismissableMask).toBe(true);
+    expect(roomService.respondToRematch).not.toHaveBeenCalled();
+  });
+
+  it('lets spectators dismiss the rematch dialog with the header close button', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        rematch: {
+          participants: {
+            black: 'host-1',
+            white: 'guest-1',
+          },
+          responses: {
+            black: 'pending',
+            white: 'accepted',
+          },
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null),
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: null,
+      participantToken: null,
+    });
+
+    const harness = await renderPage(roomService);
+    const i18n = TestBed.inject(GoI18nService);
+    const closeButton = queryDialogHeaderClose(
+      'room-rematch-dialog',
+      i18n.t('common.action.close'),
+    );
+
+    expect(queryDialog('room-rematch-dialog')).not.toBeNull();
+    expect(closeButton).not.toBeNull();
+
+    closeButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-rematch-dialog')).toBeNull();
+    expect(roomService.respondToRematch).not.toHaveBeenCalled();
+  });
+
+  it('injects the PrimeNG theme styles before rendering room dialogs', async () => {
+    clearPrimeNGStyles();
+
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        rematch: {
+          participants: {
+            black: 'host-1',
+            white: 'guest-1',
+          },
+          responses: {
+            black: 'pending',
+            white: 'accepted',
+          },
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null),
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    await renderPage(roomService);
+
+    expect(queryDialog('room-rematch-dialog')).not.toBeNull();
+    expect(queryPrimeNGStyles()).not.toHaveLength(0);
+    expect(queryPrimeNGStyle('dialog-variables')).not.toBeNull();
   });
 
   it('renders the simplified sidebar with chat-integrated room info', async () => {
@@ -353,7 +666,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'gomoku',
             boardSize: 15,
             board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null)
+              Array.from({ length: 15 }, () => null),
             ),
             phase: 'playing',
             nextPlayer: 'black',
@@ -405,58 +718,100 @@ describe('OnlineRoomPageComponent', () => {
     const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
     const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
     const shareChipButton = root.querySelector(
-      '[data-testid="room-share-chip-button"]'
+      '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
 
-    expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-compact-header"]'),
+    ).toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
     expect(stageHost?.className).toContain('block');
     expect(stageHost?.className).toContain('min-h-0');
     expect(stageHost?.className).toContain('min-w-0');
-    expect(root.querySelector('[data-testid="room-sidebar-room-id"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
-    expect(stage?.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
-    expect(stage?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-room-id"]'),
+    ).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-share-chip"]'),
+    ).not.toBeNull();
+    expect(
+      stage?.querySelector('[data-testid="room-share-chip"]'),
+    ).not.toBeNull();
+    expect(
+      stage?.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).not.toBeNull();
     expect(boardWrap).not.toBeNull();
     expect(stageDock).not.toBeNull();
-    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]')).toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
+    expect(
+      stageDock?.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).not.toBeNull();
+    expect(
+      boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).toBeNull();
+    expect(
+      boardWrap?.querySelector('[data-testid="room-stage-board"]'),
+    ).not.toBeNull();
+    expect(
+      boardWrap?.querySelector('[data-testid="room-stage-hud"]'),
+    ).toBeNull();
     expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
     expect(shareChipButton?.getAttribute('role')).toBe('button');
     expect(shareChipButton?.getAttribute('tabindex')).toBe('0');
-    expect(shareChipButton?.getAttribute('title')).toContain(i18n.t('room.connection.connected'));
-    expect(root.querySelector('[data-testid="room-sidebar-share-url"]')).toBeNull();
+    expect(shareChipButton?.getAttribute('title')).toContain(
+      i18n.t('room.connection.connected'),
+    );
+    expect(
+      root.querySelector('[data-testid="room-sidebar-share-url"]'),
+    ).toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar-copy"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-connection"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-connection"]'),
+    ).toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-next-match-panel"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-move-log-panel"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-chat-list"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-chat-composer"]')).not.toBeNull();
-    expect(root.querySelectorAll('[data-testid="room-sidebar-chat-metric"]')).toHaveLength(2);
-    const blackPlayer = root.querySelector('[data-testid="room-player-black"]') as HTMLElement | null;
-    const whitePlayer = root.querySelector('[data-testid="room-player-white"]') as HTMLElement | null;
+    expect(
+      root.querySelector('[data-testid="room-next-match-panel"]'),
+    ).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-move-log-panel"]'),
+    ).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-chat"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-chat-list"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-chat-composer"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelectorAll('[data-testid="room-sidebar-chat-metric"]'),
+    ).toHaveLength(2);
+    const blackPlayer = root.querySelector(
+      '[data-testid="room-player-black"]',
+    ) as HTMLElement | null;
+    const whitePlayer = root.querySelector(
+      '[data-testid="room-player-white"]',
+    ) as HTMLElement | null;
 
     expect(blackPlayer).not.toBeNull();
     expect(whitePlayer).not.toBeNull();
     expect(
-      blackPlayer?.querySelector('[data-testid="room-player-black-status"]')
+      blackPlayer?.querySelector('[data-testid="room-player-black-status"]'),
     ).not.toBeNull();
     expect(
-      blackPlayer?.querySelector('[data-testid="room-player-black-presence"]')
+      blackPlayer?.querySelector('[data-testid="room-player-black-presence"]'),
     ).not.toBeNull();
     expect(
-      whitePlayer?.querySelector('[data-testid="room-player-white-status"]')
+      whitePlayer?.querySelector('[data-testid="room-player-white-status"]'),
     ).not.toBeNull();
     expect(
-      whitePlayer?.querySelector('[data-testid="room-player-white-presence"]')
+      whitePlayer?.querySelector('[data-testid="room-player-white-presence"]'),
     ).not.toBeNull();
     expect(blackPlayer?.textContent).not.toContain(i18n.playerLabel('black'));
     expect(whitePlayer?.textContent).not.toContain(i18n.playerLabel('white'));
-    expect(root.textContent).not.toContain(i18n.t('room.sidebar.decorative_avatar'));
+    expect(root.textContent).not.toContain(
+      i18n.t('room.sidebar.decorative_avatar'),
+    );
   });
 
   it('keeps the match status hud inside the board column while the share chip stays docked separately', async () => {
@@ -500,7 +855,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'gomoku',
             boardSize: 15,
             board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null)
+              Array.from({ length: 15 }, () => null),
             ),
             phase: 'finished',
             nextPlayer: 'black',
@@ -537,11 +892,19 @@ describe('OnlineRoomPageComponent', () => {
     const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
     const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
 
-    expect(boardWrap?.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-hud"]')).not.toBeNull();
+    expect(
+      boardWrap?.querySelector('[data-testid="room-stage-board"]'),
+    ).not.toBeNull();
+    expect(
+      boardWrap?.querySelector('[data-testid="room-stage-hud"]'),
+    ).not.toBeNull();
     expect(stageDock).not.toBeNull();
-    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
-    expect(stageDock?.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
+    expect(
+      stageDock?.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).not.toBeNull();
+    expect(
+      stageDock?.querySelector('[data-testid="room-stage-hud"]'),
+    ).toBeNull();
   });
 
   it('omits the stage dock when no share URL is available', async () => {
@@ -561,7 +924,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'go',
             boardSize: 19,
             board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null)
+              Array.from({ length: 19 }, () => null),
             ),
             phase: 'playing',
             nextPlayer: 'black',
@@ -591,9 +954,13 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
 
-    expect(root.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-stage-board"]'),
+    ).not.toBeNull();
     expect(root.querySelector('[data-testid="room-stage-dock"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-stage-share-anchor"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).toBeNull();
   });
 
   it('keeps the share chip available beneath the empty stage content before the match starts', async () => {
@@ -611,7 +978,9 @@ describe('OnlineRoomPageComponent', () => {
     expect(stageEmpty).not.toBeNull();
     expect(root.querySelector('[data-testid="room-board-wrap"]')).toBeNull();
     expect(stageDock).not.toBeNull();
-    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
+    expect(
+      stageDock?.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).not.toBeNull();
   });
 
   it('renders chat message copy inside the chat panel', async () => {
@@ -635,10 +1004,14 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const chatCopy = root.querySelector(
-      '[data-testid="room-sidebar-chat-message-chat-1"]'
+      '[data-testid="room-sidebar-chat-message-chat-1"]',
     ) as HTMLElement | null;
-    const chatList = root.querySelector('[data-testid="room-sidebar-chat-list"]') as HTMLElement | null;
-    const composer = root.querySelector('[data-testid="room-sidebar-chat-composer"]') as HTMLElement | null;
+    const chatList = root.querySelector(
+      '[data-testid="room-sidebar-chat-list"]',
+    ) as HTMLElement | null;
+    const composer = root.querySelector(
+      '[data-testid="room-sidebar-chat-composer"]',
+    ) as HTMLElement | null;
 
     expect(chatCopy).not.toBeNull();
     expect(chatList).not.toBeNull();
@@ -656,7 +1029,7 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const emptyState = root.querySelector(
-      '[data-testid="room-sidebar-chat-empty"]'
+      '[data-testid="room-sidebar-chat-empty"]',
     ) as HTMLElement | null;
     const i18n = TestBed.inject(GoI18nService);
 
@@ -697,11 +1070,12 @@ describe('OnlineRoomPageComponent', () => {
     const i18n = TestBed.inject(GoI18nService);
     const root = harness.routeNativeElement as HTMLElement;
     const claimBlackButton = root.querySelector(
-      '[data-testid="claim-black"]'
+      '[data-testid="claim-black"]',
     ) as HTMLButtonElement | null;
 
     expect(
-      root.querySelector('[data-testid="room-sidebar-message-warning"]')?.textContent
+      root.querySelector('[data-testid="room-sidebar-message-warning"]')
+        ?.textContent,
     ).toContain(i18n.t('room.client.realtime_unavailable'));
     expect(claimBlackButton).not.toBeNull();
     expect(claimBlackButton?.disabled).toBe(true);
@@ -719,7 +1093,9 @@ describe('OnlineRoomPageComponent', () => {
 
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-chat"]'),
+    ).not.toBeNull();
   });
 
   it('renders the sidebar action area below chat with back-to-lobby and without finalize score', async () => {
@@ -763,7 +1139,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'go',
             boardSize: 19,
             board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null)
+              Array.from({ length: 19 }, () => null),
             ),
             phase: 'playing',
             nextPlayer: 'black',
@@ -793,20 +1169,29 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const chatSection = root.querySelector('[data-testid="room-sidebar-chat"]');
-    const actionsSection = root.querySelector('[data-testid="room-sidebar-actions"]');
+    const actionsSection = root.querySelector(
+      '[data-testid="room-sidebar-actions"]',
+    );
 
     expect(actionsSection).not.toBeNull();
-    expect(actionsSection?.textContent).toContain(i18n.t('room.page.back_to_lobby'));
+    expect(actionsSection?.textContent).toContain(
+      i18n.t('room.page.back_to_lobby'),
+    );
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.pass'));
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.resign'));
-    expect(actionsSection?.textContent).not.toContain(i18n.t('room.participants.finalize_score'));
+    expect(actionsSection?.textContent).not.toContain(
+      i18n.t('room.participants.finalize_score'),
+    );
 
     if (!chatSection || !actionsSection) {
       throw new Error('Expected chat and actions sections to render');
     }
 
     expect(
-      !!(chatSection.compareDocumentPosition(actionsSection) & Node.DOCUMENT_POSITION_FOLLOWING)
+      !!(
+        chatSection.compareDocumentPosition(actionsSection) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      ),
     ).toBe(true);
   });
 
@@ -821,7 +1206,7 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const shareChipButton = root.querySelector(
-      '[data-testid="room-share-chip-button"]'
+      '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
     const writeText = vi.fn().mockResolvedValue(undefined);
 
@@ -835,25 +1220,33 @@ describe('OnlineRoomPageComponent', () => {
     expect(shareChipButton).not.toBeNull();
     expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
     expect(shareChipButton?.getAttribute('aria-label')).toContain(
-      i18n.t('room.hero.copy_link')
+      i18n.t('room.hero.copy_link'),
     );
-    expect(root.querySelector('[data-testid="room-sidebar-share-url"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-share-url"]'),
+    ).toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar-copy"]')).toBeNull();
 
     shareChipButton?.click();
     await harness.fixture.whenStable();
 
     const feedback = root.querySelector(
-      '[data-testid="room-share-chip-feedback"]'
+      '[data-testid="room-share-chip-feedback"]',
     ) as HTMLElement | null;
 
-    expect(writeText).toHaveBeenCalledWith('http://localhost/online/room/ROOM42');
+    expect(writeText).toHaveBeenCalledWith(
+      'http://localhost/online/room/ROOM42',
+    );
     expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.copied'));
-    expect(shareChipButton?.getAttribute('aria-label')).toBe(i18n.t('room.hero.copy_complete'));
+    expect(shareChipButton?.getAttribute('aria-label')).toBe(
+      i18n.t('room.hero.copy_complete'),
+    );
     expect(feedback?.textContent).toContain(i18n.t('room.hero.copy_complete'));
     expect(feedback?.getAttribute('role')).toBe('status');
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
-    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-share-chip-manual"]'),
+    ).toBeNull();
   });
 
   it('expands a manual-copy fallback when automatic copy is unavailable', async () => {
@@ -867,7 +1260,7 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const shareChipButton = root.querySelector(
-      '[data-testid="room-share-chip-button"]'
+      '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
 
     Object.defineProperty(window.navigator, 'clipboard', {
@@ -879,33 +1272,37 @@ describe('OnlineRoomPageComponent', () => {
     await harness.fixture.whenStable();
 
     const manualPanel = root.querySelector(
-      '[data-testid="room-share-chip-manual"]'
+      '[data-testid="room-share-chip-manual"]',
     ) as HTMLElement | null;
     const manualUrl = root.querySelector(
-      '[data-testid="room-share-chip-manual-url"]'
+      '[data-testid="room-share-chip-manual-url"]',
     ) as HTMLInputElement | null;
     const dismissButton = root.querySelector(
-      '[data-testid="room-share-chip-manual-dismiss"]'
+      '[data-testid="room-share-chip-manual-dismiss"]',
     ) as HTMLButtonElement | null;
 
-    expect(root.querySelector('[data-testid="room-share-chip-feedback"]')).toBeNull();
-    expect(manualPanel?.textContent).toContain(
-      i18n.t('room.hero.copy_failed')
-    );
+    expect(
+      root.querySelector('[data-testid="room-share-chip-feedback"]'),
+    ).toBeNull();
+    expect(manualPanel?.textContent).toContain(i18n.t('room.hero.copy_failed'));
     expect(shareChipButton?.getAttribute('aria-label')).toContain(
-      i18n.t('room.hero.retry_copy_link')
+      i18n.t('room.hero.retry_copy_link'),
     );
     expect(manualUrl?.value).toBe('http://localhost/online/room/ROOM42');
     expect(manualUrl?.readOnly).toBe(true);
-    expect(manualUrl?.getAttribute('aria-label')).toBe(i18n.t('room.hero.manual_url_label'));
+    expect(manualUrl?.getAttribute('aria-label')).toBe(
+      i18n.t('room.hero.manual_url_label'),
+    );
     expect(manualPanel?.textContent).toContain(
-      i18n.t('room.hero.copy_manual_instruction')
+      i18n.t('room.hero.copy_manual_instruction'),
     );
 
     dismissButton?.click();
     await harness.fixture.whenStable();
 
-    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-share-chip-manual"]'),
+    ).toBeNull();
     expect(shareChipButton?.disabled).toBe(false);
     expect(document.activeElement).toBe(shareChipButton);
   });
@@ -920,7 +1317,7 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const shareChipButton = root.querySelector(
-      '[data-testid="room-share-chip-button"]'
+      '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
     const writeText = vi.fn().mockRejectedValue(new Error('clipboard denied'));
 
@@ -934,9 +1331,15 @@ describe('OnlineRoomPageComponent', () => {
     shareChipButton?.click();
     await harness.fixture.whenStable();
 
-    expect(writeText).toHaveBeenCalledWith('http://localhost/online/room/ROOM42');
-    expect(root.querySelector('[data-testid="room-share-chip-feedback"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).not.toBeNull();
+    expect(writeText).toHaveBeenCalledWith(
+      'http://localhost/online/room/ROOM42',
+    );
+    expect(
+      root.querySelector('[data-testid="room-share-chip-feedback"]'),
+    ).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-share-chip-manual"]'),
+    ).not.toBeNull();
   });
 
   it('dismisses the manual-copy fallback when Escape is pressed', async () => {
@@ -949,7 +1352,7 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const shareChipButton = root.querySelector(
-      '[data-testid="room-share-chip-button"]'
+      '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
 
     Object.defineProperty(window.navigator, 'clipboard', {
@@ -961,13 +1364,17 @@ describe('OnlineRoomPageComponent', () => {
     await harness.fixture.whenStable();
 
     const manualPanel = root.querySelector(
-      '[data-testid="room-share-chip-manual"]'
+      '[data-testid="room-share-chip-manual"]',
     ) as HTMLElement | null;
 
-    manualPanel?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    manualPanel?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
     await harness.fixture.whenStable();
 
-    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-share-chip-manual"]'),
+    ).toBeNull();
   });
 
   it('renders the missing-room state inside the new shell without the old header', async () => {
@@ -982,12 +1389,14 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
 
-    expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-compact-header"]'),
+    ).toBeNull();
     expect(root.textContent).toContain(i18n.t('room.page.missing.title'));
     expect(root.textContent).toContain(i18n.t('room.page.missing.action'));
   });
 
-  it('shows the auto-start notice in a dialog instead of the sidebar notice list', async () => {
+  it('does not show an auto-start dialog or sidebar notice when the next match starts', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         match: {
@@ -1004,7 +1413,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'go',
             boardSize: 19,
             board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null)
+              Array.from({ length: 19 }, () => null),
             ),
             phase: 'playing',
             nextPlayer: 'black',
@@ -1028,7 +1437,7 @@ describe('OnlineRoomPageComponent', () => {
       }),
       participantId: 'host-1',
       participantToken: 'token-1',
-      lastNotice: '下一場 圍棋 對局已自動開始。',
+      lastNotice: 'The next match has started.',
       lastSystemNotice: {
         id: 'notice-auto-start',
         message: createMessage('room.notice.match_started_auto', {
@@ -1041,18 +1450,17 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
-    const dialog = document.body.querySelector(
-      '[data-testid="room-auto-start-dialog"]'
-    ) as HTMLElement | null;
 
-    expect(dialog).not.toBeNull();
-    expect(document.body.textContent).toContain(i18n.t('room.dialog.auto_start.title'));
-    expect(dialog?.textContent).toContain(
-      i18n.t('room.notice.match_started_auto', {
-        mode: i18n.t('common.mode.go'),
-      })
+    expect(queryDialog('room-auto-start-dialog')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-auto-start-dialog"]'),
+    ).toBeNull();
+    expect(document.body.textContent).not.toContain(
+      i18n.t('room.dialog.auto_start.title'),
     );
-    expect(root.querySelector('[data-testid="room-sidebar-message-notice"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-message-notice"]'),
+    ).toBeNull();
   });
 
   it('shows resignation results in a dialog and removes the inline stage hud', async () => {
@@ -1106,7 +1514,7 @@ describe('OnlineRoomPageComponent', () => {
             mode: 'go',
             boardSize: 19,
             board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null)
+              Array.from({ length: 19 }, () => null),
             ),
             phase: 'finished',
             nextPlayer: 'black',
@@ -1144,27 +1552,33 @@ describe('OnlineRoomPageComponent', () => {
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const dialog = document.body.querySelector(
-      '[data-testid="room-resign-result-dialog"]'
+      '[data-testid="room-resign-result-dialog"]',
     ) as HTMLElement | null;
-    const closeButton = document.body.querySelector(
-      '[data-testid="room-resign-result-dialog-close"]'
-    ) as HTMLButtonElement | null;
+    const closeButton = queryDialogHeaderClose(
+      'room-resign-result-dialog',
+      i18n.t('common.action.close'),
+    );
 
     expect(dialog).not.toBeNull();
-    expect(document.body.textContent).toContain(i18n.t('room.dialog.match_result.title'));
+    expect(document.body.textContent).toContain(
+      i18n.t('room.dialog.match_result.title'),
+    );
     expect(dialog?.textContent).toContain(
       i18n.t('game.result.win_by_resignation', {
         winner: i18n.t('common.player.black'),
-      })
+      }),
     );
     expect(root.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-rematch"]'),
+    ).toBeNull();
 
     closeButton?.click();
     await harness.fixture.whenStable();
 
+    expect(queryDialog('room-resign-result-dialog')).toBeNull();
     expect(
-      document.body.querySelector('[data-testid="room-rematch-dialog"]')
+      document.body.querySelector('[data-testid="room-rematch-dialog"]'),
     ).not.toBeNull();
   });
 
@@ -1189,12 +1603,18 @@ describe('OnlineRoomPageComponent', () => {
 
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
-    const form = root.querySelector('[data-testid="join-room-form"]') as HTMLFormElement;
-    const input = root.querySelector('#room-join-display-name') as HTMLInputElement;
+    const form = root.querySelector(
+      '[data-testid="join-room-form"]',
+    ) as HTMLFormElement;
+    const input = root.querySelector(
+      '#room-join-display-name',
+    ) as HTMLInputElement;
 
     input.value = 'Host';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
     await harness.fixture.whenStable();
 
     expect(roomService.joinRoom).toHaveBeenCalledWith('ROOM42', 'Host (2)');
@@ -1202,9 +1622,12 @@ describe('OnlineRoomPageComponent', () => {
   });
 });
 
-async function renderPage(roomService: ReturnType<typeof createRoomServiceStub>) {
+async function renderPage(
+  roomService: ReturnType<typeof createRoomServiceStub>,
+) {
   TestBed.configureTestingModule({
     providers: [
+      provideGoPrimeNGTheme(),
       provideRouter([
         {
           path: 'online/room/:roomId',
@@ -1219,17 +1642,61 @@ async function renderPage(roomService: ReturnType<typeof createRoomServiceStub>)
   });
 
   const harness = await RouterTestingHarness.create();
-  await harness.navigateByUrl(
-    '/online/room/ROOM42',
-    OnlineRoomPageComponent
-  );
+  await harness.navigateByUrl('/online/room/ROOM42', OnlineRoomPageComponent);
 
   return harness;
 }
 
-async function renderText(roomService: ReturnType<typeof createRoomServiceStub>) {
+async function renderText(
+  roomService: ReturnType<typeof createRoomServiceStub>,
+) {
   const harness = await renderPage(roomService);
   return harness.routeNativeElement?.textContent as string;
+}
+
+function queryDialog(testId: string): HTMLElement | null {
+  return document.body.querySelector(
+    `[data-testid="${testId}"]`,
+  ) as HTMLElement | null;
+}
+
+function queryDialogHeaderClose(
+  testId: string,
+  closeAriaLabel: string,
+): HTMLButtonElement | null {
+  return queryDialog(testId)
+    ?.closest('.p-dialog')
+    ?.querySelector(
+      `button[aria-label="${closeAriaLabel}"]`,
+    ) as HTMLButtonElement | null;
+}
+
+function queryVisibleDialogs(harness: RouterTestingHarness): Dialog[] {
+  return harness.fixture.debugElement
+    .queryAll(By.directive(Dialog))
+    .map((debugElement) => debugElement.componentInstance as Dialog)
+    .filter((dialog) => dialog.visible);
+}
+
+function clearPrimeNGStyles(): void {
+  Base.clearLoadedStyleNames();
+  Theme.clearLoadedStyleNames();
+
+  document.head
+    .querySelectorAll('style[data-primeng-style-id]')
+    .forEach((styleElement) => styleElement.remove());
+}
+
+function queryPrimeNGStyle(name: string): HTMLStyleElement | null {
+  return document.head.querySelector(
+    `style[data-primeng-style-id="${name}"]`,
+  ) as HTMLStyleElement | null;
+}
+
+function queryPrimeNGStyles(): HTMLStyleElement[] {
+  return Array.from(
+    document.head.querySelectorAll('style[data-primeng-style-id]'),
+  ) as HTMLStyleElement[];
 }
 
 function createRoomServiceStub(options: {
@@ -1247,23 +1714,29 @@ function createRoomServiceStub(options: {
   const participantToken = signal(options.participantToken);
   const displayName = signal('Host');
   const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>(
-    options.bootstrapState ?? 'ready'
+    options.bootstrapState ?? 'ready',
   );
-  const connectionState = signal<'idle' | 'connecting' | 'connected' | 'disconnected'>(
-    options.connectionState ?? 'connected'
-  );
+  const connectionState = signal<
+    'idle' | 'connecting' | 'connected' | 'disconnected'
+  >(options.connectionState ?? 'connected');
   const lastError = signal<string | null>(null);
   const lastNotice = signal<string | null>(options.lastNotice ?? null);
-  const lastSystemNotice = signal<SystemNotice | null>(options.lastSystemNotice ?? null);
+  const lastSystemNotice = signal<SystemNotice | null>(
+    options.lastSystemNotice ?? null,
+  );
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
-  const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
+  const nextMatchSettings = computed(
+    () => snapshot()?.nextMatchSettings ?? null,
+  );
   const rematch = computed(() => snapshot()?.rematch ?? null);
   const autoStartBlockedUntilSeatChange = computed(
-    () => snapshot()?.autoStartBlockedUntilSeatChange ?? false
+    () => snapshot()?.autoStartBlockedUntilSeatChange ?? false,
   );
-  const viewer = computed(() =>
-    participants().find(item => item.participantId === participantId()) ?? null
+  const viewer = computed(
+    () =>
+      participants().find((item) => item.participantId === participantId()) ??
+      null,
   );
   const viewerSeat = computed(() => viewer()?.seat ?? null);
   const isHost = computed(() => viewer()?.isHost ?? false);
@@ -1272,7 +1745,9 @@ function createRoomServiceStub(options: {
   const canInteractBoard = computed(() => false);
   const canChangeSeats = computed(() => true);
   const shareUrl = computed(() =>
-    options.shareUrl === undefined ? 'http://localhost/online/room/ROOM42' : options.shareUrl
+    options.shareUrl === undefined
+      ? 'http://localhost/online/room/ROOM42'
+      : options.shareUrl,
   );
   const chat = computed(() => snapshot()?.chat ?? []);
 

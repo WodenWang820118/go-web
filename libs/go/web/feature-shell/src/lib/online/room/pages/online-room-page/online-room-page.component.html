@@ -1,20 +1,133 @@
 <section
   class="room-shell min-h-dvh bg-[radial-gradient(circle_at_top_left,_rgba(33,58,74,0.55),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(103,74,28,0.25),_transparent_28%),linear-gradient(180deg,_#0f1821,_#070b11_70%)] text-stone-100"
 >
-  <lib-go-online-room-page-dialogs
-    [autoStartVisible]="presenter.dialogs.autoStartDialogVisible()"
-    [autoStartMessage]="presenter.dialogs.autoStartDialogMessage()"
-    [rematchVisible]="presenter.dialogs.rematchDialogVisible()"
-    [canRespondToRematch]="presenter.view.canRespondToRematch()"
-    [rematchStatuses]="presenter.view.rematchStatuses()"
-    [resignVisible]="presenter.dialogs.resignResultDialogVisible()"
-    [resignMessage]="presenter.dialogs.resignResultMessage()"
-    (autoStartDismissed)="presenter.dialogs.dismissAutoStartDialog()"
-    (rematchDismissed)="presenter.dialogs.dismissRematchDialog()"
-    (rematchAccepted)="presenter.dialogs.acceptRematch()"
-    (rematchDeclined)="presenter.dialogs.declineRematch()"
-    (resignDismissed)="presenter.dialogs.dismissResignResultDialog()"
-  />
+  <p-dialog
+    [visible]="presenter.dialogs.rematchDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="!presenter.view.canRespondToRematch()"
+    [closable]="!presenter.view.canRespondToRematch()"
+    [appendTo]="'body'"
+    [style]="{ width: 'min(36rem, calc(100vw - 2rem))' }"
+    [header]="presenter.view.i18n.t('room.rematch.title')"
+    [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+    styleClass="room-event-dialog"
+    contentStyleClass="space-y-4"
+    (visibleChange)="onRematchVisibleChange($event)"
+  >
+    <div class="space-y-4" data-testid="room-rematch-dialog">
+      <p class="text-sm leading-7 text-surface-700">
+        {{
+          presenter.view.canRespondToRematch()
+            ? presenter.view.i18n.t('room.rematch.description.player')
+            : presenter.view.i18n.t('room.rematch.description.spectator')
+        }}
+      </p>
+
+      <div class="grid gap-2">
+        @for (status of presenter.view.rematchStatuses(); track status.color) {
+          <div
+            class="flex items-center justify-between gap-3 rounded-[1rem] border border-surface-200 bg-surface-50 px-3 py-2.5"
+            [attr.data-testid]="'room-rematch-dialog-status-' + status.color"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-surface-900">
+                {{ status.name }}
+              </p>
+              <p class="text-xs uppercase tracking-[0.16em] text-surface-500">
+                {{ presenter.view.i18n.playerLabel(status.color) }}
+              </p>
+            </div>
+            <p-tag
+              severity="contrast"
+              [rounded]="true"
+              [value]="
+                presenter.view.i18n.t(
+                  'room.rematch.response.' + status.response
+                )
+              "
+              styleClass="go-hosted-pill-subtle"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <ng-template #footer>
+      <div class="flex flex-wrap justify-end gap-2">
+        @if (presenter.view.canRespondToRematch()) {
+          <button
+            pButton
+            type="button"
+            class="go-hosted-button-secondary justify-center"
+            data-testid="room-rematch-dialog-decline"
+            (click)="presenter.dialogs.declineRematch()"
+          >
+            {{ presenter.view.i18n.t('room.rematch.decline') }}
+          </button>
+          <button
+            pButton
+            type="button"
+            class="go-hosted-button-primary justify-center"
+            data-testid="room-rematch-dialog-accept"
+            (click)="presenter.dialogs.acceptRematch()"
+          >
+            {{ presenter.view.i18n.t('room.rematch.accept') }}
+          </button>
+        } @else {
+          <button
+            pButton
+            type="button"
+            class="go-hosted-button-primary justify-center"
+            data-testid="room-rematch-dialog-close"
+            (click)="presenter.dialogs.dismissRematchDialog()"
+          >
+            {{ presenter.view.i18n.t('common.action.close') }}
+          </button>
+        }
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="presenter.dialogs.resignResultDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    [closable]="true"
+    [appendTo]="'body'"
+    [style]="{ width: 'min(32rem, calc(100vw - 2rem))' }"
+    [header]="presenter.view.i18n.t('room.dialog.match_result.title')"
+    [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+    styleClass="room-event-dialog"
+    contentStyleClass="space-y-4"
+    (visibleChange)="onResignVisibleChange($event)"
+  >
+    <div class="space-y-4" data-testid="room-resign-result-dialog">
+      <p
+        class="text-sm leading-7 text-surface-700"
+        data-testid="room-resign-result-dialog-message"
+      >
+        {{ presenter.dialogs.resignResultMessage() }}
+      </p>
+    </div>
+
+    <ng-template #footer>
+      <div class="flex justify-end">
+        <button
+          pButton
+          type="button"
+          class="go-hosted-button-primary justify-center"
+          data-testid="room-resign-result-dialog-close"
+          (click)="presenter.dialogs.dismissResignResultDialog()"
+        >
+          {{ presenter.view.i18n.t('common.action.close') }}
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
 
   @if (presenter.view.bootstrapState() === 'missing') {
     <lib-go-online-room-page-status
@@ -26,7 +139,9 @@
       backTestId="room-fallback-back"
       actionTestId="room-fallback-action"
     />
-  } @else if (presenter.view.bootstrapState() === 'loading' || !presenter.view.snapshot()) {
+  } @else if (
+    presenter.view.bootstrapState() === 'loading' || !presenter.view.snapshot()
+  ) {
     <lib-go-online-room-page-status
       [eyebrow]="presenter.view.loadingStatusView().eyebrow"
       [title]="presenter.view.loadingStatusView().title"
@@ -44,7 +159,9 @@
         [shareChip]="presenter.share.shareChip()"
         (pointSelected)="presenter.interactions.onBoardPoint($event)"
         (copyRequested)="presenter.share.copyShareUrl()"
-        (manualFallbackDismissed)="presenter.share.dismissShareCopyManualFallback()"
+        (manualFallbackDismissed)="
+          presenter.share.dismissShareCopyManualFallback()
+        "
       />
 
       <lib-go-online-room-sidebar
