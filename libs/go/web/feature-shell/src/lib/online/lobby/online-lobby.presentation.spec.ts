@@ -1,5 +1,6 @@
 import { LobbyRoomSummary } from '@gx/go/contracts';
 import {
+  buildLobbyRoomDetail,
   buildLobbyOverviewStats,
   buildLobbySections,
   buildLobbyTableRows,
@@ -29,6 +30,7 @@ describe('online-lobby.presentation', () => {
 
     expect(selectLobbyRoom(rooms, null)?.roomId).toBe('ROOM1');
     expect(selectLobbyRoom(rooms, 'ROOM2')?.roomId).toBe('ROOM2');
+    expect(selectLobbyRoom(rooms, 'MISSING')?.roomId).toBe('ROOM1');
   });
 
   it('formats updated timestamps using the active locale', () => {
@@ -55,6 +57,8 @@ describe('online-lobby.presentation', () => {
 
     expect(stats.roomCount).toBe(3);
     expect(stats.onlineCount).toBe(7);
+    expect(stats.participantCount).toBe(8);
+    expect(stats.spectatorCount).toBe(2);
     expect(stats.liveCount).toBe(1);
     expect(stats.readyCount).toBe(1);
     expect(stats.waitingCount).toBe(1);
@@ -68,6 +72,10 @@ describe('online-lobby.presentation', () => {
     expect(row?.roomId).toBe('ROOM9');
     expect(row?.blackSeat).toBe('Host');
     expect(row?.whiteSeat).toBe('Guest');
+    expect(row?.seatSummary).toEqual({
+      black: 'Black: Host',
+      white: 'White: Guest',
+    });
     expect(row?.participantLabel).toBe('lobby.count.person.other');
   });
 
@@ -93,6 +101,45 @@ describe('online-lobby.presentation', () => {
     expect(row?.spectatorLabel).toBe('lobby.count.spectator.one');
   });
 
+  it('builds detail view models for the selected room', () => {
+    const detail = buildLobbyRoomDetail(
+      createI18n('en'),
+      createRoom('READY9', 'ready')
+    );
+
+    expect(detail).toEqual(
+      expect.objectContaining({
+        roomId: 'READY9',
+        roomLabel: 'Room READY9',
+        title: "Host's room",
+        statusLabel: 'lobby.status.ready',
+        headline: 'lobby.room.status.ready.headline',
+        copy: 'lobby.room.status.ready.copy',
+        actionLabel: 'lobby.room.action.join',
+        actionHint: 'lobby.room.action_hint.join',
+      })
+    );
+  });
+
+  it('builds live-room detail copy for spectator entry points', () => {
+    const detail = buildLobbyRoomDetail(
+      createI18n('en'),
+      createRoom('LIVE9', 'live')
+    );
+
+    expect(detail).toEqual(
+      expect.objectContaining({
+        statusLabel: 'lobby.status.live',
+        actionLabel: 'lobby.room.action.live',
+        actionHint: 'lobby.room.action_hint.live',
+      })
+    );
+  });
+
+  it('returns null when no selected room is available for detail copy', () => {
+    expect(buildLobbyRoomDetail(createI18n('en'), null)).toBeNull();
+  });
+
   it('returns an empty-section label for the requested status', () => {
     expect(emptySectionLabel(createI18n('en'), 'ready')).toContain('lobby.section.empty');
   });
@@ -112,6 +159,14 @@ function createI18n(locale: 'en' | 'zh-TW') {
 
       if (key === 'lobby.room.card.title') {
         return `${String(params?.host ?? '')}'s room`;
+      }
+
+      if (key === 'lobby.table.black') {
+        return 'Black';
+      }
+
+      if (key === 'lobby.table.white') {
+        return 'White';
       }
 
       return key;

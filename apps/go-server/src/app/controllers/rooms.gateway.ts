@@ -1,5 +1,6 @@
 import {
   ConnectedSocket,
+  OnGatewayInit,
   MessageBody,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -11,17 +12,14 @@ import {
   type CommandErrorEvent,
   type GameCommandPayload,
   type GameRematchResponsePayload,
-  type GameUpdatedEvent,
   type GameStartPayload,
   type HostModerationPayload,
   type RoomSettingsUpdatePayload,
   type RoomJoinPayload,
-  type RoomPresenceEvent,
   type RoomSnapshot,
   type SeatClaimPayload,
   type SeatReleasePayload,
   type SystemNotice,
-  type SystemNoticeEvent,
 } from '@gx/go/contracts';
 import { createMessage, isMessageDescriptor } from '@gx/go/domain';
 import { HttpException, Inject } from '@nestjs/common';
@@ -30,6 +28,7 @@ import { RoomsChatService } from '../features/rooms-chat/rooms-chat.service';
 import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
 import { RoomsMatchService } from '../features/rooms-match/rooms-match.service';
 import { RoomsModerationService } from '../features/rooms-moderation/rooms-moderation.service';
+import { RoomsRealtimeBroadcasterService } from '../core/rooms-realtime/rooms-realtime-broadcaster.service';
 
 /**
  * Bridges hosted room websocket events to the room facade and broadcast helpers.
@@ -40,7 +39,7 @@ import { RoomsModerationService } from '../features/rooms-moderation/rooms-moder
     origin: true,
   },
 })
-export class RoomsGateway implements OnGatewayDisconnect {
+export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   server!: Server;
 
@@ -52,15 +51,21 @@ export class RoomsGateway implements OnGatewayDisconnect {
     @Inject(RoomsChatService)
     private readonly roomsChatService: RoomsChatService,
     @Inject(RoomsModerationService)
-    private readonly roomsModerationService: RoomsModerationService
+    private readonly roomsModerationService: RoomsModerationService,
+    @Inject(RoomsRealtimeBroadcasterService)
+    private readonly realtime: RoomsRealtimeBroadcasterService
   ) {}
+
+  afterInit(server: Server): void {
+    this.realtime.registerServer(server);
+  }
 
   // #region Connection lifecycle
   handleDisconnect(client: Socket): void {
     const snapshot = this.roomsLifecycleService.disconnectSocket(client.id);
 
     if (snapshot) {
-      this.broadcastPresence(snapshot);
+      this.realtime.broadcastPresence(snapshot);
     }
   }
 
@@ -75,7 +80,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
       );
 
       if (previousSnapshot) {
-        this.broadcastPresence(previousSnapshot);
+        this.realtime.broadcastPresence(previousSnapshot);
       }
 
       for (const room of client.rooms) {
@@ -92,7 +97,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
 
       void client.join(this.roomChannel(snapshot.roomId));
       client.emit('room.snapshot', snapshot);
-      this.broadcastPresence(snapshot);
+      this.realtime.broadcastPresence(snapshot);
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -210,7 +215,7 @@ export class RoomsGateway implements OnGatewayDisconnect {
         roomId: payload.roomId,
         message: result.message,
       });
-      this.broadcastRoomSnapshot(result.snapshot);
+      this.realtime.broadcastRoomSnapshot(result.snapshot);
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -256,16 +261,14 @@ export class RoomsGateway implements OnGatewayDisconnect {
         payload.targetParticipantId
       );
 
-      this.broadcastRoomSnapshot(result.snapshot);
-      this.broadcastPresence(result.snapshot);
+      this.realtime.broadcastRoomSnapshot(result.snapshot);
+      this.realtime.broadcastPresence(result.snapshot);
 
       if (result.notice) {
-        this.broadcastNotice(result.snapshot.roomId, result.notice);
+        this.realtime.broadcastNotice(result.snapshot.roomId, result.notice);
       }
 
-      for (const socketId of result.kickedSocketIds) {
-        this.server.sockets.sockets.get(socketId)?.disconnect(true);
-      }
+      this.realtime.disconnectSockets(result.kickedSocketIds);
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -284,60 +287,19 @@ export class RoomsGateway implements OnGatewayDisconnect {
     try {
       const result = operation();
 
-      this.broadcastRoomSnapshot(result.snapshot);
-      this.broadcastPresence(result.snapshot);
+      this.realtime.broadcastRoomSnapshot(result.snapshot);
+      this.realtime.broadcastPresence(result.snapshot);
 
       if (publishGameState) {
-        this.broadcastGameState(result.snapshot);
+        this.realtime.broadcastGameState(result.snapshot);
       }
 
       if (result.notice) {
-        this.broadcastNotice(result.snapshot.roomId, result.notice);
+        this.realtime.broadcastNotice(result.snapshot.roomId, result.notice);
       }
     } catch (error) {
       this.emitCommandError(client, error);
     }
-  }
-
-  private broadcastRoomSnapshot(snapshot: RoomSnapshot): void {
-    this.server.to(this.roomChannel(snapshot.roomId)).emit(
-      'room.snapshot',
-      snapshot
-    );
-  }
-
-  private broadcastPresence(snapshot: RoomSnapshot): void {
-    const payload: RoomPresenceEvent = {
-      roomId: snapshot.roomId,
-      participants: snapshot.participants,
-      seatState: snapshot.seatState,
-    };
-
-    this.server.to(this.roomChannel(snapshot.roomId)).emit(
-      'room.presence',
-      payload
-    );
-  }
-
-  private broadcastGameState(snapshot: RoomSnapshot): void {
-    const payload: GameUpdatedEvent = {
-      roomId: snapshot.roomId,
-      match: snapshot.match,
-    };
-
-    this.server.to(this.roomChannel(snapshot.roomId)).emit(
-      'game.updated',
-      payload
-    );
-  }
-
-  private broadcastNotice(roomId: string, notice: SystemNotice): void {
-    const payload: SystemNoticeEvent = {
-      roomId,
-      notice,
-    };
-
-    this.server.to(this.roomChannel(roomId)).emit('system.notice', payload);
   }
   // #endregion
 

@@ -1,4 +1,5 @@
 import {
+  CloseRoomRequest,
   CreateRoomRequest,
   GameStartSettings,
   JoinRoomRequest,
@@ -37,6 +38,13 @@ export class JoinRoomDto implements JoinRoomRequest {
   @Transform(trimString)
   @MaxLength(128)
   participantToken?: string;
+}
+
+export class CloseRoomDto implements CloseRoomRequest {
+  @IsString()
+  @Transform(trimString)
+  @MaxLength(128)
+  participantToken!: string;
 }
 
 export class GameStartSettingsDto implements GameStartSettings {

@@ -63,6 +63,7 @@ export class OnlineRoomSidebarComponent {
     input.required<readonly OnlineRoomSidebarRematchStatusViewModel[]>();
 
   readonly joinRequested = output<void>();
+  readonly backToLobbyRequested = output<void>();
   readonly claimSeatRequested = output<PlayerColor>();
   readonly releaseSeatRequested = output<void>();
   readonly passRequested = output<void>();

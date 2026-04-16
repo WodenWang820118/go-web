@@ -87,6 +87,7 @@ describe('OnlineRoomService', () => {
   afterEach(() => {
     httpMock.verify();
     window.localStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it('restores a saved identity and rejoins over websocket during bootstrap', () => {
@@ -363,6 +364,91 @@ describe('OnlineRoomService', () => {
     );
     expect(service.lastSystemNotice()?.message.key).toBe('room.notice.seat_claimed');
     expect(service.lastError()).toBe(i18n.t('room.error.not_your_turn'));
+  });
+
+  it('posts a host close request and clears the active room identity on success', () => {
+    service.joinRoom('ROOM42', 'Host').subscribe();
+
+    const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
+    joinRequest.flush({
+      roomId: 'ROOM42',
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      resumed: false,
+      snapshot: createSnapshot('ROOM42'),
+    });
+
+    service.closeRoom().subscribe();
+
+    const closeRequest = httpMock.expectOne('/api/rooms/ROOM42/close');
+    expect(closeRequest.request.body).toEqual({
+      participantToken: 'token-1',
+    });
+    closeRequest.flush(null, {
+      status: 204,
+      statusText: 'No Content',
+    });
+
+    expect(storage.get('ROOM42')).toBeNull();
+    expect(service.snapshot()).toBeNull();
+    expect(service.participantId()).toBeNull();
+    expect(service.participantToken()).toBeNull();
+    expect(service.connectionState()).toBe('idle');
+  });
+
+  it('clears local room identity and exposes a closure event when the host closes the room remotely', () => {
+    service.joinRoom('ROOM42', 'Guest').subscribe();
+
+    const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
+    joinRequest.flush({
+      roomId: 'ROOM42',
+      participantId: 'guest-1',
+      participantToken: 'token-2',
+      resumed: false,
+      snapshot: createSnapshot('ROOM42'),
+    });
+
+    socket.trigger('room.closed', {
+      roomId: 'ROOM42',
+      message: createMessage('room.notice.closed_by_host'),
+    });
+
+    expect(storage.get('ROOM42')).toBeNull();
+    expect(service.connectionState()).toBe('idle');
+    expect(service.roomClosed()?.roomId).toBe('ROOM42');
+
+    service.clearRoomClosedEvent();
+
+    expect(service.roomClosed()).toBeNull();
+  });
+
+  it('uses a keepalive fetch request when the host unloads the page', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchSpy);
+
+    service.joinRoom('ROOM42', 'Host').subscribe();
+
+    const joinRequest = httpMock.expectOne('/api/rooms/ROOM42/join');
+    joinRequest.flush({
+      roomId: 'ROOM42',
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      resumed: false,
+      snapshot: createSnapshot('ROOM42'),
+    });
+
+    await service.closeRoomWithKeepalive();
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/rooms/ROOM42/close', {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participantToken: 'token-1',
+      }),
+    });
   });
 });
 

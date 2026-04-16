@@ -130,6 +130,7 @@ const EN_ROOM_SHARED = {
     '{{actorDisplayName}} unmuted {{targetDisplayName}}.',
   'room.notice.participant_removed':
     '{{actorDisplayName}} removed {{targetDisplayName}}.',
+  'room.notice.closed_by_host': 'The host closed the room.',
   'room.validation.display_name_string': 'Display name must be text.',
   'room.validation.participant_token_too_long':
     'Participant tokens must be {{max}} characters or fewer.',
@@ -144,6 +145,7 @@ const EN_ROOM_SHARED = {
     'Wait for the room connection to finish before using room actions.',
   'room.client.unexpected_network_error': 'Unexpected network error.',
   'lobby.error.load_failed': 'Unable to load hosted rooms.',
+  'lobby.notice.room_closed_self': 'Room closed.',
 } as const;
 const EN_MODES = {
   'mode.go.title': 'Go',
@@ -286,6 +288,11 @@ const EN_HOSTED_UI = {
     'Select the room link below and copy it manually.',
   'room.hero.manual_url_label': 'Room link to copy manually',
   'room.page.back_to_lobby': 'Back to lobby',
+  'room.leave.confirm.header': 'Leave this room?',
+  'room.leave.confirm.message':
+    'Leaving will close the room and return everyone who is still inside to the lobby.',
+  'room.leave.confirm.accept': 'Leave and close room',
+  'room.leave.confirm.reject': 'Stay in room',
   'room.page.loading': 'Loading hosted room state...',
   'room.page.missing.label': 'Room unavailable',
   'room.page.missing.title': 'This room could not be found.',

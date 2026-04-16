@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { HostedMatchSnapshot } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -7,7 +6,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
 @Component({
   selector: 'lib-go-online-room-sidebar-actions',
   standalone: true,
-  imports: [RouterLink, ButtonModule],
+  imports: [ButtonModule],
   host: {
     class: 'block mt-auto',
   },
@@ -35,13 +34,15 @@ import { GoI18nService } from '@gx/go/state/i18n';
           </button>
         }
 
-        <a
-          routerLink="/"
+        <button
           pButton
+          type="button"
           class="go-hosted-button-secondary justify-center md:col-span-1"
+          data-testid="room-back-to-lobby"
+          (click)="backToLobbyRequested.emit()"
         >
           {{ i18n.t('room.page.back_to_lobby') }}
-        </a>
+        </button>
       </div>
     </section>
   `,
@@ -55,6 +56,7 @@ export class OnlineRoomSidebarActionsComponent {
   readonly canResign = input.required<boolean>();
   readonly realtimeConnected = input.required<boolean>();
 
+  readonly backToLobbyRequested = output<void>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
 

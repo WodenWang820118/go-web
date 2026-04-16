@@ -122,6 +122,10 @@ describe('OnlineRoomSidebarComponent', () => {
       fixture.componentInstance.resignRequested,
       'emit',
     );
+    const backEmit = vi.spyOn(
+      fixture.componentInstance.backToLobbyRequested,
+      'emit',
+    );
     const root = fixture.nativeElement as HTMLElement;
 
     (root.querySelector('[data-testid="claim-white"]') as HTMLButtonElement).click();
@@ -134,6 +138,7 @@ describe('OnlineRoomSidebarComponent', () => {
     ) as HTMLButtonElement[];
     actionButtons[0]?.click();
     actionButtons[1]?.click();
+    actionButtons[2]?.click();
 
     expect(claimEmit).toHaveBeenCalledWith('white');
     expect(releaseEmit).toHaveBeenCalled();
@@ -141,6 +146,7 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(declineEmit).toHaveBeenCalled();
     expect(passEmit).toHaveBeenCalled();
     expect(resignEmit).toHaveBeenCalled();
+    expect(backEmit).toHaveBeenCalled();
   });
 
   it('submits chat on Enter but keeps Shift+Enter for multiline drafts', () => {

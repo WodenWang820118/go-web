@@ -16,6 +16,7 @@ import {
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { CloseRoomResult } from '../../contracts/rooms.types';
 
 /**
  * Handles room creation, joining, presence sockets, and lifecycle cleanup.
@@ -122,6 +123,31 @@ export class RoomsLifecycleService implements OnModuleDestroy {
 
     return {
       rooms,
+    };
+  }
+
+  closeRoom(roomId: string, participantToken: string): CloseRoomResult {
+    const room = this.store.getRoomRecord(roomId);
+    const host = this.store.assertHostParticipant(room, participantToken);
+    const socketIds = [...room.participants.values()].flatMap(participant =>
+      [...participant.socketIds]
+    );
+
+    for (const socketId of socketIds) {
+      this.store.socketIndex.delete(socketId);
+    }
+
+    this.store.rooms.delete(room.id);
+
+    return {
+      roomId: room.id,
+      socketIds,
+      event: {
+        roomId: room.id,
+        message: this.roomsErrors.roomMessage('room.notice.closed_by_host', {
+          displayName: host.displayName,
+        }),
+      },
     };
   }
 

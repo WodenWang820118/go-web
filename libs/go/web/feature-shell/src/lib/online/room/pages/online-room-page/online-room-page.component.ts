@@ -9,8 +9,10 @@ import { OnlineRoomStageSectionComponent } from '../../views/online-room-stage-s
 import { OnlineRoomPagePresenterService } from './online-room-page.presenter.service';
 import { OnlineRoomPageDialogsService } from './services/online-room-page-dialogs/online-room-page-dialogs.service';
 import { OnlineRoomPageInteractionsService } from './services/online-room-page-interactions/online-room-page-interactions.service';
+import { OnlineRoomPageLeaveService } from './services/online-room-page-leave/online-room-page-leave.service';
 import { OnlineRoomPageShareService } from './services/online-room-page-share/online-room-page-share.service';
 import { OnlineRoomPageViewStateService } from './services/online-room-page-view-state/online-room-page-view-state.service';
+import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
 
 @Component({
   selector: 'lib-go-online-room-page',
@@ -35,10 +37,11 @@ import { OnlineRoomPageViewStateService } from './services/online-room-page-view
     OnlineRoomPageInteractionsService,
     OnlineRoomPageShareService,
     OnlineRoomPageDialogsService,
+    OnlineRoomPageLeaveService,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnlineRoomPageComponent {
+export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
   protected readonly presenter = inject(OnlineRoomPagePresenterService);
 
   protected onRematchVisibleChange(visible: boolean): void {
@@ -51,5 +54,9 @@ export class OnlineRoomPageComponent {
     if (!visible) {
       this.presenter.dialogs.dismissResignResultDialog();
     }
+  }
+
+  canDeactivateRoomPage(nextUrl: string | null): boolean {
+    return this.presenter.leave.canDeactivate(nextUrl);
   }
 }

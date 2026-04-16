@@ -6,6 +6,7 @@ import {
   GameCommand,
   GameStartSettings,
   JoinRoomResponse,
+  RoomClosedEvent,
   RoomSnapshot,
   SystemNotice,
 } from '@gx/go/contracts';
@@ -66,6 +67,8 @@ export class OnlineRoomService {
   private readonly lastErrorSignal = signal<string | null>(null);
   private readonly lastNoticeSignal = signal<string | null>(null);
   private readonly lastSystemNoticeSignal = signal<SystemNotice | null>(null);
+  private readonly roomClosedSignal = signal<RoomClosedEvent | null>(null);
+  private readonly closingRoomSignal = signal(false);
 
   readonly roomId = this.activeRoomIdSignal.asReadonly();
   readonly snapshot = this.snapshotSignal.asReadonly();
@@ -79,6 +82,8 @@ export class OnlineRoomService {
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly lastNotice = this.lastNoticeSignal.asReadonly();
   readonly lastSystemNotice = this.lastSystemNoticeSignal.asReadonly();
+  readonly roomClosed = this.roomClosedSignal.asReadonly();
+  readonly closingRoom = this.closingRoomSignal.asReadonly();
 
   readonly participants = computed(() =>
     this.selectors.selectRoomParticipants(this.snapshotSignal())
@@ -232,6 +237,57 @@ export class OnlineRoomService {
     });
   }
 
+  closeRoom(): Observable<void> {
+    return defer(() => {
+      const closeRequest = this.resolveCloseRequest();
+
+      if (!closeRequest) {
+        return throwError(() => new Error(JOIN_ROOM_REQUIRED_MESSAGE));
+      }
+
+      this.closingRoomSignal.set(true);
+      this.lastErrorSignal.set(null);
+
+      return this.api.closeRoom(closeRequest.roomId, closeRequest.participantToken).pipe(
+        tap(() => {
+          this.clearClosedRoomState(closeRequest.roomId);
+        }),
+        catchError(error => {
+          this.lastErrorSignal.set(
+            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
+          );
+          return throwError(() => error);
+        }),
+        finalize(() => {
+          this.closingRoomSignal.set(false);
+        })
+      );
+    });
+  }
+
+  async closeRoomWithKeepalive(): Promise<void> {
+    const closeRequest = this.resolveCloseRequest();
+
+    if (!closeRequest || typeof fetch !== 'function') {
+      return;
+    }
+
+    try {
+      await fetch(this.api.closeRoomUrl(closeRequest.roomId), {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantToken: closeRequest.participantToken,
+        }),
+      });
+    } catch {
+      // best-effort only during unload
+    }
+  }
+
   claimSeat(color: PlayerColor): void {
     this.emit('seat.claim', {
       color,
@@ -290,6 +346,21 @@ export class OnlineRoomService {
     this.lastSystemNoticeSignal.set(null);
   }
 
+  clearRoomClosedEvent(): void {
+    this.roomClosedSignal.set(null);
+  }
+
+  markRoomClosed(event: RoomClosedEvent): void {
+    const activeRoomId = this.activeRoomIdSignal();
+
+    if (activeRoomId && event.roomId !== activeRoomId) {
+      return;
+    }
+
+    this.clearClosedRoomState(event.roomId);
+    this.roomClosedSignal.set(event);
+  }
+
   disconnect(): void {
     this.socket.disconnect();
   }
@@ -313,6 +384,13 @@ export class OnlineRoomService {
     });
     this.socket.commandError$.subscribe(event => {
       this.lastErrorSignal.set(this.i18n.translateMessage(event.message));
+    });
+    this.socket.roomClosed$.subscribe(event => {
+      if (this.closingRoomSignal() || event.roomId !== this.activeRoomIdSignal()) {
+        return;
+      }
+
+      this.markRoomClosed(event);
     });
   }
 
@@ -383,6 +461,38 @@ export class OnlineRoomService {
     this.participantIdSignal.set(null);
     this.participantTokenSignal.set(null);
     this.displayNameSignal.set('');
+    this.lastNoticeSignal.set(null);
+    this.lastSystemNoticeSignal.set(null);
+    this.roomClosedSignal.set(null);
+    this.closingRoomSignal.set(false);
+  }
+
+  private resolveCloseRequest(): {
+    roomId: string;
+    participantToken: string;
+  } | null {
+    const roomId = this.activeRoomIdSignal();
+    const participantToken = this.participantTokenSignal();
+
+    if (!roomId || !participantToken) {
+      this.lastErrorSignal.set(this.i18n.t(JOIN_ROOM_REQUIRED_MESSAGE));
+      return null;
+    }
+
+    return {
+      roomId,
+      participantToken,
+    };
+  }
+
+  private clearClosedRoomState(roomId: string): void {
+    this.storage.clear(roomId);
+    this.socket.disconnect();
+    this.activeRoomIdSignal.set(null);
+    this.snapshotSignal.set(null);
+    this.participantIdSignal.set(null);
+    this.participantTokenSignal.set(null);
+    this.bootstrapStateSignal.set('ready');
     this.lastNoticeSignal.set(null);
     this.lastSystemNoticeSignal.set(null);
   }

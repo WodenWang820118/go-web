@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
+  CloseRoomRequest,
   CreateRoomResponse,
   GetRoomResponse,
   JoinRoomResponse,
@@ -45,6 +46,16 @@ export class OnlineRoomsHttpService {
       displayName,
       participantToken,
     });
+  }
+
+  closeRoom(roomId: string, participantToken: string): Observable<void> {
+    return this.http.post<void>(this.closeRoomUrl(roomId), {
+      participantToken,
+    } satisfies CloseRoomRequest);
+  }
+
+  closeRoomUrl(roomId: string): string {
+    return `${this.apiBase}/${roomId}/close`;
   }
 
   describeHttpError(error: unknown, fallbackKey: string): string {

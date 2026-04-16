@@ -20,6 +20,13 @@ export interface JoinRoomRequest {
 }
 
 /**
+ * Request body for closing a hosted room.
+ */
+export interface CloseRoomRequest {
+  participantToken: string;
+}
+
+/**
  * Response returned after creating a hosted room.
  */
 export interface CreateRoomResponse {

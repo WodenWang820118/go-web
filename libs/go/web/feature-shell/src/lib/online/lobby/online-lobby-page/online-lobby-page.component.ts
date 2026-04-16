@@ -1,11 +1,14 @@
-import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
+  ElementRef,
   effect,
   inject,
   signal,
+  viewChild,
+  viewChildren,
 } from '@angular/core';
 import {
   takeUntilDestroyed,
@@ -18,34 +21,26 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { TagModule } from 'primeng/tag';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
+  buildLobbyRoomDetail,
   buildLobbyOverviewStats,
   buildLobbyTableRows,
   buildLobbySections,
   countLabel,
   emptySectionLabel,
+  LobbyRoomDetailViewModel,
   LobbyOverviewStatsViewModel,
   LobbyRoomTableRowViewModel,
-  roomActionHint,
-  roomActionLabel,
-  roomCardLabel,
-  roomCardTitle,
-  roomModeLabel,
-  roomStatusCopy,
-  roomStatusHeadline,
-  roomStatusLabel,
-  seatLabel,
   selectLobbyRoom,
-  updatedLabel,
 } from '../online-lobby.presentation';
 import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
 import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
 import { OnlineLobbyService } from '../services/online-lobby/online-lobby.service';
+import { OnlineLobbyFlashNoticeService } from '../services/online-lobby-flash-notice/online-lobby-flash-notice.service';
 
 @Component({
   selector: 'lib-go-online-lobby-page',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     RouterLink,
     TagModule,
@@ -58,10 +53,15 @@ export class OnlineLobbyPageComponent {
   protected readonly i18n = inject(GoI18nService);
   protected readonly onlineLobby = inject(OnlineLobbyService);
   protected readonly onlineRoom = inject(OnlineRoomService);
+  protected readonly flashNotice = inject(OnlineLobbyFlashNoticeService);
 
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly roomTableScroll = viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
+  private readonly roomRowElements = viewChildren<ElementRef<HTMLElement>>('lobbyRoomRow');
   private readonly selectedRoomIdSignal = signal<string | null>(null);
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
+  private readonly mdUpSignal = signal(this.resolveMdUp());
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || this.i18n.t('common.role.host'),
@@ -90,8 +90,17 @@ export class OnlineLobbyPageComponent {
   protected readonly activeRows = computed<LobbyRoomTableRowViewModel[]>(() =>
     buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? [])
   );
+  protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(() =>
+    buildLobbyOverviewStats(this.activeSection()?.rooms ?? [])
+  );
+  protected readonly isMdUp = this.mdUpSignal.asReadonly();
   protected readonly selectedRoom = computed<LobbyRoomSummary | null>(() =>
-    selectLobbyRoom(this.onlineLobby.rooms(), this.selectedRoomIdSignal())
+    this.isMdUp()
+      ? selectLobbyRoom(this.activeSection()?.rooms ?? [], this.selectedRoomIdSignal())
+      : null
+  );
+  protected readonly selectedRoomDetail = computed<LobbyRoomDetailViewModel | null>(() =>
+    buildLobbyRoomDetail(this.i18n, this.selectedRoom())
   );
   protected readonly trimmedDisplayName = computed(() =>
     this.displayNameValue().trim()
@@ -99,31 +108,25 @@ export class OnlineLobbyPageComponent {
   protected readonly canSubmitIdentity = computed(
     () => this.trimmedDisplayName().length > 0
   );
-  protected readonly roomStatusLabel = (status: LobbyRoomStatus) =>
-    roomStatusLabel(this.i18n, status);
-  protected readonly roomStatusHeadline = (room: LobbyRoomSummary) =>
-    roomStatusHeadline(this.i18n, room);
-  protected readonly roomStatusCopy = (room: LobbyRoomSummary) =>
-    roomStatusCopy(this.i18n, room);
-  protected readonly roomModeLabel = (room: LobbyRoomSummary) =>
-    roomModeLabel(this.i18n, room);
-  protected readonly roomActionLabel = (room: LobbyRoomSummary) =>
-    roomActionLabel(this.i18n, room);
-  protected readonly roomActionHint = (room: LobbyRoomSummary) =>
-    roomActionHint(this.i18n, room);
-  protected readonly seatLabel = (name: string | null, color: 'black' | 'white') =>
-    seatLabel(this.i18n, name, color);
+  protected readonly actionBarMessage = computed(
+    () =>
+      this.onlineRoom.lastError() ??
+      this.onlineLobby.lastError() ??
+      this.flashNotice.message() ??
+      this.i18n.t('lobby.identity.description')
+  );
+  protected readonly actionBarMessageIsError = computed(
+    () => !!(this.onlineRoom.lastError() ?? this.onlineLobby.lastError())
+  );
   protected readonly countLabel = (
     count: number,
     unit: 'room' | 'person' | 'online' | 'spectator'
   ) => countLabel(this.i18n, count, unit);
-  protected readonly roomCardTitle = (host: string) => roomCardTitle(this.i18n, host);
-  protected readonly roomCardLabel = (roomId: string) => roomCardLabel(this.i18n, roomId);
-  protected readonly updatedLabel = (updatedAt: string) => updatedLabel(this.i18n, updatedAt);
   protected readonly emptySectionLabel = (status: LobbyRoomStatus) =>
     emptySectionLabel(this.i18n, status);
 
   constructor() {
+    this.bindViewportMode();
     this.onlineRoom.clearTransientMessages();
     this.onlineLobby.refresh();
     interval(10000)
@@ -154,6 +157,7 @@ export class OnlineLobbyPageComponent {
 
       if (nextStatus) {
         this.activeStatusSignal.set(nextStatus);
+        this.scrollRoomTableToTop();
       }
     });
   }
@@ -172,10 +176,30 @@ export class OnlineLobbyPageComponent {
 
   protected setActiveStatus(status: LobbyRoomStatus): void {
     this.activeStatusSignal.set(status);
+    this.scrollRoomTableToTop();
   }
 
   protected isActiveStatus(status: LobbyRoomStatus): boolean {
     return this.activeStatusSignal() === status;
+  }
+
+  protected moveRoomFocus(roomId: string, direction: 'next' | 'previous'): void {
+    const index = this.activeRows().findIndex(row => row.roomId === roomId);
+
+    if (index === -1) {
+      return;
+    }
+
+    const targetIndex = direction === 'next' ? index + 1 : index - 1;
+    const targetRow = this.activeRows()[targetIndex];
+    const targetElement = this.roomRowElements()[targetIndex]?.nativeElement;
+
+    if (!targetRow || !targetElement) {
+      return;
+    }
+
+    this.selectRoom(targetRow.roomId, targetRow.room.status);
+    targetElement.focus();
   }
 
   protected createRoom(): void {
@@ -197,8 +221,7 @@ export class OnlineLobbyPageComponent {
       .subscribe();
   }
 
-  protected joinSelectedRoom(): void {
-    const room = this.selectedRoom();
+  protected joinRoom(room: LobbyRoomSummary | null): void {
     const displayName = this.trimmedDisplayName();
 
     if (!room || !displayName) {
@@ -213,5 +236,49 @@ export class OnlineLobbyPageComponent {
         take(1)
       )
       .subscribe();
+  }
+
+  protected joinSelectedRoom(): void {
+    this.joinRoom(this.selectedRoom());
+  }
+
+  private bindViewportMode(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const listener = (event: MediaQueryListEvent) => {
+      this.mdUpSignal.set(event.matches);
+    };
+
+    this.mdUpSignal.set(mediaQuery.matches);
+    mediaQuery.addEventListener('change', listener);
+    this.destroyRef.onDestroy(() => {
+      mediaQuery.removeEventListener('change', listener);
+    });
+  }
+
+  private resolveMdUp(): boolean {
+    return typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+      ? true
+      : window.matchMedia('(min-width: 768px)').matches;
+  }
+
+  private scrollRoomTableToTop(): void {
+    const element = this.roomTableScroll()?.nativeElement;
+
+    if (!element) {
+      return;
+    }
+
+    if (typeof element.scrollTo === 'function') {
+      element.scrollTo({
+        top: 0,
+      });
+      return;
+    }
+
+    element.scrollTop = 0;
   }
 }

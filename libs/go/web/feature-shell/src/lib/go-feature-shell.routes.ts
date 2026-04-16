@@ -1,5 +1,6 @@
 import { Route } from '@angular/router';
 import { activeMatchGuard, validModeGuard } from '@gx/go/state/guards';
+import { onlineRoomLeaveGuard } from './online/room/guards/online-room-leave.guard';
 
 export const goFeatureShellRoutes: Route[] = [
   {
@@ -30,7 +31,8 @@ export const goFeatureShellRoutes: Route[] = [
     async loadComponent() {
       const m = await import('./online/room/pages/online-room-page/online-room-page.component');
       return m.OnlineRoomPageComponent;
-    }
+    },
+    canDeactivate: [onlineRoomLeaveGuard],
   },
   {
     path: 'play/:mode',

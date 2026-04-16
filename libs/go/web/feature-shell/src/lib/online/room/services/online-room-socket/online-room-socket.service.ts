@@ -3,6 +3,7 @@ import {
   ChatMessageEvent,
   CommandErrorEvent,
   GameUpdatedEvent,
+  RoomClosedEvent,
   RoomPresenceEvent,
   RoomSnapshot,
   SystemNoticeEvent,
@@ -28,6 +29,7 @@ export class OnlineRoomSocketService {
   private readonly chatMessageSubject = new Subject<ChatMessageEvent>();
   private readonly noticeSubject = new Subject<SystemNoticeEvent>();
   private readonly commandErrorSubject = new Subject<CommandErrorEvent>();
+  private readonly roomClosedSubject = new Subject<RoomClosedEvent>();
 
   readonly connectionState = this.connectionStateSignal.asReadonly();
   readonly roomSnapshot$ = this.roomSnapshotSubject.asObservable();
@@ -36,6 +38,7 @@ export class OnlineRoomSocketService {
   readonly chatMessage$ = this.chatMessageSubject.asObservable();
   readonly notice$ = this.noticeSubject.asObservable();
   readonly commandError$ = this.commandErrorSubject.asObservable();
+  readonly roomClosed$ = this.roomClosedSubject.asObservable();
 
   connect(roomId: string, participantToken: string): void {
     this.disconnect();
@@ -77,6 +80,9 @@ export class OnlineRoomSocketService {
     });
     socket.on('command.error', (event: CommandErrorEvent) => {
       this.commandErrorSubject.next(event);
+    });
+    socket.on('room.closed', (event: RoomClosedEvent) => {
+      this.roomClosedSubject.next(event);
     });
 
     this.connectionStateSignal.set('connecting');

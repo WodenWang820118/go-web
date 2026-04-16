@@ -50,6 +50,7 @@
     [canPass]="canPass()"
     [canResign]="canResign()"
     [realtimeConnected]="realtimeConnected()"
+    (backToLobbyRequested)="backToLobbyRequested.emit()"
     (passRequested)="passRequested.emit()"
     (resignRequested)="resignRequested.emit()"
   />

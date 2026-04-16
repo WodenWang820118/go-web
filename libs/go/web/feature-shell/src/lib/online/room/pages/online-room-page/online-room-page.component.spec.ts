@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { computed, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state';
@@ -14,6 +14,13 @@ import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { OnlineRoomPageComponent } from './online-room-page.component';
 import { OnlineRoomService } from '../../services/online-room/online-room.service';
+import { OnlineRoomsHttpService } from '../../services/online-rooms-http/online-rooms-http.service';
+
+@Component({
+  standalone: true,
+  template: '<p>Lobby detail</p>',
+})
+class DummyLobbyPageComponent {}
 
 describe('OnlineRoomPageComponent', () => {
   it('shows the join form for visitors who have not joined the room', async () => {
@@ -1620,6 +1627,152 @@ describe('OnlineRoomPageComponent', () => {
     expect(roomService.joinRoom).toHaveBeenCalledWith('ROOM42', 'Host (2)');
     expect(input.value).toBe('Host (2)');
   });
+
+  it('prompts the host before leaving the room and closes the room after confirmation', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const router = TestBed.inject(Router);
+    const root = harness.routeNativeElement as HTMLElement;
+    const backButton = root.querySelector(
+      '[data-testid="room-back-to-lobby"]',
+    ) as HTMLButtonElement | null;
+
+    backButton?.click();
+    await harness.fixture.whenStable();
+
+    const leaveDialog = queryDialog('room-leave-dialog');
+    const acceptButton = document.body.querySelector(
+      '[data-testid="room-leave-dialog-accept"]',
+    ) as HTMLButtonElement | null;
+
+    expect(leaveDialog).not.toBeNull();
+    expect(router.url).toBe('/online/room/ROOM42');
+
+    acceptButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.closeRoom).toHaveBeenCalledTimes(1);
+    expect(router.url).toBe('/');
+  });
+
+  it('lets the host cancel the leave prompt and stay in the room', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const router = TestBed.inject(Router);
+    const root = harness.routeNativeElement as HTMLElement;
+    const backButton = root.querySelector(
+      '[data-testid="room-back-to-lobby"]',
+    ) as HTMLButtonElement | null;
+
+    backButton?.click();
+    await harness.fixture.whenStable();
+
+    const rejectButton = document.body.querySelector(
+      '[data-testid="room-leave-dialog-reject"]',
+    ) as HTMLButtonElement | null;
+
+    rejectButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.closeRoom).not.toHaveBeenCalled();
+    expect(router.url).toBe('/online/room/ROOM42');
+    expect(queryDialog('room-leave-dialog')).toBeNull();
+  });
+
+  it('lets non-host viewers leave immediately without showing the leave prompt', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: null,
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: null,
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+      }),
+      participantId: 'guest-1',
+      participantToken: 'token-2',
+    });
+
+    const harness = await renderPage(roomService);
+    const router = TestBed.inject(Router);
+    const root = harness.routeNativeElement as HTMLElement;
+    const backButton = root.querySelector(
+      '[data-testid="room-back-to-lobby"]',
+    ) as HTMLButtonElement | null;
+
+    backButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-leave-dialog')).toBeNull();
+    expect(roomService.closeRoom).not.toHaveBeenCalled();
+    expect(router.url).toBe('/');
+  });
+
+  it('returns guests to the lobby when the host closes the room remotely', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: null,
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: null,
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+      }),
+      participantId: 'guest-1',
+      participantToken: 'token-2',
+    });
+
+    const harness = await renderPage(roomService);
+    const router = TestBed.inject(Router);
+
+    roomService.roomClosed.set({
+      roomId: 'ROOM42',
+      message: createMessage('room.notice.closed_by_host'),
+    });
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+
+    expect(roomService.clearRoomClosedEvent).toHaveBeenCalledTimes(1);
+    expect(router.url).toBe('/');
+  });
 });
 
 async function renderPage(
@@ -1630,6 +1783,10 @@ async function renderPage(
       provideGoPrimeNGTheme(),
       provideRouter([
         {
+          path: '',
+          component: DummyLobbyPageComponent,
+        },
+        {
           path: 'online/room/:roomId',
           component: OnlineRoomPageComponent,
         },
@@ -1637,6 +1794,16 @@ async function renderPage(
       {
         provide: OnlineRoomService,
         useValue: roomService,
+      },
+      {
+        provide: OnlineRoomsHttpService,
+        useValue: {
+          getRoom: vi.fn().mockReturnValue(
+            of({
+              snapshot: createSnapshot(),
+            }),
+          ),
+        },
       },
     ],
   });
@@ -1708,6 +1875,10 @@ function createRoomServiceStub(options: {
   lastNotice?: string | null;
   lastSystemNotice?: SystemNotice | null;
   shareUrl?: string | null;
+  roomClosed?: {
+    roomId: string;
+    message: ReturnType<typeof createMessage>;
+  } | null;
 }) {
   const snapshot = signal(options.snapshot);
   const participantId = signal(options.participantId);
@@ -1724,6 +1895,7 @@ function createRoomServiceStub(options: {
   const lastSystemNotice = signal<SystemNotice | null>(
     options.lastSystemNotice ?? null,
   );
+  const roomClosed = signal(options.roomClosed ?? null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
   const nextMatchSettings = computed(
@@ -1788,7 +1960,15 @@ function createRoomServiceStub(options: {
     muteParticipant: vi.fn(),
     unmuteParticipant: vi.fn(),
     kickParticipant: vi.fn(),
+    closeRoom: vi.fn().mockReturnValue(of(void 0)),
+    closeRoomWithKeepalive: vi.fn().mockResolvedValue(undefined),
+    markRoomClosed: vi.fn((event: { roomId: string; message: ReturnType<typeof createMessage> }) => {
+      roomClosed.set(event);
+    }),
     clearTransientMessages: vi.fn(),
+    roomClosed,
+    clearRoomClosedEvent: vi.fn(() => roomClosed.set(null)),
+    closingRoom: signal(false),
   };
 }
 

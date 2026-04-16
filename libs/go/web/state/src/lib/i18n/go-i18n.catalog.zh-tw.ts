@@ -104,6 +104,7 @@ const ZH_ROOM_SHARED = {
     '{{actorDisplayName}}已解除{{targetDisplayName}}的禁言。',
   'room.notice.participant_removed':
     '{{actorDisplayName}}已將{{targetDisplayName}}移出房間。',
+  'room.notice.closed_by_host': '房主已關閉房間。',
   'room.validation.display_name_string': '顯示名稱必須是文字。',
   'room.validation.participant_token_too_long':
     '參與者權杖長度不可超過 {{max}} 個字元。',
@@ -116,6 +117,7 @@ const ZH_ROOM_SHARED = {
   'room.client.realtime_unavailable': '請先等待房間即時連線完成，再使用房內操作。',
   'room.client.unexpected_network_error': '網路連線發生未預期的錯誤。',
   'lobby.error.load_failed': '無法載入線上房間。',
+  'lobby.notice.room_closed_self': '房間已關閉。',
   'room.error.next_match_settings_locked':
     '至少保留一個空座位時，才能調整下一局設定。',
   'room.error.rematch_response_unavailable': '目前沒有可回應的再來一局提示。',
@@ -252,6 +254,10 @@ const ZH_HOSTED_UI = {
   'room.hero.copy_manual_instruction': '請選取下方房間連結後手動複製。',
   'room.hero.manual_url_label': '可手動複製的房間連結',
   'room.page.back_to_lobby': '返回大廳',
+  'room.leave.confirm.header': '確定要離開房間嗎？',
+  'room.leave.confirm.message': '離開後會一併關閉這個房間，所有仍在房內的人都會被帶回大廳。',
+  'room.leave.confirm.accept': '離開並關閉房間',
+  'room.leave.confirm.reject': '留在房間',
   'room.page.loading': '正在載入線上房間狀態...',
   'room.page.missing.label': '房間無法使用',
   'room.page.missing.title': '找不到這個房間。',
