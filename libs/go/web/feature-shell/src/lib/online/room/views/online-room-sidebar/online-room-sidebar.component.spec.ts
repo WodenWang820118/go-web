@@ -186,6 +186,34 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(chatList.className).toContain('flex-1');
     expect(chatList.className).not.toContain('max-h-[clamp');
   });
+
+  it('scrolls the chat feed to the newest message when messages are appended', async () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const chatList = root.querySelector(
+      '[data-testid="room-sidebar-chat-list"]',
+    ) as HTMLElement;
+
+    Object.defineProperty(chatList, 'scrollHeight', {
+      configurable: true,
+      value: 320,
+    });
+    chatList.scrollTop = 0;
+
+    fixture.componentRef.setInput('messages', [
+      ...chatMessages,
+      {
+        id: 'chat-2',
+        participantId: 'guest-1',
+        displayName: 'Guest',
+        message: 'Newest message',
+        sentAt: '2026-03-20T00:06:00.000Z',
+      },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(chatList.scrollTop).toBe(320);
+  });
 });
 
 const participants: ParticipantSummary[] = [

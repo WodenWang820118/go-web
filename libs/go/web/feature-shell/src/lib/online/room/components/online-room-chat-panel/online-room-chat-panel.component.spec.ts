@@ -61,4 +61,35 @@ describe('OnlineRoomChatPanelComponent', () => {
     expect(emitSpy).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(false);
   });
+
+  it('scrolls to the newest chat message when messages are appended', async () => {
+    const chatList = fixture.nativeElement.querySelector('.chat-feed') as HTMLElement;
+
+    Object.defineProperty(chatList, 'scrollHeight', {
+      configurable: true,
+      value: 240,
+    });
+    chatList.scrollTop = 0;
+
+    fixture.componentRef.setInput('messages', [
+      {
+        id: 'chat-1',
+        participantId: 'host-1',
+        displayName: 'Host',
+        message: 'Hello room',
+        sentAt: '2026-03-20T00:05:00.000Z',
+      },
+      {
+        id: 'chat-2',
+        participantId: 'guest-1',
+        displayName: 'Guest',
+        message: 'Newest message',
+        sentAt: '2026-03-20T00:06:00.000Z',
+      },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(chatList.scrollTop).toBe(240);
+  });
 });

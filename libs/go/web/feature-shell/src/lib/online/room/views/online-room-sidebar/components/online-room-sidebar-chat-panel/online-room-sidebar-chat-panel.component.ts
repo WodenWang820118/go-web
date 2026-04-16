@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewChecked,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -75,6 +78,7 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
 
       <div class="mt-4 flex min-h-0 flex-1 flex-col gap-4">
         <div
+          #chatList
           class="go-hosted-scroll grid min-h-0 flex-1 gap-3 overflow-auto rounded-[1rem] border border-stone-900/10 bg-white/78 p-2 pr-1 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.03)]"
           data-testid="room-sidebar-chat-list"
         >
@@ -156,8 +160,10 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnlineRoomSidebarChatPanelComponent {
+export class OnlineRoomSidebarChatPanelComponent implements AfterViewChecked {
   protected readonly i18n = inject(GoI18nService);
+  private readonly chatList = viewChild<ElementRef<HTMLElement>>('chatList');
+  private lastAutoScrolledMessageId: string | null = null;
 
   readonly chatForm = input.required<OnlineRoomChatFormGroup>();
   readonly participantId = input<string | null>(null);
@@ -181,6 +187,19 @@ export class OnlineRoomSidebarChatPanelComponent {
     () => this.participants().filter((participant) => !participant.seat).length,
   );
 
+  ngAfterViewChecked(): void {
+    const messages = this.messages();
+    const latestMessageId =
+      messages.length > 0 ? messages[messages.length - 1]?.id ?? null : null;
+
+    if (!latestMessageId || latestMessageId === this.lastAutoScrolledMessageId) {
+      return;
+    }
+
+    this.lastAutoScrolledMessageId = latestMessageId;
+    this.scrollChatToBottom();
+  }
+
   protected onMessageKeydown(event: KeyboardEvent): void {
     if (
       event.key !== 'Enter' ||
@@ -196,5 +215,15 @@ export class OnlineRoomSidebarChatPanelComponent {
 
     event.preventDefault();
     this.sendRequested.emit();
+  }
+
+  private scrollChatToBottom(): void {
+    const chatList = this.chatList()?.nativeElement;
+
+    if (!chatList) {
+      return;
+    }
+
+    chatList.scrollTop = chatList.scrollHeight;
   }
 }

@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewChecked,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ChatMessage } from '@gx/go/contracts';
@@ -26,7 +29,10 @@ import { GoI18nService } from '@gx/go/state/i18n';
         {{ i18n.t('room.chat.title') }}
       </p>
 
-      <div class="chat-feed mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1">
+      <div
+        #chatList
+        class="chat-feed mt-4 min-h-0 flex-1 space-y-3 overflow-auto pr-1"
+      >
         @if (messages().length > 0) {
           @for (message of messages(); track message.id) {
             <article
@@ -104,8 +110,10 @@ import { GoI18nService } from '@gx/go/state/i18n';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnlineRoomChatPanelComponent {
+export class OnlineRoomChatPanelComponent implements AfterViewChecked {
   protected readonly i18n = inject(GoI18nService);
+  private readonly chatList = viewChild<ElementRef<HTMLElement>>('chatList');
+  private lastAutoScrolledMessageId: string | null = null;
 
   readonly chatForm = input.required<FormGroup>();
   readonly participantId = input<string | null>(null);
@@ -119,6 +127,19 @@ export class OnlineRoomChatPanelComponent {
   protected readonly canSend = computed(
     () => !!this.participantId() && !this.isMuted() && this.realtimeConnected(),
   );
+
+  ngAfterViewChecked(): void {
+    const messages = this.messages();
+    const latestMessageId =
+      messages.length > 0 ? messages[messages.length - 1]?.id ?? null : null;
+
+    if (!latestMessageId || latestMessageId === this.lastAutoScrolledMessageId) {
+      return;
+    }
+
+    this.lastAutoScrolledMessageId = latestMessageId;
+    this.scrollChatToBottom();
+  }
 
   protected onMessageKeydown(event: KeyboardEvent): void {
     if (
@@ -135,5 +156,15 @@ export class OnlineRoomChatPanelComponent {
 
     event.preventDefault();
     this.sendRequested.emit();
+  }
+
+  private scrollChatToBottom(): void {
+    const chatList = this.chatList()?.nativeElement;
+
+    if (!chatList) {
+      return;
+    }
+
+    chatList.scrollTop = chatList.scrollHeight;
   }
 }
