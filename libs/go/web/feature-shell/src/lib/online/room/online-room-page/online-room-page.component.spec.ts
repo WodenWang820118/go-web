@@ -470,7 +470,7 @@ describe('OnlineRoomPageComponent', () => {
     expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
   });
 
-  it('renders the core match action controls inside the sidebar', async () => {
+  it('renders the sidebar action area below chat with back-to-lobby and without finalize score', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         participants: [
@@ -540,11 +540,58 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
+    const chatSection = root.querySelector('[data-testid="room-sidebar-chat"]');
+    const actionsSection = root.querySelector('[data-testid="room-sidebar-actions"]');
 
-    expect(root.querySelector('[data-testid="room-sidebar-actions"]')).not.toBeNull();
-    expect(root.textContent).toContain(i18n.t('common.move.pass'));
-    expect(root.textContent).toContain(i18n.t('common.move.resign'));
-    expect(root.textContent).toContain(i18n.t('room.participants.finalize_score'));
+    expect(actionsSection).not.toBeNull();
+    expect(root.querySelector('.room-sidebar__topbar')).toBeNull();
+    expect(actionsSection?.textContent).toContain(i18n.t('room.page.back_to_lobby'));
+    expect(actionsSection?.textContent).toContain(i18n.t('common.move.pass'));
+    expect(actionsSection?.textContent).toContain(i18n.t('common.move.resign'));
+    expect(actionsSection?.textContent).not.toContain(i18n.t('room.participants.finalize_score'));
+    expect(
+      !!(chatSection?.compareDocumentPosition(actionsSection!) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBe(true);
+  });
+
+  it('renders an icon-only copy action inline with the share url', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+    const shareUrl = root.querySelector('[data-testid="room-sidebar-share-url"]');
+    const copyButton = root.querySelector(
+      '[data-testid="room-sidebar-copy"]'
+    ) as HTMLButtonElement | null;
+    const writeText = vi.fn().mockResolvedValue(undefined);
+
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
+
+    expect(copyButton).not.toBeNull();
+    expect(copyButton?.textContent?.trim()).toBe('');
+    expect(copyButton?.getAttribute('aria-label')).toBe(i18n.t('room.hero.copy'));
+    expect(copyButton?.getAttribute('title')).toBe(i18n.t('room.hero.share_url'));
+    expect(shareUrl?.nextElementSibling).toBe(copyButton);
+    expect(root.querySelector('.room-sidebar__topbar')).toBeNull();
+
+    copyButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(writeText).toHaveBeenCalledWith('http://localhost/online/room/ROOM42');
+    expect(
+      root.querySelector('[data-testid="room-sidebar-copy-feedback"]')?.textContent
+    ).toContain(i18n.t('room.hero.copy_complete'));
+    expect(copyButton?.classList.contains('room-sidebar__icon-action--copied')).toBe(true);
   });
 
   it('renders the missing-room state inside the new shell without the old header', async () => {

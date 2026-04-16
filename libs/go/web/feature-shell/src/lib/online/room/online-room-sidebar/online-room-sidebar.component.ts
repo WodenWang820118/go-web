@@ -42,26 +42,7 @@ interface OnlineRoomSidebarRematchStatusViewModel {
   imports: [CommonModule, ReactiveFormsModule, RouterLink, StoneBadgeComponent],
   template: `
     <aside class="room-sidebar" data-testid="room-sidebar">
-      <div class="room-sidebar__topbar">
-        <a
-          routerLink="/"
-          class="room-sidebar__back"
-        >
-          <span aria-hidden="true">&larr;</span>
-          {{ i18n.t('room.page.back_to_lobby') }}
-        </a>
-
-        <button
-          type="button"
-          class="room-sidebar__copy"
-          (click)="copyShareUrlRequested.emit()"
-        >
-          {{ i18n.t('room.hero.copy') }}
-        </button>
-      </div>
-
       <section class="room-sidebar__meta">
-        <p class="room-sidebar__eyebrow">{{ i18n.t('room.hero.share_url') }}</p>
         <div class="room-sidebar__share-row">
           <div
             class="room-sidebar__connection"
@@ -78,6 +59,37 @@ interface OnlineRoomSidebarRematchStatusViewModel {
           <div class="room-sidebar__share-url" data-testid="room-sidebar-share-url">
             {{ shareUrl() }}
           </div>
+
+          <button
+            type="button"
+            class="room-sidebar__icon-action"
+            [class.room-sidebar__icon-action--copied]="shareCopyFeedbackVisible()"
+            data-testid="room-sidebar-copy"
+            [attr.aria-label]="i18n.t('room.hero.copy')"
+            [attr.title]="i18n.t('room.hero.share_url')"
+            (click)="copyShareUrlRequested.emit()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              class="room-sidebar__icon"
+            >
+              <path
+                d="M9 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2V9Zm-6 6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1h-2V5H3v8h1v2H3Z"
+              />
+            </svg>
+          </button>
+
+          @if (shareCopyFeedbackVisible()) {
+            <span
+              class="room-sidebar__copy-feedback"
+              data-testid="room-sidebar-copy-feedback"
+              role="status"
+              aria-live="polite"
+            >
+              {{ i18n.t('room.hero.copy_complete') }}
+            </span>
+          }
         </div>
       </section>
 
@@ -253,38 +265,6 @@ interface OnlineRoomSidebarRematchStatusViewModel {
         </section>
       }
 
-      @if (showMatchActions()) {
-        <section class="room-sidebar__actions" data-testid="room-sidebar-actions">
-          <p class="room-sidebar__eyebrow">{{ i18n.t('room.participants.match_actions') }}</p>
-          <div class="room-sidebar__action-grid">
-            <button
-              type="button"
-              class="room-sidebar__secondary-action"
-              [disabled]="!canPass() || !realtimeConnected()"
-              (click)="passRequested.emit()"
-            >
-              {{ i18n.t('common.move.pass') }}
-            </button>
-            <button
-              type="button"
-              class="room-sidebar__secondary-action"
-              [disabled]="!canResign() || !realtimeConnected()"
-              (click)="resignRequested.emit()"
-            >
-              {{ i18n.t('common.move.resign') }}
-            </button>
-            <button
-              type="button"
-              class="room-sidebar__secondary-action"
-              [disabled]="!canFinalizeScoring() || !realtimeConnected()"
-              (click)="finalizeScoringRequested.emit()"
-            >
-              {{ i18n.t('room.participants.finalize_score') }}
-            </button>
-          </div>
-        </section>
-      }
-
       <section class="room-sidebar__chat" data-testid="room-sidebar-chat">
         <div class="room-sidebar__chat-header">
           <div class="room-sidebar__chat-heading">
@@ -359,6 +339,33 @@ interface OnlineRoomSidebarRematchStatusViewModel {
           </div>
         </form>
       </section>
+
+      <section class="room-sidebar__actions" data-testid="room-sidebar-actions">
+        <div class="room-sidebar__action-grid">
+          @if (showMatchActions()) {
+            <button
+              type="button"
+              class="room-sidebar__secondary-action"
+              [disabled]="!canPass() || !realtimeConnected()"
+              (click)="passRequested.emit()"
+            >
+              {{ i18n.t('common.move.pass') }}
+            </button>
+            <button
+              type="button"
+              class="room-sidebar__secondary-action"
+              [disabled]="!canResign() || !realtimeConnected()"
+              (click)="resignRequested.emit()"
+            >
+              {{ i18n.t('common.move.resign') }}
+            </button>
+          }
+
+          <a routerLink="/" class="room-sidebar__back">
+            {{ i18n.t('room.page.back_to_lobby') }}
+          </a>
+        </div>
+      </section>
     </aside>
   `,
   styleUrl: './online-room-sidebar.component.css',
@@ -368,6 +375,7 @@ export class OnlineRoomSidebarComponent {
   protected readonly i18n = inject(GoI18nService);
 
   readonly shareUrl = input.required<string>();
+  readonly shareCopyFeedbackVisible = input(false);
   readonly connectionState = input.required<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >();
@@ -389,7 +397,6 @@ export class OnlineRoomSidebarComponent {
   readonly roomMessages = input.required<readonly OnlineRoomSidebarMessageViewModel[]>();
   readonly canPass = input.required<boolean>();
   readonly canResign = input.required<boolean>();
-  readonly canFinalizeScoring = input.required<boolean>();
   readonly showRematch = input.required<boolean>();
   readonly canRespondToRematch = input.required<boolean>();
   readonly rematchStatuses =
@@ -401,7 +408,6 @@ export class OnlineRoomSidebarComponent {
   readonly releaseSeatRequested = output<void>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
-  readonly finalizeScoringRequested = output<void>();
   readonly acceptRematchRequested = output<void>();
   readonly declineRematchRequested = output<void>();
   readonly sendRequested = output<void>();

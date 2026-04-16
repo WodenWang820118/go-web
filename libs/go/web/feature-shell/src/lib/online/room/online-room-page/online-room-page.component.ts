@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -41,6 +49,8 @@ export class OnlineRoomPageComponent {
   protected readonly i18n = inject(GoI18nService);
 
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private shareCopyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly roomId = toSignal(
     this.route.paramMap.pipe(map(params => params.get('roomId')?.toUpperCase() ?? null)),
@@ -128,13 +138,6 @@ export class OnlineRoomPageComponent {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.state.phase === 'playing'
   );
-  protected readonly canFinalizeScoring = computed(
-    () =>
-      this.realtimeConnected() &&
-      !!this.onlineRoom.viewerSeat() &&
-      this.match()?.settings.mode === 'go' &&
-      this.match()?.state.phase === 'scoring'
-  );
   protected readonly rematchViewerSeat = computed<PlayerColor | null>(() => {
     const participantId = this.onlineRoom.participantId();
     const rematch = this.rematch();
@@ -187,6 +190,7 @@ export class OnlineRoomPageComponent {
     () => this.match()?.state.phase === 'finished' && !!this.rematch()
   );
   protected readonly shareUrl = this.onlineRoom.shareUrl;
+  protected readonly shareCopyFeedbackVisible = signal(false);
   protected readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
       ? this.i18n.t('room.join.title.spectator')
@@ -305,6 +309,12 @@ export class OnlineRoomPageComponent {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.shareCopyFeedbackTimer) {
+        clearTimeout(this.shareCopyFeedbackTimer);
+      }
+    });
+
     effect(() => {
       const roomId = this.roomId();
 
@@ -359,6 +369,7 @@ export class OnlineRoomPageComponent {
     const shareUrl = this.shareUrl();
 
     if (!shareUrl || typeof navigator === 'undefined' || !navigator.clipboard) {
+      this.clearShareCopyFeedback();
       this.onlineRoom.clearTransientMessages();
       return;
     }
@@ -366,15 +377,38 @@ export class OnlineRoomPageComponent {
     from(navigator.clipboard.writeText(shareUrl))
       .pipe(
         tap(() => {
+          this.showShareCopyFeedback();
           this.onlineRoom.clearTransientMessages();
         }),
         catchError(() => {
+          this.clearShareCopyFeedback();
           this.onlineRoom.clearTransientMessages();
           return EMPTY;
         }),
         take(1)
       )
       .subscribe();
+  }
+
+  private showShareCopyFeedback(): void {
+    if (this.shareCopyFeedbackTimer) {
+      clearTimeout(this.shareCopyFeedbackTimer);
+    }
+
+    this.shareCopyFeedbackVisible.set(true);
+    this.shareCopyFeedbackTimer = setTimeout(() => {
+      this.shareCopyFeedbackVisible.set(false);
+      this.shareCopyFeedbackTimer = null;
+    }, 1800);
+  }
+
+  private clearShareCopyFeedback(): void {
+    if (this.shareCopyFeedbackTimer) {
+      clearTimeout(this.shareCopyFeedbackTimer);
+      this.shareCopyFeedbackTimer = null;
+    }
+
+    this.shareCopyFeedbackVisible.set(false);
   }
 
   protected claimSeat(color: PlayerColor): void {
@@ -409,12 +443,6 @@ export class OnlineRoomPageComponent {
   protected resign(): void {
     this.onlineRoom.sendGameCommand({
       type: 'resign',
-    });
-  }
-
-  protected finalizeScoring(): void {
-    this.onlineRoom.sendGameCommand({
-      type: 'finalize-scoring',
     });
   }
 

@@ -275,6 +275,7 @@ const EN_HOSTED_UI = {
   'room.hero.connection': 'Connection',
   'room.hero.share_url': 'Share URL',
   'room.hero.copy': 'Copy',
+  'room.hero.copy_complete': 'Link copied',
   'room.page.back_to_lobby': 'Back to lobby',
   'room.page.loading': 'Loading hosted room state...',
   'room.page.missing.label': 'Room unavailable',

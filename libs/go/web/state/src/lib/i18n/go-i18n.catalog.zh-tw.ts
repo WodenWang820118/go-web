@@ -243,6 +243,7 @@ const ZH_HOSTED_UI = {
   'room.hero.connection': '連線狀態',
   'room.hero.share_url': '分享連結',
   'room.hero.copy': '複製',
+  'room.hero.copy_complete': '連結已複製',
   'room.page.back_to_lobby': '返回大廳',
   'room.page.loading': '正在載入線上房間狀態...',
   'room.page.missing.label': '房間無法使用',

@@ -116,30 +116,7 @@ export class GoRulesEngine implements RulesEngine {
 
     void settings;
 
-    const { score } = state.scoring;
-    const winner =
-      score.black === score.white ? 'draw' : score.black > score.white ? 'black' : 'white';
-    const margin = Math.abs(score.black - score.white);
-    const summary =
-      winner === 'draw'
-        ? createMessage('game.result.draw')
-        : createMessage('game.result.win_by_points', {
-            winner: createMessage(`common.player.${winner}`),
-            margin: margin.toFixed(1),
-          });
-
-    return {
-      ...state,
-      phase: 'finished',
-      result: {
-        winner,
-        reason: 'score',
-        margin,
-        score,
-        summary,
-      },
-      message: summary,
-    };
+    return this.finishByScore(state, state.scoring);
   }
 
   private placeStone(state: MatchState, settings: MatchSettings, point: BoardPoint) {
@@ -225,32 +202,33 @@ export class GoRulesEngine implements RulesEngine {
   private passTurn(state: MatchState, settings: MatchSettings): MatchState {
     const player = state.nextPlayer;
     const consecutivePasses = state.consecutivePasses + 1;
-    const phaseAfterMove = consecutivePasses >= 2 ? 'scoring' : 'playing';
-    const scoring =
-      phaseAfterMove === 'scoring'
-        ? buildScoringState(state.board, new Set<string>(), settings.komi)
-        : null;
+    const willAutoFinalize = consecutivePasses >= 2;
+    const scoring = willAutoFinalize
+      ? buildScoringState(state.board, new Set<string>(), settings.komi)
+      : null;
     const moveRecord = createMoveRecord(state, player, { type: 'pass' }, state.board, {
-      phaseAfterMove,
+      phaseAfterMove: willAutoFinalize ? 'finished' : 'playing',
       capturesAfterMove: state.captures,
     });
-
-    return {
+    const nextState: MatchState = {
       ...state,
-      phase: phaseAfterMove,
+      phase: willAutoFinalize ? 'finished' : 'playing',
       nextPlayer: otherPlayer(player),
       moveHistory: [...state.moveHistory, moveRecord],
       previousBoardHashes: [...state.previousBoardHashes, boardHash(state.board)],
       lastMove: moveRecord,
       consecutivePasses,
       message:
-        phaseAfterMove === 'scoring'
+        willAutoFinalize
           ? createMessage('game.go.state.scoring_started')
           : createMessage('game.go.state.next_turn_after_pass', {
               player: createMessage(`common.player.${otherPlayer(player)}`),
             }),
       scoring,
+      result: null,
     };
+
+    return willAutoFinalize && scoring ? this.finishByScore(nextState, scoring) : nextState;
   }
 
   private resign(state: MatchState, resignedBy: PlayerColor): MatchState {
@@ -280,6 +258,37 @@ export class GoRulesEngine implements RulesEngine {
         winner,
         reason: 'resign',
         resignedBy,
+        summary,
+      },
+      message: summary,
+    };
+  }
+
+  private finishByScore(
+    state: MatchState,
+    scoring: NonNullable<MatchState['scoring']>
+  ): MatchState {
+    const { score } = scoring;
+    const winner =
+      score.black === score.white ? 'draw' : score.black > score.white ? 'black' : 'white';
+    const margin = Math.abs(score.black - score.white);
+    const summary =
+      winner === 'draw'
+        ? createMessage('game.result.draw')
+        : createMessage('game.result.win_by_points', {
+            winner: createMessage(`common.player.${winner}`),
+            margin: margin.toFixed(1),
+          });
+
+    return {
+      ...state,
+      phase: 'finished',
+      scoring,
+      result: {
+        winner,
+        reason: 'score',
+        margin,
+        score,
         summary,
       },
       message: summary,

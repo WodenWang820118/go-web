@@ -22,7 +22,6 @@
   scrollbar-gutter: stable;
 }
 
-.room-sidebar__topbar,
 .room-sidebar__chat-line,
 .room-sidebar__chat-actions,
 .player-card__main,
@@ -37,7 +36,7 @@
 }
 
 .room-sidebar__back,
-.room-sidebar__copy,
+.room-sidebar__icon-action,
 .room-sidebar__primary-action,
 .room-sidebar__secondary-action,
 .player-card__action {
@@ -54,7 +53,6 @@
 }
 
 .room-sidebar__back,
-.room-sidebar__copy,
 .room-sidebar__secondary-action,
 .player-card__action--secondary {
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -63,12 +61,25 @@
 }
 
 .room-sidebar__back,
-.room-sidebar__copy {
+.room-sidebar__icon-action {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0.6rem 0.8rem;
   text-decoration: none;
+}
+
+.room-sidebar__icon-action {
+  justify-content: center;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  padding-inline: 0;
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.room-sidebar__icon-action--copied {
+  animation: room-sidebar-copy-pop 260ms ease;
 }
 
 .room-sidebar__primary-action,
@@ -84,7 +95,7 @@
 }
 
 .room-sidebar__back:hover,
-.room-sidebar__copy:hover,
+.room-sidebar__icon-action:hover,
 .room-sidebar__primary-action:hover,
 .room-sidebar__secondary-action:hover,
 .player-card__action:hover {
@@ -94,7 +105,7 @@
 .room-sidebar__primary-action:disabled,
 .room-sidebar__secondary-action:disabled,
 .player-card__action:disabled,
-.room-sidebar__copy:disabled {
+.room-sidebar__icon-action:disabled {
   cursor: not-allowed;
   opacity: 0.45;
   transform: none;
@@ -166,6 +177,7 @@
   align-items: center;
   gap: 0.6rem;
   margin-top: 0.45rem;
+  overflow: visible;
 }
 
 .room-sidebar__share-url {
@@ -180,6 +192,28 @@
   font-size: 0.78rem;
   font-family: 'Consolas', 'SFMono-Regular', monospace;
   color: rgba(244, 239, 226, 0.92);
+}
+
+.room-sidebar__icon {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+
+.room-sidebar__copy-feedback {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.32rem 0.62rem;
+  border: 1px solid rgba(110, 231, 183, 0.28);
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.18));
+  color: #d8fff0;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  animation: room-sidebar-copy-feedback-in 220ms ease;
 }
 
 .room-sidebar__section-copy,
@@ -409,7 +443,6 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
-  margin-top: 0.7rem;
 }
 
 .room-sidebar__chat {
@@ -517,9 +550,29 @@
   color: rgba(37, 29, 21, 0.64);
 }
 
-@media (max-width: 767px) {
-  .room-sidebar__action-grid {
-    grid-template-columns: 1fr;
+@keyframes room-sidebar-copy-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.14);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes room-sidebar-copy-feedback-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-0.25rem) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 

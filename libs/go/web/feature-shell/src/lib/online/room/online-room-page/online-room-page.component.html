@@ -74,6 +74,7 @@
 
       <lib-go-online-room-sidebar
         [shareUrl]="shareUrl()"
+        [shareCopyFeedbackVisible]="shareCopyFeedbackVisible()"
         [connectionState]="connectionState()"
         [connectionLabel]="connectionLabel()"
         [joinForm]="joinForm"
@@ -93,7 +94,6 @@
         [roomMessages]="roomMessages()"
         [canPass]="canPass()"
         [canResign]="canResign()"
-        [canFinalizeScoring]="canFinalizeScoring()"
         [showRematch]="showRematchBanner()"
         [canRespondToRematch]="canRespondToRematch()"
         [rematchStatuses]="rematchStatuses()"
@@ -103,7 +103,6 @@
         (releaseSeatRequested)="releaseSeat()"
         (passRequested)="passTurn()"
         (resignRequested)="resign()"
-        (finalizeScoringRequested)="finalizeScoring()"
         (acceptRematchRequested)="acceptRematch()"
         (declineRematchRequested)="declineRematch()"
         (sendRequested)="sendChat()"
