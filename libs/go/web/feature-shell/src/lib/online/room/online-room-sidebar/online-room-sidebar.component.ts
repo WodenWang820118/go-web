@@ -9,6 +9,11 @@ import {
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { ChatMessage, HostedMatchSnapshot, ParticipantSummary } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -39,50 +44,69 @@ interface OnlineRoomSidebarRematchStatusViewModel {
 @Component({
   selector: 'lib-go-online-room-sidebar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, StoneBadgeComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    ButtonModule,
+    InputTextModule,
+    TextareaModule,
+    MessageModule,
+    TagModule,
+    StoneBadgeComponent,
+  ],
   template: `
-    <aside class="room-sidebar" data-testid="room-sidebar">
+    <aside
+      class="go-hosted-panel-dark go-hosted-scroll flex h-full min-h-full flex-col gap-3 p-3"
+      data-testid="room-sidebar"
+    >
       @if (roomMessages().length > 0) {
-        <div class="room-sidebar__messages">
+        <div class="grid gap-2">
           @for (item of roomMessages(); track item.testId) {
-            <p
-              class="room-sidebar__message"
-              [class.room-sidebar__message--error]="item.tone === 'error'"
-              [class.room-sidebar__message--notice]="item.tone === 'notice'"
-              [class.room-sidebar__message--warning]="item.tone === 'warning'"
+            <p-message
+              [severity]="messageSeverity(item.tone)"
+              [styleClass]="'go-hosted-message ' + messageToneClass(item.tone)"
               [attr.data-testid]="item.testId"
             >
               {{ item.message }}
-            </p>
+            </p-message>
           }
         </div>
       }
 
       @if (!participantId()) {
-        <section class="room-sidebar__identity">
-          <p class="room-sidebar__eyebrow">{{ i18n.t('room.participants.join_room') }}</p>
-          <h2 class="room-sidebar__section-title">{{ joinCardTitle() }}</h2>
-          <p class="room-sidebar__section-copy">{{ joinCardDescription() }}</p>
+        <section
+          class="go-hosted-panel-dark-soft space-y-3 p-4"
+          data-testid="room-sidebar-identity"
+        >
+          <p class="go-hosted-eyebrow-muted">{{ i18n.t('room.participants.join_room') }}</p>
+          <h2 class="text-xl font-semibold text-stone-50">{{ joinCardTitle() }}</h2>
+          <p class="text-sm leading-6 text-stone-300/80">{{ joinCardDescription() }}</p>
 
           <form
-            class="room-sidebar__join-form"
+            class="mt-2 grid gap-3"
             data-testid="join-room-form"
             [formGroup]="joinForm()"
             (ngSubmit)="joinRequested.emit()"
           >
-            <label [for]="joinDisplayNameInputId" class="room-sidebar__label">
-              {{ i18n.t('room.participants.display_name') }}
+            <label
+              [for]="joinDisplayNameInputId"
+              class="grid gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-300/70"
+            >
+              <span>{{ i18n.t('room.participants.display_name') }}</span>
+              <input
+                [id]="joinDisplayNameInputId"
+                pInputText
+                formControlName="displayName"
+                maxlength="24"
+                class="go-hosted-input"
+              />
             </label>
-            <input
-              [id]="joinDisplayNameInputId"
-              formControlName="displayName"
-              maxlength="24"
-              class="room-sidebar__input"
-            />
 
             <button
+              pButton
               type="submit"
-              class="room-sidebar__primary-action"
+              class="go-hosted-button-primary justify-center"
               [disabled]="joining()"
             >
               {{
@@ -95,54 +119,71 @@ interface OnlineRoomSidebarRematchStatusViewModel {
         </section>
       }
 
-      <section class="room-sidebar__players">
+      <section class="grid gap-3 xl:grid-cols-2" data-testid="room-sidebar-players">
         @for (seat of seats(); track seat.color) {
           <article
-            class="player-card"
-            [class.player-card--active]="isActiveSeat(seat.color)"
+            class="go-hosted-panel-dark-soft border p-3"
+            [ngClass]="
+              isActiveSeat(seat.color)
+                ? 'border-amber-300/60 ring-1 ring-amber-300/25'
+                : 'border-white/10'
+            "
             [attr.data-testid]="'room-player-' + seat.color"
           >
-            <div class="player-card__main">
-              <div class="player-card__avatar" aria-hidden="true">
-                <span class="player-card__avatar-label">
-                  {{ avatarInitial(seat) }}
-                </span>
-                <span class="player-card__decorative-tag">
-                  {{ i18n.t('room.sidebar.decorative_avatar') }}
-                </span>
+            <div class="flex items-start gap-3">
+              <div
+                class="grid h-16 w-16 min-w-16 place-items-center rounded-[1rem] bg-[radial-gradient(circle_at_30%_25%,_rgba(255,200,120,0.45),_transparent_38%),linear-gradient(180deg,_#f0a33d,_#ac5a18)] text-center text-[1.35rem] font-extrabold text-amber-950"
+                aria-hidden="true"
+              >
+                <span>{{ avatarInitial(seat) }}</span>
               </div>
 
-              <div class="player-card__identity">
-                <div class="player-card__name-line">
-                  <p class="player-card__name">{{ seatDisplayName(seat) }}</p>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="truncate text-base font-semibold text-stone-50">
+                    {{ seatDisplayName(seat) }}
+                  </p>
                   <lib-go-stone-badge [color]="seat.color" />
                 </div>
-                <p class="player-card__seat">{{ i18n.playerLabel(seat.color) }}</p>
-                <div class="player-card__chips">
-                  <span class="player-card__chip">
+
+                <div
+                  class="mt-3 flex items-center gap-2 overflow-hidden"
+                  [attr.data-testid]="'room-player-' + seat.color + '-status'"
+                >
+                  <span
+                    class="go-hosted-pill-subtle inline-flex shrink-0 items-center justify-center"
+                    [attr.data-testid]="'room-player-' + seat.color + '-presence'"
+                  >
                     {{ seatPresenceLabel(seat) }}
                   </span>
-                  @if (captureLabel(seat.color)) {
-                    <span class="player-card__chip player-card__chip--subtle">
-                      {{ captureLabel(seat.color) }}
+                  @if (captureLabel(seat.color); as captureCountLabel) {
+                    <span
+                      class="go-hosted-pill-subtle inline-flex shrink-0 items-center justify-center"
+                      [attr.data-testid]="'room-player-' + seat.color + '-captures'"
+                    >
+                      {{ captureCountLabel }}
                     </span>
                   }
                 </div>
               </div>
             </div>
 
-            <div class="player-card__footer">
-              <div class="player-card__clock" aria-hidden="true">
-                <span class="player-card__clock-time">--:--</span>
-                <span class="player-card__decorative-tag">
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <div
+                class="inline-flex min-h-[2.5rem] items-center gap-2 rounded-full bg-black/35 px-3 py-2 text-amber-100"
+                aria-hidden="true"
+              >
+                <span class="font-mono text-base font-extrabold tracking-[0.08em]">--:--</span>
+                <span class="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-stone-300">
                   {{ i18n.t('room.sidebar.decorative_clock') }}
                 </span>
               </div>
 
               @if (seat.isViewerSeat && canChangeSeats()) {
                 <button
+                  pButton
                   type="button"
-                  class="player-card__action player-card__action--secondary"
+                  class="go-hosted-button-secondary"
                   [attr.data-testid]="'release-' + seat.color"
                   [disabled]="!realtimeConnected()"
                   (click)="releaseSeatRequested.emit()"
@@ -151,8 +192,9 @@ interface OnlineRoomSidebarRematchStatusViewModel {
                 </button>
               } @else if (seat.canClaim) {
                 <button
+                  pButton
                   type="button"
-                  class="player-card__action"
+                  class="go-hosted-button-primary"
                   [attr.data-testid]="'claim-' + seat.color"
                   [disabled]="!realtimeConnected()"
                   (click)="claimSeatRequested.emit(seat.color)"
@@ -166,10 +208,13 @@ interface OnlineRoomSidebarRematchStatusViewModel {
       </section>
 
       @if (showRematch()) {
-        <section class="room-sidebar__rematch" data-testid="room-sidebar-rematch">
-          <p class="room-sidebar__eyebrow">{{ i18n.t('room.rematch.eyebrow') }}</p>
-          <h2 class="room-sidebar__section-title">{{ i18n.t('room.rematch.title') }}</h2>
-          <p class="room-sidebar__section-copy">
+        <section
+          class="go-hosted-panel-dark-soft space-y-3 p-4"
+          data-testid="room-sidebar-rematch"
+        >
+          <p class="go-hosted-eyebrow-muted">{{ i18n.t('room.rematch.eyebrow') }}</p>
+          <h2 class="text-xl font-semibold text-stone-50">{{ i18n.t('room.rematch.title') }}</h2>
+          <p class="text-sm leading-6 text-stone-300/80">
             {{
               canRespondToRematch()
                 ? i18n.t('room.rematch.description.player')
@@ -177,34 +222,41 @@ interface OnlineRoomSidebarRematchStatusViewModel {
             }}
           </p>
 
-          <div class="room-sidebar__rematch-statuses">
+          <div class="grid gap-2">
             @for (status of rematchStatuses(); track status.color) {
-              <div class="room-sidebar__rematch-status">
-                <div>
-                  <p class="room-sidebar__rematch-name">{{ status.name }}</p>
-                  <p class="room-sidebar__rematch-seat">
+              <div
+                class="flex items-center justify-between gap-3 rounded-[1rem] bg-white/5 px-3 py-2.5"
+              >
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-stone-50">{{ status.name }}</p>
+                  <p class="text-xs uppercase tracking-[0.16em] text-stone-400">
                     {{ i18n.playerLabel(status.color) }}
                   </p>
                 </div>
-                <span class="room-sidebar__viewer-tag">
-                  {{ i18n.t('room.rematch.response.' + status.response) }}
-                </span>
+                <p-tag
+                  severity="contrast"
+                  [rounded]="true"
+                  [value]="i18n.t('room.rematch.response.' + status.response)"
+                  styleClass="go-hosted-pill-subtle"
+                />
               </div>
             }
           </div>
 
           @if (canRespondToRematch()) {
-            <div class="room-sidebar__rematch-actions">
+            <div class="grid gap-2 sm:grid-cols-2">
               <button
+                pButton
                 type="button"
-                class="room-sidebar__primary-action"
+                class="go-hosted-button-primary justify-center"
                 (click)="acceptRematchRequested.emit()"
               >
                 {{ i18n.t('room.rematch.accept') }}
               </button>
               <button
+                pButton
                 type="button"
-                class="room-sidebar__secondary-action"
+                class="go-hosted-button-secondary justify-center"
                 (click)="declineRematchRequested.emit()"
               >
                 {{ i18n.t('room.rematch.decline') }}
@@ -214,95 +266,139 @@ interface OnlineRoomSidebarRematchStatusViewModel {
         </section>
       }
 
-      <section class="room-sidebar__chat" data-testid="room-sidebar-chat">
-        <div class="room-sidebar__chat-header">
-          <div class="room-sidebar__chat-heading">
-            <h2 class="room-sidebar__section-title room-sidebar__section-title--chat">
-              {{ i18n.t('room.chat.title') }}
-            </h2>
+      <section
+        class="go-hosted-panel-light flex min-h-0 flex-1 flex-col p-4"
+        data-testid="room-sidebar-chat"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="text-xl font-semibold text-stone-950">{{ i18n.t('room.chat.title') }}</h2>
 
-            <div class="room-sidebar__chat-metrics">
-              <span class="room-sidebar__chat-metric">
-                <strong>{{ onlineCount() }}</strong>
-                <span>{{ i18n.t('common.status.online') }}</span>
-              </span>
-              <span class="room-sidebar__chat-metric">
-                <strong>{{ spectatorCount() }}</strong>
-                <span>{{ i18n.t('common.role.spectator') }}</span>
-              </span>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <div
+                class="go-hosted-metric-card"
+                data-testid="room-sidebar-chat-metric"
+                aria-label="{{ onlineCount() }} {{ i18n.t('common.status.online') }}"
+              >
+                <span class="go-hosted-metric-card__count">{{ onlineCount() }}</span>
+                <span
+                  class="go-hosted-metric-card__dot go-hosted-metric-card__dot--online"
+                  aria-hidden="true"
+                ></span>
+                <span class="go-hosted-metric-card__label">
+                  {{ i18n.t('common.status.online') }}
+                </span>
+              </div>
+              <div
+                class="go-hosted-metric-card"
+                data-testid="room-sidebar-chat-metric"
+                aria-label="{{ spectatorCount() }} {{ i18n.t('common.role.spectator') }}"
+              >
+                <span class="go-hosted-metric-card__count">{{ spectatorCount() }}</span>
+                <span
+                  class="go-hosted-metric-card__dot go-hosted-metric-card__dot--spectator"
+                  aria-hidden="true"
+                ></span>
+                <span class="go-hosted-metric-card__label">
+                  {{ i18n.t('common.role.spectator') }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="room-sidebar__chat-feed">
-          @if (messages().length > 0) {
-            @for (message of messages(); track message.id) {
-              <article class="room-sidebar__chat-message">
-                <div class="room-sidebar__chat-line">
-                  <p class="room-sidebar__chat-author">{{ message.displayName }}</p>
-                  <p class="room-sidebar__chat-time">
-                    {{ message.sentAt | date: 'shortTime' : undefined : i18n.locale() }}
+        <div class="mt-4 flex min-h-0 flex-1 flex-col justify-end gap-4">
+          <div
+            class="go-hosted-scroll grid max-h-[clamp(8rem,32vh,20rem)] min-h-0 gap-3 overflow-auto rounded-[1rem] border border-stone-900/10 bg-white/78 p-2 pr-1 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.03)]"
+            data-testid="room-sidebar-chat-list"
+          >
+            @if (messages().length > 0) {
+              @for (message of messages(); track message.id) {
+                <article
+                  class="rounded-[1rem] border border-stone-900/10 bg-white/80 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.05)]"
+                  [attr.data-testid]="'room-sidebar-chat-message-' + message.id"
+                >
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="truncate text-sm font-semibold text-stone-950">
+                      {{ message.displayName }}
+                    </p>
+                    <p class="text-[0.68rem] uppercase tracking-[0.16em] text-stone-500">
+                      {{ message.sentAt | date: 'shortTime' : undefined : i18n.locale() }}
+                    </p>
+                  </div>
+                  <p class="mt-2 text-sm leading-6 text-stone-800">
+                    {{ message.message }}
                   </p>
-                </div>
-                <p class="room-sidebar__chat-copy">{{ message.message }}</p>
-              </article>
+                </article>
+              }
+            } @else {
+              <p
+                class="grid min-h-[6.5rem] place-items-center rounded-[1rem] border border-dashed border-stone-900/15 px-4 py-6 text-center text-sm leading-6 text-stone-700"
+                data-testid="room-sidebar-chat-empty"
+              >
+                {{ i18n.t('room.chat.empty') }}
+              </p>
             }
-          } @else {
-            <p class="room-sidebar__chat-empty">
-              {{ i18n.t('room.chat.empty') }}
-            </p>
-          }
-        </div>
-
-        <form
-          class="room-sidebar__chat-form"
-          [formGroup]="chatForm()"
-          (ngSubmit)="sendRequested.emit()"
-        >
-          <label [for]="chatMessageInputId" class="room-sidebar__label">
-            {{ i18n.t('room.chat.message') }}
-          </label>
-          <textarea
-            [id]="chatMessageInputId"
-            formControlName="message"
-            rows="3"
-            data-testid="chat-message-input"
-            class="room-sidebar__textarea"
-            [placeholder]="i18n.t('room.chat.placeholder')"
-            [readOnly]="!canSend()"
-            (keydown)="onMessageKeydown($event)"
-          ></textarea>
-
-          <div class="room-sidebar__chat-actions">
-            <p class="room-sidebar__helper">
-              {{ helperText() }}
-            </p>
-
-            <button
-              type="submit"
-              class="room-sidebar__primary-action"
-              [disabled]="!canSend()"
-            >
-              {{ i18n.t('room.chat.send') }}
-            </button>
           </div>
-        </form>
+
+          <form
+            class="grid gap-3 rounded-[1rem] border border-stone-900/10 bg-white/88 p-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.04)]"
+            data-testid="room-sidebar-chat-composer"
+            [formGroup]="chatForm()"
+            (ngSubmit)="sendRequested.emit()"
+          >
+            <label
+              [for]="chatMessageInputId"
+              class="grid gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500"
+            >
+              <span>{{ i18n.t('room.chat.message') }}</span>
+              <textarea
+                [id]="chatMessageInputId"
+                pTextarea
+                formControlName="message"
+                rows="3"
+                data-testid="chat-message-input"
+                class="go-hosted-textarea"
+                [placeholder]="i18n.t('room.chat.placeholder')"
+                [readOnly]="!canSend()"
+                (keydown)="onMessageKeydown($event)"
+              ></textarea>
+            </label>
+
+            <div class="flex items-center justify-between gap-3">
+              <p class="flex-1 text-sm leading-6 text-stone-700">
+                {{ helperText() }}
+              </p>
+
+              <button
+                pButton
+                type="submit"
+                class="go-hosted-button-primary"
+                [disabled]="!canSend()"
+              >
+                {{ i18n.t('room.chat.send') }}
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
 
-      <section class="room-sidebar__actions" data-testid="room-sidebar-actions">
-        <div class="room-sidebar__action-grid">
+      <section data-testid="room-sidebar-actions">
+        <div class="grid gap-2 md:grid-cols-3">
           @if (showMatchActions()) {
             <button
+              pButton
               type="button"
-              class="room-sidebar__secondary-action"
+              class="go-hosted-button-secondary justify-center"
               [disabled]="!canPass() || !realtimeConnected()"
               (click)="passRequested.emit()"
             >
               {{ i18n.t('common.move.pass') }}
             </button>
             <button
+              pButton
               type="button"
-              class="room-sidebar__secondary-action"
+              class="go-hosted-button-secondary justify-center"
               [disabled]="!canResign() || !realtimeConnected()"
               (click)="resignRequested.emit()"
             >
@@ -310,14 +406,20 @@ interface OnlineRoomSidebarRematchStatusViewModel {
             </button>
           }
 
-          <a routerLink="/" class="room-sidebar__back">
+          <a
+            routerLink="/"
+            pButton
+            class="go-hosted-button-secondary justify-center md:col-span-1"
+          >
             {{ i18n.t('room.page.back_to_lobby') }}
           </a>
         </div>
       </section>
     </aside>
   `,
-  styleUrl: './online-room-sidebar.component.css',
+  host: {
+    class: 'block min-h-0',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomSidebarComponent {
@@ -365,9 +467,10 @@ export class OnlineRoomSidebarComponent {
   protected readonly spectatorCount = computed(
     () => this.participants().filter(participant => !participant.seat).length
   );
-  protected readonly showMatchActions = computed(
-    () => !!this.match() && this.match()!.state.phase !== 'finished'
-  );
+  protected readonly showMatchActions = computed(() => {
+    const match = this.match();
+    return !!match && match.state.phase !== 'finished';
+  });
 
   protected seatDisplayName(seat: OnlineRoomSeatViewModel): string {
     return seat.occupant?.displayName ?? this.i18n.t('room.participants.open_seat');
@@ -402,6 +505,30 @@ export class OnlineRoomSidebarComponent {
     return this.i18n.t('ui.match_sidebar.captures', {
       count: match.state.captures[color],
     });
+  }
+
+  protected messageSeverity(
+    tone: OnlineRoomSidebarMessageViewModel['tone']
+  ): 'error' | 'secondary' | 'warn' {
+    switch (tone) {
+      case 'error':
+        return 'error';
+      case 'notice':
+        return 'secondary';
+      default:
+        return 'warn';
+    }
+  }
+
+  protected messageToneClass(tone: OnlineRoomSidebarMessageViewModel['tone']): string {
+    switch (tone) {
+      case 'error':
+        return 'go-hosted-message--error';
+      case 'notice':
+        return 'go-hosted-message--notice';
+      default:
+        return 'go-hosted-message--warning';
+    }
   }
 
   protected onMessageKeydown(event: KeyboardEvent): void {

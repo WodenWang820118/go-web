@@ -2,63 +2,80 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  computed,
   effect,
   input,
   output,
   viewChild,
 } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { ChipModule } from 'primeng/chip';
+import { InputTextModule } from 'primeng/inputtext';
 
 export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
 
 @Component({
   selector: 'lib-go-online-room-share-chip',
   standalone: true,
+  imports: [ButtonModule, ChipModule, InputTextModule],
   template: `
-    <section class="room-share-chip" data-testid="room-share-chip">
+    <section class="flex w-full flex-col items-end gap-2" data-testid="room-share-chip">
       <button
         #shareButton
         type="button"
-        class="room-share-chip__button"
+        class="room-share-chip__button-reset"
         data-testid="room-share-chip-button"
-        [class.room-share-chip__button--connected]="connectionState() === 'connected'"
-        [class.room-share-chip__button--warning]="connectionState() !== 'connected'"
-        [disabled]="!shareUrl()"
-        [attr.aria-label]="feedbackState() === 'manual' ? retryAriaLabel() : copyAriaLabel()"
+        role="button"
+        tabindex="0"
+        [disabled]="shareDisabled()"
+        [attr.aria-label]="shareChipAriaLabel()"
         [attr.title]="connectionLabel()"
-        (click)="copyRequested.emit()"
+        (click)="activateShareChip()"
       >
-        <span class="room-share-chip__light" aria-hidden="true"></span>
-        <span class="room-share-chip__label">{{ shareLabel() }}</span>
+        <p-chip [styleClass]="shareChipStyleClass()" [disabled]="shareDisabled()">
+          <span
+            class="room-share-chip__light"
+            [class.room-share-chip__light--success]="feedbackState() === 'success'"
+            [class.room-share-chip__light--connected]="
+              feedbackState() !== 'success' && connectionState() === 'connected'
+            "
+            aria-hidden="true"
+          ></span>
+          <span class="room-share-chip__label">
+            {{ feedbackState() === 'success' ? copiedLabel() : shareLabel() }}
+          </span>
+        </p-chip>
       </button>
 
       @if (feedbackState() === 'success') {
-        <p
-          class="room-share-chip__feedback room-share-chip__feedback--success"
+        <span
+          class="sr-only"
           data-testid="room-share-chip-feedback"
           role="status"
           aria-live="polite"
         >
           {{ copiedMessage() }}
-        </p>
+        </span>
       }
 
       @if (feedbackState() === 'manual') {
         <div
-          class="room-share-chip__manual"
+          class="go-hosted-surface-warm grid w-full max-w-[17rem] gap-3 p-3 sm:p-3"
           data-testid="room-share-chip-manual"
           role="status"
           aria-live="polite"
           tabindex="-1"
           (keydown.escape)="dismissManualFallback()"
         >
-          <p class="room-share-chip__manual-copy">
+          <p class="text-sm leading-6">
             {{ copyFailedMessage() }}
           </p>
 
           <input
             #manualUrlInput
+            pInputText
             type="text"
-            class="room-share-chip__manual-url"
+            class="go-hosted-input font-mono text-xs"
             data-testid="room-share-chip-manual-url"
             [value]="shareUrl()"
             [attr.aria-label]="manualUrlAriaLabel()"
@@ -66,14 +83,15 @@ export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
             (keydown.escape)="dismissManualFallback()"
           />
 
-          <div class="room-share-chip__manual-footer">
-            <p class="room-share-chip__manual-instruction">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm leading-6">
               {{ manualCopyInstruction() }}
             </p>
 
             <button
+              pButton
               type="button"
-              class="room-share-chip__dismiss"
+              class="go-hosted-button-secondary whitespace-nowrap"
               data-testid="room-share-chip-manual-dismiss"
               [attr.aria-label]="dismissLabel()"
               (click)="dismissManualFallback()"
@@ -92,57 +110,82 @@ export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
       width: 100%;
     }
 
-    .room-share-chip {
-      display: grid;
-      justify-items: end;
-      gap: 0.45rem;
-    }
-
-    .room-share-chip__button,
-    .room-share-chip__dismiss {
+    .room-share-chip__button-reset {
+      padding: 0;
       border: 0;
-      border-radius: var(--room-radius-chip, 999px);
-      font-weight: 700;
-      line-height: 1;
-      transition:
-        transform 140ms ease,
-        opacity 140ms ease,
-        border-color 140ms ease,
-        background-color 140ms ease;
+      background: transparent;
     }
 
-    .room-share-chip__button {
+    .room-share-chip__button-reset:not(:disabled) {
+      cursor: pointer;
+    }
+
+    .room-share-chip__button-reset:not(:disabled):hover .room-share-chip__trigger,
+    .room-share-chip__button-reset:focus-visible .room-share-chip__trigger {
+      transform: translateY(-1px);
+    }
+
+    .room-share-chip__button-reset:focus-visible {
+      outline: none;
+    }
+
+    .room-share-chip__button-reset:focus-visible .room-share-chip__trigger {
+      outline: 2px solid rgba(220, 184, 93, 0.72);
+      outline-offset: 2px;
+    }
+
+    .room-share-chip__button-reset:disabled .room-share-chip__trigger {
+      cursor: default;
+      opacity: 0.92;
+      transform: none;
+    }
+
+    .room-share-chip__trigger {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.45rem;
-      padding: 0.56rem 0.72rem;
       border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--go-hosted-radius-pill, 999px);
+      padding: 0.56rem 0.72rem;
       background:
         linear-gradient(180deg, rgba(29, 38, 49, 0.96), rgba(12, 18, 25, 0.96)),
         linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
       color: #f4efe2;
       box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3);
       cursor: pointer;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      transition:
+        transform 140ms ease,
+        opacity 140ms ease,
+        border-color 140ms ease,
+        background-color 140ms ease;
+      user-select: none;
     }
 
-    .room-share-chip__button:hover:not(:disabled),
-    .room-share-chip__dismiss:hover {
-      transform: translateY(-1px);
-    }
-
-    .room-share-chip__button:disabled {
-      cursor: default;
-      opacity: 0.92;
-      transform: none;
-    }
-
-    .room-share-chip__button--connected {
+    .room-share-chip__trigger--connected {
       border-color: rgba(74, 222, 128, 0.28);
     }
 
-    .room-share-chip__button--warning {
+    .room-share-chip__trigger--success {
+      border-color: rgba(110, 231, 183, 0.42);
+      background:
+        linear-gradient(180deg, rgba(17, 66, 53, 0.96), rgba(10, 36, 30, 0.96)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+      color: #eafff5;
+    }
+
+    .room-share-chip__trigger--warning {
       border-color: rgba(251, 191, 36, 0.24);
+    }
+
+    .room-share-chip__trigger.p-disabled {
+      cursor: default;
+      opacity: 0.92;
+      transform: none;
     }
 
     .room-share-chip__light {
@@ -151,102 +194,21 @@ export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
       border-radius: 999px;
       background: #fbbf24;
       box-shadow: 0 0 1rem rgba(251, 191, 36, 0.55);
+      flex: none;
     }
 
-    .room-share-chip__button--connected .room-share-chip__light {
+    .room-share-chip__light--connected {
       background: #4ade80;
       box-shadow: 0 0 1rem rgba(74, 222, 128, 0.62);
     }
 
+    .room-share-chip__light--success {
+      background: #6ee7b7;
+      box-shadow: 0 0 1rem rgba(110, 231, 183, 0.68);
+    }
+
     .room-share-chip__label {
-      font-size: 0.74rem;
-      letter-spacing: 0.04em;
-    }
-
-    .room-share-chip__feedback,
-    .room-share-chip__manual {
-      width: min(100%, 17rem);
-      border-radius: var(--room-radius-card, 1rem);
-      padding: 0.75rem 0.85rem;
-      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
-    }
-
-    .room-share-chip__feedback {
-      margin: 0;
-      font-size: 0.74rem;
-      font-weight: 700;
-      line-height: 1.4;
-    }
-
-    .room-share-chip__feedback--success {
-      border: 1px solid rgba(110, 231, 183, 0.32);
-      background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(6, 95, 70, 0.22));
-      color: #d8fff0;
-    }
-
-    .room-share-chip__manual {
-      display: grid;
-      gap: 0.65rem;
-      border: 1px solid rgba(248, 205, 137, 0.26);
-      background:
-        linear-gradient(180deg, rgba(38, 25, 10, 0.95), rgba(25, 18, 8, 0.95)),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
-      color: #f6ead3;
-    }
-
-    .room-share-chip__manual-copy,
-    .room-share-chip__manual-instruction {
-      margin: 0;
-      font-size: 0.74rem;
-      line-height: 1.45;
-    }
-
-    .room-share-chip__manual-url {
-      width: 100%;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: var(--room-radius-soft, 0.9rem);
-      padding: 0.72rem 0.8rem;
-      background: rgba(255, 255, 255, 0.06);
-      color: #fff7e6;
-      font-size: 0.74rem;
-      font-family: 'Consolas', 'SFMono-Regular', monospace;
-      outline: none;
-    }
-
-    .room-share-chip__manual-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-    }
-
-    .room-share-chip__dismiss {
-      padding: 0.5rem 0.75rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff7e6;
-      cursor: pointer;
       white-space: nowrap;
-    }
-
-    @media (max-width: 767px) {
-      .room-share-chip,
-      .room-share-chip__manual {
-        justify-items: stretch;
-      }
-
-      .room-share-chip__manual,
-      .room-share-chip__feedback {
-        width: 100%;
-      }
-
-      .room-share-chip__manual-footer {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .room-share-chip__dismiss {
-        width: 100%;
-      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -257,6 +219,7 @@ export class OnlineRoomShareChipComponent {
 
   readonly shareUrl = input.required<string>();
   readonly shareLabel = input.required<string>();
+  readonly copiedLabel = input.required<string>();
   readonly copyAriaLabel = input.required<string>();
   readonly retryAriaLabel = input.required<string>();
   readonly copiedMessage = input.required<string>();
@@ -269,6 +232,30 @@ export class OnlineRoomShareChipComponent {
   >();
   readonly connectionLabel = input.required<string>();
   readonly feedbackState = input<OnlineRoomShareChipFeedbackState>('idle');
+  protected readonly shareDisabled = computed(() => !this.shareUrl());
+  protected readonly shareChipStyleClass = computed(() => {
+    if (this.feedbackState() === 'success') {
+      return 'room-share-chip__trigger room-share-chip__trigger--success';
+    }
+
+    const toneClass =
+      this.connectionState() === 'connected'
+        ? 'room-share-chip__trigger room-share-chip__trigger--connected'
+        : 'room-share-chip__trigger room-share-chip__trigger--warning';
+
+    return toneClass;
+  });
+  protected readonly shareChipAriaLabel = computed(() => {
+    if (this.feedbackState() === 'manual') {
+      return this.retryAriaLabel();
+    }
+
+    if (this.feedbackState() === 'success') {
+      return this.copiedMessage();
+    }
+
+    return this.copyAriaLabel();
+  });
 
   readonly copyRequested = output<void>();
   readonly manualFallbackDismissed = output<void>();
@@ -285,6 +272,14 @@ export class OnlineRoomShareChipComponent {
         input?.select();
       });
     });
+  }
+
+  protected activateShareChip(): void {
+    if (this.shareDisabled()) {
+      return;
+    }
+
+    this.copyRequested.emit();
   }
 
   protected dismissManualFallback(): void {

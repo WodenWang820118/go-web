@@ -277,6 +277,7 @@ const EN_HOSTED_UI = {
   'room.hero.share_url': 'Share URL',
   'room.hero.copy': 'Copy',
   'room.hero.copy_link': 'Copy room link',
+  'room.hero.copied': 'Copied',
   'room.hero.retry_copy_link': 'Retry copying room link',
   'room.hero.copy_complete': 'Room link copied to clipboard.',
   'room.hero.copy_failed':

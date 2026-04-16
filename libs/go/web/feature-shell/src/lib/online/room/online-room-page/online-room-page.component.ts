@@ -11,6 +11,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { MAX_DISPLAY_NAME_LENGTH, createUniqueDisplayName } from '@gx/go/contracts';
 import { BoardPoint, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -46,12 +47,16 @@ interface OnlineRoomSidebarMessageViewModel {
   imports: [
     CommonModule,
     RouterLink,
+    ButtonModule,
     GameBoardComponent,
     OnlineRoomShareChipComponent,
     OnlineRoomSidebarComponent,
   ],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',
+  host: {
+    class: 'block min-h-dvh',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomPageComponent {
@@ -225,6 +230,7 @@ export class OnlineRoomPageComponent {
     }
   });
   protected readonly shareChipLabel = computed(() => this.i18n.t('room.hero.share'));
+  protected readonly shareChipCopiedLabel = computed(() => this.i18n.t('room.hero.copied'));
   protected readonly shareChipCopyAriaLabel = computed(
     () => `${this.i18n.t('room.hero.copy_link')} · ${this.connectionLabel()}`
   );

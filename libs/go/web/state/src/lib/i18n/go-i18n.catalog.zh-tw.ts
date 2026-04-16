@@ -245,6 +245,7 @@ const ZH_HOSTED_UI = {
   'room.hero.share_url': '分享連結',
   'room.hero.copy': '複製',
   'room.hero.copy_link': '複製房間連結',
+  'room.hero.copied': '已複製',
   'room.hero.retry_copy_link': '重新複製房間連結',
   'room.hero.copy_complete': '房間連結已複製到剪貼簿。',
   'room.hero.copy_failed': '目前無法自動複製，請改為手動複製下方房間連結。',
