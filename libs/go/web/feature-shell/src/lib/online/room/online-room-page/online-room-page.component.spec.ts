@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -422,6 +424,53 @@ describe('OnlineRoomPageComponent', () => {
     expect(root.querySelector('[data-testid="room-player-white"]')).not.toBeNull();
   });
 
+  it('keeps chat message copy dark against the light chat cards', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        chat: [
+          {
+            id: 'chat-1',
+            participantId: 'host-1',
+            displayName: 'Host',
+            message: 'Visible chat copy',
+            sentAt: '2026-03-20T00:10:00.000Z',
+            system: false,
+          },
+        ],
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const chatCopy = root.querySelector('.room-sidebar__chat-copy') as HTMLElement | null;
+    const sidebarStyles = readSidebarStyles();
+
+    expect(chatCopy).not.toBeNull();
+    expect(sidebarStyles).toMatch(
+      /\.room-sidebar__chat-copy,\s*\.room-sidebar__chat-empty\s*\{\s*color:\s*#251d15;/s
+    );
+  });
+
+  it('keeps the empty chat state dark against the light chat surface', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const emptyState = root.querySelector('.room-sidebar__chat-empty') as HTMLElement | null;
+    const sidebarStyles = readSidebarStyles();
+
+    expect(emptyState).not.toBeNull();
+    expect(sidebarStyles).not.toMatch(
+      /\.room-sidebar__section-copy,\s*\.room-sidebar__helper,\s*\.room-sidebar__chat-copy,\s*\.room-sidebar__chat-empty,\s*\.room-sidebar__rematch-seat,\s*\.player-card__seat/s
+    );
+  });
+
   it('warns joined viewers when realtime is disconnected and disables seat claims', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
@@ -559,8 +608,13 @@ describe('OnlineRoomPageComponent', () => {
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.pass'));
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.resign'));
     expect(actionsSection?.textContent).not.toContain(i18n.t('room.participants.finalize_score'));
+
+    if (!chatSection || !actionsSection) {
+      throw new Error('Expected chat and actions sections to render');
+    }
+
     expect(
-      !!(chatSection?.compareDocumentPosition(actionsSection!) & Node.DOCUMENT_POSITION_FOLLOWING)
+      !!(chatSection.compareDocumentPosition(actionsSection) & Node.DOCUMENT_POSITION_FOLLOWING)
     ).toBe(true);
   });
 
@@ -1012,4 +1066,14 @@ function createSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
     chat: [],
     ...overrides,
   };
+}
+
+function readSidebarStyles(): string {
+  return readFileSync(
+    resolve(
+      process.cwd(),
+      'src/lib/online/room/online-room-sidebar/online-room-sidebar.component.css'
+    ),
+    'utf8'
+  );
 }

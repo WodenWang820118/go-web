@@ -120,8 +120,6 @@
 
 .room-sidebar__section-copy,
 .room-sidebar__helper,
-.room-sidebar__chat-copy,
-.room-sidebar__chat-empty,
 .room-sidebar__rematch-seat,
 .player-card__seat {
   margin: 0;
@@ -427,6 +425,11 @@
 .room-sidebar__helper {
   font-size: 0.76rem;
   line-height: 1.45;
+}
+
+.room-sidebar__chat-copy,
+.room-sidebar__chat-empty {
+  color: #251d15;
 }
 
 .room-sidebar__chat-empty {
