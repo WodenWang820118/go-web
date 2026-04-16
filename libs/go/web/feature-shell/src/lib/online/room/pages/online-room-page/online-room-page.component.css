@@ -7,26 +7,9 @@ lib-go-online-room-sidebar {
   min-height: 0;
 }
 
-.room-stage {
-  min-height: calc(100dvh - 1rem);
-}
-
-.room-stage__board-wrap {
-  flex: 1;
-  position: relative;
-}
-
-.room-stage__board {
-  align-self: center;
-  aspect-ratio: 1 / 1;
-}
-
-.room-stage__hud {
-  width: 100%;
-}
-
-.room-stage__share-anchor lib-go-online-room-share-chip {
-  width: min(100%, 10rem);
+lib-go-online-room-stage-section {
+  min-height: 0;
+  min-width: 0;
 }
 
 @media (min-width: 1080px) {
@@ -35,87 +18,10 @@ lib-go-online-room-sidebar {
     height: 100dvh;
     overflow: hidden;
   }
-
-  .room-stage {
-    --room-stage-share-track: 6.7rem;
-    padding-block-end: 0.75rem;
-  }
-
-  .room-stage__board-wrap {
-    --room-stage-hud-reserve: 0rem;
-    --room-stage-board-span: min(
-      max(0rem, calc(100% - (2 * var(--room-stage-share-track)))),
-      calc(100dvh - 5rem),
-      calc(100vw - var(--room-sidebar-width) - 5.5rem)
-    );
-    display: grid;
-    grid-template-columns:
-      var(--room-stage-share-track)
-      minmax(0, 1fr)
-      minmax(0, var(--room-stage-board-span))
-      minmax(0, 1fr)
-      var(--room-stage-share-track);
-    grid-template-rows: minmax(0, 1fr) auto;
-    row-gap: 0.75rem;
-    align-content: stretch;
-    justify-items: stretch;
-    box-sizing: border-box;
-    height: 100%;
-  }
-
-  .room-stage__board-wrap--with-hud {
-    --room-stage-hud-reserve: clamp(3.5rem, 6vw, 4.75rem);
-  }
-
-  .room-stage__board,
-  .room-stage__hud {
-    width: min(100%, var(--room-stage-board-span));
-  }
-
-  .room-stage__board {
-    grid-column: 3;
-    grid-row: 1;
-    align-self: end;
-    justify-self: stretch;
-  }
-
-  .room-stage__hud {
-    grid-column: 3;
-    grid-row: 2;
-    justify-self: stretch;
-  }
-
-  @supports (width: 1cqi) {
-    .room-stage__board-wrap {
-      --room-stage-board-span:
-        min(
-          max(0rem, calc(100cqi - (2 * var(--room-stage-share-track)))),
-          max(0rem, calc(100cqb - var(--room-stage-hud-reserve)))
-        );
-      container-type: size;
-    }
-  }
-
-  .room-stage__share-anchor--board {
-    grid-column: 5;
-    grid-row: 1;
-    align-self: end;
-    justify-self: end;
-    width: 100%;
-  }
-
-  .room-stage__share-anchor--board lib-go-online-room-share-chip {
-    width: 5.75rem;
-  }
 }
 
 @media (max-width: 1079px) {
   .room-layout {
     min-height: auto;
-  }
-
-  .room-stage__share-anchor {
-    margin-top: 0.85rem;
-    padding-inline-start: 0.25rem;
   }
 }

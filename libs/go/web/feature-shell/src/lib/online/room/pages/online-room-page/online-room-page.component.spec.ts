@@ -400,20 +400,27 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
+    const stageHost = root.querySelector('lib-go-online-room-stage-section');
     const stage = root.querySelector('[data-testid="room-stage"]');
     const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
+    const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
     const shareChipButton = root.querySelector(
       '[data-testid="room-share-chip-button"]'
     ) as HTMLButtonElement | null;
 
     expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
+    expect(stageHost?.className).toContain('block');
+    expect(stageHost?.className).toContain('min-h-0');
+    expect(stageHost?.className).toContain('min-w-0');
     expect(root.querySelector('[data-testid="room-sidebar-room-id"]')).toBeNull();
     expect(root.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
     expect(stage?.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
     expect(stage?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
     expect(boardWrap).not.toBeNull();
-    expect(boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
+    expect(stageDock).not.toBeNull();
+    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
+    expect(boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]')).toBeNull();
     expect(boardWrap?.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
     expect(boardWrap?.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
     expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
@@ -450,6 +457,161 @@ describe('OnlineRoomPageComponent', () => {
     expect(blackPlayer?.textContent).not.toContain(i18n.playerLabel('black'));
     expect(whitePlayer?.textContent).not.toContain(i18n.playerLabel('white'));
     expect(root.textContent).not.toContain(i18n.t('room.sidebar.decorative_avatar'));
+  });
+
+  it('keeps the match status hud inside the board column while the share chip stays docked separately', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        match: {
+          settings: {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'gomoku',
+            boardSize: 15,
+            board: Array.from({ length: 15 }, () =>
+              Array.from({ length: 15 }, () => null)
+            ),
+            phase: 'finished',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: {
+              summary: createMessage('game.gomoku.result.five_in_row', {
+                winner: createMessage('common.player.black'),
+              }),
+              winner: 'black',
+              score: null,
+            },
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.gomoku.result.five_in_row', {
+              winner: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
+    const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
+
+    expect(boardWrap?.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
+    expect(boardWrap?.querySelector('[data-testid="room-stage-hud"]')).not.toBeNull();
+    expect(stageDock).not.toBeNull();
+    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
+    expect(stageDock?.querySelector('[data-testid="room-stage-hud"]')).toBeNull();
+  });
+
+  it('omits the stage dock when no share URL is available', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        match: {
+          settings: {
+            mode: 'go',
+            boardSize: 19,
+            komi: 6.5,
+            players: {
+              black: 'Host',
+              white: 'Guest',
+            },
+          },
+          state: {
+            mode: 'go',
+            boardSize: 19,
+            board: Array.from({ length: 19 }, () =>
+              Array.from({ length: 19 }, () => null)
+            ),
+            phase: 'playing',
+            nextPlayer: 'black',
+            captures: {
+              black: 0,
+              white: 0,
+            },
+            moveHistory: [],
+            previousBoardHashes: [],
+            result: null,
+            lastMove: null,
+            consecutivePasses: 0,
+            winnerLine: [],
+            message: createMessage('game.state.next_turn', {
+              player: createMessage('common.player.black'),
+            }),
+            scoring: null,
+          },
+          startedAt: '2026-03-20T00:05:00.000Z',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      shareUrl: null,
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="room-stage-board"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-stage-dock"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-stage-share-anchor"]')).toBeNull();
+  });
+
+  it('keeps the share chip available beneath the empty stage content before the match starts', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const stageEmpty = root.querySelector('[data-testid="room-stage-empty"]');
+    const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
+
+    expect(stageEmpty).not.toBeNull();
+    expect(root.querySelector('[data-testid="room-board-wrap"]')).toBeNull();
+    expect(stageDock).not.toBeNull();
+    expect(stageDock?.querySelector('[data-testid="room-stage-share-anchor"]')).not.toBeNull();
   });
 
   it('renders chat message copy inside the chat panel', async () => {
@@ -1078,6 +1240,7 @@ function createRoomServiceStub(options: {
   connectionState?: 'idle' | 'connecting' | 'connected' | 'disconnected';
   lastNotice?: string | null;
   lastSystemNotice?: SystemNotice | null;
+  shareUrl?: string | null;
 }) {
   const snapshot = signal(options.snapshot);
   const participantId = signal(options.participantId);
@@ -1108,7 +1271,9 @@ function createRoomServiceStub(options: {
   const isActivePlayer = computed(() => false);
   const canInteractBoard = computed(() => false);
   const canChangeSeats = computed(() => true);
-  const shareUrl = computed(() => 'http://localhost/online/room/ROOM42');
+  const shareUrl = computed(() =>
+    options.shareUrl === undefined ? 'http://localhost/online/room/ROOM42' : options.shareUrl
+  );
   const chat = computed(() => snapshot()?.chat ?? []);
 
   return {
