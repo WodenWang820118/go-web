@@ -389,19 +389,29 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
+    const stage = root.querySelector('.room-stage');
+    const boardWrap = root.querySelector('.room-stage__board-wrap');
+    const shareChipButton = root.querySelector(
+      '[data-testid="room-share-chip-button"]'
+    ) as HTMLButtonElement | null;
 
     expect(root.querySelector('[data-testid="room-compact-header"]')).toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="room-sidebar-room-id"]')).toBeNull();
-    expect(
-      root.querySelector('[data-testid="room-sidebar-connection"]')?.getAttribute('title')
-    ).toBe(i18n.t('room.connection.connected'));
-    expect(
-      root.querySelector('[data-testid="room-sidebar-connection"]')?.getAttribute('aria-label')
-    ).toBe(i18n.t('room.connection.connected'));
-    expect(
-      root.querySelector('[data-testid="room-sidebar-share-url"]')?.textContent
-    ).toContain('http://localhost/online/room/ROOM42');
+    expect(root.querySelector('.room-layout__share-rail')).toBeNull();
+    expect(root.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
+    expect(stage?.querySelector('[data-testid="room-share-chip"]')).not.toBeNull();
+    expect(stage?.querySelector('.room-stage__share-anchor')).not.toBeNull();
+    expect(boardWrap).not.toBeNull();
+    expect(boardWrap?.querySelector('.room-stage__share-anchor')).not.toBeNull();
+    expect(boardWrap?.classList.contains('room-stage__board-wrap--with-hud')).toBe(false);
+    expect(boardWrap?.querySelector('.room-stage__board')).not.toBeNull();
+    expect(boardWrap?.querySelector('.room-stage__hud')).toBeNull();
+    expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
+    expect(shareChipButton?.getAttribute('title')).toContain(i18n.t('room.connection.connected'));
+    expect(root.querySelector('[data-testid="room-sidebar-share-url"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-copy"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-connection"]')).toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
     expect(root.querySelector('[data-testid="room-next-match-panel"]')).toBeNull();
     expect(root.querySelector('[data-testid="room-move-log-panel"]')).toBeNull();
@@ -554,7 +564,7 @@ describe('OnlineRoomPageComponent', () => {
     ).toBe(true);
   });
 
-  it('renders an icon-only copy action inline with the share url', async () => {
+  it('renders a board-adjacent share chip that copies the room link with success feedback', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
@@ -564,9 +574,8 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
-    const shareUrl = root.querySelector('[data-testid="room-sidebar-share-url"]');
-    const copyButton = root.querySelector(
-      '[data-testid="room-sidebar-copy"]'
+    const shareChipButton = root.querySelector(
+      '[data-testid="room-share-chip-button"]'
     ) as HTMLButtonElement | null;
     const writeText = vi.fn().mockResolvedValue(undefined);
 
@@ -577,21 +586,141 @@ describe('OnlineRoomPageComponent', () => {
       },
     });
 
-    expect(copyButton).not.toBeNull();
-    expect(copyButton?.textContent?.trim()).toBe('');
-    expect(copyButton?.getAttribute('aria-label')).toBe(i18n.t('room.hero.copy'));
-    expect(copyButton?.getAttribute('title')).toBe(i18n.t('room.hero.share_url'));
-    expect(shareUrl?.nextElementSibling).toBe(copyButton);
+    expect(shareChipButton).not.toBeNull();
+    expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
+    expect(shareChipButton?.getAttribute('aria-label')).toContain(
+      i18n.t('room.hero.copy_link')
+    );
+    expect(root.querySelector('[data-testid="room-sidebar-share-url"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-sidebar-copy"]')).toBeNull();
     expect(root.querySelector('.room-sidebar__topbar')).toBeNull();
 
-    copyButton?.click();
+    shareChipButton?.click();
+    await harness.fixture.whenStable();
+
+    const feedback = root.querySelector(
+      '[data-testid="room-share-chip-feedback"]'
+    ) as HTMLElement | null;
+
+    expect(writeText).toHaveBeenCalledWith('http://localhost/online/room/ROOM42');
+    expect(feedback?.textContent).toContain(i18n.t('room.hero.copy_complete'));
+    expect(feedback?.getAttribute('role')).toBe('status');
+    expect(feedback?.getAttribute('aria-live')).toBe('polite');
+    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
+  });
+
+  it('expands a manual-copy fallback when automatic copy is unavailable', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+    const shareChipButton = root.querySelector(
+      '[data-testid="room-share-chip-button"]'
+    ) as HTMLButtonElement | null;
+
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+
+    shareChipButton?.click();
+    await harness.fixture.whenStable();
+
+    const manualPanel = root.querySelector(
+      '[data-testid="room-share-chip-manual"]'
+    ) as HTMLElement | null;
+    const manualUrl = root.querySelector(
+      '[data-testid="room-share-chip-manual-url"]'
+    ) as HTMLInputElement | null;
+    const dismissButton = root.querySelector(
+      '[data-testid="room-share-chip-manual-dismiss"]'
+    ) as HTMLButtonElement | null;
+
+    expect(root.querySelector('[data-testid="room-share-chip-feedback"]')).toBeNull();
+    expect(manualPanel?.textContent).toContain(
+      i18n.t('room.hero.copy_failed')
+    );
+    expect(shareChipButton?.getAttribute('aria-label')).toContain(
+      i18n.t('room.hero.retry_copy_link')
+    );
+    expect(manualUrl?.value).toBe('http://localhost/online/room/ROOM42');
+    expect(manualUrl?.readOnly).toBe(true);
+    expect(manualUrl?.getAttribute('aria-label')).toBe(i18n.t('room.hero.manual_url_label'));
+    expect(manualPanel?.textContent).toContain(
+      i18n.t('room.hero.copy_manual_instruction')
+    );
+
+    dismissButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
+    expect(shareChipButton?.disabled).toBe(false);
+    expect(document.activeElement).toBe(shareChipButton);
+  });
+
+  it('expands the manual-copy fallback when clipboard writes are rejected', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const shareChipButton = root.querySelector(
+      '[data-testid="room-share-chip-button"]'
+    ) as HTMLButtonElement | null;
+    const writeText = vi.fn().mockRejectedValue(new Error('clipboard denied'));
+
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
+
+    shareChipButton?.click();
     await harness.fixture.whenStable();
 
     expect(writeText).toHaveBeenCalledWith('http://localhost/online/room/ROOM42');
-    expect(
-      root.querySelector('[data-testid="room-sidebar-copy-feedback"]')?.textContent
-    ).toContain(i18n.t('room.hero.copy_complete'));
-    expect(copyButton?.classList.contains('room-sidebar__icon-action--copied')).toBe(true);
+    expect(root.querySelector('[data-testid="room-share-chip-feedback"]')).toBeNull();
+    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).not.toBeNull();
+  });
+
+  it('dismisses the manual-copy fallback when Escape is pressed', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+    });
+
+    const harness = await renderPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const shareChipButton = root.querySelector(
+      '[data-testid="room-share-chip-button"]'
+    ) as HTMLButtonElement | null;
+
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+
+    shareChipButton?.click();
+    await harness.fixture.whenStable();
+
+    const manualPanel = root.querySelector(
+      '[data-testid="room-share-chip-manual"]'
+    ) as HTMLElement | null;
+
+    manualPanel?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await harness.fixture.whenStable();
+
+    expect(root.querySelector('[data-testid="room-share-chip-manual"]')).toBeNull();
   });
 
   it('renders the missing-room state inside the new shell without the old header', async () => {
@@ -697,10 +826,16 @@ describe('OnlineRoomPageComponent', () => {
     const harness = await renderPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
+    const boardWrap = root.querySelector('.room-stage__board-wrap');
 
     expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
     expect(root.textContent).toContain(i18n.t('room.rematch.title'));
     expect(root.textContent).toContain(i18n.t('room.rematch.accept'));
+    expect(boardWrap).not.toBeNull();
+    expect(boardWrap?.querySelector('.room-stage__share-anchor')).not.toBeNull();
+    expect(boardWrap?.classList.contains('room-stage__board-wrap--with-hud')).toBe(true);
+    expect(boardWrap?.querySelector('.room-stage__board')).not.toBeNull();
+    expect(boardWrap?.querySelector('.room-stage__hud')).not.toBeNull();
   });
 
   it('suffixes duplicate join names before submitting the room form', async () => {

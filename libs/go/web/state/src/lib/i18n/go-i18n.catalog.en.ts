@@ -273,9 +273,17 @@ const EN_HOSTED_UI = {
   'room.hero.description':
     'Invite two players to take seats, let spectators watch live, and keep the room chat moving during the match.',
   'room.hero.connection': 'Connection',
+  'room.hero.share': 'Share',
   'room.hero.share_url': 'Share URL',
   'room.hero.copy': 'Copy',
-  'room.hero.copy_complete': 'Link copied',
+  'room.hero.copy_link': 'Copy room link',
+  'room.hero.retry_copy_link': 'Retry copying room link',
+  'room.hero.copy_complete': 'Room link copied to clipboard.',
+  'room.hero.copy_failed':
+    'Automatic copy is unavailable. Copy the room link below instead.',
+  'room.hero.copy_manual_instruction':
+    'Select the room link below and copy it manually.',
+  'room.hero.manual_url_label': 'Room link to copy manually',
   'room.page.back_to_lobby': 'Back to lobby',
   'room.page.loading': 'Loading hosted room state...',
   'room.page.missing.label': 'Room unavailable',

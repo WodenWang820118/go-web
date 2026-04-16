@@ -20,6 +20,10 @@ import {
   OnlineRoomSeatViewModel,
   OnlineRoomStageViewModel,
 } from '../online-room-page.models';
+import {
+  OnlineRoomShareChipComponent,
+  OnlineRoomShareChipFeedbackState,
+} from '../online-room-share-chip/online-room-share-chip.component';
 import { OnlineRoomSidebarComponent } from '../online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomService } from '../services/online-room/online-room.service';
 
@@ -39,7 +43,13 @@ interface OnlineRoomSidebarMessageViewModel {
 @Component({
   selector: 'lib-go-online-room-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, GameBoardComponent, OnlineRoomSidebarComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    GameBoardComponent,
+    OnlineRoomShareChipComponent,
+    OnlineRoomSidebarComponent,
+  ],
   templateUrl: './online-room-page.component.html',
   styleUrl: './online-room-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -190,7 +200,8 @@ export class OnlineRoomPageComponent {
     () => this.match()?.state.phase === 'finished' && !!this.rematch()
   );
   protected readonly shareUrl = this.onlineRoom.shareUrl;
-  protected readonly shareCopyFeedbackVisible = signal(false);
+  protected readonly shareCopyFeedbackState =
+    signal<OnlineRoomShareChipFeedbackState>('idle');
   protected readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
       ? this.i18n.t('room.join.title.spectator')
@@ -213,6 +224,28 @@ export class OnlineRoomPageComponent {
         return this.i18n.t('room.connection.offline');
     }
   });
+  protected readonly shareChipLabel = computed(() => this.i18n.t('room.hero.share'));
+  protected readonly shareChipCopyAriaLabel = computed(
+    () => `${this.i18n.t('room.hero.copy_link')} · ${this.connectionLabel()}`
+  );
+  protected readonly shareChipRetryAriaLabel = computed(
+    () => `${this.i18n.t('room.hero.retry_copy_link')} · ${this.connectionLabel()}`
+  );
+  protected readonly shareChipCopiedMessage = computed(() =>
+    this.i18n.t('room.hero.copy_complete')
+  );
+  protected readonly shareChipCopyFailedMessage = computed(() =>
+    this.i18n.t('room.hero.copy_failed')
+  );
+  protected readonly shareChipManualCopyInstruction = computed(() =>
+    this.i18n.t('room.hero.copy_manual_instruction')
+  );
+  protected readonly shareChipManualUrlAriaLabel = computed(() =>
+    this.i18n.t('room.hero.manual_url_label')
+  );
+  protected readonly shareChipDismissLabel = computed(() =>
+    this.i18n.t('common.action.close')
+  );
   protected readonly chatHelperText = computed(() => {
     if (!this.onlineRoom.participantId()) {
       return this.i18n.t('room.chat.helper.join');
@@ -368,8 +401,14 @@ export class OnlineRoomPageComponent {
   protected copyShareUrl(): void {
     const shareUrl = this.shareUrl();
 
-    if (!shareUrl || typeof navigator === 'undefined' || !navigator.clipboard) {
+    if (!shareUrl) {
       this.clearShareCopyFeedback();
+      this.onlineRoom.clearTransientMessages();
+      return;
+    }
+
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      this.showShareCopyManualFallback();
       this.onlineRoom.clearTransientMessages();
       return;
     }
@@ -377,11 +416,11 @@ export class OnlineRoomPageComponent {
     from(navigator.clipboard.writeText(shareUrl))
       .pipe(
         tap(() => {
-          this.showShareCopyFeedback();
+          this.showShareCopySuccess();
           this.onlineRoom.clearTransientMessages();
         }),
         catchError(() => {
-          this.clearShareCopyFeedback();
+          this.showShareCopyManualFallback();
           this.onlineRoom.clearTransientMessages();
           return EMPTY;
         }),
@@ -390,16 +429,29 @@ export class OnlineRoomPageComponent {
       .subscribe();
   }
 
-  private showShareCopyFeedback(): void {
+  protected dismissShareCopyManualFallback(): void {
+    this.clearShareCopyFeedback();
+  }
+
+  private showShareCopySuccess(): void {
     if (this.shareCopyFeedbackTimer) {
       clearTimeout(this.shareCopyFeedbackTimer);
     }
 
-    this.shareCopyFeedbackVisible.set(true);
+    this.shareCopyFeedbackState.set('success');
     this.shareCopyFeedbackTimer = setTimeout(() => {
-      this.shareCopyFeedbackVisible.set(false);
+      this.shareCopyFeedbackState.set('idle');
       this.shareCopyFeedbackTimer = null;
-    }, 1800);
+    }, 3000);
+  }
+
+  private showShareCopyManualFallback(): void {
+    if (this.shareCopyFeedbackTimer) {
+      clearTimeout(this.shareCopyFeedbackTimer);
+      this.shareCopyFeedbackTimer = null;
+    }
+
+    this.shareCopyFeedbackState.set('manual');
   }
 
   private clearShareCopyFeedback(): void {
@@ -408,7 +460,7 @@ export class OnlineRoomPageComponent {
       this.shareCopyFeedbackTimer = null;
     }
 
-    this.shareCopyFeedbackVisible.set(false);
+    this.shareCopyFeedbackState.set('idle');
   }
 
   protected claimSeat(color: PlayerColor): void {

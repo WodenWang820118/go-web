@@ -2,6 +2,10 @@
   display: block;
   min-height: 100dvh;
   background: #091018;
+  --room-radius-shell: 0.45rem;
+  --room-radius-card: 0.34rem;
+  --room-radius-soft: 0.26rem;
+  --room-radius-chip: 0.3rem;
 }
 
 .room-shell {
@@ -37,16 +41,17 @@ lib-go-online-room-sidebar {
 .room-stage,
 .room-fallback__card {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.6rem;
+  border-radius: var(--room-radius-shell);
   background: linear-gradient(180deg, rgba(19, 26, 35, 0.98), rgba(8, 12, 18, 0.98));
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.36);
 }
 
 .room-stage {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   min-height: 0;
+  position: relative;
   padding: clamp(0.45rem, 0.8vw, 0.85rem);
   overflow: hidden;
 }
@@ -55,23 +60,40 @@ lib-go-online-room-sidebar {
   display: flex;
   width: 100%;
   min-height: 0;
+  min-width: 0;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
+  position: relative;
 }
 
 .room-stage__board {
-  width: min(100%, calc(100dvh - 7rem), calc(100vw - 1rem));
+  width: 100%;
   max-width: 100%;
+  align-self: center;
+  overflow: hidden;
+  border-radius: var(--room-radius-shell);
   aspect-ratio: 1 / 1;
 }
 
 .room-stage__hud {
-  width: min(100%, calc(100dvh - 7rem), calc(100vw - 1rem));
+  width: 100%;
+}
+
+.room-stage__share-anchor {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.room-stage__share-anchor lib-go-online-room-share-chip {
+  width: min(100%, 10rem);
+}
+
+.room-stage__hud {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
+  border-radius: var(--room-radius-card);
   padding: 0.7rem 0.85rem;
   background: rgba(255, 255, 255, 0.04);
 }
@@ -103,6 +125,7 @@ lib-go-online-room-sidebar {
 
 .room-stage__empty {
   width: min(42rem, 100%);
+  align-self: center;
   text-align: center;
   padding: 1.2rem;
 }
@@ -132,7 +155,7 @@ lib-go-online-room-sidebar {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--room-radius-chip);
   padding: 0.75rem 1rem;
   font-weight: 700;
   text-decoration: none;
@@ -163,12 +186,80 @@ lib-go-online-room-sidebar {
   }
 
   .room-stage {
+    --room-stage-share-track: 6.7rem;
     min-height: calc(100dvh - 1rem);
+    padding-block-end: 0.75rem;
+  }
+
+  .room-stage__board-wrap {
+    --room-stage-hud-reserve: 0rem;
+    --room-stage-board-span: min(
+      max(0rem, calc(100% - (2 * var(--room-stage-share-track)))),
+      calc(100dvh - 5rem),
+      calc(100vw - var(--room-sidebar-width) - 5.5rem)
+    );
+    display: grid;
+    grid-template-columns:
+      var(--room-stage-share-track)
+      minmax(0, 1fr)
+      minmax(0, var(--room-stage-board-span))
+      minmax(0, 1fr)
+      var(--room-stage-share-track);
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 0;
+    row-gap: 0.55rem;
+    align-content: stretch;
+    justify-items: stretch;
+    box-sizing: border-box;
+    height: 100%;
+  }
+
+  .room-stage__board-wrap--with-hud {
+    --room-stage-hud-reserve: clamp(3.5rem, 6vw, 4.75rem);
   }
 
   .room-stage__board,
   .room-stage__hud {
-    width: min(100%, calc(100dvh - 5rem), calc(100vw - var(--room-sidebar-width) - 2rem));
+    width: min(100%, var(--room-stage-board-span));
+  }
+
+  .room-stage__board {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: end;
+    justify-self: stretch;
+  }
+
+  .room-stage__hud {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: stretch;
+  }
+
+  @supports (width: 1cqi) {
+    .room-stage__board-wrap {
+      --room-stage-board-span:
+        min(
+          max(0rem, calc(100cqi - (2 * var(--room-stage-share-track)))),
+          max(0rem, calc(100cqb - var(--room-stage-hud-reserve)))
+        );
+      container-type: size;
+    }
+  }
+
+  .room-stage__share-anchor--board {
+    position: static;
+    grid-column: 5;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    width: 100%;
+    top: auto;
+    transform: none;
+  }
+
+  .room-stage__share-anchor--board lib-go-online-room-share-chip {
+    width: 5.75rem;
   }
 }
 
@@ -176,5 +267,11 @@ lib-go-online-room-sidebar {
   .room-layout {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .room-stage__share-anchor {
+    width: 100%;
+    margin-top: 0.85rem;
+    padding-inline-start: 0.25rem;
   }
 }

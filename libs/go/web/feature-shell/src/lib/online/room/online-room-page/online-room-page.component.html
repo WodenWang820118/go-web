@@ -40,8 +40,30 @@
   } @else {
     <div class="room-layout">
       <section class="room-stage">
+        <ng-template #shareChipTemplate>
+          <lib-go-online-room-share-chip
+            [shareUrl]="shareUrl()"
+            [shareLabel]="shareChipLabel()"
+            [copyAriaLabel]="shareChipCopyAriaLabel()"
+            [retryAriaLabel]="shareChipRetryAriaLabel()"
+            [copiedMessage]="shareChipCopiedMessage()"
+            [copyFailedMessage]="shareChipCopyFailedMessage()"
+            [manualCopyInstruction]="shareChipManualCopyInstruction()"
+            [manualUrlAriaLabel]="shareChipManualUrlAriaLabel()"
+            [dismissLabel]="shareChipDismissLabel()"
+            [connectionState]="connectionState()"
+            [connectionLabel]="connectionLabel()"
+            [feedbackState]="shareCopyFeedbackState()"
+            (copyRequested)="copyShareUrl()"
+            (manualFallbackDismissed)="dismissShareCopyManualFallback()"
+          />
+        </ng-template>
+
         @if (match()) {
-          <div class="room-stage__board-wrap">
+          <div
+            class="room-stage__board-wrap"
+            [class.room-stage__board-wrap--with-hud]="!!matchStatusLine()"
+          >
             <div class="room-stage__board">
               <lib-go-game-board
                 [mode]="match()!.settings.mode"
@@ -57,11 +79,17 @@
               />
             </div>
 
-            <div class="room-stage__hud">
-              @if (matchStatusLine()) {
+            @if (matchStatusLine()) {
+              <div class="room-stage__hud">
                 <p class="room-stage__status">{{ matchStatusLine() }}</p>
-              }
-            </div>
+              </div>
+            }
+
+            @if (shareUrl()) {
+              <div class="room-stage__share-anchor room-stage__share-anchor--board">
+                <ng-container [ngTemplateOutlet]="shareChipTemplate" />
+              </div>
+            }
           </div>
         } @else {
           <div class="room-stage__empty">
@@ -69,14 +97,16 @@
             <h1 class="room-stage__empty-title">{{ roomStage()!.title }}</h1>
             <p class="room-stage__empty-copy">{{ roomStage()!.description }}</p>
           </div>
+
+          @if (shareUrl()) {
+            <div class="room-stage__share-anchor">
+              <ng-container [ngTemplateOutlet]="shareChipTemplate" />
+            </div>
+          }
         }
       </section>
 
       <lib-go-online-room-sidebar
-        [shareUrl]="shareUrl()"
-        [shareCopyFeedbackVisible]="shareCopyFeedbackVisible()"
-        [connectionState]="connectionState()"
-        [connectionLabel]="connectionLabel()"
         [joinForm]="joinForm"
         [chatForm]="chatForm"
         [participantId]="onlineRoom.participantId()"
@@ -97,7 +127,6 @@
         [showRematch]="showRematchBanner()"
         [canRespondToRematch]="canRespondToRematch()"
         [rematchStatuses]="rematchStatuses()"
-        (copyShareUrlRequested)="copyShareUrl()"
         (joinRequested)="joinRoom()"
         (claimSeatRequested)="claimSeat($event)"
         (releaseSeatRequested)="releaseSeat()"

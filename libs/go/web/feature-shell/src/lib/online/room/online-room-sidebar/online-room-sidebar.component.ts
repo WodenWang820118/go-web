@@ -42,57 +42,6 @@ interface OnlineRoomSidebarRematchStatusViewModel {
   imports: [CommonModule, ReactiveFormsModule, RouterLink, StoneBadgeComponent],
   template: `
     <aside class="room-sidebar" data-testid="room-sidebar">
-      <section class="room-sidebar__meta">
-        <div class="room-sidebar__share-row">
-          <div
-            class="room-sidebar__connection"
-            data-testid="room-sidebar-connection"
-            role="status"
-            [attr.title]="connectionLabel()"
-            [attr.aria-label]="connectionLabel()"
-            [class.room-sidebar__connection--online]="connectionState() === 'connected'"
-            [class.room-sidebar__connection--warning]="connectionState() !== 'connected'"
-          >
-            <span class="room-sidebar__connection-light" aria-hidden="true"></span>
-          </div>
-
-          <div class="room-sidebar__share-url" data-testid="room-sidebar-share-url">
-            {{ shareUrl() }}
-          </div>
-
-          <button
-            type="button"
-            class="room-sidebar__icon-action"
-            [class.room-sidebar__icon-action--copied]="shareCopyFeedbackVisible()"
-            data-testid="room-sidebar-copy"
-            [attr.aria-label]="i18n.t('room.hero.copy')"
-            [attr.title]="i18n.t('room.hero.share_url')"
-            (click)="copyShareUrlRequested.emit()"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              class="room-sidebar__icon"
-            >
-              <path
-                d="M9 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2V9Zm-6 6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1h-2V5H3v8h1v2H3Z"
-              />
-            </svg>
-          </button>
-
-          @if (shareCopyFeedbackVisible()) {
-            <span
-              class="room-sidebar__copy-feedback"
-              data-testid="room-sidebar-copy-feedback"
-              role="status"
-              aria-live="polite"
-            >
-              {{ i18n.t('room.hero.copy_complete') }}
-            </span>
-          }
-        </div>
-      </section>
-
       @if (roomMessages().length > 0) {
         <div class="room-sidebar__messages">
           @for (item of roomMessages(); track item.testId) {
@@ -374,12 +323,6 @@ interface OnlineRoomSidebarRematchStatusViewModel {
 export class OnlineRoomSidebarComponent {
   protected readonly i18n = inject(GoI18nService);
 
-  readonly shareUrl = input.required<string>();
-  readonly shareCopyFeedbackVisible = input(false);
-  readonly connectionState = input.required<
-    'idle' | 'connecting' | 'connected' | 'disconnected'
-  >();
-  readonly connectionLabel = input.required<string>();
   readonly joinForm = input.required<OnlineRoomJoinFormGroup>();
   readonly chatForm = input.required<OnlineRoomChatFormGroup>();
   readonly participantId = input<string | null>(null);
@@ -402,7 +345,6 @@ export class OnlineRoomSidebarComponent {
   readonly rematchStatuses =
     input.required<readonly OnlineRoomSidebarRematchStatusViewModel[]>();
 
-  readonly copyShareUrlRequested = output<void>();
   readonly joinRequested = output<void>();
   readonly claimSeatRequested = output<PlayerColor>();
   readonly releaseSeatRequested = output<void>();
