@@ -398,6 +398,8 @@ const EN_HOSTED_UI = {
   'lobby.empty.description':
     'Create the next room below and it will become the first place players can jump into chat.',
   'lobby.section.live.title': 'Live rooms',
+  'lobby.section.live.caption':
+    'Rooms with active matches still stay open for people who want to watch and chat.',
   'lobby.section.ready.title': 'Ready rooms',
   'lobby.section.waiting.title': 'Waiting rooms',
   'lobby.section.empty': 'No {{section}} yet.',
