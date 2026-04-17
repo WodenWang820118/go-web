@@ -14,7 +14,7 @@
     [attr.title]="connectionLabel()"
     (click)="activateShareChip()"
   >
-    <p-chip [styleClass]="shareChipStyleClass()" [disabled]="shareDisabled()">
+    <p-chip [class]="shareChipStyleClass()" [disabled]="shareDisabled()">
       <span
         class="room-share-chip__light"
         [class.room-share-chip__light--success]="feedbackState() === 'success'"

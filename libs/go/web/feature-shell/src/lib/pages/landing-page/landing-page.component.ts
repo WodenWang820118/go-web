@@ -38,7 +38,7 @@ import { TagModule } from 'primeng/tag';
 
       <div class="mt-10 grid gap-6 lg:grid-cols-2">
         @for (mode of modes(); track mode.mode) {
-          <p-card styleClass="h-full overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10">
+          <p-card class="h-full overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10">
             <ng-template pTemplate="header">
               <div class="space-y-4 border-b border-stone-200/80 bg-[linear-gradient(140deg,_rgba(250,245,235,0.96),_rgba(255,255,255,0.92))] px-6 py-6">
                 <div class="flex items-center justify-between gap-4">

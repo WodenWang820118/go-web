@@ -44,7 +44,7 @@ import { OnlineRoomSidebarRematchStatusViewModel } from '../../../../contracts/o
               severity="contrast"
               [rounded]="true"
               [value]="i18n.t('room.rematch.response.' + status.response)"
-              styleClass="go-hosted-pill-subtle"
+              class="go-hosted-pill-subtle"
             />
           </div>
         }
