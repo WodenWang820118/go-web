@@ -131,6 +131,15 @@ describe('rooms HTTP contract', () => {
         spectatorCount: 1,
       }),
     ]);
+    expect(body.onlineParticipants).toEqual([
+      expect.objectContaining({
+        roomId: waitingRoom.roomId,
+        displayName: 'Host Waiting',
+        isHost: true,
+        seat: null,
+        activity: 'watching',
+      }),
+    ]);
   });
 
   it('closes a room through the REST contract and removes it from the lobby immediately', async () => {
@@ -166,6 +175,7 @@ describe('rooms HTTP contract', () => {
     const body = listResponse.body as ListRoomsResponse;
 
     expect(body.rooms).toEqual([]);
+    expect(body.onlineParticipants).toEqual([]);
   });
 
   it('rejects close-room requests from non-host participants', async () => {

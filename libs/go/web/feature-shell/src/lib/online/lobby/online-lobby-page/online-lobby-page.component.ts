@@ -8,7 +8,6 @@ import {
   inject,
   signal,
   viewChild,
-  viewChildren,
 } from '@angular/core';
 import {
   takeUntilDestroyed,
@@ -21,16 +20,16 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { TagModule } from 'primeng/tag';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
-  buildLobbyRoomDetail,
-  buildLobbyOverviewStats,
+  buildLobbyAnnouncementCards,
+  buildLobbyOnlinePlayerGroups,
   buildLobbyTableRows,
   buildLobbySections,
   countLabel,
   emptySectionLabel,
-  LobbyRoomDetailViewModel,
+  LobbyAnnouncementCardViewModel,
+  LobbyOnlinePlayerGroupViewModel,
   LobbyOverviewStatsViewModel,
   LobbyRoomTableRowViewModel,
-  selectLobbyRoom,
 } from '../online-lobby.presentation';
 import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
 import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
@@ -58,13 +57,11 @@ export class OnlineLobbyPageComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly roomTableScroll = viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
-  private readonly roomRowElements = viewChildren<ElementRef<HTMLElement>>('lobbyRoomRow');
-  private readonly selectedRoomIdSignal = signal<string | null>(null);
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
   private readonly mdUpSignal = signal(this.resolveMdUp());
 
   protected readonly displayName = new FormControl(
-    this.onlineRoom.displayName() || this.i18n.t('common.role.host'),
+    this.onlineRoom.displayName() || '',
     {
       nonNullable: true,
     }
@@ -79,9 +76,6 @@ export class OnlineLobbyPageComponent {
   protected readonly sections = computed(() =>
     buildLobbySections(this.i18n, this.onlineLobby.rooms())
   );
-  protected readonly lobbyStats = computed<LobbyOverviewStatsViewModel>(() =>
-    buildLobbyOverviewStats(this.onlineLobby.rooms())
-  );
   protected readonly activeSection = computed(() =>
     this.sections().find(section => section.status === this.activeStatusSignal()) ??
     this.sections()[0] ??
@@ -91,17 +85,35 @@ export class OnlineLobbyPageComponent {
     buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? [])
   );
   protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(() =>
-    buildLobbyOverviewStats(this.activeSection()?.rooms ?? [])
+    ({
+      liveCount: this.activeSection()?.status === 'live' ? this.activeRows().length : 0,
+      readyCount: this.activeSection()?.status === 'ready' ? this.activeRows().length : 0,
+      waitingCount: this.activeSection()?.status === 'waiting' ? this.activeRows().length : 0,
+      roomCount: this.activeSection()?.rooms.length ?? 0,
+      participantCount: (this.activeSection()?.rooms ?? []).reduce(
+        (total, room) => total + room.participantCount,
+        0
+      ),
+      onlineCount: (this.activeSection()?.rooms ?? []).reduce(
+        (total, room) => total + room.onlineCount,
+        0
+      ),
+      spectatorCount: (this.activeSection()?.rooms ?? []).reduce(
+        (total, room) => total + room.spectatorCount,
+        0
+      ),
+    })
+  );
+  protected readonly announcementCards = computed<LobbyAnnouncementCardViewModel[]>(() =>
+    buildLobbyAnnouncementCards(this.i18n)
+  );
+  protected readonly onlinePlayerGroups = computed<LobbyOnlinePlayerGroupViewModel[]>(() =>
+    buildLobbyOnlinePlayerGroups(this.i18n, this.onlineLobby.onlineParticipants())
+  );
+  protected readonly totalOnlinePlayers = computed(
+    () => this.onlineLobby.onlineParticipants().length
   );
   protected readonly isMdUp = this.mdUpSignal.asReadonly();
-  protected readonly selectedRoom = computed<LobbyRoomSummary | null>(() =>
-    this.isMdUp()
-      ? selectLobbyRoom(this.activeSection()?.rooms ?? [], this.selectedRoomIdSignal())
-      : null
-  );
-  protected readonly selectedRoomDetail = computed<LobbyRoomDetailViewModel | null>(() =>
-    buildLobbyRoomDetail(this.i18n, this.selectedRoom())
-  );
   protected readonly trimmedDisplayName = computed(() =>
     this.displayNameValue().trim()
   );
@@ -149,7 +161,11 @@ export class OnlineLobbyPageComponent {
       const sections = this.sections();
       const activeStatus = this.activeStatusSignal();
 
-      if (sections.some(section => section.status === activeStatus && section.rooms.length > 0)) {
+      if (
+        sections.some(
+          section => section.status === activeStatus && section.rooms.length > 0
+        )
+      ) {
         return;
       }
 
@@ -162,18 +178,6 @@ export class OnlineLobbyPageComponent {
     });
   }
 
-  protected selectRoom(roomId: string, status?: LobbyRoomStatus): void {
-    this.selectedRoomIdSignal.set(roomId);
-
-    if (status) {
-      this.activeStatusSignal.set(status);
-    }
-  }
-
-  protected isSelectedRoom(roomId: string): boolean {
-    return this.selectedRoom()?.roomId === roomId;
-  }
-
   protected setActiveStatus(status: LobbyRoomStatus): void {
     this.activeStatusSignal.set(status);
     this.scrollRoomTableToTop();
@@ -181,25 +185,6 @@ export class OnlineLobbyPageComponent {
 
   protected isActiveStatus(status: LobbyRoomStatus): boolean {
     return this.activeStatusSignal() === status;
-  }
-
-  protected moveRoomFocus(roomId: string, direction: 'next' | 'previous'): void {
-    const index = this.activeRows().findIndex(row => row.roomId === roomId);
-
-    if (index === -1) {
-      return;
-    }
-
-    const targetIndex = direction === 'next' ? index + 1 : index - 1;
-    const targetRow = this.activeRows()[targetIndex];
-    const targetElement = this.roomRowElements()[targetIndex]?.nativeElement;
-
-    if (!targetRow || !targetElement) {
-      return;
-    }
-
-    this.selectRoom(targetRow.roomId, targetRow.room.status);
-    targetElement.focus();
   }
 
   protected createRoom(): void {
@@ -236,10 +221,6 @@ export class OnlineLobbyPageComponent {
         take(1)
       )
       .subscribe();
-  }
-
-  protected joinSelectedRoom(): void {
-    this.joinRoom(this.selectedRoom());
   }
 
   private bindViewportMode(): void {

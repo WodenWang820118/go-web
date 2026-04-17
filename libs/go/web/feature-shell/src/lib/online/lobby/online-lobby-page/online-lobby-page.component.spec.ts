@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { Component, computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { CreateRoomResponse, LobbyRoomSummary, RoomSnapshot } from '@gx/go/contracts';
+import {
+  CreateRoomResponse,
+  LobbyOnlineParticipantSummary,
+  LobbyRoomSummary,
+  RoomSnapshot,
+} from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state';
 import { Observable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -29,20 +34,25 @@ describe('OnlineLobbyPageComponent', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows an empty state when no public rooms are available', async () => {
-    const lobbyService = createLobbyServiceStub([]);
+  it('shows the room panel plus announcement and online-player panels when the lobby is empty', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub();
 
-    const text = await renderText(lobbyService, roomService);
+    const harness = await renderLobby(lobbyService, roomService);
     const i18n = TestBed.inject(GoI18nService);
+    const root = harness.routeNativeElement as HTMLElement;
 
     expect(lobbyService.refresh).toHaveBeenCalledTimes(1);
     expect(roomService.clearTransientMessages).toHaveBeenCalledTimes(1);
-    expect(text).toContain(i18n.t('lobby.empty.title'));
+    expect(root.querySelector('[data-testid="lobby-action-bar"]')).toBeNull();
+    expect(root.querySelector('[data-testid="lobby-room-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-announcement-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-online-players-panel"]')).not.toBeNull();
+    expect(root.textContent).toContain(i18n.t('lobby.panel.announcement'));
   });
 
-  it('creates a room from the root lobby and redirects into the room detail page', async () => {
-    const lobbyService = createLobbyServiceStub([]);
+  it('creates a room from the lobby and redirects into the room detail page', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub({
       createRoomResponse: {
         roomId: 'ROOM42',
@@ -63,6 +73,8 @@ describe('OnlineLobbyPageComponent', () => {
 
     input.value = 'Captain';
     input.dispatchEvent(new Event('input'));
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
     button.click();
     await harness.fixture.whenStable();
 
@@ -70,42 +82,56 @@ describe('OnlineLobbyPageComponent', () => {
     expect(router.url).toBe('/online/room/ROOM42');
   });
 
-  it('selects a room and quick-joins it from the desktop detail pane', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'WAIT42',
-        hostDisplayName: 'Waiting Host',
-      }),
-      createRoomSummary({
-        roomId: 'READY7',
-        hostDisplayName: 'Ready Host',
-        status: 'ready',
-        players: {
-          black: 'Ready Host',
-          white: 'Guest Ready',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-        spectatorCount: 0,
-      }),
-    ]);
+  it('keeps the create controls inside the room panel instead of a separate top header', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const roomPanel = root.querySelector('[data-testid="lobby-room-panel"]') as HTMLElement;
+    const input = roomPanel.querySelector(
+      '[data-testid="lobby-display-name-input"]'
+    ) as HTMLInputElement;
+
+    expect(root.querySelector('[data-testid="lobby-action-bar"]')).toBeNull();
+    expect(input).not.toBeNull();
+    expect(input.value).toBe('');
+    expect(roomPanel.querySelector('[data-testid="online-lobby-create-button"]')).not.toBeNull();
+  });
+
+  it('joins a room from the desktop action column', async () => {
+    const lobbyService = createLobbyServiceStub(
+      [
+        createRoomSummary({
+          roomId: 'READY7',
+          hostDisplayName: 'Ready Host',
+          status: 'ready',
+          players: {
+            black: 'Ready Host',
+            white: 'Guest Ready',
+          },
+          participantCount: 2,
+          onlineCount: 2,
+          spectatorCount: 0,
+        }),
+      ],
+      []
+    );
     const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService);
     const router = TestBed.inject(Router);
-    const input = harness.routeNativeElement?.querySelector(
+    const root = harness.routeNativeElement as HTMLElement;
+    const input = root.querySelector(
       '[data-testid="lobby-display-name-input"]'
     ) as HTMLInputElement;
-    const roomCard = harness.routeNativeElement?.querySelector(
-      '[data-testid="lobby-room-READY7"]'
-    ) as HTMLButtonElement;
-    const joinButton = harness.routeNativeElement?.querySelector(
-      '[data-testid="online-lobby-join-selected-button"]'
+    const joinButton = root.querySelector(
+      '[data-testid="online-lobby-row-action-READY7"]'
     ) as HTMLButtonElement;
 
     input.value = 'Captain';
     input.dispatchEvent(new Event('input'));
-    roomCard.click();
+    harness.fixture.detectChanges();
     await harness.fixture.whenStable();
     joinButton.click();
     await harness.fixture.whenStable();
@@ -114,147 +140,41 @@ describe('OnlineLobbyPageComponent', () => {
     expect(router.url).toBe('/online/room/READY7');
   });
 
-  it('switches lobby status tabs and resets the desktop detail pane to the first room in that segment', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'LIVE42',
-        status: 'live',
-        hostDisplayName: 'Live Host',
-      }),
-      createRoomSummary({
-        roomId: 'LIVE43',
-        status: 'live',
-        hostDisplayName: 'Live Challenger',
-      }),
-      createRoomSummary({
-        roomId: 'READY7',
-        status: 'ready',
-        hostDisplayName: 'Ready Host',
-        players: {
-          black: 'Ready Host',
-          white: 'Guest Ready',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-      createRoomSummary({
-        roomId: 'READY8',
-        status: 'ready',
-        hostDisplayName: 'Ready Backup',
-        players: {
-          black: 'Ready Backup',
-          white: 'Guest Backup',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-    ]);
+  it('renders online players grouped by activity with room and role badges', async () => {
+    const lobbyService = createLobbyServiceStub(
+      [createRoomSummary({ roomId: 'LIVE42', status: 'live' })],
+      [
+        createOnlineParticipant({
+          participantId: 'p1',
+          displayName: 'Live Host',
+          roomId: 'LIVE42',
+          seat: 'black',
+          isHost: true,
+          activity: 'playing',
+        }),
+        createOnlineParticipant({
+          participantId: 'p2',
+          displayName: 'Watcher',
+          roomId: 'LIVE42',
+          seat: null,
+          isHost: false,
+          activity: 'watching',
+        }),
+      ]
+    );
     const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService);
     const root = harness.routeNativeElement as HTMLElement;
-    const liveRow = root.querySelector('[data-testid="lobby-room-LIVE43"]') as HTMLElement;
-    const readyTab = root.querySelector('[data-testid="lobby-tab-ready"]') as HTMLButtonElement;
-    const detail = root.querySelector('[data-testid="online-lobby-selected-room"]') as HTMLElement;
 
-    liveRow.click();
-    await harness.fixture.whenStable();
-    expect(detail.textContent).toContain('Live Challenger');
-
-    readyTab.click();
-    await harness.fixture.whenStable();
-
-    expect(root.querySelector('[data-testid="lobby-room-READY7"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="lobby-room-LIVE42"]')).toBeNull();
-    expect(detail.textContent).toContain('Ready Host');
-  });
-
-  it('updates the desktop detail pane when a row is selected with the keyboard', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'READY7',
-        status: 'ready',
-        hostDisplayName: 'Ready Host',
-        players: {
-          black: 'Ready Host',
-          white: 'Guest Ready',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-      createRoomSummary({
-        roomId: 'READY8',
-        status: 'ready',
-        hostDisplayName: 'Ready Backup',
-        players: {
-          black: 'Ready Backup',
-          white: 'Guest Backup',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-    ]);
-    const roomService = createRoomServiceStub();
-
-    const harness = await renderLobby(lobbyService, roomService);
-    const root = harness.routeNativeElement as HTMLElement;
-    const row = root.querySelector('[data-testid="lobby-room-READY8"]') as HTMLElement;
-    const detail = root.querySelector('[data-testid="online-lobby-selected-room"]') as HTMLElement;
-
-    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    await harness.fixture.whenStable();
-
-    expect(detail.textContent).toContain('Ready Backup');
-  });
-
-  it('moves the desktop selection with arrow keys inside the room table', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'READY7',
-        status: 'ready',
-        hostDisplayName: 'Ready Host',
-        players: {
-          black: 'Ready Host',
-          white: 'Guest Ready',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-      createRoomSummary({
-        roomId: 'READY8',
-        status: 'ready',
-        hostDisplayName: 'Ready Backup',
-        players: {
-          black: 'Ready Backup',
-          white: 'Guest Backup',
-        },
-        participantCount: 2,
-        onlineCount: 2,
-      }),
-    ]);
-    const roomService = createRoomServiceStub();
-
-    const harness = await renderLobby(lobbyService, roomService);
-    const root = harness.routeNativeElement as HTMLElement;
-    const row = root.querySelector('[data-testid="lobby-room-READY7"]') as HTMLElement;
-    const detail = root.querySelector('[data-testid="online-lobby-selected-room"]') as HTMLElement;
-
-    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
-    await harness.fixture.whenStable();
-    expect(detail.textContent).toContain('Ready Host');
-
-    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
-    await harness.fixture.whenStable();
-    expect(detail.textContent).toContain('Ready Backup');
-
-    const nextRow = root.querySelector('[data-testid="lobby-room-READY8"]') as HTMLElement;
-    nextRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
-    await harness.fixture.whenStable();
-    expect(detail.textContent).toContain('Ready Host');
+    expect(root.querySelector('[data-testid="lobby-online-group-playing"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-online-group-watching"]')).not.toBeNull();
+    expect(root.textContent).toContain('Live Host');
+    expect(root.textContent).toContain('#LIVE42');
   });
 
   it('prioritizes room errors over lobby errors in the fixed message rail', async () => {
-    const lobbyService = createLobbyServiceStub([], {
+    const lobbyService = createLobbyServiceStub([], [], {
       lastError: 'Lobby failed',
     });
     const roomService = createRoomServiceStub({
@@ -271,7 +191,7 @@ describe('OnlineLobbyPageComponent', () => {
   });
 
   it('shows a one-time lobby flash notice when there are no active errors', async () => {
-    const lobbyService = createLobbyServiceStub([]);
+    const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService);
@@ -287,13 +207,43 @@ describe('OnlineLobbyPageComponent', () => {
     expect(rail.textContent).toContain('The host closed the room.');
   });
 
-  it('renders stacked mobile cards without a desktop detail pane and joins from the inline CTA', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'WAIT42',
-        hostDisplayName: 'Waiting Host',
-      }),
-    ]);
+  it('renders stacked mobile cards plus announcement and online-player panels', async () => {
+    const lobbyService = createLobbyServiceStub(
+      [
+        createRoomSummary({
+          roomId: 'WAIT42',
+          hostDisplayName: 'Waiting Host',
+        }),
+      ],
+      [
+        createOnlineParticipant({
+          participantId: 'watcher-1',
+          displayName: 'Watcher',
+          roomId: 'WAIT42',
+        }),
+      ]
+    );
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService, 'mobile');
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="lobby-mobile-room-WAIT42"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-announcement-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="lobby-online-players-panel"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="online-lobby-selected-room"]')).toBeNull();
+  });
+
+  it('joins from the inline mobile CTA', async () => {
+    const lobbyService = createLobbyServiceStub(
+      [
+        createRoomSummary({
+          roomId: 'WAIT42',
+          hostDisplayName: 'Waiting Host',
+        }),
+      ],
+      []
+    );
     const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService, 'mobile');
@@ -308,17 +258,17 @@ describe('OnlineLobbyPageComponent', () => {
 
     input.value = 'Captain';
     input.dispatchEvent(new Event('input'));
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
     primaryAction.click();
     await harness.fixture.whenStable();
 
-    expect(root.querySelector('[data-testid="online-lobby-selected-room"]')).toBeNull();
-    expect(root.querySelector('[data-testid="lobby-mobile-room-WAIT42"]')).not.toBeNull();
     expect(roomService.joinRoom).toHaveBeenCalledWith('WAIT42', 'Captain');
     expect(router.url).toBe('/online/room/WAIT42');
   });
 
   it('does not navigate when room creation fails', async () => {
-    const lobbyService = createLobbyServiceStub([]);
+    const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub({
       createRoomResult: throwError(() => new Error('create failed')),
     });
@@ -334,6 +284,8 @@ describe('OnlineLobbyPageComponent', () => {
 
     input.value = 'Captain';
     input.dispatchEvent(new Event('input'));
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
     button.click();
     await harness.fixture.whenStable();
 
@@ -341,13 +293,16 @@ describe('OnlineLobbyPageComponent', () => {
   });
 
   it('does not navigate when joining a room fails', async () => {
-    const lobbyService = createLobbyServiceStub([
-      createRoomSummary({
-        roomId: 'READY7',
-        hostDisplayName: 'Ready Host',
-        status: 'ready',
-      }),
-    ]);
+    const lobbyService = createLobbyServiceStub(
+      [
+        createRoomSummary({
+          roomId: 'READY7',
+          hostDisplayName: 'Ready Host',
+          status: 'ready',
+        }),
+      ],
+      []
+    );
     const roomService = createRoomServiceStub({
       joinRoomResult: throwError(() => new Error('join failed')),
     });
@@ -358,35 +313,44 @@ describe('OnlineLobbyPageComponent', () => {
       '[data-testid="lobby-display-name-input"]'
     ) as HTMLInputElement;
     const joinButton = harness.routeNativeElement?.querySelector(
-      '[data-testid="online-lobby-join-selected-button"]'
+      '[data-testid="online-lobby-row-action-READY7"]'
     ) as HTMLButtonElement;
 
     input.value = 'Captain';
     input.dispatchEvent(new Event('input'));
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
     joinButton.click();
     await harness.fixture.whenStable();
 
     expect(router.url).toBe('/');
   });
 
-  it('keeps local play links visible from the lobby-first home page', async () => {
-    const lobbyService = createLobbyServiceStub([]);
+  it('keeps the locale switcher beside local actions without the lobby label', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub();
 
     const harness = await renderLobby(lobbyService, roomService);
     const router = TestBed.inject(Router);
     const i18n = TestBed.inject(GoI18nService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const actions = root.querySelector('nav[aria-label="Hosted actions"]') as HTMLElement;
+    const localeSwitcherHost = actions.lastElementChild as HTMLElement;
 
-    const goLink = harness.routeNativeElement?.querySelector(
+    const goLink = root.querySelector(
       'a[href="/setup/go"]'
     ) as HTMLAnchorElement;
 
-    expect(harness.routeNativeElement?.textContent).toContain(
+    expect(root.querySelector('[data-testid="locale-switcher"]')).not.toBeNull();
+    expect(root.textContent).not.toContain(i18n.t('hosted.header.lobby'));
+    expect(root.textContent).toContain(
       i18n.t('hosted.header.start_local_go')
     );
-    expect(harness.routeNativeElement?.textContent).toContain(
+    expect(root.textContent).toContain(
       i18n.t('hosted.header.start_local_gomoku')
     );
+    expect(localeSwitcherHost.tagName.toLowerCase()).toBe('lib-go-locale-switcher');
+    expect(localeSwitcherHost.querySelector('[data-testid="locale-switcher"]')).not.toBeNull();
 
     goLink.click();
     await harness.fixture.whenStable();
@@ -394,15 +358,6 @@ describe('OnlineLobbyPageComponent', () => {
     expect(router.url).toBe('/setup/go');
   });
 });
-
-async function renderText(
-  lobbyService: ReturnType<typeof createLobbyServiceStub>,
-  roomService: ReturnType<typeof createRoomServiceStub>,
-  viewport: 'desktop' | 'mobile' = 'desktop'
-) {
-  const harness = await renderLobby(lobbyService, roomService, viewport);
-  return harness.routeNativeElement?.textContent as string;
-}
 
 async function renderLobby(
   lobbyService: ReturnType<typeof createLobbyServiceStub>,
@@ -446,16 +401,19 @@ async function renderLobby(
 
 function createLobbyServiceStub(
   rooms: LobbyRoomSummary[],
+  onlineParticipants: LobbyOnlineParticipantSummary[],
   options?: {
     lastError?: string | null;
   }
 ) {
   const roomsSignal = signal(rooms);
+  const onlineParticipantsSignal = signal(onlineParticipants);
   const loading = signal(false);
   const lastError = signal<string | null>(options?.lastError ?? null);
 
   return {
     rooms: roomsSignal,
+    onlineParticipants: onlineParticipantsSignal,
     loading,
     lastError,
     hasRooms: computed(() => roomsSignal().length > 0),
@@ -469,7 +427,7 @@ function createRoomServiceStub(options?: {
   joinRoomResult?: Observable<void>;
   lastError?: string | null;
 }) {
-  const displayName = signal('Host');
+  const displayName = signal('');
   const creating = signal(false);
   const joining = signal(false);
   const lastError = signal<string | null>(options?.lastError ?? null);
@@ -529,6 +487,21 @@ function createRoomSummary(
     participantCount: 1,
     onlineCount: 1,
     spectatorCount: 1,
+    ...overrides,
+  };
+}
+
+function createOnlineParticipant(
+  overrides: Partial<LobbyOnlineParticipantSummary> = {}
+): LobbyOnlineParticipantSummary {
+  return {
+    participantId: 'participant-1',
+    displayName: 'Host',
+    roomId: 'ROOM01',
+    seat: null,
+    isHost: true,
+    joinedAt: '2026-03-20T00:00:00.000Z',
+    activity: 'watching',
     ...overrides,
   };
 }

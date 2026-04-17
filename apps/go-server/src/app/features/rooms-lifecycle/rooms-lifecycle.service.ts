@@ -116,13 +116,18 @@ export class RoomsLifecycleService implements OnModuleDestroy {
   }
 
   listRooms(): ListRoomsResponse {
-    const rooms = [...this.store.rooms.values()]
-      .filter(room => !this.store.isRoomOffline(room))
+    const lobbyRooms = [...this.store.rooms.values()].filter(
+      room => !this.store.isRoomOffline(room)
+    );
+    const rooms = lobbyRooms
       .map(room => this.snapshotMapper.toLobbySummary(room))
       .sort((left, right) => this.snapshotMapper.compareLobbyRooms(left, right));
 
     return {
       rooms,
+      onlineParticipants: this.snapshotMapper.toLobbyOnlineParticipants(
+        lobbyRooms
+      ),
     };
   }
 

@@ -2,23 +2,23 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
 
 @Component({
-  selector: 'app-go-locale-switcher',
+  selector: 'lib-go-locale-switcher',
   standalone: true,
   template: `
     <div
-      class="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-stone-200/80 bg-white/90 p-2 shadow-lg shadow-stone-950/10 backdrop-blur sm:right-6 sm:top-6"
+      class="inline-flex items-center gap-1 rounded-sm border border-white/10 bg-white/10 p-1 text-stone-100"
       data-testid="locale-switcher"
       [attr.aria-label]="i18n.languageLabel()"
     >
       @for (locale of locales; track locale) {
         <button
           type="button"
-          class="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition"
+          class="rounded-sm px-2.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] transition"
           [attr.data-testid]="'locale-option-' + locale"
-          [class.bg-stone-950]="i18n.isActiveLocale(locale)"
-          [class.text-stone-50]="i18n.isActiveLocale(locale)"
-          [class.text-stone-700]="!i18n.isActiveLocale(locale)"
-          [class.hover:bg-stone-100]="!i18n.isActiveLocale(locale)"
+          [class.bg-stone-50]="i18n.isActiveLocale(locale)"
+          [class.text-slate-950]="i18n.isActiveLocale(locale)"
+          [class.text-stone-200]="!i18n.isActiveLocale(locale)"
+          [class.hover:bg-white/10]="!i18n.isActiveLocale(locale)"
           (click)="i18n.setLocale(locale)"
         >
           {{ i18n.localeOptionLabel(locale) }}

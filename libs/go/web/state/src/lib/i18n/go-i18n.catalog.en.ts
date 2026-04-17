@@ -398,42 +398,20 @@ const EN_HOSTED_UI = {
   'lobby.empty.description':
     'Create the next room below and it will become the first place players can jump into chat.',
   'lobby.section.live.title': 'Live rooms',
-  'lobby.section.live.caption':
-    'Games in progress stay open for spectators who want to watch and chat.',
   'lobby.section.ready.title': 'Ready rooms',
-  'lobby.section.ready.caption':
-    'These rooms already have two players seated and will auto-start with their saved next-match settings.',
   'lobby.section.waiting.title': 'Waiting rooms',
-  'lobby.section.waiting.caption':
-    'Open seats are still available, so these are the best rooms for fresh players to join.',
   'lobby.section.empty': 'No {{section}} yet.',
   'lobby.status.live': 'Live',
   'lobby.status.ready': 'Ready',
   'lobby.status.waiting': 'Waiting',
-  'lobby.room.status.live.headline':
-    'Watch the live board and join chat as a spectator.',
-  'lobby.room.status.live.copy':
-    'Joining from the lobby takes you straight into spectator chat while the active game stays locked.',
-  'lobby.room.status.ready.headline':
-    'Players are seated and the room is primed to auto-start the next match.',
-  'lobby.room.status.ready.copy':
-    'Enter the room to chat, confirm the saved settings, or watch the automatic start and rematch flow.',
-  'lobby.room.status.waiting.headline':
-    'Join the room, claim a seat inside, and get the next match moving.',
-  'lobby.room.status.waiting.copy':
-    'Enter the room first, then claim black or white from the in-room seat controls.',
-  'lobby.room.mode_pending':
-    'Mode and board size are chosen in-room before the match begins.',
+  'lobby.room.mode_pending': 'Pending setup',
   'lobby.room.mode_with_board': '{{mode}} on a {{size}} x {{size}} board',
-  'lobby.room.action.live': 'Watch and chat live',
-  'lobby.room.action.join': 'Join selected room',
-  'lobby.room.action_hint.live':
-    'You will enter as a spectator while the match is live.',
-  'lobby.room.action_hint.join':
-    'Seat claims and host controls stay inside the room after you join.',
+  'lobby.room.action.live': 'Watch',
+  'lobby.room.action.join': 'Join',
+  'lobby.room.open_room': 'Open room',
   'lobby.room.open_seat': 'Open {{seat}}',
   'lobby.room.card.title': "{{host}}'s room",
-  'lobby.room.card.label': 'Room {{roomId}}',
+  'lobby.room.card.label': '#{{roomId}}',
   'lobby.room.selected': 'Selected',
   'lobby.table.room': 'Room',
   'lobby.table.mode': 'Mode',
@@ -441,14 +419,32 @@ const EN_HOSTED_UI = {
   'lobby.table.white': 'White',
   'lobby.table.people_online': 'People / online',
   'lobby.table.status': 'Status',
+  'lobby.table.action': 'Action',
   'lobby.table.updated': 'Updated',
   'lobby.identity.label': 'Your identity',
   'lobby.identity.title': 'Enter your name once',
   'lobby.identity.description':
-    'The same display name is reused when you create a room or join the one you selected from the lobby.',
+    'Your display name carries into every room you create or join.',
   'lobby.identity.display_name': 'Display name',
   'lobby.identity.create_room': 'Create room',
   'lobby.identity.creating_room': 'Creating room...',
+  'lobby.panel.room_list': 'Room list',
+  'lobby.panel.announcement': 'Announcements',
+  'lobby.panel.online_players': 'Online players',
+  'lobby.announcement.guide.title': 'Lobby notice slot',
+  'lobby.announcement.guide.copy':
+    'Use this area for onboarding, events, or a future intro page entry point.',
+  'lobby.announcement.ad.title': 'Ad slot reserved',
+  'lobby.announcement.ad.copy':
+    'This card keeps space for future Google Ads or sponsor placements.',
+  'lobby.online.empty': 'No one is online yet.',
+  'lobby.online.activity.playing': 'Playing',
+  'lobby.online.activity.seated': 'Seated',
+  'lobby.online.activity.watching': 'Watching',
+  'lobby.online.role.host': 'Host',
+  'lobby.online.role.black': 'Black',
+  'lobby.online.role.white': 'White',
+  'lobby.online.role.watching': 'Watching',
   'lobby.selected.label': 'Selected room',
   'lobby.selected.open_room_details': 'Open room details',
   'lobby.selected.updated': 'Updated {{time}}',

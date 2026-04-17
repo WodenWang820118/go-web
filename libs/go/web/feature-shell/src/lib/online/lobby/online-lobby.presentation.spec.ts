@@ -1,12 +1,14 @@
-import { LobbyRoomSummary } from '@gx/go/contracts';
 import {
-  buildLobbyRoomDetail,
+  LobbyOnlineParticipantSummary,
+  LobbyRoomSummary,
+} from '@gx/go/contracts';
+import {
+  buildLobbyAnnouncementCards,
+  buildLobbyOnlinePlayerGroups,
   buildLobbyOverviewStats,
   buildLobbySections,
   buildLobbyTableRows,
   emptySectionLabel,
-  selectLobbyRoom,
-  updatedLabel,
 } from './online-lobby.presentation';
 
 describe('online-lobby.presentation', () => {
@@ -23,24 +25,6 @@ describe('online-lobby.presentation', () => {
       'waiting',
     ]);
     expect(sections[0]?.rooms.map(room => room.roomId)).toEqual(['ROOM1']);
-  });
-
-  it('falls back to the first available room when nothing is selected', () => {
-    const rooms = [createRoom('ROOM1', 'live'), createRoom('ROOM2', 'ready')];
-
-    expect(selectLobbyRoom(rooms, null)?.roomId).toBe('ROOM1');
-    expect(selectLobbyRoom(rooms, 'ROOM2')?.roomId).toBe('ROOM2');
-    expect(selectLobbyRoom(rooms, 'MISSING')?.roomId).toBe('ROOM1');
-  });
-
-  it('formats updated timestamps using the active locale', () => {
-    const sample = '2026-03-24T13:05:00.000Z';
-    const en = updatedLabel(createI18n('en'), sample);
-    const zh = updatedLabel(createI18n('zh-TW'), sample);
-
-    expect(en).toContain('Updated ');
-    expect(zh).toContain('Updated ');
-    expect(en).not.toBe(zh);
   });
 
   it('aggregates lobby overview stats from all rooms', () => {
@@ -64,30 +48,31 @@ describe('online-lobby.presentation', () => {
     expect(stats.waitingCount).toBe(1);
   });
 
-  it('builds table rows with seat and count labels', () => {
+  it('builds compact table rows with seat and count values', () => {
     const [row] = buildLobbyTableRows(createI18n('en'), [
       createRoom('ROOM9', 'waiting'),
     ]);
 
-    expect(row?.roomId).toBe('ROOM9');
-    expect(row?.blackSeat).toBe('Host');
-    expect(row?.whiteSeat).toBe('Guest');
-    expect(row?.seatSummary).toEqual({
-      black: 'Black: Host',
-      white: 'White: Guest',
-    });
-    expect(row?.participantLabel).toBe('lobby.count.person.other');
+    expect(row).toEqual(
+      expect.objectContaining({
+        roomId: 'ROOM9',
+        roomLabel: '#ROOM9',
+        hostLabel: 'Host',
+        blackSeat: 'Host',
+        whiteSeat: 'Guest',
+        peopleOnlineLabel: '2 / 2',
+        statusLabel: 'lobby.status.waiting',
+        actionLabel: 'Join',
+      })
+    );
   });
 
-  it('builds pending-mode rows and singular count labels', () => {
+  it('builds pending-mode rows and live-room actions', () => {
     const [row] = buildLobbyTableRows(createI18n('en'), [
       {
-        ...createRoom('ROOM10', 'waiting'),
+        ...createRoom('LIVE10', 'live'),
         mode: null,
         boardSize: null,
-        participantCount: 1,
-        onlineCount: 1,
-        spectatorCount: 1,
         players: {
           black: null,
           white: null,
@@ -95,53 +80,80 @@ describe('online-lobby.presentation', () => {
       },
     ]);
 
-    expect(row?.modeLabel).toBe('lobby.room.mode_pending');
-    expect(row?.participantLabel).toBe('lobby.count.person.one');
-    expect(row?.onlineLabel).toBe('lobby.count.online.one');
-    expect(row?.spectatorLabel).toBe('lobby.count.spectator.one');
+    expect(row?.modeLabel).toBe('Pending setup');
+    expect(row?.seatSummary).toEqual({
+      black: 'Open Black',
+      white: 'Open White',
+    });
+    expect(row?.actionLabel).toBe('Watch');
   });
 
-  it('builds detail view models for the selected room', () => {
-    const detail = buildLobbyRoomDetail(
-      createI18n('en'),
-      createRoom('READY9', 'ready')
-    );
+  it('builds announcement cards for guide and ad slots', () => {
+    const cards = buildLobbyAnnouncementCards(createI18n('en'));
 
-    expect(detail).toEqual(
+    expect(cards).toEqual([
       expect.objectContaining({
-        roomId: 'READY9',
-        roomLabel: 'Room READY9',
-        title: "Host's room",
-        statusLabel: 'lobby.status.ready',
-        headline: 'lobby.room.status.ready.headline',
-        copy: 'lobby.room.status.ready.copy',
-        actionLabel: 'lobby.room.action.join',
-        actionHint: 'lobby.room.action_hint.join',
+        id: 'guide',
+        tone: 'guide',
+      }),
+      expect.objectContaining({
+        id: 'ad',
+        tone: 'ad',
+      }),
+    ]);
+  });
+
+  it('groups online players by activity and renders host plus seat badges', () => {
+    const groups = buildLobbyOnlinePlayerGroups(createI18n('en'), [
+      createOnlineParticipant({
+        participantId: 'p1',
+        roomId: 'LIVE1',
+        displayName: 'Host Live',
+        seat: 'black',
+        isHost: true,
+        activity: 'playing',
+      }),
+      createOnlineParticipant({
+        participantId: 'p2',
+        roomId: 'READY1',
+        displayName: 'Guest Ready',
+        seat: 'white',
+        isHost: false,
+        activity: 'seated',
+      }),
+      createOnlineParticipant({
+        participantId: 'p3',
+        roomId: 'WAIT1',
+        displayName: 'Watcher',
+        seat: null,
+        isHost: false,
+        activity: 'watching',
+      }),
+    ]);
+
+    expect(groups.map(group => group.activity)).toEqual([
+      'playing',
+      'seated',
+      'watching',
+    ]);
+    expect(groups[0]?.players[0]).toEqual(
+      expect.objectContaining({
+        displayName: 'Host Live',
+        roomLabel: '#LIVE1',
+        roleBadges: ['Host', 'Black'],
       })
     );
-  });
-
-  it('builds live-room detail copy for spectator entry points', () => {
-    const detail = buildLobbyRoomDetail(
-      createI18n('en'),
-      createRoom('LIVE9', 'live')
-    );
-
-    expect(detail).toEqual(
+    expect(groups[2]?.players[0]).toEqual(
       expect.objectContaining({
-        statusLabel: 'lobby.status.live',
-        actionLabel: 'lobby.room.action.live',
-        actionHint: 'lobby.room.action_hint.live',
+        roleBadges: ['Watching'],
       })
     );
-  });
-
-  it('returns null when no selected room is available for detail copy', () => {
-    expect(buildLobbyRoomDetail(createI18n('en'), null)).toBeNull();
   });
 
   it('returns an empty-section label for the requested status', () => {
-    expect(emptySectionLabel(createI18n('en'), 'ready')).toContain('lobby.section.empty');
+    expect(emptySectionLabel(createI18n('en'), 'ready')).toContain(
+      'No ready rooms yet.'
+    );
   });
 });
 
@@ -149,24 +161,84 @@ function createI18n(locale: 'en' | 'zh-TW') {
   return {
     locale: () => locale,
     t: (key: string, params?: Record<string, unknown>) => {
-      if (key === 'lobby.selected.updated') {
-        return `Updated ${String(params?.time ?? '')}`;
-      }
-
       if (key === 'lobby.room.card.label') {
-        return `Room ${String(params?.roomId ?? '')}`;
+        return `#${String(params?.roomId ?? '')}`;
       }
 
-      if (key === 'lobby.room.card.title') {
-        return `${String(params?.host ?? '')}'s room`;
+      if (key === 'lobby.room.mode_with_board') {
+        return `${String(params?.mode ?? '')} ${String(params?.size ?? '')}x${String(params?.size ?? '')}`;
       }
 
-      if (key === 'lobby.table.black') {
+      if (key === 'lobby.room.open_seat') {
+        return `Open ${String(params?.seat ?? '')}`;
+      }
+
+      if (key === 'lobby.room.mode_pending') {
+        return 'Pending setup';
+      }
+
+      if (key === 'lobby.room.action.live') {
+        return 'Watch';
+      }
+
+      if (key === 'lobby.room.action.join') {
+        return 'Join';
+      }
+
+      if (key === 'lobby.announcement.guide.title') {
+        return 'Lobby notice slot';
+      }
+
+      if (key === 'lobby.announcement.guide.copy') {
+        return 'Guide copy';
+      }
+
+      if (key === 'lobby.announcement.ad.title') {
+        return 'Ad slot reserved';
+      }
+
+      if (key === 'lobby.announcement.ad.copy') {
+        return 'Ad copy';
+      }
+
+      if (key === 'lobby.online.role.host') {
+        return 'Host';
+      }
+
+      if (key === 'lobby.online.role.black') {
         return 'Black';
       }
 
-      if (key === 'lobby.table.white') {
+      if (key === 'lobby.online.role.white') {
         return 'White';
+      }
+
+      if (key === 'lobby.online.role.watching') {
+        return 'Watching';
+      }
+
+      if (key === 'common.mode.go') {
+        return 'Go';
+      }
+
+      if (key === 'common.mode.gomoku') {
+        return 'Gomoku';
+      }
+
+      if (key === 'common.seat.black') {
+        return 'Black';
+      }
+
+      if (key === 'common.seat.white') {
+        return 'White';
+      }
+
+      if (key === 'lobby.section.ready.title') {
+        return 'Ready rooms';
+      }
+
+      if (key === 'lobby.section.empty') {
+        return `No ${String(params?.section ?? '')} yet.`;
       }
 
       return key;
@@ -174,7 +246,10 @@ function createI18n(locale: 'en' | 'zh-TW') {
   };
 }
 
-function createRoom(roomId: string, status: LobbyRoomSummary['status']): LobbyRoomSummary {
+function createRoom(
+  roomId: string,
+  status: LobbyRoomSummary['status']
+): LobbyRoomSummary {
   return {
     roomId,
     createdAt: '2026-03-20T00:00:00.000Z',
@@ -190,5 +265,20 @@ function createRoom(roomId: string, status: LobbyRoomSummary['status']): LobbyRo
     participantCount: 2,
     onlineCount: 2,
     spectatorCount: 0,
+  };
+}
+
+function createOnlineParticipant(
+  overrides: Partial<LobbyOnlineParticipantSummary> = {}
+): LobbyOnlineParticipantSummary {
+  return {
+    participantId: 'participant-1',
+    displayName: 'Host',
+    roomId: 'ROOM1',
+    seat: null,
+    isHost: false,
+    joinedAt: '2026-03-20T00:00:00.000Z',
+    activity: 'watching',
+    ...overrides,
   };
 }

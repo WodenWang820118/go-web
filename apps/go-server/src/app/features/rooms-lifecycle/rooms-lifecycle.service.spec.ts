@@ -83,7 +83,10 @@ describe('RoomsLifecycleService', () => {
       },
     });
     expect(() => lifecycle.getRoom(host.roomId)).toThrow();
-    expect(lifecycle.listRooms().rooms).toEqual([]);
+    expect(lifecycle.listRooms()).toEqual({
+      rooms: [],
+      onlineParticipants: [],
+    });
   });
 
   it('rejects close-room requests from non-host participants', () => {

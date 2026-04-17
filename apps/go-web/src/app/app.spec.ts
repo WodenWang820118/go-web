@@ -39,7 +39,7 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders the locale switcher on lobby routes', async () => {
+  it('renders the active lobby route content', async () => {
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(App);
 
@@ -47,12 +47,10 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="locale-switcher"]')
-    ).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Lobby page');
   });
 
-  it('does not render the locale switcher on room routes', async () => {
+  it('renders the active room route content', async () => {
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(App);
 
@@ -60,6 +58,6 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="locale-switcher"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Room page');
   });
 });

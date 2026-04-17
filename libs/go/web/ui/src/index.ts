@@ -3,4 +3,5 @@ export * from './lib/match-sidebar/match-sidebar.component';
 export * from './lib/game-status-chip/game-status-chip.component';
 export * from './lib/stone-badge/stone-badge.component';
 export * from './lib/board-coordinates/board-coordinates.component';
+export * from './lib/go-locale-switcher/go-locale-switcher.component';
 export * from './lib/primeng/go-primeng-theme.provider';

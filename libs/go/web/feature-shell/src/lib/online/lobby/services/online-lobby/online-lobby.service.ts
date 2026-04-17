@@ -1,6 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { LobbyRoomSummary } from '@gx/go/contracts';
+import {
+  LobbyOnlineParticipantSummary,
+  LobbyRoomSummary,
+} from '@gx/go/contracts';
 import { EMPTY, Subscription, catchError, finalize, tap } from 'rxjs';
 import { OnlineRoomsHttpService } from '../../../room/services/online-rooms-http/online-rooms-http.service';
 
@@ -13,11 +16,13 @@ export class OnlineLobbyService {
   private refreshSubscription: Subscription | null = null;
 
   private readonly roomsSignal = signal<LobbyRoomSummary[]>([]);
+  private readonly onlineParticipantsSignal = signal<LobbyOnlineParticipantSummary[]>([]);
   private readonly loadingSignal = signal(true);
   private readonly lastErrorSignal = signal<string | null>(null);
   private readonly initializedSignal = signal(false);
 
   readonly rooms = this.roomsSignal.asReadonly();
+  readonly onlineParticipants = this.onlineParticipantsSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly lastError = this.lastErrorSignal.asReadonly();
   readonly hasRooms = computed(() => this.roomsSignal().length > 0);
@@ -43,6 +48,7 @@ export class OnlineLobbyService {
       .pipe(
         tap(response => {
           this.roomsSignal.set([...response.rooms]);
+          this.onlineParticipantsSignal.set([...response.onlineParticipants]);
           this.initializedSignal.set(true);
         }),
         catchError((error: unknown) => {
@@ -50,6 +56,7 @@ export class OnlineLobbyService {
 
           if (this.isMissingLobby(error)) {
             this.roomsSignal.set([]);
+            this.onlineParticipantsSignal.set([]);
             return EMPTY;
           }
 

@@ -24,6 +24,7 @@ describe('goFeatureShellRoutes', () => {
           provide: OnlineLobbyService,
           useValue: {
             rooms: signal([]),
+            onlineParticipants: signal([]),
             loading: signal(false),
             lastError: signal<string | null>(null),
             hasRooms: computed(() => false),
@@ -58,7 +59,7 @@ describe('goFeatureShellRoutes', () => {
       i18n.t('lobby.identity.display_name'),
     );
     expect(harness.routeNativeElement?.textContent).toContain(
-      i18n.t('lobby.empty.title'),
+      i18n.t('lobby.panel.announcement'),
     );
   });
 

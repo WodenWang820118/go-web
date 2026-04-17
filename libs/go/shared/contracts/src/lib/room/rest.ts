@@ -1,5 +1,6 @@
 import { GoMessageDescriptor } from '@gx/go/domain';
 import {
+  LobbyOnlineParticipantSummary,
   LobbyRoomSummary,
   RoomSnapshot,
 } from './snapshots';
@@ -59,6 +60,7 @@ export interface GetRoomResponse {
  */
 export interface ListRoomsResponse {
   rooms: LobbyRoomSummary[];
+  onlineParticipants: LobbyOnlineParticipantSummary[];
 }
 
 /**

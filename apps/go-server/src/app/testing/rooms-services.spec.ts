@@ -295,6 +295,57 @@ describe('rooms services composition', () => {
           }),
         ])
       );
+      expect(response.onlineParticipants).toEqual([
+        expect.objectContaining({
+          displayName: 'Host Live',
+          roomId: liveHost.roomId,
+          seat: 'black',
+          isHost: true,
+          activity: 'playing',
+        }),
+        expect.objectContaining({
+          displayName: 'Guest Live',
+          roomId: liveHost.roomId,
+          seat: 'white',
+          isHost: false,
+          activity: 'playing',
+        }),
+        expect.objectContaining({
+          displayName: 'Host Ready',
+          roomId: readyHost.roomId,
+          seat: 'black',
+          isHost: true,
+          activity: 'seated',
+        }),
+        expect.objectContaining({
+          displayName: 'Guest Ready',
+          roomId: readyHost.roomId,
+          seat: 'white',
+          isHost: false,
+          activity: 'seated',
+        }),
+        expect.objectContaining({
+          displayName: 'Watcher Ready',
+          roomId: readyHost.roomId,
+          seat: null,
+          isHost: false,
+          activity: 'watching',
+        }),
+        expect.objectContaining({
+          displayName: 'Host Waiting Newer',
+          roomId: waitingNewer.roomId,
+          seat: null,
+          isHost: true,
+          activity: 'watching',
+        }),
+        expect.objectContaining({
+          displayName: 'Host Waiting Older',
+          roomId: waitingOlder.roomId,
+          seat: null,
+          isHost: true,
+          activity: 'watching',
+        }),
+      ]);
     } finally {
       vi.useRealTimers();
     }

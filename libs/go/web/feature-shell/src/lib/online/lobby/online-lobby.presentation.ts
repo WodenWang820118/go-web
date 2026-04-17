@@ -1,4 +1,9 @@
-import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
+import {
+  LobbyOnlineParticipantActivity,
+  LobbyOnlineParticipantSummary,
+  LobbyRoomStatus,
+  LobbyRoomSummary,
+} from '@gx/go/contracts';
 
 type TranslationReader = {
   locale(): string;
@@ -8,7 +13,6 @@ type TranslationReader = {
 export interface LobbySectionViewModel {
   status: LobbyRoomStatus;
   title: string;
-  caption: string;
   rooms: LobbyRoomSummary[];
 }
 
@@ -22,54 +26,54 @@ export interface LobbyOverviewStatsViewModel {
   waitingCount: number;
 }
 
-export interface LobbyRoomTableRowViewModel {
-  room: LobbyRoomSummary;
-  roomId: string;
-  roomLabel: string;
-  title: string;
-  modeLabel: string;
-  blackSeat: string;
-  whiteSeat: string;
-  seatSummary: LobbyRoomSeatSummaryViewModel;
-  participantLabel: string;
-  onlineLabel: string;
-  spectatorLabel: string;
-  statusLabel: string;
-  headline: string;
-  actionLabel: string;
-  updatedLabel: string;
-}
-
 export interface LobbyRoomSeatSummaryViewModel {
   black: string;
   white: string;
 }
 
-export interface LobbyRoomDetailViewModel {
+export interface LobbyRoomTableRowViewModel {
   room: LobbyRoomSummary;
   roomId: string;
   roomLabel: string;
-  title: string;
-  statusLabel: string;
-  headline: string;
-  copy: string;
+  hostLabel: string;
   modeLabel: string;
   blackSeat: string;
   whiteSeat: string;
   seatSummary: LobbyRoomSeatSummaryViewModel;
-  participantLabel: string;
-  onlineLabel: string;
-  spectatorLabel: string;
-  updatedLabel: string;
+  peopleOnlineLabel: string;
+  statusLabel: string;
   actionLabel: string;
-  actionHint: string;
+}
+
+export interface LobbyAnnouncementCardViewModel {
+  id: string;
+  title: string;
+  copy: string;
+  tone: 'guide' | 'ad';
+}
+
+export interface LobbyOnlinePlayerViewModel {
+  participantId: string;
+  displayName: string;
+  roomId: string;
+  roomLabel: string;
+  roleBadges: string[];
+}
+
+export interface LobbyOnlinePlayerGroupViewModel {
+  activity: LobbyOnlineParticipantActivity;
+  title: string;
+  count: number;
+  players: LobbyOnlinePlayerViewModel[];
 }
 
 const LOBBY_SECTION_ORDER: readonly LobbyRoomStatus[] = ['live', 'ready', 'waiting'];
+const ONLINE_PLAYER_ORDER: readonly LobbyOnlineParticipantActivity[] = [
+  'playing',
+  'seated',
+  'watching',
+];
 
-/**
- * Builds the ordered lobby sections shown on the hosted-room landing page.
- */
 export function buildLobbySections(
   i18n: TranslationReader,
   rooms: readonly LobbyRoomSummary[]
@@ -77,7 +81,6 @@ export function buildLobbySections(
   return LOBBY_SECTION_ORDER.map(status => ({
     status,
     title: i18n.t(`lobby.section.${status}.title`),
-    caption: i18n.t(`lobby.section.${status}.caption`),
     rooms: rooms.filter(room => room.status === status),
   }));
 }
@@ -122,81 +125,75 @@ export function buildLobbyTableRows(
       room,
       roomId: room.roomId,
       roomLabel: roomCardLabel(i18n, room.roomId),
-      title: roomCardTitle(i18n, room.hostDisplayName),
+      hostLabel: room.hostDisplayName,
       modeLabel: roomModeLabel(i18n, room),
       blackSeat,
       whiteSeat,
-      seatSummary: buildSeatSummary(i18n, blackSeat, whiteSeat),
-      participantLabel: countLabel(i18n, room.participantCount, 'person'),
-      onlineLabel: countLabel(i18n, room.onlineCount, 'online'),
-      spectatorLabel: countLabel(i18n, room.spectatorCount, 'spectator'),
+      seatSummary: {
+        black: blackSeat,
+        white: whiteSeat,
+      },
+      peopleOnlineLabel: `${room.participantCount} / ${room.onlineCount}`,
       statusLabel: roomStatusLabel(i18n, room.status),
-      headline: roomStatusHeadline(i18n, room),
       actionLabel: roomActionLabel(i18n, room),
-      updatedLabel: updatedLabel(i18n, room.updatedAt),
     };
   });
 }
 
-export function buildLobbyRoomDetail(
+export function buildLobbyAnnouncementCards(
+  i18n: TranslationReader
+): LobbyAnnouncementCardViewModel[] {
+  return [
+    {
+      id: 'guide',
+      title: i18n.t('lobby.announcement.guide.title'),
+      copy: i18n.t('lobby.announcement.guide.copy'),
+      tone: 'guide',
+    },
+    {
+      id: 'ad',
+      title: i18n.t('lobby.announcement.ad.title'),
+      copy: i18n.t('lobby.announcement.ad.copy'),
+      tone: 'ad',
+    },
+  ];
+}
+
+export function buildLobbyOnlinePlayerGroups(
   i18n: TranslationReader,
-  room: LobbyRoomSummary | null
-): LobbyRoomDetailViewModel | null {
-  if (!room) {
-    return null;
-  }
+  participants: readonly LobbyOnlineParticipantSummary[]
+): LobbyOnlinePlayerGroupViewModel[] {
+  return ONLINE_PLAYER_ORDER.map(activity => {
+    const players = participants
+      .filter(participant => participant.activity === activity)
+      .map<LobbyOnlinePlayerViewModel>(participant => ({
+        participantId: participant.participantId,
+        displayName: participant.displayName,
+        roomId: participant.roomId,
+        roomLabel: roomCardLabel(i18n, participant.roomId),
+        roleBadges: playerRoleBadges(i18n, participant),
+      }));
 
-  const blackSeat = seatLabel(i18n, room.players.black, 'black');
-  const whiteSeat = seatLabel(i18n, room.players.white, 'white');
-
-  return {
-    room,
-    roomId: room.roomId,
-    roomLabel: roomCardLabel(i18n, room.roomId),
-    title: roomCardTitle(i18n, room.hostDisplayName),
-    statusLabel: roomStatusLabel(i18n, room.status),
-    headline: roomStatusHeadline(i18n, room),
-    copy: roomStatusCopy(i18n, room),
-    modeLabel: roomModeLabel(i18n, room),
-    blackSeat,
-    whiteSeat,
-    seatSummary: buildSeatSummary(i18n, blackSeat, whiteSeat),
-    participantLabel: countLabel(i18n, room.participantCount, 'person'),
-    onlineLabel: countLabel(i18n, room.onlineCount, 'online'),
-    spectatorLabel: countLabel(i18n, room.spectatorCount, 'spectator'),
-    updatedLabel: updatedLabel(i18n, room.updatedAt),
-    actionLabel: roomActionLabel(i18n, room),
-    actionHint: roomActionHint(i18n, room),
-  };
+    return {
+      activity,
+      title: i18n.t(`lobby.online.activity.${activity}`),
+      count: players.length,
+      players,
+    };
+  }).filter(group => group.count > 0);
 }
 
-/**
- * Returns the currently selected room, defaulting to the first available room.
- */
-export function selectLobbyRoom(
-  rooms: readonly LobbyRoomSummary[],
-  selectedRoomId: string | null
-): LobbyRoomSummary | null {
-  if (rooms.length === 0) {
-    return null;
-  }
-
-  return rooms.find(room => room.roomId === selectedRoomId) ?? rooms[0] ?? null;
-}
-
-export function roomStatusLabel(i18n: TranslationReader, status: LobbyRoomStatus): string {
+export function roomStatusLabel(
+  i18n: TranslationReader,
+  status: LobbyRoomStatus
+): string {
   return i18n.t(`lobby.status.${status}`);
 }
 
-export function roomStatusHeadline(i18n: TranslationReader, room: LobbyRoomSummary): string {
-  return i18n.t(`lobby.room.status.${room.status}.headline`);
-}
-
-export function roomStatusCopy(i18n: TranslationReader, room: LobbyRoomSummary): string {
-  return i18n.t(`lobby.room.status.${room.status}.copy`);
-}
-
-export function roomModeLabel(i18n: TranslationReader, room: LobbyRoomSummary): string {
+export function roomModeLabel(
+  i18n: TranslationReader,
+  room: LobbyRoomSummary
+): string {
   if (!room.mode || !room.boardSize) {
     return i18n.t('lobby.room.mode_pending');
   }
@@ -207,16 +204,13 @@ export function roomModeLabel(i18n: TranslationReader, room: LobbyRoomSummary): 
   });
 }
 
-export function roomActionLabel(i18n: TranslationReader, room: LobbyRoomSummary): string {
+export function roomActionLabel(
+  i18n: TranslationReader,
+  room: LobbyRoomSummary
+): string {
   return room.status === 'live'
     ? i18n.t('lobby.room.action.live')
     : i18n.t('lobby.room.action.join');
-}
-
-export function roomActionHint(i18n: TranslationReader, room: LobbyRoomSummary): string {
-  return room.status === 'live'
-    ? i18n.t('lobby.room.action_hint.live')
-    : i18n.t('lobby.room.action_hint.join');
 }
 
 export function seatLabel(
@@ -242,35 +236,36 @@ export function countLabel(
   });
 }
 
-export function roomCardTitle(i18n: TranslationReader, host: string): string {
-  return i18n.t('lobby.room.card.title', { host });
-}
-
 export function roomCardLabel(i18n: TranslationReader, roomId: string): string {
   return i18n.t('lobby.room.card.label', { roomId });
 }
 
-export function updatedLabel(i18n: TranslationReader, updatedAt: string): string {
-  const formatted = new Intl.DateTimeFormat(i18n.locale() === 'zh-TW' ? 'zh-TW' : 'en', {
-    timeStyle: 'short',
-  }).format(new Date(updatedAt));
-
-  return i18n.t('lobby.selected.updated', { time: formatted });
-}
-
-export function emptySectionLabel(i18n: TranslationReader, status: LobbyRoomStatus): string {
+export function emptySectionLabel(
+  i18n: TranslationReader,
+  status: LobbyRoomStatus
+): string {
   return i18n.t('lobby.section.empty', {
     section: i18n.t(`lobby.section.${status}.title`).toLowerCase(),
   });
 }
 
-function buildSeatSummary(
+function playerRoleBadges(
   i18n: TranslationReader,
-  blackSeat: string,
-  whiteSeat: string
-): LobbyRoomSeatSummaryViewModel {
-  return {
-    black: `${i18n.t('lobby.table.black')}: ${blackSeat}`,
-    white: `${i18n.t('lobby.table.white')}: ${whiteSeat}`,
-  };
+  participant: LobbyOnlineParticipantSummary
+): string[] {
+  const badges: string[] = [];
+
+  if (participant.isHost) {
+    badges.push(i18n.t('lobby.online.role.host'));
+  }
+
+  if (participant.seat === 'black') {
+    badges.push(i18n.t('lobby.online.role.black'));
+  } else if (participant.seat === 'white') {
+    badges.push(i18n.t('lobby.online.role.white'));
+  } else {
+    badges.push(i18n.t('lobby.online.role.watching'));
+  }
+
+  return badges;
 }

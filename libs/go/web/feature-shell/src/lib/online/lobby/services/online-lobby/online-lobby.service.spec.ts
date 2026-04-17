@@ -4,7 +4,10 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { LobbyRoomSummary } from '@gx/go/contracts';
+import {
+  LobbyOnlineParticipantSummary,
+  LobbyRoomSummary,
+} from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
 import { GO_SERVER_ORIGIN, GoI18nService } from '@gx/go/state';
 import { OnlineLobbyService } from './online-lobby.service';
@@ -44,6 +47,11 @@ describe('OnlineLobbyService', () => {
           status: 'waiting',
         }),
       ],
+      onlineParticipants: [
+        createOnlineParticipant({
+          roomId: 'ROOM42',
+        }),
+      ],
     });
 
     expect(service.loading()).toBe(false);
@@ -52,6 +60,12 @@ describe('OnlineLobbyService', () => {
       expect.objectContaining({
         roomId: 'ROOM42',
         status: 'waiting',
+      }),
+    ]);
+    expect(service.onlineParticipants()).toEqual([
+      expect.objectContaining({
+        roomId: 'ROOM42',
+        activity: 'watching',
       }),
     ]);
   });
@@ -73,6 +87,7 @@ describe('OnlineLobbyService', () => {
 
     expect(service.loading()).toBe(false);
     expect(service.rooms()).toEqual([]);
+    expect(service.onlineParticipants()).toEqual([]);
     expect(service.lastError()).toBe(i18n.t('lobby.error.load_failed'));
   });
 
@@ -86,6 +101,7 @@ describe('OnlineLobbyService', () => {
 
     expect(service.loading()).toBe(false);
     expect(service.rooms()).toEqual([]);
+    expect(service.onlineParticipants()).toEqual([]);
     expect(service.hasRooms()).toBe(false);
     expect(service.lastError()).toBeNull();
   });
@@ -109,6 +125,21 @@ function createRoomSummary(
     participantCount: 1,
     onlineCount: 1,
     spectatorCount: 1,
+    ...overrides,
+  };
+}
+
+function createOnlineParticipant(
+  overrides: Partial<LobbyOnlineParticipantSummary> = {}
+): LobbyOnlineParticipantSummary {
+  return {
+    participantId: 'participant-1',
+    displayName: 'Host',
+    roomId: 'ROOM01',
+    seat: null,
+    isHost: true,
+    joinedAt: '2026-03-20T00:00:00.000Z',
+    activity: 'watching',
     ...overrides,
   };
 }

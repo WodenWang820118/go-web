@@ -78,7 +78,8 @@ test('keeps the desktop lobby pinned to the viewport while the room table scroll
   const header = page.getByTestId('lobby-room-table-head');
 
   await expect(panel).toBeVisible();
-  await expect(page.getByTestId('online-lobby-selected-room')).toBeVisible();
+  await expect(page.getByTestId('lobby-announcement-panel')).toBeVisible();
+  await expect(page.getByTestId('lobby-online-players-panel')).toBeVisible();
 
   const panelMetrics = await panel.evaluate(node => ({
     clientHeight: node.clientHeight,
@@ -98,7 +99,9 @@ test('keeps the desktop lobby pinned to the viewport while the room table scroll
   expect(Math.abs((beforeHeader?.y ?? 0) - (afterHeader?.y ?? 0))).toBeLessThan(4);
 });
 
-test('shows the dense lobby with a visible detail pane on tablet widths', async ({ page }) => {
+test('shows the dense lobby with announcement and online-player panels on tablet widths', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 768, height: 1024 });
   await mockLobby(page, createDenseLobbyRooms());
   await useEnglish(page);
@@ -110,8 +113,10 @@ test('shows the dense lobby with a visible detail pane on tablet widths', async 
   expect(scrollOverflow).toBeLessThanOrEqual(1);
 
   await page.getByTestId('lobby-tab-ready').click();
-  await page.getByTestId('lobby-room-READY05').click();
-  await expect(page.getByTestId('online-lobby-selected-room')).toContainText('Ready Host 05');
+  await expect(page.getByTestId('lobby-room-READY05')).toBeVisible();
+  await expect(page.getByTestId('lobby-announcement-panel')).toBeVisible();
+  await expect(page.getByTestId('lobby-online-players-panel')).toBeVisible();
+  await expect(page.getByTestId('online-lobby-selected-room')).toHaveCount(0);
 });
 
 test('renders stacked mobile cards with working open-room and join actions', async ({
@@ -126,6 +131,8 @@ test('renders stacked mobile cards with working open-room and join actions', asy
 
   await expect(page.getByTestId('online-lobby-selected-room')).toHaveCount(0);
   await expect(page.getByTestId('lobby-mobile-room-WAIT01')).toBeVisible();
+  await expect(page.getByTestId('lobby-announcement-panel')).toBeVisible();
+  await expect(page.getByTestId('lobby-online-players-panel')).toBeVisible();
 
   await page.getByTestId('online-lobby-mobile-open-WAIT01').click();
   await expect(page).toHaveURL(/\/online\/room\/WAIT01$/);
@@ -154,6 +161,7 @@ async function clickLocalLink(page: Page, href: '/setup/go' | '/setup/gomoku'): 
 }
 
 async function mockLobby(page: Page, rooms: LobbyRoomFixture[]): Promise<void> {
+  const onlineParticipants = createLobbyOnlineParticipants(rooms);
   const snapshots = new Map(
     rooms.map(room => [
       room.roomId,
@@ -170,7 +178,10 @@ async function mockLobby(page: Page, rooms: LobbyRoomFixture[]): Promise<void> {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ rooms }),
+        body: JSON.stringify({
+          rooms,
+          onlineParticipants,
+        }),
       });
       return;
     }
@@ -343,4 +354,66 @@ function createRoomSnapshot(roomId: string, hostDisplayName: string) {
     match: null,
     chat: [],
   };
+}
+
+function createLobbyOnlineParticipants(rooms: LobbyRoomFixture[]) {
+  return rooms.slice(0, 10).flatMap(room => {
+    if (room.status === 'live') {
+      return [
+        {
+          participantId: `${room.roomId}-black`,
+          displayName: room.players.black ?? `${room.hostDisplayName} Black`,
+          roomId: room.roomId,
+          seat: 'black',
+          isHost: true,
+          joinedAt: '2026-03-20T00:00:00.000Z',
+          activity: 'playing',
+        },
+        {
+          participantId: `${room.roomId}-white`,
+          displayName: room.players.white ?? 'Guest',
+          roomId: room.roomId,
+          seat: 'white',
+          isHost: false,
+          joinedAt: '2026-03-20T00:01:00.000Z',
+          activity: 'playing',
+        },
+      ];
+    }
+
+    if (room.status === 'ready' && room.players.black && room.players.white) {
+      return [
+        {
+          participantId: `${room.roomId}-black`,
+          displayName: room.players.black,
+          roomId: room.roomId,
+          seat: 'black',
+          isHost: true,
+          joinedAt: '2026-03-20T00:00:00.000Z',
+          activity: 'seated',
+        },
+        {
+          participantId: `${room.roomId}-white`,
+          displayName: room.players.white,
+          roomId: room.roomId,
+          seat: 'white',
+          isHost: false,
+          joinedAt: '2026-03-20T00:01:00.000Z',
+          activity: 'seated',
+        },
+      ];
+    }
+
+    return [
+      {
+        participantId: `${room.roomId}-watcher`,
+        displayName: room.hostDisplayName,
+        roomId: room.roomId,
+        seat: null,
+        isHost: true,
+        joinedAt: '2026-03-20T00:00:00.000Z',
+        activity: 'watching',
+      },
+    ];
+  });
 }

@@ -69,6 +69,7 @@ export interface HostedRematchState {
 }
 
 export type LobbyRoomStatus = 'live' | 'ready' | 'waiting';
+export type LobbyOnlineParticipantActivity = 'playing' | 'seated' | 'watching';
 
 /**
  * Public summary shown in the hosted-room lobby.
@@ -88,6 +89,19 @@ export interface LobbyRoomSummary {
   participantCount: number;
   onlineCount: number;
   spectatorCount: number;
+}
+
+/**
+ * Online participant summary shown in the hosted-room lobby sidebar.
+ */
+export interface LobbyOnlineParticipantSummary {
+  participantId: string;
+  displayName: string;
+  roomId: string;
+  seat: PlayerColor | null;
+  isHost: boolean;
+  joinedAt: string;
+  activity: LobbyOnlineParticipantActivity;
 }
 
 /**
