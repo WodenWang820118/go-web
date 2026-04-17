@@ -60,6 +60,7 @@
           [attr.cy]="y(point)"
           r="5"
           fill="rgba(51, 36, 20, 0.85)"
+          pointer-events="none"
         />
       }
 
@@ -80,11 +81,17 @@
               [attr.fill]="stoneColor(point) === 'black' ? 'url(#stone-black)' : 'url(#stone-white)'"
               [attr.stroke]="stoneColor(point) === 'black' ? '#09090b' : '#e7e5e4'"
               stroke-width="2"
+              pointer-events="none"
             />
           }
 
           @if (isDeadStone(point)) {
-            <g stroke="#f97316" stroke-width="3" stroke-linecap="round">
+            <g
+              stroke="#f97316"
+              stroke-width="3"
+              stroke-linecap="round"
+              pointer-events="none"
+            >
               <line
                 [attr.x1]="x(point) - 12"
                 [attr.y1]="y(point) - 12"
@@ -106,6 +113,7 @@
               [attr.cy]="y(point)"
               r="5"
               [attr.fill]="stoneColor(point) === 'black' ? '#fef3c7' : '#1f2937'"
+              pointer-events="none"
             />
           }
 
@@ -118,6 +126,7 @@
               stroke="#38bdf8"
               stroke-width="4"
               stroke-dasharray="6 6"
+              pointer-events="none"
             />
           }
 
@@ -129,6 +138,7 @@
               fill="none"
               stroke="#f97316"
               stroke-width="2"
+              pointer-events="none"
             />
           }
         </g>
@@ -139,9 +149,14 @@
           [attr.cx]="x(ghostPoint()!)"
           [attr.cy]="y(ghostPoint()!)"
           [attr.r]="stoneRadius() - 2"
-          [attr.fill]="currentPlayer() === 'black' ? 'rgba(9, 9, 11, 0.35)' : 'rgba(255, 255, 255, 0.6)'"
+          [attr.fill]="
+            currentPlayer() === 'black'
+              ? 'rgba(9, 9, 11, 0.35)'
+              : 'rgba(255, 255, 255, 0.6)'
+          "
           [attr.stroke]="currentPlayer() === 'black' ? '#1f2937' : '#e7e5e4'"
           stroke-width="2"
+          pointer-events="none"
         />
       }
     </svg>

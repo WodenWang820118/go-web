@@ -1,4 +1,5 @@
 import { boardHash, cloneBoard, createBoard, setCell } from './board/board-state';
+import { buildScoringState } from './engines/go/go-scoring';
 import { GoRulesEngine } from './engines/go-rules-engine';
 import { DEFAULT_GO_KOMI, MatchSettings, MatchState } from './types';
 
@@ -76,19 +77,17 @@ describe('GoRulesEngine', () => {
     });
   });
 
-  it('enters scoring after two passes and finalizes the result', () => {
+  it('auto-finalizes the result after two consecutive passes', () => {
     let state = engine.createInitialState(settings);
 
     state = engine.applyMove(state, settings, { type: 'pass' }).state;
     state = engine.applyMove(state, settings, { type: 'pass' }).state;
 
-    expect(state.phase).toBe('scoring');
+    expect(state.phase).toBe('finished');
     expect(state.scoring?.score.white).toBe(DEFAULT_GO_KOMI);
-
-    const finished = engine.finalizeScoring(state, settings);
-
-    expect(finished.phase).toBe('finished');
-    expect(finished.result?.winner).toBe('white');
+    expect(state.result?.winner).toBe('white');
+    expect(state.result?.reason).toBe('score');
+    expect(state.lastMove?.phaseAfterMove).toBe('finished');
   });
 
   it('marks dead groups during scoring and updates the preview score', () => {
@@ -102,18 +101,12 @@ describe('GoRulesEngine', () => {
     setCell(board, { x: 0, y: 2 }, 'black');
     setCell(board, { x: 2, y: 2 }, 'black');
 
-    const scoringState = engine.applyMove(
-      engine.applyMove(
-        {
-          ...engine.createInitialState(settings),
-          board,
-        },
-        settings,
-        { type: 'pass' }
-      ).state,
-      settings,
-      { type: 'pass' }
-    ).state;
+    const scoringState: MatchState = {
+      ...engine.createInitialState(settings),
+      board,
+      phase: 'scoring',
+      scoring: buildScoringState(board, new Set<string>(), settings.komi),
+    };
 
     const toggled = engine.toggleDeadGroup(scoringState, settings, { x: 1, y: 1 });
 

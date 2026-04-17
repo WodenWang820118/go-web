@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Inject,
   Param,
   Post,
@@ -14,8 +15,9 @@ import type {
   ListRoomsResponse,
 } from '@gx/go/contracts';
 import type { Request } from 'express';
-import { CreateRoomDto, JoinRoomDto } from './rooms.dtos';
+import { CloseRoomDto, CreateRoomDto, JoinRoomDto } from './rooms.dtos';
 import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
+import { RoomsRealtimeBroadcasterService } from '../core/rooms-realtime/rooms-realtime-broadcaster.service';
 
 /**
  * Exposes the hosted room REST API used by the Angular frontend.
@@ -24,7 +26,9 @@ import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecyc
 export class RoomsController {
   constructor(
     @Inject(RoomsLifecycleService)
-    private readonly roomsLifecycleService: RoomsLifecycleService
+    private readonly roomsLifecycleService: RoomsLifecycleService,
+    @Inject(RoomsRealtimeBroadcasterService)
+    private readonly realtime: RoomsRealtimeBroadcasterService
   ) {}
 
   // #region Routes
@@ -51,6 +55,15 @@ export class RoomsController {
       body.participantToken,
       this.requesterKey(request, `join:${roomId}`)
     );
+  }
+
+  @Post(':roomId/close')
+  @HttpCode(204)
+  closeRoom(@Param('roomId') roomId: string, @Body() body: CloseRoomDto): void {
+    const closed = this.roomsLifecycleService.closeRoom(roomId, body.participantToken);
+
+    this.realtime.broadcastRoomClosed(closed.event);
+    this.realtime.disconnectSockets(closed.socketIds, 50);
   }
 
   @Get()

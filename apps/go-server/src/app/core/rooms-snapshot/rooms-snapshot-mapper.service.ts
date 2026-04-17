@@ -1,4 +1,6 @@
 import {
+  LobbyOnlineParticipantActivity,
+  LobbyOnlineParticipantSummary,
   LobbyRoomStatus,
   LobbyRoomSummary,
   RoomSnapshot,
@@ -85,6 +87,39 @@ export class RoomsSnapshotMapper {
     };
   }
 
+  toLobbyOnlineParticipants(
+    rooms: readonly RoomRecord[]
+  ): LobbyOnlineParticipantSummary[] {
+    const sortedRooms = [...rooms].sort((left, right) =>
+      this.compareLobbyRooms(this.toLobbySummary(left), this.toLobbySummary(right))
+    );
+    const roomOrder = new Map(
+      sortedRooms.map((room, index) => [room.id, index] as const)
+    );
+
+    return sortedRooms
+      .flatMap(room => {
+        const black = this.store.getSeatHolder(room, 'black');
+        const white = this.store.getSeatHolder(room, 'white');
+        const status = this.getLobbyStatus(room, black, white);
+
+        return [...room.participants.values()]
+          .filter(participant => participant.online)
+          .map<LobbyOnlineParticipantSummary>(participant => ({
+            participantId: participant.id,
+            displayName: participant.displayName,
+            roomId: room.id,
+            seat: participant.seat,
+            isHost: participant.isHost,
+            joinedAt: participant.joinedAt,
+            activity: this.getLobbyParticipantActivity(participant, status),
+          }));
+      })
+      .sort((left, right) =>
+        this.compareLobbyParticipants(left, right, roomOrder)
+      );
+  }
+
   compareLobbyRooms(left: LobbyRoomSummary, right: LobbyRoomSummary): number {
     const statusOrder = this.compareLobbyStatus(left.status, right.status);
 
@@ -122,5 +157,82 @@ export class RoomsSnapshotMapper {
     };
 
     return order[left] - order[right];
+  }
+
+  private getLobbyParticipantActivity(
+    participant: ParticipantRecord,
+    roomStatus: LobbyRoomStatus
+  ): LobbyOnlineParticipantActivity {
+    if (participant.seat === null) {
+      return 'watching';
+    }
+
+    return roomStatus === 'live' ? 'playing' : 'seated';
+  }
+
+  private compareLobbyParticipants(
+    left: LobbyOnlineParticipantSummary,
+    right: LobbyOnlineParticipantSummary,
+    roomOrder: ReadonlyMap<string, number>
+  ): number {
+    const activityOrder = this.compareLobbyParticipantActivity(
+      left.activity,
+      right.activity
+    );
+
+    if (activityOrder !== 0) {
+      return activityOrder;
+    }
+
+    const leftRoomOrder = roomOrder.get(left.roomId) ?? Number.MAX_SAFE_INTEGER;
+    const rightRoomOrder = roomOrder.get(right.roomId) ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftRoomOrder !== rightRoomOrder) {
+      return leftRoomOrder - rightRoomOrder;
+    }
+
+    const seatOrder = this.compareLobbyParticipantSeat(left.seat, right.seat);
+
+    if (seatOrder !== 0) {
+      return seatOrder;
+    }
+
+    if (left.isHost !== right.isHost) {
+      return left.isHost ? -1 : 1;
+    }
+
+    const joinedAtOrder = left.joinedAt.localeCompare(right.joinedAt);
+
+    if (joinedAtOrder !== 0) {
+      return joinedAtOrder;
+    }
+
+    return left.displayName.localeCompare(right.displayName);
+  }
+
+  private compareLobbyParticipantActivity(
+    left: LobbyOnlineParticipantActivity,
+    right: LobbyOnlineParticipantActivity
+  ): number {
+    const order: Record<LobbyOnlineParticipantActivity, number> = {
+      playing: 0,
+      seated: 1,
+      watching: 2,
+    };
+
+    return order[left] - order[right];
+  }
+
+  private compareLobbyParticipantSeat(
+    left: ParticipantRecord['seat'],
+    right: ParticipantRecord['seat']
+  ): number {
+    const order = {
+      black: 0,
+      white: 1,
+      null: 2,
+    } as const;
+
+    return order[left ?? 'null'] - order[right ?? 'null'];
   }
 }

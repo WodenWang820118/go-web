@@ -47,3 +47,11 @@ export interface CommandErrorEvent {
   code: string;
   message: GoMessageDescriptor;
 }
+
+/**
+ * Realtime event emitted when a host closes the room.
+ */
+export interface RoomClosedEvent {
+  roomId: string;
+  message: GoMessageDescriptor;
+}

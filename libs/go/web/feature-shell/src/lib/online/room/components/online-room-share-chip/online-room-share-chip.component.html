@@ -1,0 +1,89 @@
+<section
+  class="flex w-full flex-col items-end gap-2"
+  data-testid="room-share-chip"
+>
+  <button
+    #shareButton
+    type="button"
+    class="room-share-chip__button-reset"
+    data-testid="room-share-chip-button"
+    role="button"
+    tabindex="0"
+    [disabled]="shareDisabled()"
+    [attr.aria-label]="shareChipAriaLabel()"
+    [attr.title]="connectionLabel()"
+    (click)="activateShareChip()"
+  >
+    <p-chip [class]="shareChipStyleClass()" [disabled]="shareDisabled()">
+      <span
+        class="room-share-chip__light"
+        [class.room-share-chip__light--success]="feedbackState() === 'success'"
+        [class.room-share-chip__light--connected]="
+          feedbackState() !== 'success' && connectionState() === 'connected'
+        "
+        aria-hidden="true"
+      ></span>
+      <span class="room-share-chip__label">
+        {{ feedbackState() === 'success' ? copiedLabel() : shareLabel() }}
+      </span>
+    </p-chip>
+  </button>
+
+  @if (feedbackState() === 'success') {
+    <span
+      class="sr-only"
+      data-testid="room-share-chip-feedback"
+      role="status"
+      aria-live="polite"
+    >
+      {{ copiedMessage() }}
+    </span>
+  }
+
+  @if (feedbackState() === 'manual') {
+    <div
+      class="go-hosted-surface-warm grid w-full max-w-[17rem] gap-3 p-3 sm:p-3"
+      data-testid="room-share-chip-manual"
+      role="status"
+      aria-live="polite"
+      tabindex="-1"
+      (keydown.escape)="dismissManualFallback()"
+    >
+      <p class="text-sm leading-6">
+        {{ copyFailedMessage() }}
+      </p>
+
+      <input
+        #manualUrlInput
+        pInputText
+        type="text"
+        class="go-hosted-input font-mono text-xs"
+        data-testid="room-share-chip-manual-url"
+        [value]="shareUrl()"
+        [attr.aria-label]="manualUrlAriaLabel()"
+        readonly
+        (keydown.escape)="dismissManualFallback()"
+      />
+
+      <div
+        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p class="text-sm leading-6">
+          {{ manualCopyInstruction() }}
+        </p>
+
+        <button
+          pButton
+          type="button"
+          class="go-hosted-button-secondary whitespace-nowrap"
+          data-testid="room-share-chip-manual-dismiss"
+          [attr.aria-label]="dismissLabel()"
+          (click)="dismissManualFallback()"
+          (keydown.escape)="dismissManualFallback()"
+        >
+          {{ dismissLabel() }}
+        </button>
+      </div>
+    </div>
+  }
+</section>

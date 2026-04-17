@@ -2,6 +2,7 @@ import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service
 import { RoomsLifecycleService } from './rooms-lifecycle.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('RoomsLifecycleService', () => {
   let lifecycle: RoomsLifecycleService;
@@ -63,5 +64,37 @@ describe('RoomsLifecycleService', () => {
     const disconnected = lifecycle.disconnectSocket('socket-1');
 
     expect(disconnected?.participants[0]?.online).toBe(false);
+  });
+
+  it('lets the host close the room and removes it immediately', () => {
+    const host = lifecycle.createRoom('Host', 'create:test');
+    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+
+    lifecycle.connectParticipantSocket(host.roomId, host.participantToken, 'socket-host');
+    lifecycle.connectParticipantSocket(host.roomId, guest.participantToken, 'socket-guest');
+
+    const closed = lifecycle.closeRoom(host.roomId, host.participantToken);
+
+    expect(closed).toMatchObject({
+      roomId: host.roomId,
+      socketIds: expect.arrayContaining(['socket-host', 'socket-guest']),
+      event: {
+        roomId: host.roomId,
+      },
+    });
+    expect(() => lifecycle.getRoom(host.roomId)).toThrow();
+    expect(lifecycle.listRooms()).toEqual({
+      rooms: [],
+      onlineParticipants: [],
+    });
+  });
+
+  it('rejects close-room requests from non-host participants', () => {
+    const host = lifecycle.createRoom('Host', 'create:test');
+    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+
+    expect(() =>
+      lifecycle.closeRoom(host.roomId, guest.participantToken)
+    ).toThrow(ForbiddenException);
   });
 });

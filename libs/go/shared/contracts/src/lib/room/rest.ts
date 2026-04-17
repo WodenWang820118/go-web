@@ -1,5 +1,6 @@
 import { GoMessageDescriptor } from '@gx/go/domain';
 import {
+  LobbyOnlineParticipantSummary,
   LobbyRoomSummary,
   RoomSnapshot,
 } from './snapshots';
@@ -17,6 +18,13 @@ export interface CreateRoomRequest {
 export interface JoinRoomRequest {
   displayName: string;
   participantToken?: string;
+}
+
+/**
+ * Request body for closing a hosted room.
+ */
+export interface CloseRoomRequest {
+  participantToken: string;
 }
 
 /**
@@ -52,6 +60,7 @@ export interface GetRoomResponse {
  */
 export interface ListRoomsResponse {
   rooms: LobbyRoomSummary[];
+  onlineParticipants: LobbyOnlineParticipantSummary[];
 }
 
 /**

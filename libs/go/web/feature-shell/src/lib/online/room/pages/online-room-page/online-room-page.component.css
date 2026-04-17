@@ -1,0 +1,27 @@
+.room-layout {
+  --room-sidebar-width: 30rem;
+  align-items: stretch;
+}
+
+lib-go-online-room-sidebar {
+  min-height: 0;
+}
+
+lib-go-online-room-stage-section {
+  min-height: 0;
+  min-width: 0;
+}
+
+@media (min-width: 1080px) {
+  .room-layout {
+    grid-template-columns: minmax(0, 1fr) var(--room-sidebar-width);
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1079px) {
+  .room-layout {
+    min-height: auto;
+  }
+}

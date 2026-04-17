@@ -130,6 +130,7 @@ const EN_ROOM_SHARED = {
     '{{actorDisplayName}} unmuted {{targetDisplayName}}.',
   'room.notice.participant_removed':
     '{{actorDisplayName}} removed {{targetDisplayName}}.',
+  'room.notice.closed_by_host': 'The host closed the room.',
   'room.validation.display_name_string': 'Display name must be text.',
   'room.validation.participant_token_too_long':
     'Participant tokens must be {{max}} characters or fewer.',
@@ -144,6 +145,7 @@ const EN_ROOM_SHARED = {
     'Wait for the room connection to finish before using room actions.',
   'room.client.unexpected_network_error': 'Unexpected network error.',
   'lobby.error.load_failed': 'Unable to load hosted rooms.',
+  'lobby.notice.room_closed_self': 'Room closed.',
 } as const;
 const EN_MODES = {
   'mode.go.title': 'Go',
@@ -273,9 +275,24 @@ const EN_HOSTED_UI = {
   'room.hero.description':
     'Invite two players to take seats, let spectators watch live, and keep the room chat moving during the match.',
   'room.hero.connection': 'Connection',
+  'room.hero.share': 'Share',
   'room.hero.share_url': 'Share URL',
   'room.hero.copy': 'Copy',
+  'room.hero.copy_link': 'Copy room link',
+  'room.hero.copied': 'Copied',
+  'room.hero.retry_copy_link': 'Retry copying room link',
+  'room.hero.copy_complete': 'Room link copied to clipboard.',
+  'room.hero.copy_failed':
+    'Automatic copy is unavailable. Copy the room link below instead.',
+  'room.hero.copy_manual_instruction':
+    'Select the room link below and copy it manually.',
+  'room.hero.manual_url_label': 'Room link to copy manually',
   'room.page.back_to_lobby': 'Back to lobby',
+  'room.leave.confirm.header': 'Leave this room?',
+  'room.leave.confirm.message':
+    'Leaving will close the room and return everyone who is still inside to the lobby.',
+  'room.leave.confirm.accept': 'Leave and close room',
+  'room.leave.confirm.reject': 'Stay in room',
   'room.page.loading': 'Loading hosted room state...',
   'room.page.missing.label': 'Room unavailable',
   'room.page.missing.title': 'This room could not be found.',
@@ -308,7 +325,6 @@ const EN_HOSTED_UI = {
   'room.connection.offline': 'Offline',
   'room.chat.helper.join': 'Join the room to chat.',
   'room.chat.helper.muted': 'The host muted your chat access.',
-  'room.chat.helper.default': 'Spectators and players can chat in real time.',
   'room.participants.join_room': 'Join room',
   'room.participants.display_name': 'Display name',
   'room.participants.joining_room': 'Joining room...',
@@ -358,11 +374,15 @@ const EN_HOSTED_UI = {
   'room.rematch.response.declined': 'Passed',
   'room.rematch.blocked':
     'A player passed on the rematch. Change a seat to unlock auto-start for the next game.',
+  'room.dialog.auto_start.title': 'Next match started',
+  'room.dialog.match_result.title': 'Match result',
   'room.chat.title': 'Room chat',
   'room.chat.empty': 'Join the room to start the conversation.',
   'room.chat.message': 'Message',
   'room.chat.placeholder': 'Message the room...',
   'room.chat.send': 'Send',
+  'room.sidebar.decorative_avatar': 'Decorative avatar',
+  'room.sidebar.decorative_clock': 'Decorative clock',
   'lobby.hero.eyebrow': 'Hosted multiplayer lobby',
   'lobby.hero.title': 'Go and Gomoku rooms, ready to join.',
   'lobby.hero.description':
@@ -379,49 +399,54 @@ const EN_HOSTED_UI = {
     'Create the next room below and it will become the first place players can jump into chat.',
   'lobby.section.live.title': 'Live rooms',
   'lobby.section.live.caption':
-    'Games in progress stay open for spectators who want to watch and chat.',
+    'Rooms with active matches still stay open for people who want to watch and chat.',
   'lobby.section.ready.title': 'Ready rooms',
-  'lobby.section.ready.caption':
-    'These rooms already have two players seated and will auto-start with their saved next-match settings.',
   'lobby.section.waiting.title': 'Waiting rooms',
-  'lobby.section.waiting.caption':
-    'Open seats are still available, so these are the best rooms for fresh players to join.',
   'lobby.section.empty': 'No {{section}} yet.',
   'lobby.status.live': 'Live',
   'lobby.status.ready': 'Ready',
   'lobby.status.waiting': 'Waiting',
-  'lobby.room.status.live.headline':
-    'Watch the live board and join chat as a spectator.',
-  'lobby.room.status.live.copy':
-    'Joining from the lobby takes you straight into spectator chat while the active game stays locked.',
-  'lobby.room.status.ready.headline':
-    'Players are seated and the room is primed to auto-start the next match.',
-  'lobby.room.status.ready.copy':
-    'Enter the room to chat, confirm the saved settings, or watch the automatic start and rematch flow.',
-  'lobby.room.status.waiting.headline':
-    'Join the room, claim a seat inside, and get the next match moving.',
-  'lobby.room.status.waiting.copy':
-    'Enter the room first, then claim black or white from the in-room seat controls.',
-  'lobby.room.mode_pending':
-    'Mode and board size are chosen in-room before the match begins.',
+  'lobby.room.mode_pending': 'Pending setup',
   'lobby.room.mode_with_board': '{{mode}} on a {{size}} x {{size}} board',
-  'lobby.room.action.live': 'Watch and chat live',
-  'lobby.room.action.join': 'Join selected room',
-  'lobby.room.action_hint.live':
-    'You will enter as a spectator while the match is live.',
-  'lobby.room.action_hint.join':
-    'Seat claims and host controls stay inside the room after you join.',
+  'lobby.room.action.live': 'Watch',
+  'lobby.room.action.join': 'Join',
+  'lobby.room.open_room': 'Open room',
   'lobby.room.open_seat': 'Open {{seat}}',
   'lobby.room.card.title': "{{host}}'s room",
-  'lobby.room.card.label': 'Room {{roomId}}',
+  'lobby.room.card.label': '#{{roomId}}',
   'lobby.room.selected': 'Selected',
+  'lobby.table.room': 'Room',
+  'lobby.table.mode': 'Mode',
+  'lobby.table.black': 'Black',
+  'lobby.table.white': 'White',
+  'lobby.table.people_online': 'People / online',
+  'lobby.table.status': 'Status',
+  'lobby.table.action': 'Action',
+  'lobby.table.updated': 'Updated',
   'lobby.identity.label': 'Your identity',
   'lobby.identity.title': 'Enter your name once',
   'lobby.identity.description':
-    'The same display name is reused when you create a room or join the one you selected from the lobby.',
+    'Your display name carries into every room you create or join.',
   'lobby.identity.display_name': 'Display name',
   'lobby.identity.create_room': 'Create room',
   'lobby.identity.creating_room': 'Creating room...',
+  'lobby.panel.room_list': 'Room list',
+  'lobby.panel.announcement': 'Announcements',
+  'lobby.panel.online_players': 'Online players',
+  'lobby.announcement.guide.title': 'Lobby notice slot',
+  'lobby.announcement.guide.copy':
+    'Use this area for onboarding, events, or a future intro page entry point.',
+  'lobby.announcement.ad.title': 'Ad slot reserved',
+  'lobby.announcement.ad.copy':
+    'This card keeps space for future Google Ads or sponsor placements.',
+  'lobby.online.empty': 'No one is online yet.',
+  'lobby.online.activity.playing': 'Playing',
+  'lobby.online.activity.seated': 'Seated',
+  'lobby.online.activity.watching': 'Watching',
+  'lobby.online.role.host': 'Host',
+  'lobby.online.role.black': 'Black',
+  'lobby.online.role.white': 'White',
+  'lobby.online.role.watching': 'Watching',
   'lobby.selected.label': 'Selected room',
   'lobby.selected.open_room_details': 'Open room details',
   'lobby.selected.updated': 'Updated {{time}}',
