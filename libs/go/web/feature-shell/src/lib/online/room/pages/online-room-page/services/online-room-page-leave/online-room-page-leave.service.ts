@@ -17,6 +17,8 @@ interface RoomLeaveConfirmationState {
   rejectLabel: string;
 }
 
+const ROOM_CLOSURE_PROBE_DELAY_MS = 250;
+
 @Injectable()
 export class OnlineRoomPageLeaveService {
   private readonly router = inject(Router);
@@ -32,12 +34,20 @@ export class OnlineRoomPageLeaveService {
     signal<RoomLeaveConfirmationState | null>(null);
   private readonly leavingSignal = signal(false);
   private readonly hadRoomIdentitySignal = signal(false);
+  private readonly roomClosureProbeArmedSignal = signal(false);
+  private readonly roomClosureProbePendingSignal = signal(false);
+  private readonly roomClosureProbeInFlightSignal = signal(false);
+  private roomClosureProbeTimer: ReturnType<typeof setTimeout> | null = null;
+  private roomClosureProbeRoomId: string | null = null;
 
   readonly leaveConfirmation = this.leaveConfirmationSignal.asReadonly();
   readonly leaving = this.leavingSignal.asReadonly();
 
   constructor() {
     this.bindWindowGuards();
+    this.destroyRef.onDestroy(() => {
+      this.resetRoomClosureProbe();
+    });
 
     effect(() => {
       const roomClosed = this.onlineRoom.roomClosed();
@@ -60,44 +70,41 @@ export class OnlineRoomPageLeaveService {
       }
     });
 
-    effect(onCleanup => {
+    effect(() => {
       const roomId = this.view.roomId();
       const connectionState = this.onlineRoom.connectionState();
+      const roomClosed = this.onlineRoom.roomClosed();
+      const leaving = this.leavingSignal();
+      const closingRoom = this.onlineRoom.closingRoom();
+      const allowNextNavigation = this.allowNextNavigationSignal();
+      const probeArmed = this.roomClosureProbeArmedSignal();
+      const probePending = this.roomClosureProbePendingSignal();
+      const probeInFlight = this.roomClosureProbeInFlightSignal();
+
+      if (this.roomClosureProbeRoomId && this.roomClosureProbeRoomId !== roomId) {
+        this.resetRoomClosureProbe();
+      }
+
+      if (!roomId || roomClosed || leaving || closingRoom || allowNextNavigation) {
+        this.resetRoomClosureProbe();
+        return;
+      }
+
+      if (connectionState === 'connected') {
+        this.resetRoomClosureProbe();
+        return;
+      }
 
       if (
-        !roomId ||
-        connectionState !== 'disconnected' ||
-        this.onlineRoom.roomClosed() ||
-        this.leavingSignal() ||
-        this.onlineRoom.closingRoom() ||
-        this.allowNextNavigationSignal()
+        !this.hadRoomIdentitySignal() ||
+        probeArmed ||
+        probePending ||
+        probeInFlight
       ) {
         return;
       }
 
-      const timeoutId = setTimeout(() => {
-        void firstValueFrom(
-          this.roomsApi.getRoom(roomId).pipe(
-            mapTo(false),
-            catchError(error => {
-              if (error instanceof HttpErrorResponse && error.status === 404) {
-                this.onlineRoom.markRoomClosed({
-                  roomId,
-                  message: createMessage('room.notice.closed_by_host'),
-                });
-              }
-
-              return EMPTY;
-            })
-          )
-        ).catch(() => {
-          // ignore transport errors; reconnect UI handles transient disconnects
-        });
-      }, 250);
-
-      onCleanup(() => {
-        clearTimeout(timeoutId);
-      });
+      this.scheduleRoomClosureProbe(roomId);
     });
 
     effect(() => {
@@ -231,6 +238,82 @@ export class OnlineRoomPageLeaveService {
     this.leaveConfirmationSignal.set(null);
     this.flashNotice.show(message);
     void this.navigateWithBypass('/');
+  }
+
+  private scheduleRoomClosureProbe(roomId: string): void {
+    if (this.roomClosureProbeTimer || this.roomClosureProbeInFlightSignal()) {
+      return;
+    }
+
+    this.roomClosureProbeRoomId = roomId;
+    this.roomClosureProbeArmedSignal.set(true);
+    this.roomClosureProbePendingSignal.set(true);
+    this.roomClosureProbeTimer = setTimeout(() => {
+      this.roomClosureProbeTimer = null;
+      this.roomClosureProbePendingSignal.set(false);
+
+      if (!this.canHandleRoomClosureProbe(roomId)) {
+        if (this.roomClosureProbeRoomId === roomId) {
+          this.roomClosureProbeRoomId = null;
+        }
+
+        return;
+      }
+
+      this.roomClosureProbeInFlightSignal.set(true);
+
+      void firstValueFrom(
+        this.roomsApi.getRoom(roomId).pipe(
+          mapTo(false),
+          catchError(error => {
+            if (
+              error instanceof HttpErrorResponse &&
+              error.status === 404 &&
+              this.canHandleRoomClosureProbe(roomId)
+            ) {
+              this.onlineRoom.markRoomClosed({
+                roomId,
+                message: createMessage('room.notice.closed_by_host'),
+              });
+            }
+
+            return EMPTY;
+          })
+        )
+      )
+        .catch(() => {
+          // ignore transport errors; reconnect UI handles transient disconnects
+        })
+        .finally(() => {
+          this.roomClosureProbeInFlightSignal.set(false);
+
+          if (this.roomClosureProbeRoomId === roomId) {
+            this.roomClosureProbeRoomId = null;
+          }
+        });
+    }, ROOM_CLOSURE_PROBE_DELAY_MS);
+  }
+
+  private resetRoomClosureProbe(): void {
+    if (this.roomClosureProbeTimer) {
+      clearTimeout(this.roomClosureProbeTimer);
+      this.roomClosureProbeTimer = null;
+    }
+
+    this.roomClosureProbeArmedSignal.set(false);
+    this.roomClosureProbePendingSignal.set(false);
+    this.roomClosureProbeRoomId = null;
+  }
+
+  private canHandleRoomClosureProbe(roomId: string): boolean {
+    return (
+      this.roomClosureProbeRoomId === roomId &&
+      this.view.roomId() === roomId &&
+      !this.onlineRoom.roomClosed() &&
+      !this.leavingSignal() &&
+      !this.onlineRoom.closingRoom() &&
+      !this.allowNextNavigationSignal()
+    );
   }
 
   private async navigateWithBypass(targetUrl: string): Promise<void> {

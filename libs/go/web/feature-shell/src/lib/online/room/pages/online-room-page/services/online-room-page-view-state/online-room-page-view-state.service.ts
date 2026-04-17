@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { PlayerColor } from '@gx/go/domain';
@@ -276,7 +276,9 @@ export class OnlineRoomPageViewStateService {
       const roomId = this.roomId();
 
       if (roomId) {
-        this.onlineRoom.bootstrapRoom(roomId);
+        untracked(() => {
+          this.onlineRoom.bootstrapRoom(roomId);
+        });
       }
     });
   }
