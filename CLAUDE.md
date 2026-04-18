@@ -1,3 +1,9 @@
+## Agent Bridge
+
+- `AGENTS.md` is the canonical repository instruction file. Follow it first.
+- For Angular, NestJS, and shared TypeScript work, load the canonical stack conventions from `.agents/stack-conventions.md` through `AGENTS.md`.
+- Keep this file as a bridge, not a second source of truth.
+
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
 

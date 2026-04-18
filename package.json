@@ -15,9 +15,9 @@
     "go-server:build": "nx build go-server",
     "go-server:lint": "nx lint go-server",
     "go-server:test": "nx test go-server",
-    "review:status": "node tools/scripts/review-gate/status.ts",
-    "review:approve-pre-implementation": "node tools/scripts/review-gate/approve-pre-implementation.ts",
-    "review:reset": "node tools/scripts/review-gate/reset.ts",
+    "review:status": "node --experimental-strip-types tools/scripts/review-gate/status.ts",
+    "review:approve-pre-implementation": "node --experimental-strip-types tools/scripts/review-gate/approve-pre-implementation.ts",
+    "review:reset": "node --experimental-strip-types tools/scripts/review-gate/reset.ts",
     "proofshot:check": "node tools/scripts/proofshot.ts check",
     "proofshot:start:web": "node tools/scripts/proofshot.ts start-web",
     "proofshot:stop": "node tools/scripts/proofshot.ts stop",
@@ -25,7 +25,14 @@
     "docker:build": "pnpm nx run-many -t docker:build -p go-web,go-server",
     "docker:export": "pnpm docker:build && node tools/scripts/docker/export-images.ts",
     "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "review:implementation": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --checkpoint implementation --provider auto --focus general",
+    "review:test": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --checkpoint test --provider auto --focus tests",
+    "review:plan:risky": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --checkpoint plan --provider gemini --model gemini-2.5-pro --focus general",
+    "review:gemini": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --provider gemini",
+    "review:copilot": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --provider copilot",
+    "review:checkpoint": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts",
+    "review:plan": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --checkpoint plan --provider auto --focus general"
   },
   "private": true,
   "dependencies": {

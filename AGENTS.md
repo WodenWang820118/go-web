@@ -6,7 +6,7 @@ Project skills live in `.agents/skills`, reviewer personas live in `.agents/revi
 ## Canonical Context
 
 - Follow `AGENTS.md` first, then load the smallest relevant set of skills.
-- The preferred reviewer across all tools is GitHub Copilot running a Claude-family model.
+- The preferred review authority is GitHub Copilot running a Claude-family model. Use Gemini CLI as the scripted fallback and default implementation reviewer where this file says so.
 - Skill precedence is fixed:
   1. `AGENTS.md`
   2. local Nx and repo skills in `.agents/skills`
@@ -14,9 +14,52 @@ Project skills live in `.agents/skills`, reviewer personas live in `.agents/revi
   4. vendored general-purpose skills in `.agents/skills`
 - Treat `.agents/skills` as the canonical skill directory for this repo.
 - Do not recreate `.github/skills` or `.gemini/skills` copies unless a tool proves it cannot read `.agents/skills`.
-- Use `using-agent-skills` to choose the smallest helpful workflow. For non-trivial work, the default path is `spec-driven-development` -> `planning-and-task-breakdown` -> `incremental-implementation` -> `test-driven-development` -> `code-review-and-quality`.
+- Use `using-agent-skills` to choose the smallest helpful workflow. For non-trivial work, the common path is `product-and-scope-review` when framing is unstable, then `spec-driven-development` -> `planning-and-task-breakdown` -> `incremental-implementation` -> `test-driven-development` -> `qa-verification` -> `code-review-and-quality` -> `release-readiness`, but load only the phases the task actually needs.
+- `.agents/skills/authoring-guide.md` defines the repo-local rules for writing or slimming skills.
 - A repo-level pre-implementation gate is enforced through `.github/hooks/review-gate.json`. On a clean worktree, Copilot will deny mutating tool calls until a plan review approval is recorded.
-- `proofshot` is an optional repo-local verification skill for browser-verifiable UI work. It does not replace tests, and it does not participate in the pre-implementation gate.
+- `proofshot` is an optional repo-local verification helper for browser-verifiable UI work. It does not replace tests, and it does not participate in the pre-implementation gate.
+
+## Phased Context Loading
+
+The agent must operate in distinct phases, loading context incrementally. A later-phase skill is not part of entry context unless a repo rule explicitly requires it.
+
+### Phase 1: Entry & Intent Discovery
+
+- **Default context loaded:**
+  1. `AGENTS.md` (this file)
+  2. `.agents/skills/using-agent-skills/SKILL.md`
+- **Repo-mandated exceptions:**
+  - Load `nx-workspace` immediately for Nx exploration, target discovery, or workspace debugging.
+  - Load `nx-generate` immediately for Nx scaffolding or setup work.
+- **Workflow:**
+  1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, ask 1 decision question before repo exploration.
+  2. **Bounded Discovery:** Otherwise, prefer repo truth over asking. Use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
+  3. **Clarification Budget:** After bounded discovery, ask at most 1 follow-up question if high-impact ambiguity remains. Budget exhaustion never authorizes proceeding through unresolved ambiguity that would change architecture, public contracts, security boundaries, persistent data, or require broad exploration.
+  4. **Workflow Selection:** Choose 1 primary next skill for the planning or repo-workflow phase.
+
+### Phase 2: Planning
+
+- Load 1 primary planning skill at a time.
+- Use `product-and-scope-review` first when the request is solution-framed, scope is unstable, or the real user outcome still needs to be clarified.
+- For feature work, the usual progression is `spec-driven-development` then `planning-and-task-breakdown`.
+- Do not preload `incremental-implementation`, `test-driven-development`, `qa-verification`, or `code-review-and-quality` during planning.
+- Every non-trivial spec or plan must pass the `Plan Review` checkpoint before implementation starts.
+
+### Phase 3: Implementation
+
+- Use `incremental-implementation` as the execution discipline for multi-file work.
+- Load specialist skills on demand for the current slice, such as `frontend-ui-engineering`, `api-and-interface-design`, `security-and-hardening`, or repo-specific Nx skills.
+- Load `.agents/stack-conventions.md` only when the task involves the repo's primary implementation stacks.
+- Keep checkpoint and release-closeout skills unloaded until the work reaches their checkpoint.
+
+### Phase 4: Test, QA, and Review Checkpoints
+
+- Load `.agents/skills/test-driven-development/SKILL.md` when drafting or updating tests for changed behavior.
+- Load `.agents/skills/qa-verification/SKILL.md` when a completed change needs browser proof, smoke verification, report-only QA, or fix-enabled verification.
+- Use `.agents/skills/proofshot/SKILL.md` only as a browser-only helper when `qa-verification` or the user request calls for proof artifacts.
+- Load `.agents/skills/code-review-and-quality/SKILL.md` when preparing for or responding to implementation review.
+- Load `.agents/skills/release-readiness/SKILL.md` when the work needs docs freshness, a final verification story, or a clean handoff summary.
+- Load reviewer personas from `.agents/reviewers` only for the active checkpoint, adding specialist reviewers when a change crosses categories.
 
 ## Mandatory Review Lifecycle
 
@@ -25,19 +68,22 @@ For any non-trivial task, the primary agent must use a second opinion before mov
 The ideal review path is:
 
 1. plan or implementation is produced in the active tool
-2. GitHub Copilot is opened on a Claude-family model
-3. Copilot performs the checkpoint review using the matching reviewer agent or prompt
-4. the primary tool continues only after the Copilot review is addressed
+2. the checkpoint is routed to the preferred reviewer for that stage
+3. the reviewer performs the checkpoint review using the matching reviewer agent or prompt
+4. the primary tool continues only after the review is addressed
 
-If Copilot Claude is unavailable in the current environment, fall back to the matching local reviewer persona or subagent.
+If Copilot Claude is unavailable in the current environment, fall back to Gemini CLI where defined below, otherwise use the matching local reviewer persona or Codex reviewer subagent.
 
 ### Required checkpoints
 
 1. `Plan review`: produce a spec or implementation plan, then send it to a second reviewer.
-2. `Implementation review`: after the first working implementation and self-check, send the change to a second reviewer.
-3. `Test review`: after writing tests but before executing them, send the test strategy and assertions to a second reviewer.
+   Default: GitHub Copilot Claude. If the plan is high-risk, Copilot quota is exhausted, or Copilot is otherwise unavailable, use `gemini-2.5-pro`. If Gemini is also unavailable, use the matching Codex reviewer subagent.
+2. `Test review`: after writing tests but before running the broad sign-off suite or using those tests as approval evidence, send the test strategy and assertions to a second reviewer.
+   Default: GitHub Copilot Claude. If Copilot is unavailable, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
+3. `Implementation review`: after the first working implementation, self-check, and reviewable verification story are ready, send the change to a second reviewer.
+   Default: Gemini Flash Preview using the CLI model id `gemini-3-flash-preview`. If Gemini is unavailable, fall back to GitHub Copilot Claude, then to the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
 
-For browser-verifiable `go-web` tasks, `proofshot` can be used after implementation and before final sign-off to generate screenshots, session video, and a local proof summary for human review.
+For browser-verifiable `go-web` tasks, `proofshot` can be used after implementation and before final sign-off, typically through `qa-verification`, to generate screenshots, session video, and a local proof summary for human review.
 
 ### Guardrails
 
@@ -45,7 +91,7 @@ For browser-verifiable `go-web` tasks, `proofshot` can be used after implementat
 - If a reviewer reports a high-risk issue, stop, fix it, and re-run the relevant checkpoint before continuing.
 - Implementation review is mandatory when a task touches 3 or more files, changes data flow, updates permissions or auth, changes persistent state, modifies process lifecycle, or alters an external contract.
 - Pre-merge review must include the appropriate specialist reviewer for public APIs, auth, secrets, filesystem access, shell execution, or network behavior.
-- Before the first implementation change on a clean worktree, open the gate by running `pnpm review:approve-pre-implementation -- --reviewer copilot-claude --focus <area> --summary "<approval summary>"` after the Copilot Claude plan review passes.
+- Before the first implementation change on a clean worktree, open the gate by running `pnpm review:approve-pre-implementation -- --reviewer <copilot-claude|gemini-2.5-pro|codex-subagent> --focus <area> --summary "<approval summary>"` after the plan review passes.
 - Use `pnpm review:status` to inspect the gate and `pnpm review:reset` to clear it manually when needed.
 
 ## Reviewer Routing
@@ -65,7 +111,7 @@ Use `proofshot` only when the task is browser-verifiable and one of these is tru
 
 - the user explicitly asks for `proofshot`
 - the user asks for screenshots, video proof, browser proof, or visual proof
-- the agent believes human-reviewable proof artifacts would materially reduce UI risk
+- `qa-verification` chooses the browser path because human-reviewable artifacts would materially reduce risk
 
 Expected repo workflow:
 
@@ -83,25 +129,30 @@ Expected repo workflow:
 
 - `.github/copilot-instructions.md` is a bridge file. It must not override this workflow.
 - Prefer project skills from `.agents/skills`.
-- GitHub Copilot on a Claude-family model is the preferred review authority for this repository.
+- GitHub Copilot on a Claude-family model is the preferred reviewer for plan reviews, test reviews, and escalated implementation reviews.
+- Before using Copilot CLI for a scripted checkpoint review, confirm the local CLI is installed and that a constant low-cost probe still succeeds. Treat a failed probe as unavailability and fall back instead of sending the full review payload.
 - Copilot hooks in `.github/hooks/review-gate.json` are the hard guardrail for pre-implementation review on a clean worktree.
 - When using Copilot CLI and Rubber Duck is available, prefer a Claude-family orchestrator and enable `/experimental`.
-- Trigger Rubber Duck critique after a plan is drafted, after a complex multi-file implementation, and after tests are written but before they are executed.
+- Trigger Rubber Duck critique after a plan is drafted, after an escalated multi-file implementation review, and after tests are written but before they are executed.
 - If Rubber Duck is unavailable, use the matching reviewer agent in `.github/agents` as the required second opinion.
 - If the user explicitly asks for a critique, review, second opinion, or Rubber Duck, force a second opinion even if the task is otherwise small.
-- For browser-verifiable UI proof requests, use the repo-local `proofshot` workflow and review local artifacts with the dedicated Copilot proofshot prompt.
+- For browser-verifiable UI proof requests, use `qa-verification` and the repo-local `proofshot` workflow when browser artifacts are the right evidence path.
 
 ### Gemini CLI
 
 - Keep using `.gemini/settings.json` with `contextFileName: "AGENTS.md"`.
-- For non-trivial work, pause at each checkpoint and route the second opinion through GitHub Copilot Claude when available.
-- Use `.agents/reviewers` as the source of second-opinion personas at each checkpoint.
+- Use `gemini-2.5-pro` for risky pre-implementation plan reviews and when Copilot quota or availability prevents the normal Copilot plan review path.
+- Use Gemini Flash Preview through the CLI model id `gemini-3-flash-preview` as the default implementation reviewer.
+- Before using Gemini CLI for a scripted checkpoint review, confirm the local CLI is installed and that a constant low-cost probe succeeds for the intended model. If the probe fails, fall back instead of sending the full review payload.
+- Apply adaptive throttling for scripted Gemini reviews: `gemini-2.5-pro` uses a 38s start-to-start target with `35s -> 50s -> 75s` retry backoff, and `gemini-3-flash-preview` uses a 22s start-to-start target with `20s -> 30s` retry backoff.
+- Use `.agents/reviewers` as the source of reviewer personas and escalation lenses for Gemini-produced reviews.
 
 ### Codex CLI
 
 - Keep using `.codex/config.toml` as the repo-local Codex config.
-- For non-trivial work, pause at each checkpoint and route the second opinion through GitHub Copilot Claude when available.
+- For non-trivial work, use `pnpm review:plan`, `pnpm review:plan:risky`, `pnpm review:implementation`, and `pnpm review:test` to route checkpoint reviews through the repo-standard wrappers.
 - Use the configured reviewer subagents for plan, implementation, test, and UX/security review checkpoints.
+- When Copilot CLI or Gemini CLI is not locally usable, the review wrappers should fall back to the matching Codex reviewer subagent instead of silently self-approving.
 
 ## Repo Map
 
@@ -115,6 +166,14 @@ Expected repo workflow:
 - `libs/go/shared/contracts`: shared room DTOs and Socket.IO payloads for frontend/backend boundaries
 
 Use repo-specific reviewers and skills with that topology in mind.
+
+## Stack Conventions
+
+- For Angular, NestJS, and shared TypeScript implementation work, use `.agents/stack-conventions.md` as the canonical stack-conventions source after reading `AGENTS.md`.
+- Keep bridge files thin. They may point to the canonical conventions file, but they must not duplicate the full conventions body.
+- Angular guidance should reflect the repo's standalone-component, dependency-injection-first, `inject()`, and signal-first patterns.
+- NestJS guidance should reflect the repo's dependency-injection-first architecture plus the `controllers/`, `core/`, and `features/` split with thin transport boundaries and service-led orchestration.
+- Shared TypeScript guidance should reflect the repo's framework-free domain helpers, contract reuse, and focused Vitest coverage.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

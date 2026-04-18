@@ -5,99 +5,42 @@ description: Discovers and invokes the repo-local skill set. Use when starting w
 
 # Using Agent Skills
 
-## Overview
+Entry routing skill for minimal context loading. Use it to understand the request, resolve only the ambiguity that matters, and choose the next workflow skill without preloading the whole chain.
 
-This repository uses a curated skill set instead of the full upstream catalog.
-Treat this file as the discovery layer for the skills that are actually installed in `.agents/skills` and the reviewer personas that are installed in `.agents/reviewers`.
+## When to Use
 
-## Canonical Sources
+- At the start of a new task.
+- When a task needs to be re-scoped after major ambiguity is uncovered.
 
-1. `AGENTS.md` defines the mandatory workflow and review checkpoints.
-2. `.agents/skills` contains the installed repo-local skills.
-3. `.agents/reviewers` contains second-opinion reviewer personas.
+## Load / Do Not Load
 
-Do not route work to skills that are not installed in this repository.
+- Load this skill with `AGENTS.md` by default.
+- Load `nx-workspace` immediately for Nx exploration/debugging and `nx-generate` immediately for Nx scaffolding/setup when repo rules require them.
+- Do **not** preload planning, implementation, test, or review skills from here. Select 1 next skill and hand off.
 
-## Installed General Skills
+## Core Workflow
 
-- `spec-driven-development`
-- `planning-and-task-breakdown`
-- `incremental-implementation`
-- `test-driven-development`
-- `code-review-and-quality`
-- `debugging-and-error-recovery`
-- `frontend-ui-engineering`
-- `api-and-interface-design`
-- `security-and-hardening`
+1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, ask 1 decision question before repo exploration.
+2. **Bounded Discovery:** Otherwise, prefer repo truth. Use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
+3. **Clarification Budget:** Ask at most 1 pre-scan question and 1 post-scan question. If high-impact ambiguity remains after that budget, stop and ask or escalate. Do not continue on conflicting assumptions.
+4. **Workflow Selection:** Choose 1 next skill:
+   - solution-framed request, fuzzy problem statement, or unclear ambition/scope: `product-and-scope-review`
+   - new feature or significant change: `spec-driven-development`
+   - bug or failing behavior: `debugging-and-error-recovery`
+   - post-implementation verification or evidence gathering: `qa-verification`
+   - release closeout, docs freshness, or handoff completeness: `release-readiness`
+   - UI-heavy work: `frontend-ui-engineering`
+   - API or contract work: `api-and-interface-design`
+   - repo or Nx workflow: the specific repo skill, then exit this entry workflow
+5. **Checkpoint Timing:** `test-driven-development` and `code-review-and-quality` load only at their checkpoints, not during entry.
 
-## Installed Repo Skills
+## Ask / Escalate
 
-- `nx-generate`
-- `nx-workspace`
-- `nx-run-tasks`
-- `nx-plugins`
-- `nx-import`
-- `link-workspace-packages`
-- `monitor-ci`
-- `proofshot`
+- Ask when ambiguity would change architecture, public contracts, auth or security boundaries, persistent data, or require broad exploration.
+- Escalate reviewer routing and checkpoint defaults through `references/reviewer-routing.md` rather than restating the full lifecycle here.
 
-## Routing Guide
+## References
 
-Use the smallest set of skills that matches the task.
-
-- New feature or significant behavior change:
-  `spec-driven-development` -> `planning-and-task-breakdown` -> `incremental-implementation` -> `test-driven-development` -> `code-review-and-quality`
-- Bug fix or failing behavior:
-  `debugging-and-error-recovery` -> `test-driven-development` -> `code-review-and-quality`
-- UI-heavy work:
-  add `frontend-ui-engineering`
-- API, schema, or contract work:
-  add `api-and-interface-design`
-- Security-sensitive work:
-  add `security-and-hardening`
-- Nx workspace exploration:
-  `nx-workspace`
-- Nx task execution:
-  `nx-run-tasks`
-- Nx scaffolding or setup:
-  `nx-generate`
-- Nx plugin discovery or installation:
-  `nx-plugins`
-- Importing code into the monorepo:
-  `nx-import`
-- Workspace dependency linking:
-  `link-workspace-packages`
-- Nx Cloud CI monitoring:
-  `monitor-ci`
-- Browser-verifiable UI proof, screenshots, or video evidence:
-  `proofshot`
-
-## Reviewer Routing
-
-The primary agent must use reviewer personas from `.agents/reviewers` at the checkpoints defined in `AGENTS.md`.
-
-- Planning, interfaces, schemas, or multi-file design:
-  `architecture-reviewer.md`
-- Tests, bug fixes, or regression proof:
-  `test-reviewer.md`
-- Auth, secrets, filesystem, shell, network, or untrusted input:
-  `security-reviewer.md`
-- UI, UX, accessibility, responsive layout, or user-facing states:
-  `ux-reviewer.md`
-
-## ProofShot Usage
-
-Use `proofshot` only for browser-verifiable frontend work.
-
-- Good fit:
-  `go-web` UI flows, screenshots, video proof, visual verification, user-requested browser proof
-- Bad fit:
-  backend-only tasks, server-only changes, library-only work with no browser flow
-
-## Operating Rules
-
-1. Start with a spec for any non-trivial task.
-2. Break the work into small verifiable chunks before implementing.
-3. Use a second-opinion reviewer at plan, implementation, and test checkpoints.
-4. Prefer repo-local Nx skills before improvising workspace commands.
-5. Verify the result with tests or concrete task output before calling the work done.
+- Skill catalog: `references/skills-catalog.md`
+- Reviewer routing and checkpoint defaults: `references/reviewer-routing.md`
+- Stack conventions: `.agents/stack-conventions.md`

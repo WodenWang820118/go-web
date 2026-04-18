@@ -3,10 +3,12 @@ import {
   getRepoContext,
   parseArgs,
   saveState,
+  validateReviewerId,
 } from './shared.ts';
 
 const options = parseArgs(process.argv.slice(2));
 const repoContext = getRepoContext();
+const reviewer = validateReviewerId(options.reviewer);
 
 if (repoContext.dirty && !options.force) {
   console.error(
@@ -16,7 +18,7 @@ if (repoContext.dirty && !options.force) {
 }
 
 const state = createApproval({
-  reviewer: options.reviewer,
+  reviewer,
   focus: options.focus,
   summary: options.summary,
   repoContext,
