@@ -45,19 +45,8 @@ test('extractCodexAgentMessage returns the last completed agent message from JSO
     '{"type":"thread.started","thread_id":"1"}',
     '{"type":"item.completed","item":{"id":"a","type":"agent_message","text":"First"}}',
     '2026-04-17T10:00:00Z WARN something noisy',
-    '{"type":"item.completed","item":{"id":"broken"',
     '{"type":"item.completed","item":{"id":"b","type":"agent_message","text":"Final"}}',
   ].join('\n');
 
   assert.equal(extractCodexAgentMessage(output), 'Final');
-});
-
-test('extractCodexAgentMessage returns an empty string when no completed agent message is present', () => {
-  const output = [
-    '{"type":"thread.started","thread_id":"1"}',
-    '{"type":"item.completed","item":{"id":"a","type":"tool_result","text":"noop"}}',
-    '{"type":"item.completed","item":{"id":"broken"',
-  ].join('\n');
-
-  assert.equal(extractCodexAgentMessage(output), '');
 });

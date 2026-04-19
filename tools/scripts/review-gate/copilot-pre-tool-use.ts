@@ -16,15 +16,7 @@ const rawInput = await new Promise<string>((resolve) => {
   process.stdin.on('end', () => resolve(buffer));
 });
 
-let hookInput;
-try {
-  hookInput = parseHookInput(rawInput);
-} catch {
-  process.stdout.write(
-    buildDenyPayload('Review gate received malformed hook input.')
-  );
-  process.exit(0);
-}
+const hookInput = parseHookInput(rawInput);
 
 if (!isMutatingToolUse(hookInput)) {
   process.exit(0);

@@ -5,7 +5,7 @@
       {
         "type": "command",
         "bash": "node --experimental-strip-types ./tools/scripts/review-gate/copilot-pre-tool-use.ts",
-        "powershell": "node --experimental-strip-types ./tools/scripts/review-gate/copilot-pre-tool-use.ts",
+        "powershell": "node --experimental-strip-types .\tools\scripts\review-gate\copilot-pre-tool-use.ts",
         "cwd": ".",
         "timeoutSec": 10
       }

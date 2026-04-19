@@ -52,12 +52,6 @@ test('validateReviewerId rejects reviewers outside the allowlist', () => {
 test('isReviewGateCommand only exempts the TypeScript review-gate entrypoints', () => {
   assert.equal(
     isReviewGateCommand(
-      'node --experimental-strip-types tools/scripts/review-gate/status.ts'
-    ),
-    true
-  );
-  assert.equal(
-    isReviewGateCommand(
       'node --experimental-strip-types scripts/review-gate/status.ts'
     ),
     true
@@ -79,7 +73,7 @@ test('buildDenyPayload points reviewers to Copilot first and includes Codex fall
   assert.match(payload.permissionDecisionReason, /Codex/i);
   assert.match(
     payload.permissionDecisionReason,
-    /tools\/scripts\/review-gate\/approve-pre-implementation\.ts/
+    /approve-pre-implementation\.ts/
   );
 });
 

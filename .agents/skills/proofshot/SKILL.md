@@ -24,7 +24,7 @@ Browser-only verification helper for `go-web`. Use it directly for explicit proo
 1. **Confirm the Browser Path:** Use this skill only after `qa-verification` or the user request has established that browser proof is the right evidence path.
 2. **Ensure Proofshot Is Installed:** `npm install -g proofshot` and then `proofshot install`.
 3. **Verify the CLI Is Available:** `pnpm proofshot:check`.
-4. **Start a Capture Session:** `pnpm proofshot:start:web -- --description "Describe the UI flow being verified"`.
+4. **Start a Capture Session:** `pnpm proofshot:start:web -- --description "<flow>"`.
 5. **Drive the Browser Through the Flow:** Use `proofshot exec ...` or compatible browser automation commands.
 6. **Stop the Capture Session:** `pnpm proofshot:stop`.
 7. **Review the Artifacts:** Inspect `proofshot-artifacts/`, especially `SUMMARY.md`, `step-*.png`, and `session.webm`.
