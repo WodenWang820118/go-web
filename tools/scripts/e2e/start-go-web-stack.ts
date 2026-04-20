@@ -15,6 +15,14 @@ const goServerOrigin = process.env.GO_SERVER_ORIGIN || 'http://127.0.0.1:3000';
 const webPort = new URL(baseUrl).port || '4200';
 const goServerPort = new URL(goServerOrigin).port || '3000';
 const goServerHealthUrl = new URL('/api/health', goServerOrigin).toString();
+const e2eRoomCreateAttemptsPerWindow = resolvePositiveIntegerEnvOverride(
+  process.env.GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW,
+  100
+);
+const e2eRoomJoinAttemptsPerWindow = resolvePositiveIntegerEnvOverride(
+  process.env.GO_ROOM_JOIN_ATTEMPTS_PER_WINDOW,
+  100
+);
 
 async function isUrlReady(url: string): Promise<boolean> {
   try {
@@ -118,6 +126,17 @@ function startNxTarget(label: string, args: string[], env = {}): ReturnType<type
   return child;
 }
 
+function resolvePositiveIntegerEnvOverride(
+  value: string | undefined,
+  fallback: number
+): string {
+  if (!value || !/^[1-9]\d*$/.test(value)) {
+    return String(fallback);
+  }
+
+  return value;
+}
+
 async function ensureServer(
   label: string,
   url: string,
@@ -146,6 +165,10 @@ process.on('SIGTERM', () => {
 async function main(): Promise<void> {
   await ensureServer('go-server', goServerHealthUrl, 'go-server:serve', {
     PORT: goServerPort,
+    // The Playwright suite shares a single backend across multiple specs and browsers.
+    // Keep throttles well above suite traffic so rate limits only fail explicit throttle tests.
+    GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW: e2eRoomCreateAttemptsPerWindow,
+    GO_ROOM_JOIN_ATTEMPTS_PER_WINDOW: e2eRoomJoinAttemptsPerWindow,
   });
   await ensureServer('go-web', baseUrl, `go-web:serve-static --port=${webPort}`);
 

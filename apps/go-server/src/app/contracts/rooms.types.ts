@@ -3,6 +3,7 @@ import {
   GameStartSettings,
   HostedMatchSnapshot,
   HostedRematchState,
+  RoomClosedEvent,
   RoomSnapshot,
   SystemNotice,
 } from '@gx/go/contracts';
@@ -53,4 +54,10 @@ export interface ChatResult {
 
 export interface KickResult extends MutationResult {
   kickedSocketIds: string[];
+}
+
+export interface CloseRoomResult {
+  roomId: string;
+  event: RoomClosedEvent;
+  socketIds: string[];
 }

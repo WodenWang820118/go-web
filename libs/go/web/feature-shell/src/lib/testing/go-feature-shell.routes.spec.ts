@@ -2,25 +2,29 @@ import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { RoomSnapshot } from '@gx/go/contracts';
+import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
+import { provideGoPrimeNGTheme } from '@gx/go/ui';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-import { OnlineLobbyService } from '../online/lobby/online-lobby.service';
-import { OnlineRoomService } from '../online/room/services/online-room.service';
+import { OnlineLobbyService } from '../online/lobby/services/online-lobby/online-lobby.service';
+import { OnlineRoomService } from '../online/room/services/online-room/online-room.service';
+import { OnlineRoomsHttpService } from '../online/room/services/online-rooms-http/online-rooms-http.service';
 import { goFeatureShellRoutes } from '../go-feature-shell.routes';
-import { OnlineLobbyPageComponent } from '../online/lobby/online-lobby-page.component';
+import { OnlineLobbyPageComponent } from '../online/lobby/online-lobby-page/online-lobby-page.component';
 
 describe('goFeatureShellRoutes', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        provideGoPrimeNGTheme(),
         provideRouter(goFeatureShellRoutes),
         {
           provide: OnlineLobbyService,
           useValue: {
             rooms: signal([]),
+            onlineParticipants: signal([]),
             loading: signal(false),
             lastError: signal<string | null>(null),
             hasRooms: computed(() => false),
@@ -30,6 +34,16 @@ describe('goFeatureShellRoutes', () => {
         {
           provide: OnlineRoomService,
           useValue: createOnlineRoomServiceStub(),
+        },
+        {
+          provide: OnlineRoomsHttpService,
+          useValue: {
+            getRoom: vi.fn().mockReturnValue(
+              of({
+                snapshot: createSnapshot(),
+              }),
+            ),
+          },
         },
       ],
     });
@@ -42,7 +56,10 @@ describe('goFeatureShellRoutes', () => {
     await harness.navigateByUrl('/', OnlineLobbyPageComponent);
 
     expect(harness.routeNativeElement?.textContent).toContain(
-      i18n.t('lobby.hero.eyebrow'),
+      i18n.t('lobby.identity.display_name'),
+    );
+    expect(harness.routeNativeElement?.textContent).toContain(
+      i18n.t('lobby.panel.announcement'),
     );
   });
 
@@ -101,6 +118,81 @@ describe('goFeatureShellRoutes', () => {
 
     expect(router.url).toBe('/online/room/ROOM42');
   });
+
+  it('blocks host route navigation away from a room until the leave confirmation is accepted', async () => {
+    const roomService = TestBed.inject(OnlineRoomService) as ReturnType<
+      typeof createOnlineRoomServiceStub
+    >;
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+
+    roomService.participantId.set('host-1');
+    roomService.participantToken.set('token-1');
+
+    await harness.navigateByUrl('/online/room/ROOM42');
+    await harness.fixture.whenStable();
+
+    const navigationResult = await router.navigateByUrl('/setup/go');
+    await harness.fixture.whenStable();
+
+    expect(navigationResult).toBe(false);
+    expect(router.url).toBe('/online/room/ROOM42');
+
+    const acceptButton = document.body.querySelector(
+      '[data-testid="room-leave-dialog-accept"]',
+    ) as HTMLButtonElement | null;
+
+    acceptButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.closeRoom).toHaveBeenCalledTimes(1);
+    expect(router.url).toBe('/setup/go');
+  });
+
+  it('lets non-host viewers navigate away from a room without interception', async () => {
+    const roomService = TestBed.inject(OnlineRoomService) as ReturnType<
+      typeof createOnlineRoomServiceStub
+    >;
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+
+    roomService.snapshot.set(
+      createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: null,
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: null,
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+      }),
+    );
+    roomService.participantId.set('guest-1');
+    roomService.participantToken.set('token-2');
+
+    await harness.navigateByUrl('/online/room/ROOM42');
+    await harness.fixture.whenStable();
+
+    const navigationResult = await router.navigateByUrl('/setup/go');
+    await harness.fixture.whenStable();
+
+    expect(navigationResult).toBe(true);
+    expect(roomService.closeRoom).not.toHaveBeenCalled();
+    expect(router.url).toBe('/setup/go');
+  });
 });
 
 function createOnlineRoomServiceStub() {
@@ -114,6 +206,14 @@ function createOnlineRoomServiceStub() {
   >('connected');
   const lastError = signal<string | null>(null);
   const lastNotice = signal<string | null>(null);
+  const lastSystemNotice = signal<SystemNotice | null>(null);
+  const roomClosed = signal<{
+    roomId: string;
+    message: {
+      key: string;
+      params?: Record<string, string | number | boolean | null | undefined>;
+    };
+  } | null>(null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
   const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
@@ -144,6 +244,7 @@ function createOnlineRoomServiceStub() {
     creating: signal(false),
     lastError,
     lastNotice,
+    lastSystemNotice,
     participants,
     match,
     nextMatchSettings,
@@ -177,7 +278,15 @@ function createOnlineRoomServiceStub() {
     muteParticipant: vi.fn(),
     unmuteParticipant: vi.fn(),
     kickParticipant: vi.fn(),
+    closeRoom: vi.fn().mockReturnValue(of(void 0)),
+    closeRoomWithKeepalive: vi.fn().mockResolvedValue(undefined),
+    markRoomClosed: vi.fn((event: { roomId: string; message: { key: string; params?: Record<string, string | number | boolean | null | undefined> } }) => {
+      roomClosed.set(event);
+    }),
     clearTransientMessages: vi.fn(),
+    roomClosed,
+    clearRoomClosedEvent: vi.fn(() => roomClosed.set(null)),
+    closingRoom: signal(false),
   };
 }
 

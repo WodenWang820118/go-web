@@ -1,0 +1,114 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+.room-share-chip__button-reset {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.room-share-chip__button-reset:not(:disabled) {
+    cursor: pointer;
+}
+
+.room-share-chip__button-reset:not(:disabled):hover
+    .room-share-chip__trigger,
+.room-share-chip__button-reset:focus-visible .room-share-chip__trigger {
+    transform: translateY(-1px);
+}
+
+.room-share-chip__button-reset:focus-visible {
+    outline: none;
+}
+
+.room-share-chip__button-reset:focus-visible .room-share-chip__trigger {
+    outline: 2px solid rgba(220, 184, 93, 0.72);
+    outline-offset: 2px;
+}
+
+.room-share-chip__button-reset:disabled .room-share-chip__trigger {
+    cursor: default;
+    opacity: 0.92;
+    transform: none;
+}
+
+.room-share-chip__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--go-hosted-radius-pill, 999px);
+    padding: 0.56rem 0.72rem;
+    background:
+    linear-gradient(180deg, rgba(29, 38, 49, 0.96), rgba(12, 18, 25, 0.96)),
+    linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0)
+    );
+    color: #f4efe2;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    transition:
+    transform 140ms ease,
+    opacity 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+    user-select: none;
+}
+
+.room-share-chip__trigger--connected {
+    border-color: rgba(74, 222, 128, 0.28);
+}
+
+.room-share-chip__trigger--success {
+    border-color: rgba(110, 231, 183, 0.42);
+    background:
+    linear-gradient(180deg, rgba(17, 66, 53, 0.96), rgba(10, 36, 30, 0.96)),
+    linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0)
+    );
+    color: #eafff5;
+}
+
+.room-share-chip__trigger--warning {
+    border-color: rgba(251, 191, 36, 0.24);
+}
+
+.room-share-chip__trigger.p-disabled {
+    cursor: default;
+    opacity: 0.92;
+    transform: none;
+}
+
+.room-share-chip__light {
+    width: 0.52rem;
+    height: 0.52rem;
+    border-radius: 999px;
+    background: #fbbf24;
+    box-shadow: 0 0 1rem rgba(251, 191, 36, 0.55);
+    flex: none;
+}
+
+.room-share-chip__light--connected {
+    background: #4ade80;
+    box-shadow: 0 0 1rem rgba(74, 222, 128, 0.62);
+}
+
+.room-share-chip__light--success {
+    background: #6ee7b7;
+    box-shadow: 0 0 1rem rgba(110, 231, 183, 0.68);
+}
+
+.room-share-chip__label {
+    white-space: nowrap;
+}

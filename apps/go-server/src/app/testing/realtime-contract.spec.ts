@@ -1,4 +1,10 @@
-import { CreateRoomResponse, JoinRoomResponse, RoomPresenceEvent, RoomSnapshot } from '@gx/go/contracts';
+import {
+  CreateRoomResponse,
+  JoinRoomResponse,
+  RoomClosedEvent,
+  RoomPresenceEvent,
+  RoomSnapshot,
+} from '@gx/go/contracts';
 import request from 'supertest';
 import { Socket } from 'socket.io-client';
 
@@ -361,6 +367,62 @@ describe('rooms realtime contract', () => {
         online: true,
         seat: 'white',
       });
+    },
+    30000
+  );
+
+  it(
+    'broadcasts room.closed and disconnects room sockets when the host closes the room',
+    async () => {
+      const createdResponse = await request(context.app.getHttpServer())
+        .post('/api/rooms')
+        .send({ displayName: 'Host' })
+        .expect(201);
+      const host = createdResponse.body as CreateRoomResponse;
+
+      const joinedResponse = await request(context.app.getHttpServer())
+        .post(`/api/rooms/${host.roomId}/join`)
+        .send({ displayName: 'Guest' })
+        .expect(201);
+      const guest = joinedResponse.body as JoinRoomResponse;
+
+      const hostSocket = openRoomSocket(context.baseUrl);
+      const guestSocket = openRoomSocket(context.baseUrl);
+      sockets.push(hostSocket, guestSocket);
+
+      await waitForConnect(hostSocket);
+      await waitForConnect(guestSocket);
+
+      const hostJoined = once<RoomSnapshot>(hostSocket, 'room.snapshot');
+      hostSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: host.participantToken,
+      });
+      await hostJoined;
+
+      const guestJoined = once<RoomSnapshot>(guestSocket, 'room.snapshot');
+      guestSocket.emit('room.join', {
+        roomId: host.roomId,
+        participantToken: guest.participantToken,
+      });
+      await guestJoined;
+
+      const roomClosed = onceWhere<RoomClosedEvent>(
+        guestSocket,
+        'room.closed',
+        event => event.roomId === host.roomId
+      );
+      const guestDisconnected = once(guestSocket, 'disconnect');
+
+      await request(context.app.getHttpServer())
+        .post(`/api/rooms/${host.roomId}/close`)
+        .send({ participantToken: host.participantToken })
+        .expect(204);
+
+      await expect(roomClosed).resolves.toMatchObject({
+        roomId: host.roomId,
+      });
+      await guestDisconnected;
     },
     30000
   );
