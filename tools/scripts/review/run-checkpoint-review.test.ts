@@ -40,8 +40,8 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
     }),
     [
       execution('plan', 'copilot', 'general', 'claude-sonnet-4.6'),
-      execution('plan', 'copilot', 'general', 'gpt-5-mini'),
       execution('plan', 'gemini', 'general', 'gemini-2.5-pro'),
+      execution('plan', 'copilot', 'general', 'gpt-5-mini'),
       execution('plan', 'codex', 'general'),
     ]
   );
@@ -68,6 +68,7 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
     }),
     [
       execution('test', 'copilot', 'tests', 'claude-sonnet-4.6'),
+      execution('test', 'gemini', 'tests', 'gemini-2.5-pro'),
       execution('test', 'copilot', 'tests', 'gpt-5-mini'),
       execution('test', 'codex', 'tests'),
     ]
@@ -187,7 +188,7 @@ test('executeReviewFlow fails fast for a single explicit unavailable provider', 
   );
 });
 
-test('executeReviewFlow falls back to Copilot GPT-5 mini before leaving Copilot', async () => {
+test('executeReviewFlow prefers Gemini before Copilot GPT-5 mini in auto routing', async () => {
   const probed: string[] = [];
 
   const output = await executeReviewFlow(
@@ -220,12 +221,12 @@ test('executeReviewFlow falls back to Copilot GPT-5 mini before leaving Copilot'
 
   assert.deepEqual(probed, [
     'copilot:claude-sonnet-4.6',
-    'copilot:gpt-5-mini',
+    'gemini:gemini-2.5-pro',
   ]);
-  assert.equal(output, 'gpt-5-mini');
+  assert.equal(output, 'gemini-2.5-pro');
 });
 
-test('executeReviewFlow skips Gemini for test checkpoints and falls back to Codex', async () => {
+test('executeReviewFlow falls back to Copilot GPT-5 mini before Codex after Gemini fails for test checkpoints', async () => {
   const probed: string[] = [];
 
   const output = await executeReviewFlow(
@@ -244,7 +245,7 @@ test('executeReviewFlow skips Gemini for test checkpoints and falls back to Code
       },
       async probe(execution) {
         probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
-        if (execution.provider === 'copilot') {
+        if (execution.provider === 'copilot' || execution.provider === 'gemini') {
           return { available: false, reason: 'quota exhausted' };
         }
 
@@ -258,6 +259,7 @@ test('executeReviewFlow skips Gemini for test checkpoints and falls back to Code
 
   assert.deepEqual(probed, [
     'copilot:claude-sonnet-4.6',
+    'gemini:gemini-2.5-pro',
     'copilot:gpt-5-mini',
     'codex:<none>',
   ]);
@@ -336,7 +338,7 @@ test('executeReviewFlow reports all unavailable providers when auto routing is e
         },
       }
     ),
-    /Attempted providers:[\s\S]*copilot:claude-sonnet-4\.6: copilot down[\s\S]*copilot:gpt-5-mini: copilot down[\s\S]*gemini:gemini-2\.5-pro: gemini down[\s\S]*codex: codex down/
+    /Attempted providers:[\s\S]*copilot:claude-sonnet-4\.6: copilot down[\s\S]*gemini:gemini-2\.5-pro: gemini down[\s\S]*copilot:gpt-5-mini: copilot down[\s\S]*codex: codex down/
   );
 });
 

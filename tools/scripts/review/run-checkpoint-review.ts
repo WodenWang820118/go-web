@@ -217,6 +217,12 @@ export function getReviewExecutionPlan(input: {
       }),
       createReviewExecution({
         checkpoint: input.checkpoint,
+        provider: 'gemini',
+        focus: input.focus,
+        model: getDefaultGeminiModel(input.checkpoint),
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
         provider: 'copilot',
         focus: input.focus,
         model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
@@ -238,15 +244,15 @@ export function getReviewExecutionPlan(input: {
     }),
     createReviewExecution({
       checkpoint: input.checkpoint,
-      provider: 'copilot',
-      focus: input.focus,
-      model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
-    }),
-    createReviewExecution({
-      checkpoint: input.checkpoint,
       provider: 'gemini',
       focus: input.focus,
       model: getDefaultGeminiModel(input.checkpoint),
+    }),
+    createReviewExecution({
+      checkpoint: input.checkpoint,
+      provider: 'copilot',
+      focus: input.focus,
+      model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
     }),
     createReviewExecution({
       checkpoint: input.checkpoint,

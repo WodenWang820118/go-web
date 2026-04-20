@@ -10,7 +10,7 @@
 - Use `product-and-scope-review` when the prompt is solution-framed, `qa-verification` when the implementation needs verification evidence, and `release-readiness` when the work needs a final handoff story.
 - Keep the review session on a Claude-family model when possible.
 - When using Copilot CLI, prefer a Claude-family orchestrator and run `/experimental` so Rubber Duck can provide a second opinion.
-- When the scripted Copilot Claude path is unavailable, the review wrappers should retry with Copilot GPT-5 mini before leaving Copilot.
+- When the scripted Copilot Claude path is unavailable, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Keep the Copilot-only fallback chain only when the review is explicitly pinned to `--provider copilot`.
 - Force a Rubber Duck or second-opinion review after a drafted plan, after any implementation review that was escalated from Gemini, and after tests are written but before they are executed.
 - If Rubber Duck is not available for the current model/account, use the matching reviewer in `.github/agents`.
 - If the user asks for `critique`, `review`, `second opinion`, or `rubber duck`, always trigger a second-opinion pass.

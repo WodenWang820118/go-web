@@ -12,6 +12,10 @@ import { join, resolve } from 'node:path';
 import test from 'node:test';
 
 import {
+  analyzeHybridHeuristics,
+  buildHybridPrefilterContext,
+  buildHybridReviewReport,
+  createHybridGptBypassReview,
   buildPrefilterContext,
   buildPrefilterFailureContext,
   buildWindowsProcessBridgePayload,
@@ -19,6 +23,8 @@ import {
   createLocalReviewerEnv,
   DEFAULT_SMALL_DIFF_THRESHOLD_CHARS,
   getEscalationReasons,
+  MAX_HYBRID_GPT_DIFF_CHARS,
+  planHybridLocalReview,
   resolveLocalReviewerRepoRoot,
   selectEvaluationSamples,
   selectAbSamples,
@@ -26,6 +32,7 @@ import {
   summarizeEvaluation,
   writePrefilterArtifacts,
   type EvaluationLocalResult,
+  type HybridGptReview,
   type LocalReviewFinding,
   type LocalReviewReport,
 } from './local-reviewer-support.ts';
@@ -157,6 +164,161 @@ test('getEscalationReasons detects high severity and sensitive paths', () => {
 
   assert.match(reasons.join(' '), /critical\/high/i);
   assert.match(reasons.join(' '), /sensitive area detected/i);
+});
+
+test('planHybridLocalReview skips local execution for a confident low-risk GPT review', () => {
+  const heuristics = analyzeHybridHeuristics({
+    changedFiles: ['src/utils.ts'],
+    diffText: '@@\n+export const value = 1;\n',
+  });
+
+  const plan = planHybridLocalReview({
+    heuristics,
+    gptReview: hybridGptReview({
+      confidence: 'high',
+      focus_profiles: ['typescript'],
+      needs_local_deep_review: false,
+      overall_risk: 'low',
+    }),
+  });
+
+  assert.deepEqual(plan, {
+    local_mode: 'skipped',
+    requested_profiles: [],
+  });
+});
+
+test('planHybridLocalReview falls back to full local review when GPT is unavailable', () => {
+  const heuristics = analyzeHybridHeuristics({
+    changedFiles: ['src/utils.ts'],
+    diffText: '@@\n+export const value = 1;\n',
+  });
+
+  const plan = planHybridLocalReview({
+    heuristics,
+    gptReview: hybridGptReview({
+      confidence: null,
+      error: 'quota exhausted',
+      focus_profiles: [],
+      needs_local_deep_review: true,
+      overall_risk: null,
+      status: 'unavailable',
+      summary: null,
+    }),
+  });
+
+  assert.deepEqual(plan, {
+    local_mode: 'full',
+    requested_profiles: ['typescript'],
+  });
+});
+
+test('createHybridGptBypassReview marks oversized diffs for local fallback', () => {
+  const review = createHybridGptBypassReview(
+    `Diff exceeded ${MAX_HYBRID_GPT_DIFF_CHARS} chars.`,
+  );
+
+  assert.equal(review.status, 'runtime-error');
+  assert.equal(review.needs_local_deep_review, true);
+  assert.match(review.error ?? '', /Diff exceeded/);
+});
+
+test('planHybridLocalReview forces full local review for sensitive changes before GPT focus narrowing', () => {
+  const heuristics = analyzeHybridHeuristics({
+    changedFiles: ['src/auth.service.ts'],
+    diffText: '@@\n+const token = process.env.API_KEY;\n',
+  });
+
+  const plan = planHybridLocalReview({
+    heuristics,
+    gptReview: hybridGptReview({
+      confidence: 'high',
+      focus_profiles: ['general'],
+      needs_local_deep_review: false,
+      overall_risk: 'low',
+    }),
+  });
+
+  assert.deepEqual(plan, {
+    local_mode: 'full',
+    requested_profiles: ['angular'],
+  });
+});
+
+test('planHybridLocalReview narrows the local run to GPT focus profiles when confidence is low', () => {
+  const heuristics = analyzeHybridHeuristics({
+    changedFiles: ['README.md', 'src/utils.ts'],
+    diffText: '@@\n+docs and code\n',
+  });
+
+  const plan = planHybridLocalReview({
+    heuristics,
+    gptReview: hybridGptReview({
+      confidence: 'low',
+      focus_profiles: ['repo-habits'],
+      needs_local_deep_review: true,
+      overall_risk: 'medium',
+    }),
+  });
+
+  assert.deepEqual(plan, {
+    local_mode: 'targeted',
+    requested_profiles: ['repo-habits'],
+  });
+});
+
+test('buildHybridReviewReport escalates when either GPT or local review blocks and deduplicates merged findings', () => {
+  const heuristics = analyzeHybridHeuristics({
+    changedFiles: ['src/auth.service.ts'],
+    diffText: '@@\n+execSync("whoami")\n',
+  });
+  const report = buildHybridReviewReport({
+    heuristics,
+    gptReview: hybridGptReview({
+      confidence: 'medium',
+      findings: [
+        {
+          severity: 'high',
+          title: 'Shell execution',
+          detail: 'Uses execSync.',
+          file_path: 'src/auth.service.ts',
+          line: 3,
+          recommendation: 'Avoid shell execution.',
+        },
+      ],
+      focus_profiles: ['angular'],
+      needs_local_deep_review: true,
+      overall_risk: 'high',
+    }),
+    localReviewResult: {
+      local_mode: 'full',
+      requested_profiles: ['angular'],
+      report: reviewReport([
+        {
+          severity: 'high',
+          title: 'Shell execution',
+          detail: 'Uses execSync.',
+          file_path: 'src/auth.service.ts',
+          line: 3,
+          recommendation: 'Avoid shell execution.',
+          profile: 'typescript',
+          rationale: null,
+          evidence: null,
+        },
+      ]),
+      error: null,
+    },
+  });
+
+  assert.equal(report.recommended_escalation, true);
+  assert.match(report.escalation_reasons.join(' '), /GPT reviewer marked the change high risk/);
+  assert.match(report.escalation_reasons.join(' '), /sensitive area detected/);
+  assert.equal(report.merged_findings.length, 1);
+  assert.equal(report.findings.length, 1);
+  assert.equal(report.merged_findings[0]?.source, 'gpt');
+  assert.match(report.summary, /Low-risk change|Hybrid review completed/i);
+  assert.equal(report.decision_basis, 'gpt+local');
+  assert.match(buildHybridPrefilterContext({ report }), /gpt_provider=copilot-gpt-5-mini/);
 });
 
 test('writePrefilterArtifacts persists both report and context', () => {
@@ -353,5 +515,23 @@ function reviewReport(findings: LocalReviewFinding[]): LocalReviewReport {
     model_used: 'qwen3:8b',
     runtime_provider: 'ollama',
     advisory_only: true,
+  };
+}
+
+function hybridGptReview(
+  overrides: Partial<HybridGptReview>,
+): HybridGptReview {
+  return {
+    provider: 'copilot-gpt-5-mini',
+    model: 'gpt-5-mini',
+    status: 'completed',
+    overall_risk: 'low',
+    confidence: 'high',
+    needs_local_deep_review: false,
+    focus_profiles: [],
+    findings: [],
+    summary: 'Low-risk change.',
+    error: null,
+    ...overrides,
   };
 }

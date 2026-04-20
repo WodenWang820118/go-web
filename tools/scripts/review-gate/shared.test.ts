@@ -71,13 +71,17 @@ test('isReviewGateCommand only exempts the TypeScript review-gate entrypoints', 
   assert.equal(isReviewGateCommand('pnpm nx test law-prep-web'), false);
 });
 
-test('buildDenyPayload points reviewers to Copilot first and includes Codex fallback', () => {
+test('buildDenyPayload points reviewers to Copilot first, then Gemini, and includes Codex fallback', () => {
   const payload = JSON.parse(buildDenyPayload('Gate blocked.'));
 
   assert.equal(payload.permissionDecision, 'deny');
   assert.match(payload.permissionDecisionReason, /Copilot/i);
-  assert.match(payload.permissionDecisionReason, /GPT-5 mini/i);
   assert.match(payload.permissionDecisionReason, /Gemini 2\.5 Pro/i);
+  assert.match(payload.permissionDecisionReason, /GPT-5 mini/i);
+  assert.match(
+    payload.permissionDecisionReason,
+    /Gemini 2\.5 Pro[\s\S]*GPT-5 mini/i
+  );
   assert.match(payload.permissionDecisionReason, /Codex/i);
   assert.match(
     payload.permissionDecisionReason,

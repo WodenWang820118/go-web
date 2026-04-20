@@ -3,6 +3,12 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 
+import {
+  isCopilotUnavailableError,
+  probeCopilotCliHealth,
+  runCopilotReview,
+} from './providers/copilot.ts';
+
 export type LocalReviewSeverity =
   | 'critical'
   | 'high'
@@ -160,10 +166,103 @@ export interface PaidReviewContextSelection {
   smallDiffThresholdChars: number;
 }
 
+export type HybridReviewProfileName =
+  | 'angular'
+  | 'nest'
+  | 'typescript'
+  | 'repo-habits'
+  | 'general';
+
+export type HybridRiskLevel = 'low' | 'medium' | 'high';
+export type HybridConfidenceLevel = 'low' | 'medium' | 'high';
+export type HybridGptReviewStatus =
+  | 'completed'
+  | 'unavailable'
+  | 'invalid-response'
+  | 'runtime-error';
+export type HybridLocalMode = 'skipped' | 'targeted' | 'full';
+export type HybridDecisionBasis =
+  | 'heuristics'
+  | 'gpt'
+  | 'gpt+local'
+  | 'local-fallback';
+
+export interface HybridGptFinding {
+  severity: LocalReviewSeverity;
+  title: string;
+  detail: string;
+  file_path: string | null;
+  line: number | null;
+  recommendation: string | null;
+}
+
+export interface HybridGptReview {
+  provider: 'copilot-gpt-5-mini';
+  model: 'gpt-5-mini';
+  status: HybridGptReviewStatus;
+  overall_risk: HybridRiskLevel | null;
+  confidence: HybridConfidenceLevel | null;
+  needs_local_deep_review: boolean;
+  focus_profiles: HybridReviewProfileName[];
+  findings: HybridGptFinding[];
+  summary: string | null;
+  error: string | null;
+}
+
+export interface HybridHeuristics {
+  changed_files: string[];
+  diff_length: number;
+  file_count: number;
+  routed_profiles: HybridReviewProfileName[];
+  sensitive_categories: Array<
+    | 'auth'
+    | 'secrets'
+    | 'filesystem'
+    | 'shell'
+    | 'network'
+    | 'public contract'
+    | 'persistent state'
+  >;
+}
+
+export interface HybridLocalPlan {
+  local_mode: HybridLocalMode;
+  requested_profiles: HybridReviewProfileName[];
+}
+
+export interface HybridLocalReviewResult {
+  local_mode: Exclude<HybridLocalMode, 'skipped'>;
+  requested_profiles: HybridReviewProfileName[];
+  report: LocalReviewReport | null;
+  error: string | null;
+}
+
+export interface HybridMergedFinding extends LocalReviewFinding {
+  source: 'gpt' | 'local';
+}
+
+export interface HybridReviewReport {
+  strategy: 'gpt-gate';
+  heuristics: HybridHeuristics;
+  gpt_review: HybridGptReview;
+  local_review: LocalReviewReport | null;
+  local_mode: HybridLocalMode;
+  requested_profiles: HybridReviewProfileName[];
+  findings: HybridMergedFinding[];
+  merged_findings: HybridMergedFinding[];
+  summary: string;
+  recommended_escalation: boolean;
+  escalation_reasons: string[];
+  decision_basis: HybridDecisionBasis;
+  local_review_error: string | null;
+}
+
 const DEFAULT_OLLAMA_HOST = 'http://127.0.0.1:11434';
 const DEFAULT_OLLAMA_KEEP_ALIVE = '10m';
 const DEFAULT_OLLAMA_MODEL = 'qwen3:8b';
 const DEFAULT_OLLAMA_TIMEOUT_MS = '120000';
+const DEFAULT_HYBRID_GPT_MODEL = 'gpt-5-mini';
+const MAX_HYBRID_GPT_DIFF_CHARS = 8_000;
 const DEFAULT_EVALUATION_AB_SAMPLE_COUNT = 0;
 const DEFAULT_EVALUATION_ROUNDS = 32;
 const DEFAULT_SAMPLE_SEED = 20260419;
@@ -212,6 +311,13 @@ const PREFILTER_CONTEXT_FILE = 'prefilter-context.md';
 const PREFILTER_REPORT_FILE = 'prefilter-report.json';
 const REVIEWER_CONTEXT_FILE = 'prefilter-review-context.md';
 const EVALUATION_ARTIFACT_DIR = ['.cache', 'reviews', 'local-reviewer-eval'];
+const HYBRID_PROFILE_ORDER: HybridReviewProfileName[] = [
+  'angular',
+  'nest',
+  'typescript',
+  'repo-habits',
+  'general',
+] as const;
 const SENSITIVE_REVIEW_AREAS: Array<{
   category:
     | 'auth'
@@ -248,6 +354,32 @@ const SENSITIVE_REVIEW_AREAS: Array<{
     category: 'persistent state',
     pattern: /\b(migration|database|sql|persist|storage|repository|prisma|typeorm)\b/i,
   },
+];
+const HYBRID_ANGULAR_PATH_PATTERNS = [
+  /\.(component|directive|pipe|service)\.ts$/i,
+  /\.(html|scss|css)$/i,
+];
+const HYBRID_NEST_PATH_PATTERNS = [
+  /\.(controller|module|guard|interceptor|pipe|service)\.ts$/i,
+  /^apps\/.+\/src\/.+\.ts$/i,
+];
+const HYBRID_TYPESCRIPT_PATH_PATTERNS = [/\.(ts|tsx|mts|cts)$/i];
+const HYBRID_REPO_HABITS_PATH_PATTERNS = [
+  /^package\.json$/i,
+  /^pnpm-workspace\.ya?ml$/i,
+  /^pnpm-lock\.ya?ml$/i,
+  /^nx\.json$/i,
+  /(^|\/)tsconfig[^/]*\.json$/i,
+  /(^|\/)project\.json$/i,
+  /(^|\/)pyproject\.toml$/i,
+  /(^|\/)README\.md$/i,
+  /\.jsonc?$/i,
+  /\.json5$/i,
+  /\.md$/i,
+  /\.toml$/i,
+  /\.ya?ml$/i,
+  /^\.github\/.+\.(json|ya?ml)$/i,
+  /^local-reviewer\.toml$/i,
 ];
 
 export function createLocalReviewerDependencies(): LocalReviewerDependencies {
@@ -455,6 +587,7 @@ export function runLocalReviewerReview(input: {
   dependencies: LocalReviewerDependencies;
   env?: NodeJS.ProcessEnv;
   headRef?: string;
+  requestedProfiles?: ReadonlyArray<HybridReviewProfileName>;
   staged: boolean;
   targetRepoRoot: string;
   toolRepoRoot: string;
@@ -471,7 +604,7 @@ export function runLocalReviewerReview(input: {
 
   return runLocalReviewerJsonCommand<LocalReviewReport>({
     dependencies: input.dependencies,
-    env: input.env,
+    env: buildLocalReviewerRequestedProfilesEnv(input.env, input.requestedProfiles),
     targetRepoRoot: input.targetRepoRoot,
     toolRepoRoot: input.toolRepoRoot,
     subcommandArgs,
@@ -516,6 +649,251 @@ export function collectChangedFiles(input: {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+export function analyzeHybridHeuristics(input: {
+  changedFiles: ReadonlyArray<string>;
+  diffText: string;
+}): HybridHeuristics {
+  const normalizedPaths = input.changedFiles.map(normalizeHybridPath);
+  return {
+    changed_files: normalizedPaths,
+    diff_length: input.diffText.length,
+    file_count: normalizedPaths.length,
+    routed_profiles: routeHybridProfiles(normalizedPaths),
+    sensitive_categories: detectSensitiveReviewAreas({
+      changedFiles: normalizedPaths,
+      diffText: input.diffText,
+    }),
+  };
+}
+
+export function runHybridGptReview(input: {
+  changedFiles: ReadonlyArray<string>;
+  diffText: string;
+  repoRoot: string;
+}): HybridGptReview {
+  const provider = 'copilot-gpt-5-mini' as const;
+  const model = DEFAULT_HYBRID_GPT_MODEL;
+  const health = probeCopilotCliHealth({
+    model,
+    repoRoot: input.repoRoot,
+  });
+
+  if (!health.available) {
+    return {
+      provider,
+      model,
+      status: 'unavailable',
+      overall_risk: null,
+      confidence: null,
+      needs_local_deep_review: true,
+      focus_profiles: [],
+      findings: [],
+      summary: null,
+      error: health.reason ?? 'Copilot GPT-5 mini is unavailable.',
+    };
+  }
+
+  try {
+    const rawOutput = runCopilotReview({
+      model,
+      prompt: buildHybridGptPrompt({
+        changedFiles: input.changedFiles,
+        diffText: input.diffText,
+      }),
+      repoRoot: input.repoRoot,
+    });
+    const parsed = parseHybridGptReview(rawOutput);
+    return {
+      provider,
+      model,
+      status: 'completed',
+      error: null,
+      ...parsed,
+    };
+  } catch (error) {
+    const errorText = error instanceof Error ? error.message : String(error);
+    return {
+      provider,
+      model,
+      status: isCopilotUnavailableError(error) ? 'unavailable' : 'runtime-error',
+      overall_risk: null,
+      confidence: null,
+      needs_local_deep_review: true,
+      focus_profiles: [],
+      findings: [],
+      summary: null,
+      error: errorText,
+    };
+  }
+}
+
+export function createHybridGptBypassReview(reason: string): HybridGptReview {
+  return {
+    provider: 'copilot-gpt-5-mini',
+    model: DEFAULT_HYBRID_GPT_MODEL,
+    status: 'runtime-error',
+    overall_risk: null,
+    confidence: null,
+    needs_local_deep_review: true,
+    focus_profiles: [],
+    findings: [],
+    summary: null,
+    error: reason,
+  };
+}
+
+export function planHybridLocalReview(input: {
+  gptReview: HybridGptReview;
+  heuristics: HybridHeuristics;
+}): HybridLocalPlan {
+  if (
+    input.heuristics.sensitive_categories.length > 0 ||
+    input.heuristics.file_count > 15
+  ) {
+    return {
+      local_mode: 'full',
+      requested_profiles: input.heuristics.routed_profiles,
+    };
+  }
+
+  if (input.gptReview.status !== 'completed') {
+    return {
+      local_mode: 'full',
+      requested_profiles: input.heuristics.routed_profiles,
+    };
+  }
+
+  if (
+    input.gptReview.needs_local_deep_review ||
+    input.gptReview.confidence === 'low'
+  ) {
+    const requestedProfiles = selectRequestedHybridProfiles({
+      gptFocusProfiles: input.gptReview.focus_profiles,
+      routedProfiles: input.heuristics.routed_profiles,
+    });
+
+    return {
+      local_mode:
+        requestedProfiles.length === input.heuristics.routed_profiles.length
+          ? 'full'
+          : 'targeted',
+      requested_profiles: requestedProfiles,
+    };
+  }
+
+  return {
+    local_mode: 'skipped',
+    requested_profiles: [],
+  };
+}
+
+export function buildHybridReviewReport(input: {
+  gptReview: HybridGptReview;
+  heuristics: HybridHeuristics;
+  localReviewResult?: HybridLocalReviewResult | null;
+}): HybridReviewReport {
+  const localReview = input.localReviewResult?.report ?? null;
+  const localReviewError = input.localReviewResult?.error ?? null;
+  const localMode = input.localReviewResult?.local_mode ?? 'skipped';
+  const requestedProfiles = input.localReviewResult?.requested_profiles ?? [];
+  const mergedFindings = mergeHybridFindings({
+    gptFindings: input.gptReview.findings,
+    localFindings: localReview?.findings ?? [],
+  });
+  const escalationReasons = getHybridEscalationReasons({
+    gptReview: input.gptReview,
+    heuristics: input.heuristics,
+    localFindings: localReview?.findings ?? [],
+    localReviewError,
+  });
+
+  return {
+    strategy: 'gpt-gate',
+    heuristics: input.heuristics,
+    gpt_review: input.gptReview,
+    local_review: localReview,
+    local_mode: localMode,
+    requested_profiles: requestedProfiles,
+    findings: mergedFindings,
+    merged_findings: mergedFindings,
+    summary:
+      input.gptReview.summary ??
+      localReview?.summary ??
+      `Hybrid review completed for ${input.heuristics.file_count} file(s).`,
+    recommended_escalation: escalationReasons.length > 0,
+    escalation_reasons: escalationReasons,
+    decision_basis: resolveHybridDecisionBasis({
+      gptReview: input.gptReview,
+      localReview,
+      localReviewError,
+      localMode,
+    }),
+    local_review_error: localReviewError,
+  };
+}
+
+export function buildHybridPrefilterContext(input: {
+  report: HybridReviewReport;
+}): string {
+  const changedFiles = input.report.heuristics.changed_files;
+  const condensedFiles = changedFiles.slice(0, 8);
+  const condensedFindings =
+    input.report.merged_findings.length > 0
+      ? input.report.merged_findings.slice(0, 5).map((finding) => {
+          const location = finding.file_path
+            ? finding.line
+              ? `${finding.file_path}:${finding.line}`
+              : finding.file_path
+            : '<repo>';
+          return `- [${finding.source}/${finding.severity}] ${finding.title} (${location}) :: ${finding.detail}`;
+        })
+      : ['- none'];
+
+  return [
+    '# Prefilter',
+    '',
+    `strategy=${input.report.strategy}`,
+    `gpt_provider=${input.report.gpt_review.provider}`,
+    `gpt_status=${input.report.gpt_review.status}`,
+    `gpt_risk=${input.report.gpt_review.overall_risk ?? 'unknown'}`,
+    `gpt_confidence=${input.report.gpt_review.confidence ?? 'unknown'}`,
+    `local_mode=${input.report.local_mode}`,
+    `requested_profiles=${
+      input.report.requested_profiles.length > 0
+        ? input.report.requested_profiles.join(',')
+        : 'none'
+    }`,
+    `recommended_escalation=${input.report.recommended_escalation ? 'yes' : 'no'}`,
+    `summary=${
+      input.report.gpt_review.summary ??
+      input.report.local_review?.summary ??
+      'Hybrid gate completed without a reviewer summary.'
+    }`,
+    '',
+    'reasons:',
+    ...(input.report.escalation_reasons.length > 0
+      ? input.report.escalation_reasons.map((reason) => `- ${reason}`)
+      : ['- none']),
+    '',
+    'files:',
+    ...condensedFiles.map((file) => `- ${file}`),
+    ...(changedFiles.length > condensedFiles.length
+      ? [`- ... ${changedFiles.length - condensedFiles.length} more file(s)`]
+      : []),
+    '',
+    'findings:',
+    ...condensedFindings,
+    '',
+    'focus:',
+    ...deriveSuggestedReviewFocus(
+      input.report.merged_findings,
+      input.report.escalation_reasons,
+    )
+      .slice(0, 4)
+      .map((line) => `- ${line}`),
+  ].join('\n');
 }
 
 export function getEscalationReasons(input: {
@@ -1061,8 +1439,401 @@ function renderEvaluationSummary(
   ].join('\n');
 }
 
+function buildHybridGptPrompt(input: {
+  changedFiles: ReadonlyArray<string>;
+  diffText: string;
+}): string {
+  const routedProfiles = routeHybridProfiles(input.changedFiles);
+  return [
+    'You are the cloud reviewer in a hybrid local-review prefilter workflow.',
+    'Return JSON only. Do not include markdown fences, commentary, or prose outside the JSON object.',
+    'Use this exact schema:',
+    '{"overall_risk":"low|medium|high","confidence":"low|medium|high","needs_local_deep_review":true,"focus_profiles":["angular","nest","typescript","repo-habits","general"],"findings":[{"severity":"critical|high|medium|low|info","title":"...","detail":"...","file_path":"path/or/null","line":12,"recommendation":"..."}],"summary":"..."}',
+    '',
+    'Rules:',
+    '- Mark `needs_local_deep_review` true when you are uncertain, when the diff touches risky areas, or when local evidence would materially help.',
+    '- Keep `focus_profiles` inside the allowed set and prefer the routed profiles when possible.',
+    '- Return an empty findings array if nothing actionable stands out.',
+    '',
+    'Changed files:',
+    ...input.changedFiles.map((file) => `- ${normalizeHybridPath(file)}`),
+    '',
+    `Routed local profiles: ${routedProfiles.join(', ')}`,
+    '',
+    'Diff to review:',
+    input.diffText.trim(),
+  ].join('\n');
+}
+
+function parseHybridGptReview(rawOutput: string): Omit<
+  HybridGptReview,
+  'error' | 'model' | 'provider' | 'status'
+> {
+  const payload = extractJsonObject(rawOutput);
+  const parsed = JSON.parse(payload) as Record<string, unknown>;
+  const overallRisk = normalizeHybridRisk(parsed.overall_risk);
+  const confidence = normalizeHybridConfidence(parsed.confidence);
+  const summary = normalizeRequiredText(parsed.summary, 'summary');
+
+  return {
+    overall_risk: overallRisk,
+    confidence,
+    needs_local_deep_review: normalizeBoolean(
+      parsed.needs_local_deep_review,
+      'needs_local_deep_review',
+    ),
+    focus_profiles: normalizeHybridProfileList(parsed.focus_profiles),
+    findings: normalizeHybridGptFindings(parsed.findings),
+    summary,
+  };
+}
+
+function extractJsonObject(rawOutput: string): string {
+  const trimmed = rawOutput.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    return trimmed;
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error('Hybrid GPT reviewer did not return a JSON object.');
+  }
+
+  return trimmed.slice(firstBrace, lastBrace + 1);
+}
+
+function normalizeHybridRisk(value: unknown): HybridRiskLevel {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  if (normalized === 'low' || normalized === 'medium' || normalized === 'high') {
+    return normalized;
+  }
+
+  throw new Error('Hybrid GPT review returned an invalid overall_risk value.');
+}
+
+function normalizeHybridConfidence(value: unknown): HybridConfidenceLevel {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  if (normalized === 'low' || normalized === 'medium' || normalized === 'high') {
+    return normalized;
+  }
+
+  throw new Error('Hybrid GPT review returned an invalid confidence value.');
+}
+
+function normalizeRequiredText(value: unknown, fieldName: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`Hybrid GPT review returned an invalid ${fieldName} value.`);
+  }
+
+  return value.trim();
+}
+
+function normalizeBoolean(value: unknown, fieldName: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new Error(`Hybrid GPT review returned a non-boolean ${fieldName} value.`);
+  }
+
+  return value;
+}
+
+function normalizeHybridProfileList(value: unknown): HybridReviewProfileName[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value.filter(
+        (item): item is HybridReviewProfileName =>
+          item === 'angular' ||
+          item === 'nest' ||
+          item === 'typescript' ||
+          item === 'repo-habits' ||
+          item === 'general',
+      ),
+    ),
+  );
+}
+
+function normalizeHybridGptFindings(value: unknown): HybridGptFinding[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Hybrid GPT review returned a non-array findings value.');
+  }
+
+  return value.map((entry, index) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(
+        `Hybrid GPT review returned an invalid finding at index ${index}.`,
+      );
+    }
+
+    const finding = entry as Record<string, unknown>;
+    return {
+      severity: normalizeLocalReviewSeverity(finding.severity),
+      title: normalizeRequiredText(finding.title, `findings[${index}].title`),
+      detail: normalizeRequiredText(finding.detail, `findings[${index}].detail`),
+      file_path: normalizeOptionalText(finding.file_path),
+      line: normalizeOptionalLineNumber(finding.line),
+      recommendation: normalizeOptionalText(finding.recommendation),
+    };
+  });
+}
+
+function normalizeLocalReviewSeverity(value: unknown): LocalReviewSeverity {
+  if (
+    value === 'critical' ||
+    value === 'high' ||
+    value === 'medium' ||
+    value === 'low' ||
+    value === 'info'
+  ) {
+    return value;
+  }
+
+  return 'info';
+}
+
+function normalizeOptionalText(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeOptionalLineNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const parsed =
+    typeof value === 'number' ? value : Number.parseInt(String(value), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function routeHybridProfiles(
+  changedFiles: ReadonlyArray<string>,
+): HybridReviewProfileName[] {
+  const routed = new Set<HybridReviewProfileName>();
+
+  for (const file of changedFiles) {
+    routed.add(routeHybridProfileForPath(file));
+  }
+
+  if (routed.size === 0) {
+    routed.add('general');
+  }
+
+  return HYBRID_PROFILE_ORDER.filter((profile) => routed.has(profile));
+}
+
+function routeHybridProfileForPath(filePath: string): HybridReviewProfileName {
+  const normalizedPath = normalizeHybridPath(filePath);
+
+  if (matchesAnyPattern(normalizedPath, HYBRID_ANGULAR_PATH_PATTERNS)) {
+    return 'angular';
+  }
+
+  if (matchesAnyPattern(normalizedPath, HYBRID_NEST_PATH_PATTERNS)) {
+    return 'nest';
+  }
+
+  if (matchesAnyPattern(normalizedPath, HYBRID_TYPESCRIPT_PATH_PATTERNS)) {
+    return 'typescript';
+  }
+
+  if (matchesAnyPattern(normalizedPath, HYBRID_REPO_HABITS_PATH_PATTERNS)) {
+    return 'repo-habits';
+  }
+
+  return 'general';
+}
+
+function matchesAnyPattern(
+  normalizedPath: string,
+  patterns: ReadonlyArray<RegExp>,
+): boolean {
+  return patterns.some((pattern) => pattern.test(normalizedPath));
+}
+
+function normalizeHybridPath(candidate: string): string {
+  return candidate.replaceAll('\\', '/').replace(/^\.\//, '').trim();
+}
+
+function detectSensitiveReviewAreas(input: {
+  changedFiles: ReadonlyArray<string>;
+  diffText: string;
+}): HybridHeuristics['sensitive_categories'] {
+  const combinedText = `${input.changedFiles.join('\n')}\n${input.diffText}`;
+  return SENSITIVE_REVIEW_AREAS.filter(({ pattern }) => pattern.test(combinedText)).map(
+    ({ category }) => category,
+  );
+}
+
+function selectRequestedHybridProfiles(input: {
+  gptFocusProfiles: ReadonlyArray<HybridReviewProfileName>;
+  routedProfiles: ReadonlyArray<HybridReviewProfileName>;
+}): HybridReviewProfileName[] {
+  const routed = new Set(input.routedProfiles);
+  const intersection = input.gptFocusProfiles.filter((profile) => routed.has(profile));
+
+  if (intersection.length > 0) {
+    return HYBRID_PROFILE_ORDER.filter((profile) => intersection.includes(profile));
+  }
+
+  if (input.routedProfiles.length > 0) {
+    return [...input.routedProfiles];
+  }
+
+  return ['general'];
+}
+
+function mergeHybridFindings(input: {
+  gptFindings: ReadonlyArray<HybridGptFinding>;
+  localFindings: ReadonlyArray<LocalReviewFinding>;
+}): HybridMergedFinding[] {
+  const unique: HybridMergedFinding[] = [];
+  const seen = new Set<string>();
+
+  for (const finding of input.gptFindings) {
+    const normalized = normalizeHybridMergedFinding({
+      ...finding,
+      profile: null,
+      rationale: null,
+      evidence: null,
+      source: 'gpt',
+    });
+    const key = buildHybridFindingKey(normalized);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(normalized);
+    }
+  }
+
+  for (const finding of input.localFindings) {
+    const normalized = normalizeHybridMergedFinding({
+      ...finding,
+      source: 'local',
+    });
+    const key = buildHybridFindingKey(normalized);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(normalized);
+    }
+  }
+
+  return unique.sort((left, right) => {
+    const severityOrder = {
+      critical: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
+      info: 4,
+    } as const;
+    const severityDelta = severityOrder[left.severity] - severityOrder[right.severity];
+    if (severityDelta !== 0) {
+      return severityDelta;
+    }
+
+    const fileDelta = (left.file_path ?? '').localeCompare(right.file_path ?? '');
+    if (fileDelta !== 0) {
+      return fileDelta;
+    }
+
+    const lineDelta = (left.line ?? 0) - (right.line ?? 0);
+    if (lineDelta !== 0) {
+      return lineDelta;
+    }
+
+    return left.title.localeCompare(right.title);
+  });
+}
+
+function normalizeHybridMergedFinding(
+  finding: LocalReviewFinding & { source: 'gpt' | 'local' },
+): HybridMergedFinding {
+  return {
+    severity: finding.severity,
+    title: finding.title.trim(),
+    detail: finding.detail.trim(),
+    file_path: finding.file_path?.trim() || null,
+    line: finding.line ?? null,
+    recommendation: finding.recommendation?.trim() || null,
+    profile: finding.profile?.trim() || null,
+    rationale: finding.rationale?.trim() || null,
+    evidence: finding.evidence?.trim() || null,
+    source: finding.source,
+  };
+}
+
+function buildHybridFindingKey(finding: HybridMergedFinding): string {
+  return JSON.stringify([
+    finding.severity,
+    finding.file_path,
+    finding.line,
+    finding.title.toLowerCase(),
+    finding.detail.toLowerCase(),
+  ]);
+}
+
+function getHybridEscalationReasons(input: {
+  gptReview: HybridGptReview;
+  heuristics: HybridHeuristics;
+  localFindings: ReadonlyArray<LocalReviewFinding>;
+  localReviewError: string | null;
+}): string[] {
+  const reasons: string[] = [];
+
+  if (input.gptReview.overall_risk === 'high') {
+    reasons.push('GPT reviewer marked the change high risk');
+  }
+
+  if (
+    input.localFindings.some(
+      (finding) => finding.severity === 'critical' || finding.severity === 'high',
+    )
+  ) {
+    reasons.push('local reviewer reported a critical/high finding');
+  }
+
+  if (input.heuristics.sensitive_categories.length > 0) {
+    reasons.push(
+      `sensitive area detected: ${Array.from(
+        new Set(input.heuristics.sensitive_categories),
+      ).join(', ')}`,
+    );
+  }
+
+  if (input.localReviewError) {
+    reasons.push(`local runtime failure: ${input.localReviewError}`);
+  }
+
+  return reasons;
+}
+
+function resolveHybridDecisionBasis(input: {
+  gptReview: HybridGptReview;
+  localMode: HybridLocalMode;
+  localReview: LocalReviewReport | null;
+  localReviewError: string | null;
+}): HybridDecisionBasis {
+  if (input.gptReview.status !== 'completed' || input.localReviewError) {
+    return 'local-fallback';
+  }
+
+  if (input.localMode !== 'skipped' || input.localReview) {
+    return 'gpt+local';
+  }
+
+  return 'gpt';
+}
+
 function deriveSuggestedReviewFocus(
-  findings: ReadonlyArray<LocalReviewFinding>,
+  findings: ReadonlyArray<
+    Pick<LocalReviewFinding, 'detail' | 'profile' | 'recommendation'>
+  >,
   escalationReasons: ReadonlyArray<string>,
 ): string[] {
   const focus = new Set<string>();
@@ -1121,6 +1892,24 @@ function runLocalReviewerJsonCommand<T>(input: {
       }`,
     );
   }
+}
+
+function buildLocalReviewerRequestedProfilesEnv(
+  env: NodeJS.ProcessEnv | undefined,
+  requestedProfiles: ReadonlyArray<HybridReviewProfileName> | undefined,
+): NodeJS.ProcessEnv | undefined {
+  if (!env && (!requestedProfiles || requestedProfiles.length === 0)) {
+    return undefined;
+  }
+
+  if (!requestedProfiles || requestedProfiles.length === 0) {
+    return env;
+  }
+
+  return {
+    ...(env ?? {}),
+    LOCAL_REVIEWER_REQUESTED_PROFILES: requestedProfiles.join(','),
+  };
 }
 
 function runGitCommand(
@@ -1504,6 +2293,7 @@ export {
   DEFAULT_EVALUATION_AB_SAMPLE_COUNT,
   DEFAULT_EVALUATION_ROUNDS,
   DEFAULT_SAMPLE_SEED,
+  MAX_HYBRID_GPT_DIFF_CHARS,
   DEFAULT_SMALL_DIFF_THRESHOLD_CHARS,
   EVALUATION_ARTIFACT_DIR,
   PREFILTER_ARTIFACT_DIR,

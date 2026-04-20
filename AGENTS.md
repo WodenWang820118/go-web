@@ -72,14 +72,14 @@ The ideal review path is:
 3. the reviewer performs the checkpoint review using the matching reviewer agent or prompt
 4. the primary tool continues only after the review is addressed
 
-If the scripted Copilot Claude path is unavailable in the current environment, fall back to Copilot GPT-5 mini first, then to Gemini CLI where defined below, otherwise use the matching local reviewer persona or Codex reviewer subagent.
+If the scripted Copilot Claude path is unavailable in the current environment, prefer Gemini CLI before Copilot GPT-5 mini where this file routes an automatic second reviewer, otherwise use the matching local reviewer persona or Codex reviewer subagent.
 
 ### Required checkpoints
 
 1. `Plan review`: produce a spec or implementation plan, then send it to a second reviewer.
-   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, fall back to GitHub Copilot GPT-5 mini. If Copilot is fully unavailable after both Copilot models, use `gemini-2.5-pro`. If Gemini is also unavailable, use the matching Codex reviewer subagent.
+   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, use `gemini-2.5-pro` before retrying with GitHub Copilot GPT-5 mini. If both local CLIs are unavailable, use the matching Codex reviewer subagent.
 2. `Test review`: after writing tests but before running the broad sign-off suite or using those tests as approval evidence, send the test strategy and assertions to a second reviewer.
-   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, fall back to GitHub Copilot GPT-5 mini. If Copilot is fully unavailable after both Copilot models, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
+   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, use `gemini-2.5-pro` before retrying with GitHub Copilot GPT-5 mini. If both local CLIs are unavailable, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
 3. `Implementation review`: after the first working implementation, self-check, and reviewable verification story are ready, send the change to a second reviewer.
    Default: Gemini Flash Preview using the CLI model id `gemini-3-flash-preview`. If Gemini is unavailable, fall back to GitHub Copilot Claude Sonnet 4.6, then GitHub Copilot GPT-5 mini, then to the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
 
@@ -133,7 +133,7 @@ Expected repo workflow:
 - Before using Copilot CLI for a scripted checkpoint review, confirm the local CLI is installed and that a constant low-cost probe still succeeds. Treat a failed probe as unavailability and fall back instead of sending the full review payload.
 - Copilot hooks in `.github/hooks/review-gate.json` are the hard guardrail for pre-implementation review on a clean worktree.
 - When using Copilot CLI and Rubber Duck is available, prefer a Claude-family orchestrator and enable `/experimental`.
-- When the scripted Copilot Claude path is unavailable, the review wrappers should retry with Copilot GPT-5 mini before leaving Copilot.
+- When the scripted Copilot Claude path is unavailable, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Keep the Copilot-only retry path only when the review is explicitly pinned to `--provider copilot`.
 - Trigger Rubber Duck critique after a plan is drafted, after an escalated multi-file implementation review, and after tests are written but before they are executed.
 - If Rubber Duck is unavailable, use the matching reviewer agent in `.github/agents` as the required second opinion.
 - If the user explicitly asks for a critique, review, second opinion, or Rubber Duck, force a second opinion even if the task is otherwise small.
