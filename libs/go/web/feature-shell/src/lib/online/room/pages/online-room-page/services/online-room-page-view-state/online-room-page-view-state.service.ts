@@ -13,6 +13,18 @@ import {
   OnlineRoomStageViewModel,
 } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomService } from '../../../../services/online-room/online-room.service';
+import {
+  buildRoomBoardSection,
+  buildRoomLoadingStatusView,
+  buildRoomMissingStatusView,
+  buildRoomRematchStatuses,
+  buildRoomSeatViewModels,
+  buildRoomSidebarMessages,
+  buildRoomStageViewModel,
+  connectionStateLabel,
+  findRoomRematchViewerSeat,
+  isLiveHostedMatch,
+} from '../../online-room-page.presentation';
 
 @Injectable()
 export class OnlineRoomPageViewStateService {
@@ -35,76 +47,22 @@ export class OnlineRoomPageViewStateService {
   readonly connectionState = this.onlineRoom.connectionState;
   readonly bootstrapState = this.onlineRoom.bootstrapState;
   readonly realtimeConnected = computed(() => this.connectionState() === 'connected');
-  readonly isLiveMatch = computed(() => {
-    const phase = this.match()?.state.phase;
-    return phase ? phase !== 'finished' : false;
-  });
+  readonly isLiveMatch = computed(() => isLiveHostedMatch(this.match()));
   readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
-    const snapshot = this.snapshot();
-
-    if (!snapshot || this.match()) {
-      return null;
-    }
-
-    if (
-      snapshot.autoStartBlockedUntilSeatChange &&
-      snapshot.seatState.black &&
-      snapshot.seatState.white
-    ) {
-      return {
-        label: this.i18n.t('room.stage.blocked.label'),
-        title: this.i18n.t('room.stage.blocked.title'),
-        description: this.i18n.t('room.stage.blocked.description'),
-      };
-    }
-
-    if (snapshot.seatState.black && snapshot.seatState.white) {
-      return {
-        label: this.i18n.t('room.stage.ready.label'),
-        title: this.i18n.t('room.stage.ready.title'),
-        description: this.i18n.t('room.stage.ready.description'),
-      };
-    }
-
-    return {
-      label: this.i18n.t('room.stage.waiting.label'),
-      title: this.i18n.t('room.stage.waiting.title'),
-      description: this.i18n.t('room.stage.waiting.description'),
-    };
+    return buildRoomStageViewModel(this.i18n, this.snapshot(), this.match());
   });
-  readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() => ({
-    eyebrow: this.roomId()
-      ? this.i18n.t('room.hero.title', { roomId: this.roomId()! })
-      : this.i18n.t('room.hero.loading_title'),
-    title: this.i18n.t('room.page.loading'),
-    description: null,
-    actionLabel: null,
-  }));
-  readonly missingStatusView = computed<OnlineRoomPageStatusViewModel>(() => ({
-    eyebrow: this.i18n.t('room.page.missing.label'),
-    title: this.i18n.t('room.page.missing.title'),
-    description: this.i18n.t('room.page.missing.description'),
-    actionLabel: this.i18n.t('room.page.missing.action'),
-  }));
+  readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
+    buildRoomLoadingStatusView(this.i18n, this.roomId())
+  );
+  readonly missingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
+    buildRoomMissingStatusView(this.i18n)
+  );
   readonly seats = computed<OnlineRoomSeatViewModel[]>(() => {
-    const snapshot = this.snapshot();
-    const canChangeSeats = this.onlineRoom.canChangeSeats();
-    const participantId = this.onlineRoom.participantId();
-    const viewerSeat = this.onlineRoom.viewerSeat();
-
-    if (!snapshot) {
-      return [];
-    }
-
-    return (['black', 'white'] as const).map(color => ({
-      color,
-      occupant:
-        snapshot.participants.find(
-          participant => participant.participantId === snapshot.seatState[color]
-        ) ?? null,
-      canClaim: !!participantId && canChangeSeats && !snapshot.seatState[color],
-      isViewerSeat: viewerSeat === color,
-    }));
+    return buildRoomSeatViewModels(this.snapshot(), {
+      participantId: this.onlineRoom.participantId(),
+      viewerSeat: this.onlineRoom.viewerSeat(),
+      canChangeSeats: this.onlineRoom.canChangeSeats(),
+    });
   });
   readonly lastPlacedPoint = computed(() => {
     const command = this.match()?.state.lastMove?.command;
@@ -122,24 +80,9 @@ export class OnlineRoomPageViewStateService {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.state.phase === 'playing'
   );
-  readonly rematchViewerSeat = computed<PlayerColor | null>(() => {
-    const participantId = this.onlineRoom.participantId();
-    const rematch = this.rematch();
-
-    if (!participantId || !rematch) {
-      return null;
-    }
-
-    if (rematch.participants.black === participantId) {
-      return 'black';
-    }
-
-    if (rematch.participants.white === participantId) {
-      return 'white';
-    }
-
-    return null;
-  });
+  readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
+    findRoomRematchViewerSeat(this.onlineRoom.participantId(), this.rematch())
+  );
   readonly canRespondToRematch = computed(() => {
     const viewerSeat = this.rematchViewerSeat();
 
@@ -150,25 +93,12 @@ export class OnlineRoomPageViewStateService {
     );
   });
   readonly rematchStatuses = computed<OnlineRoomSidebarRematchStatusViewModel[]>(() => {
-    const rematch = this.rematch();
-
-    if (!rematch) {
-      return [];
-    }
-
-    return (['black', 'white'] as const).map(color => {
-      const participantId = rematch.participants[color];
-      const participant = this.participants().find(
-        currentParticipant => currentParticipant.participantId === participantId
-      );
-
-      return {
-        color,
-        name: participant?.displayName ?? this.i18n.playerLabel(color),
-        response: rematch.responses[color],
-        isViewer: this.onlineRoom.participantId() === participantId,
-      };
-    });
+    return buildRoomRematchStatuses(
+      this.i18n,
+      this.participants(),
+      this.rematch(),
+      this.onlineRoom.participantId()
+    );
   });
   readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
@@ -180,18 +110,9 @@ export class OnlineRoomPageViewStateService {
       ? this.i18n.t('room.join.description.spectator')
       : this.i18n.t('room.join.description.pre_match')
   );
-  readonly connectionLabel = computed(() => {
-    switch (this.connectionState()) {
-      case 'connected':
-        return this.i18n.t('room.connection.connected');
-      case 'connecting':
-        return this.i18n.t('room.connection.connecting');
-      case 'disconnected':
-        return this.i18n.t('room.connection.reconnecting');
-      default:
-        return this.i18n.t('room.connection.offline');
-    }
-  });
+  readonly connectionLabel = computed(() =>
+    connectionStateLabel(this.i18n, this.connectionState())
+  );
   readonly chatHelperText = computed(() => {
     if (!this.onlineRoom.participantId()) {
       return this.i18n.t('room.chat.helper.join');
@@ -213,63 +134,25 @@ export class OnlineRoomPageViewStateService {
       : null
   );
   readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
-    const messages: OnlineRoomSidebarMessageViewModel[] = [];
-
-    if (this.onlineRoom.lastError()) {
-      messages.push({
-        tone: 'error',
-        message: this.onlineRoom.lastError()!,
-        testId: 'room-sidebar-message-error',
-      });
-    }
-
-    if (
-      this.onlineRoom.lastNotice() &&
-      this.onlineRoom.lastSystemNotice()?.message.key !== 'room.notice.match_started_auto'
-    ) {
-      messages.push({
-        tone: 'notice',
-        message: this.onlineRoom.lastNotice()!,
-        testId: 'room-sidebar-message-notice',
-      });
-    }
-
-    if (this.connectionWarning()) {
-      messages.push({
-        tone: 'warning',
-        message: this.connectionWarning()!,
-        testId: 'room-sidebar-message-warning',
-      });
-    }
-
-    if (
-      this.match()?.state.phase === 'finished' &&
-      !this.rematch() &&
-      this.onlineRoom.autoStartBlockedUntilSeatChange()
-    ) {
-      messages.push({
-        tone: 'warning',
-        message: this.i18n.t('room.rematch.blocked'),
-        testId: 'room-sidebar-message-rematch-blocked',
-      });
-    }
-
-    return messages;
+    return buildRoomSidebarMessages(this.i18n, {
+      lastError: this.onlineRoom.lastError(),
+      lastNotice: this.onlineRoom.lastNotice(),
+      lastSystemNotice: this.onlineRoom.lastSystemNotice(),
+      connectionWarning: this.connectionWarning(),
+      match: this.match(),
+      rematch: this.rematch(),
+      autoStartBlockedUntilSeatChange:
+        this.onlineRoom.autoStartBlockedUntilSeatChange(),
+    });
   });
-  readonly matchStatusLine = computed(() => {
-    const match = this.match();
-
-    if (!match || match.state.phase === 'playing' || match.state.result?.reason === 'resign') {
-      return null;
-    }
-
-    return this.i18n.translateMessage(match.state.result?.summary ?? match.state.message);
-  });
-  readonly boardSection = computed<OnlineRoomBoardSectionViewModel>(() => ({
-    lastPlacedPoint: this.lastPlacedPoint(),
-    interactive: this.onlineRoom.canInteractBoard() && this.realtimeConnected(),
-    statusLine: this.matchStatusLine(),
-  }));
+  readonly boardSection = computed<OnlineRoomBoardSectionViewModel>(() =>
+    buildRoomBoardSection(this.i18n, {
+      lastPlacedPoint: this.lastPlacedPoint(),
+      canInteractBoard: this.onlineRoom.canInteractBoard(),
+      realtimeConnected: this.realtimeConnected(),
+      match: this.match(),
+    })
+  );
 
   constructor() {
     effect(() => {
