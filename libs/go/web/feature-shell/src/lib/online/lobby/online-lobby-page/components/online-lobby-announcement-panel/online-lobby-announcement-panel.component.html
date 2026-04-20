@@ -1,0 +1,33 @@
+<section
+  class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,_rgba(28,33,39,0.98),_rgba(13,16,20,0.98))] shadow-xl shadow-slate-950/25"
+  data-testid="lobby-announcement-panel"
+>
+  <div class="border-b border-white/10 px-4 py-3">
+    <h2
+      id="lobby-announcement-heading"
+      class="text-sm font-semibold uppercase tracking-[0.22em] text-stone-400"
+    >
+      {{ i18n.t('lobby.panel.announcement') }}
+    </h2>
+  </div>
+
+  <div
+    class="min-h-0 space-y-3 overflow-y-auto px-4 py-4"
+    tabindex="0"
+    aria-labelledby="lobby-announcement-heading"
+  >
+    @for (card of cards(); track card.id) {
+      <article
+        class="rounded-md border px-4 py-4"
+        [class.border-amber-300/30]="card.tone === 'guide'"
+        [class.bg-amber-300/10]="card.tone === 'guide'"
+        [class.border-dashed]="card.tone === 'ad'"
+        [class.border-white/15]="card.tone === 'ad'"
+        [class.bg-white/[0.03]]="card.tone === 'ad'"
+      >
+        <h3 class="text-sm font-semibold text-stone-50">{{ card.title }}</h3>
+        <p class="mt-2 text-sm leading-6 text-stone-300">{{ card.copy }}</p>
+      </article>
+    }
+  </div>
+</section>

@@ -3,29 +3,25 @@ import {
   Component,
   computed,
   DestroyRef,
-  ElementRef,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import {
   takeUntilDestroyed,
   toSignal,
 } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { FormControl } from '@angular/forms';
+import { Router } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { TagModule } from 'primeng/tag';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
   buildLobbyAnnouncementCards,
   buildLobbyOnlinePlayerGroups,
+  buildLobbyOverviewStats,
   buildLobbyTableRows,
   buildLobbySections,
-  countLabel,
-  emptySectionLabel,
   LobbyAnnouncementCardViewModel,
   LobbyOnlinePlayerGroupViewModel,
   LobbyOverviewStatsViewModel,
@@ -35,15 +31,18 @@ import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hos
 import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
 import { OnlineLobbyService } from '../services/online-lobby/online-lobby.service';
 import { OnlineLobbyFlashNoticeService } from '../services/online-lobby-flash-notice/online-lobby-flash-notice.service';
+import { OnlineLobbyAnnouncementPanelComponent } from './components/online-lobby-announcement-panel/online-lobby-announcement-panel.component';
+import { OnlineLobbyOnlinePlayersPanelComponent } from './components/online-lobby-online-players-panel/online-lobby-online-players-panel.component';
+import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-panel/online-lobby-room-panel.component';
 
 @Component({
   selector: 'lib-go-online-lobby-page',
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    TagModule,
     HostedShellHeaderComponent,
+    OnlineLobbyRoomPanelComponent,
+    OnlineLobbyAnnouncementPanelComponent,
+    OnlineLobbyOnlinePlayersPanelComponent,
   ],
   templateUrl: './online-lobby-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,7 +55,6 @@ export class OnlineLobbyPageComponent {
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly roomTableScroll = viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
   private readonly mdUpSignal = signal(this.resolveMdUp());
 
@@ -81,28 +79,11 @@ export class OnlineLobbyPageComponent {
     this.sections()[0] ??
     null
   );
-  protected readonly activeRows = computed<LobbyRoomTableRowViewModel[]>(() =>
+  protected readonly activeRows = computed<readonly LobbyRoomTableRowViewModel[]>(() =>
     buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? [])
   );
   protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(() =>
-    ({
-      liveCount: this.activeSection()?.status === 'live' ? this.activeRows().length : 0,
-      readyCount: this.activeSection()?.status === 'ready' ? this.activeRows().length : 0,
-      waitingCount: this.activeSection()?.status === 'waiting' ? this.activeRows().length : 0,
-      roomCount: this.activeSection()?.rooms.length ?? 0,
-      participantCount: (this.activeSection()?.rooms ?? []).reduce(
-        (total, room) => total + room.participantCount,
-        0
-      ),
-      onlineCount: (this.activeSection()?.rooms ?? []).reduce(
-        (total, room) => total + room.onlineCount,
-        0
-      ),
-      spectatorCount: (this.activeSection()?.rooms ?? []).reduce(
-        (total, room) => total + room.spectatorCount,
-        0
-      ),
-    })
+    buildLobbyOverviewStats(this.activeSection()?.rooms ?? [])
   );
   protected readonly announcementCards = computed<LobbyAnnouncementCardViewModel[]>(() =>
     buildLobbyAnnouncementCards(this.i18n)
@@ -130,12 +111,6 @@ export class OnlineLobbyPageComponent {
   protected readonly actionBarMessageIsError = computed(
     () => !!(this.onlineRoom.lastError() ?? this.onlineLobby.lastError())
   );
-  protected readonly countLabel = (
-    count: number,
-    unit: 'room' | 'person' | 'online' | 'spectator'
-  ) => countLabel(this.i18n, count, unit);
-  protected readonly emptySectionLabel = (status: LobbyRoomStatus) =>
-    emptySectionLabel(this.i18n, status);
 
   constructor() {
     this.bindViewportMode();
@@ -173,18 +148,12 @@ export class OnlineLobbyPageComponent {
 
       if (nextStatus) {
         this.activeStatusSignal.set(nextStatus);
-        this.scrollRoomTableToTop();
       }
     });
   }
 
   protected setActiveStatus(status: LobbyRoomStatus): void {
     this.activeStatusSignal.set(status);
-    this.scrollRoomTableToTop();
-  }
-
-  protected isActiveStatus(status: LobbyRoomStatus): boolean {
-    return this.activeStatusSignal() === status;
   }
 
   protected createRoom(): void {
@@ -244,22 +213,5 @@ export class OnlineLobbyPageComponent {
     return typeof window === 'undefined' || typeof window.matchMedia !== 'function'
       ? true
       : window.matchMedia('(min-width: 768px)').matches;
-  }
-
-  private scrollRoomTableToTop(): void {
-    const element = this.roomTableScroll()?.nativeElement;
-
-    if (!element) {
-      return;
-    }
-
-    if (typeof element.scrollTo === 'function') {
-      element.scrollTo({
-        top: 0,
-      });
-      return;
-    }
-
-    element.scrollTop = 0;
   }
 }
