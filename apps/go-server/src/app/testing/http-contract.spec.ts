@@ -10,6 +10,7 @@ import {
   waitForConnect,
   type NestTestAppContext,
 } from './test-fixtures';
+import { CREATE_ATTEMPTS_PER_WINDOW } from '../core/rooms-config/rooms.constants';
 
 describe('rooms HTTP contract', () => {
   let context: NestTestAppContext;
@@ -90,6 +91,50 @@ describe('rooms HTTP contract', () => {
           }),
         ]),
       }),
+    });
+  });
+
+  it('deterministically throttles room creation after the per-requester limit', async () => {
+    for (let index = 0; index < CREATE_ATTEMPTS_PER_WINDOW; index += 1) {
+      await request(context.app.getHttpServer())
+        .post('/api/rooms')
+        .send({ displayName: `Host ${index + 1}` })
+        .expect(201);
+    }
+
+    const throttledResponse = await request(context.app.getHttpServer())
+      .post('/api/rooms')
+      .send({ displayName: `Host ${CREATE_ATTEMPTS_PER_WINDOW + 1}` })
+      .expect(429);
+
+    expect(throttledResponse.body).toMatchObject({
+      message: {
+        key: 'room.error.too_many_create_attempts',
+      },
+    });
+  });
+
+  it('never creates more rooms than the per-requester limit during a parallel burst', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: CREATE_ATTEMPTS_PER_WINDOW + 5 }, (_, index) =>
+        request(context.app.getHttpServer())
+          .post('/api/rooms')
+          .send({ displayName: `Host ${index + 1}` })
+      )
+    );
+
+    const createdResponses = responses.filter(response => response.status === 201);
+    const throttledResponses = responses.filter(response => response.status === 429);
+
+    expect(createdResponses.length).toBeLessThanOrEqual(CREATE_ATTEMPTS_PER_WINDOW);
+    expect(throttledResponses.length).toBeGreaterThanOrEqual(1);
+    expect(
+      responses.every(response => response.status === 201 || response.status === 429)
+    ).toBe(true);
+    expect(throttledResponses[0]?.body).toMatchObject({
+      message: {
+        key: 'room.error.too_many_create_attempts',
+      },
     });
   });
 

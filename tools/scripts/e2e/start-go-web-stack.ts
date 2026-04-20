@@ -146,6 +146,8 @@ process.on('SIGTERM', () => {
 async function main(): Promise<void> {
   await ensureServer('go-server', goServerHealthUrl, 'go-server:serve', {
     PORT: goServerPort,
+    GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW:
+      process.env.GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW ?? '20',
   });
   await ensureServer('go-web', baseUrl, `go-web:serve-static --port=${webPort}`);
 

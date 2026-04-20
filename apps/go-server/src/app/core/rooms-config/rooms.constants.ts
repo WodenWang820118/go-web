@@ -2,7 +2,15 @@ export const ROOM_ID_LENGTH = 6;
 export const ROOM_ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const ROOM_IDLE_TTL_MS = 60 * 60 * 1000;
 export const THROTTLE_WINDOW_MS = 60 * 1000;
-export const CREATE_ATTEMPTS_PER_WINDOW = 6;
+const DEFAULT_CREATE_ATTEMPTS_PER_WINDOW = 6;
+const createAttemptsOverride = Number.parseInt(
+  process.env.GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW ?? '',
+  10
+);
+export const CREATE_ATTEMPTS_PER_WINDOW =
+  Number.isFinite(createAttemptsOverride) && createAttemptsOverride > 0
+    ? createAttemptsOverride
+    : DEFAULT_CREATE_ATTEMPTS_PER_WINDOW;
 export const JOIN_ATTEMPTS_PER_WINDOW = 12;
 export const CHAT_WINDOW_MS = 10 * 1000;
 export const CHAT_MESSAGES_PER_WINDOW = 5;

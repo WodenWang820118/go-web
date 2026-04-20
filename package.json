@@ -22,7 +22,7 @@
                     "proofshot:start:web":  "node tools/scripts/proofshot.ts start-web",
                     "proofshot:stop":  "node tools/scripts/proofshot.ts stop",
                     "proofshot:clean":  "node tools/scripts/proofshot.ts clean",
-                    "docker:build":  "pnpm nx run-many -t docker:build -p go-web,go-server",
+                    "docker:build":  "pnpm nx run go-web:docker:build && pnpm nx run go-server:docker:build",
                     "docker:export":  "pnpm docker:build \u0026\u0026 node tools/scripts/docker/export-images.ts",
                     "docker:up":  "docker compose up -d --build",
                     "docker:down":  "docker compose down",

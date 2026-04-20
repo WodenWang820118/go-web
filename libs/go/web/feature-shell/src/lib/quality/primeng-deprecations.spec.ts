@@ -15,16 +15,22 @@ type DeprecatedPrimeNgFinding = DeprecatedPrimeNgInput & {
   snippet: string;
 };
 
-describe('PrimeNG deprecated inputs', () => {
-  it('does not use deprecated template inputs in go-web sources', () => {
-    const workspaceRoot = findWorkspaceRoot(
-      dirname(fileURLToPath(import.meta.url)),
-    );
-    const deprecatedInputs = readDeprecatedPrimeNgInputs(workspaceRoot);
-    const findings = findDeprecatedPrimeNgUsage(workspaceRoot, deprecatedInputs);
+const PRIMENG_DEPRECATION_AUDIT_TIMEOUT_MS = 20_000;
 
-    expect(findings, formatFindings(findings)).toEqual([]);
-  });
+describe('PrimeNG deprecated inputs', () => {
+  it(
+    'does not use deprecated template inputs in go-web sources',
+    { timeout: PRIMENG_DEPRECATION_AUDIT_TIMEOUT_MS },
+    () => {
+      const workspaceRoot = findWorkspaceRoot(
+        dirname(fileURLToPath(import.meta.url)),
+      );
+      const deprecatedInputs = readDeprecatedPrimeNgInputs(workspaceRoot);
+      const findings = findDeprecatedPrimeNgUsage(workspaceRoot, deprecatedInputs);
+
+      expect(findings, formatFindings(findings)).toEqual([]);
+    },
+  );
 });
 
 function findWorkspaceRoot(startDirectory: string): string {

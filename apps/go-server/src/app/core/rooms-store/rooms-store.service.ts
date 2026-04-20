@@ -168,7 +168,10 @@ export class RoomsStore {
     const now = Date.now();
 
     for (const [roomId, room] of this.rooms.entries()) {
-      if (room.emptySince && now - room.emptySince >= ROOM_IDLE_TTL_MS) {
+      const referenceTime = room.emptySince ?? Date.parse(room.createdAt);
+      const isStale = now - referenceTime >= ROOM_IDLE_TTL_MS;
+
+      if (isStale && this.isRoomOffline(room)) {
         this.rooms.delete(roomId);
       }
     }
