@@ -15,7 +15,6 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@org/models": ["libs/shared/models/src/index.ts"],
       "@gx/go/domain": ["libs/go/shared/domain/src/index.ts"],
       "@gx/go/state": ["libs/go/web/state/src/index.ts"],
       "@gx/go/state/guards": ["libs/go/web/state/src/lib/guards/active-match.guard.ts"],

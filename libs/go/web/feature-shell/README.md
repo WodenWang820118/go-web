@@ -10,7 +10,7 @@ Physical root: `libs/go/web/feature-shell`
 - Hosts the top-level page containers for the lobby-first `/` home route, `/online/room/:roomId`, `/setup/:mode`, and `/play/:mode`
 - Preserves legacy hosted-lobby redirects from `/online` and `/online/new` back to `/`
 - Keeps hosted-room coordination in frontend services such as `OnlineLobbyService` and `OnlineRoomService`
-- Uses internal presenter components for the room hero, participants panel, and chat panel so the route container stays thin
+- Keeps hosted-room coordination in route-local services and internal helpers so the route container stays thin
 - Keeps route-level verification under `src/lib/testing`
 
 ## Test Organization
