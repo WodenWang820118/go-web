@@ -51,6 +51,11 @@ interface HookInput {
   toolName?: string;
 }
 
+export interface HookPermissionResult {
+  allow: boolean;
+  reason?: string;
+}
+
 function trySpawn(command: string, args: string[], cwd: string): string | null {
   const result = spawnSync(command, args, {
     cwd,
@@ -315,6 +320,16 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
     /\bperl\s+-pi\b/i,
     /\b(prettier|eslint)\b.*--write\b/i,
     /\b(rm|mv|cp|mkdir|touch)\b/i,
+    /\b(rmdir|chmod|chown)\b/i,
+    /\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|Rename-Item|Clear-Content)\b/i,
+    /\b(Invoke-Expression|iex)\b/i,
+    /\bgit\s+(apply|am|checkout|switch|restore|reset|revert|clean|rm|mv|commit|merge|rebase|cherry-pick)\b/i,
+    /\bgit\s+stash\s+(apply|pop)\b/i,
+    /\bgit\s+worktree\s+(add|move|remove|prune)\b/i,
+    /\b(pnpm|npm|yarn|bun)\s+(install|add|remove|update|up|dedupe|unlink|link)\b/i,
+    /\bpip(?:3)?\s+install\b/i,
+    /\bpoetry\s+(add|remove|install|update|lock)\b/i,
+    /\|\s*(sh|bash|pwsh|powershell)\b/i,
     /\btee\b/i,
     />{1,2}\s*\S/,
   ];
@@ -346,6 +361,26 @@ export function parseHookInput(rawInput: string): HookInput {
     ...input,
     toolArgs,
   };
+}
+
+export function evaluateHookPermission(input: {
+  hookInput: HookInput;
+  repoContext: RepoContext;
+  state: ReviewGateState | null;
+}): HookPermissionResult {
+  if (!isMutatingToolUse(input.hookInput)) {
+    return { allow: true };
+  }
+
+  const evaluation = evaluateApproval(input.state, input.repoContext);
+  if (!evaluation.valid) {
+    return {
+      allow: false,
+      reason: evaluation.reason,
+    };
+  }
+
+  return { allow: true };
 }
 
 export function buildDenyPayload(reason: string): string {

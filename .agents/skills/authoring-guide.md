@@ -19,6 +19,8 @@ Add a new skill only when at least one of these is true:
 
 Do **not** add a new skill for one-off notes, stack conventions already covered elsewhere, or reference material that could live under another skill's `references/`.
 
+When importing ideas from an external methodology or skills library, prefer extending the existing repo-local skills first. Add a new skill only when the imported behavior fills a real workflow gap that cannot be expressed cleanly through an existing skill and its references.
+
 ## Core `SKILL.md` Budget
 
 - Target `SKILL.md` to stay under roughly 4 KB and about 120 lines.
@@ -56,6 +58,7 @@ If the skill owns a mandatory checkpoint, the core file must also state the chec
 - Link every reference file from `SKILL.md`. Do not assume the agent will discover it automatically.
 - Prefer a few focused reference files over one giant appendix.
 - When slimming an over-budget skill, preserve the core workflow in `SKILL.md` and move the detailed decision trees, examples, and command playbooks into `references/`.
+- When importing external practices, keep the repo's existing names and phase boundaries unless the current framework has a genuine gap. Augment first; duplicate only as a last resort.
 
 ## Suggested Skeleton
 

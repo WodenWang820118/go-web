@@ -26,6 +26,7 @@ This is the repo-local catalog for `.agents/skills`.
 
 - `test-driven-development`
 - `code-review-and-quality`
+- `address-review-feedback`
 - `proofshot`
 
 ## Repo & Nx Skills

@@ -1,45 +1,45 @@
 # Code Review Process & Etiquette
 
-## Change Sizing
+## Before Asking for Review
 
-Small, focused changes are easier to review. Target **~100 lines changed**. Anything over ~300 lines should probably be split. **Separate refactoring from feature work.**
+Package the change so the reviewer can understand it quickly:
 
-## Change Descriptions
+- short summary of what changed and why
+- link or pointer to the spec, bug, or task
+- the verification story
+- any known residual risk or intentional limitation
 
-A good change description justifies the change and provides context.
+Do not make the reviewer reconstruct the context from the diff alone.
 
-- **First line:** A short, imperative summary (e.g., "Add user profile endpoint").
-- **Body:** Explain the "what" and "why". Link to specs or bug reports.
+## Reviewer Etiquette
 
-## Review Process
+- Review the change that was requested, not the entirely different change you wish had been built.
+- Be direct about required issues and relaxed about pure preference.
+- Prefer findings grouped by root cause instead of several comments on the same symptom.
+- Separate blocking issues from polish so the author can respond efficiently.
 
-1.  **Understand Context:** Read the change description and related spec/task first.
-2.  **Review Tests:** Read the tests before the implementation to understand the intended behavior and edge cases.
-3.  **Review Implementation:** Read the code, evaluating it against the five axes (Correctness, Readability, Architecture, Security, Performance).
-4.  **Categorize Findings:** Prefix every comment with its severity so the author knows what is required.
-    - `(no prefix)`: **Required** change. Must be addressed.
-    - `Critical:`: **Blocks merge**. A major issue like a security vulnerability or data loss risk.
-    - `Nit:`: **Minor/Optional**. A suggestion that the author can choose to ignore (e.g., formatting, style preferences).
-    - `Optional:` / `Consider:`: A suggestion that is not required but worth considering.
-    - `FYI:`: **Informational**. No action needed.
+## Author Response Etiquette
 
-## Dead Code Hygiene
+- Restate the finding in your own words before fixing it if the root cause is not obvious.
+- Explain what changed, not just "done."
+- If you disagree, ground the response in spec context, repo constraints, or concrete evidence.
+- If the reviewer is right but the fix is out of scope, escalate instead of silently widening the change.
 
-After any refactoring, check for orphaned code. List any unused functions or variables you find and ask the author for confirmation before deleting them.
+## Severity Prefixes
 
-## Dependency Discipline
+- `Critical:` blocks progress or merge
+- `Important:` should be fixed in the current slice unless re-scoped
+- `Nitpick:` optional polish
+- `FYI:` informational only
 
-Before adding any new dependency, ask:
+## Turning Findings into Work
 
-1.  Can this be solved with our existing code?
-2.  Is the dependency actively maintained and secure?
-3.  How large is it? What is its license?
+When feedback becomes implementation:
 
-Every dependency is a long-term liability.
+1. group related findings
+2. identify the shared root cause
+3. write the smallest safe remediation plan
+4. apply the changes
+5. return to the affected checkpoint
 
-## Handling Disagreements
-
-- Technical facts and data override opinions.
-- The project's style guide is the final authority on style.
-- Codebase consistency is important, but not if it degrades overall code health.
-- Do not accept "I'll clean it up later." Fix it now or file a ticket.
+This keeps review feedback from turning into an unplanned rewrite.

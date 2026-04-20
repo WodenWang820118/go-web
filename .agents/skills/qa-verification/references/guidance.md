@@ -16,10 +16,25 @@ Use the CLI or service path when browser proof is not relevant.
 - Capture deterministic output where possible.
 - Separate hard failures from minor polish findings.
 
+## Evidence-First Completion
+
+- Verification starts by collecting evidence, not by making opportunistic fixes.
+- "It should work now" is not evidence.
+- If verification is partial, say exactly what was not proven.
+
 ## Mode Discipline
 
 - `report-only` means no repo-tracked edits, even if the fix looks obvious.
 - `fix-enabled` still starts with evidence gathering; do not fix first and call it verification later.
+
+## Residual Risk
+
+Call out the leftover uncertainty explicitly:
+
+- environment was unavailable
+- only a partial flow was exercised
+- browser proof exists but automated checks did not run
+- automated checks passed but a manual operator flow was not exercised
 
 ## Suggested Output Shape
 
