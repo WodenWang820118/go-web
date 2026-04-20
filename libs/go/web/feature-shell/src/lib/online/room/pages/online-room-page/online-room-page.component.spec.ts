@@ -8,7 +8,6 @@ import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state';
 import { provideGoPrimeNGTheme } from '@gx/go/ui';
-import { Theme } from '@primeuix/styled';
 import { Base } from 'primeng/base';
 import { Dialog } from 'primeng/dialog';
 import { of, throwError } from 'rxjs';
@@ -24,6 +23,10 @@ import { OnlineRoomsHttpService } from '../../services/online-rooms-http/online-
 class DummyLobbyPageComponent {}
 
 describe('OnlineRoomPageComponent', () => {
+  afterEach(() => {
+    clearPrimeNGStyles();
+  });
+
   it('shows the join form for visitors who have not joined the room', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
@@ -543,6 +546,7 @@ describe('OnlineRoomPageComponent', () => {
 
   it('injects the PrimeNG theme styles before rendering room dialogs', async () => {
     clearPrimeNGStyles();
+    expect(queryPrimeNGStyles()).toHaveLength(0);
 
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
@@ -627,10 +631,63 @@ describe('OnlineRoomPageComponent', () => {
     });
 
     await renderPage(roomService);
-
     expect(queryDialog('room-rematch-dialog')).not.toBeNull();
+    await vi.waitFor(() => {
+      expect(queryPrimeNGStyle('dialog-variables')).not.toBeNull();
+    });
+
+    const dialogVariablesStyle = queryPrimeNGStyle('dialog-variables');
+
     expect(queryPrimeNGStyles()).not.toHaveLength(0);
-    expect(queryPrimeNGStyle('dialog-variables')).not.toBeNull();
+    expect(dialogVariablesStyle).not.toBeNull();
+    expect(dialogVariablesStyle?.textContent).toMatch(
+      /--p-dialog-background\s*:/,
+    );
+  });
+
+  it('safely clears PrimeNG styles when the base registry is unavailable', () => {
+    expect(() => clearPrimeNGStyles(undefined)).not.toThrow();
+    expect(queryPrimeNGStyles()).toHaveLength(0);
+  });
+
+  it('resets the PrimeNG base style registry when available', () => {
+    if (
+      typeof Base === 'undefined' ||
+      typeof Base.clearLoadedStyleNames !== 'function'
+    ) {
+      expect(true).toBe(true);
+      return;
+    }
+
+    const clearLoadedStyleNamesSpy = vi.spyOn(Base, 'clearLoadedStyleNames');
+
+    try {
+      clearPrimeNGStyles();
+      expect(clearLoadedStyleNamesSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      clearLoadedStyleNamesSpy.mockRestore();
+    }
+  });
+
+  it('removes PrimeNG style tags without touching unrelated styles', () => {
+    const dialogStyle = document.createElement('style');
+    dialogStyle.dataset.primengStyleId = 'dialog-variables';
+    const layerStyle = document.createElement('style');
+    layerStyle.dataset.primengStyleId = 'layer-order';
+    const appStyle = document.createElement('style');
+    appStyle.dataset.testid = 'app-style';
+    appStyle.textContent = '.app-shell { color: red; }';
+
+    document.head.append(dialogStyle, layerStyle, appStyle);
+
+    try {
+      clearPrimeNGStyles();
+
+      expect(queryPrimeNGStyles()).toHaveLength(0);
+      expect(document.head.contains(appStyle)).toBe(true);
+    } finally {
+      appStyle.remove();
+    }
   });
 
   it('renders the simplified sidebar with chat-integrated room info', async () => {
@@ -2014,9 +2071,17 @@ function queryVisibleDialogs(harness: RouterTestingHarness): Dialog[] {
     .filter((dialog) => dialog.visible);
 }
 
-function clearPrimeNGStyles(): void {
-  Base.clearLoadedStyleNames();
-  Theme.clearLoadedStyleNames();
+function clearPrimeNGStyles(
+  base: Pick<typeof Base, 'clearLoadedStyleNames'> | undefined = Base,
+): void {
+  // Keep the reset on PrimeNG's public surface so the spec does not depend on
+  // the internal @primeuix/styled package resolving in every CI environment.
+  if (
+    typeof base !== 'undefined' &&
+    typeof base.clearLoadedStyleNames === 'function'
+  ) {
+    base.clearLoadedStyleNames();
+  }
 
   document.head
     .querySelectorAll('style[data-primeng-style-id]')
