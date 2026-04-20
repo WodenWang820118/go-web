@@ -96,6 +96,7 @@
                             "@nx/webpack":  "22.6.0",
                             "@nx/workspace":  "22.6.0",
                             "@playwright/test":  "^1.36.0",
+                            "@primeuix/styled":  "0.7.4",
                             "@schematics/angular":  "21.1.1",
                             "@swc-node/register":  "1.11.1",
                             "@swc/core":  "1.15.8",
