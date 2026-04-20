@@ -1,10 +1,9 @@
-import { expect, Page, test } from '@playwright/test';
-
-const goServerOrigin = (process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000').replace(
-  /\/+$/,
-  ''
-);
-const goServerOriginStorageKey = 'gx.go.serverOrigin';
+import { expect, test } from '@playwright/test';
+import {
+  createHostedRoom,
+  useEnglish,
+  waitForApiHealth,
+} from './online-room-test-helpers';
 
 test('online room auto-starts once both seats are claimed and both players can accept a rematch', async ({
   browser,
@@ -19,13 +18,7 @@ test('online room auto-starts once both seats are claimed and both players can a
     await waitForApiHealth();
 
     await useEnglish(page);
-    await page.getByTestId('lobby-display-name-input').fill('Host');
-    await page.getByTestId('online-lobby-create-button').click();
-    await expect(page).toHaveURL(/\/online\/room\/[A-Z0-9]+$/, {
-      timeout: 10000,
-    });
-
-    const roomId = getRoomIdFromUrl(page.url());
+    const roomId = await createHostedRoom(page, 'Host');
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
@@ -105,13 +98,7 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await waitForApiHealth();
 
     await useEnglish(page);
-    await page.getByTestId('lobby-display-name-input').fill('Host');
-    await page.getByTestId('online-lobby-create-button').click();
-    await expect(page).toHaveURL(/\/online\/room\/[A-Z0-9]+$/, {
-      timeout: 10000,
-    });
-
-    const roomId = getRoomIdFromUrl(page.url());
+    const roomId = await createHostedRoom(page, 'Host');
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
@@ -151,42 +138,3 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await guestContext.close();
   }
 });
-
-async function useEnglish(page: Page): Promise<void> {
-  await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value);
-    },
-    {
-      key: goServerOriginStorageKey,
-      value: goServerOrigin,
-    }
-  );
-  await page.goto('/');
-  await page.getByTestId('locale-option-en').click();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-}
-
-async function waitForApiHealth(): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        try {
-          const response = await fetch(`${goServerOrigin}/api/health`);
-          return response.ok;
-        } catch {
-          return false;
-        }
-      },
-      {
-        timeout: 30000,
-      }
-    )
-    .toBe(true);
-}
-
-function getRoomIdFromUrl(url: string): string {
-  const match = url.match(/\/online\/room\/([A-Z0-9]+)$/);
-  expect(match?.[1]).toBeTruthy();
-  return match![1];
-}
