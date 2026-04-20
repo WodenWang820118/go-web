@@ -25,7 +25,29 @@ const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
   'clipboard',
 );
 
-export type RoomServiceStub = ReturnType<typeof createRoomServiceStub>;
+type RoomBootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
+type RoomConnectionState =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'disconnected';
+type RoomClosedState = {
+  roomId: string;
+  message: ReturnType<typeof createMessage>;
+} | null;
+type StubSignal<T> = ReturnType<typeof signal<T>>;
+type StubMock = ReturnType<typeof vi.fn>;
+
+export interface RoomServiceStub {
+  snapshot: StubSignal<RoomSnapshot | null>;
+  connectionState: StubSignal<RoomConnectionState>;
+  roomClosed: StubSignal<RoomClosedState>;
+  bootstrapRoom: StubMock;
+  joinRoom: StubMock;
+  respondToRematch: StubMock;
+  closeRoom: StubMock;
+  clearRoomClosedEvent: StubMock;
+}
 
 export async function renderOnlineRoomPage(
   roomService: RoomServiceStub,
@@ -149,8 +171,8 @@ export function createRoomServiceStub(options: {
   snapshot: RoomSnapshot | null;
   participantId: string | null;
   participantToken: string | null;
-  bootstrapState?: 'idle' | 'loading' | 'ready' | 'missing';
-  connectionState?: 'idle' | 'connecting' | 'connected' | 'disconnected';
+  bootstrapState?: RoomBootstrapState;
+  connectionState?: RoomConnectionState;
   lastNotice?: string | null;
   lastSystemNotice?: SystemNotice | null;
   shareUrl?: string | null;
@@ -158,17 +180,17 @@ export function createRoomServiceStub(options: {
     roomId: string;
     message: ReturnType<typeof createMessage>;
   } | null;
-}) {
+}): RoomServiceStub {
   const snapshot = signal(options.snapshot);
   const participantId = signal(options.participantId);
   const participantToken = signal(options.participantToken);
   const displayName = signal('Host');
-  const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>(
+  const bootstrapState = signal<RoomBootstrapState>(
     options.bootstrapState ?? 'ready',
   );
-  const connectionState = signal<
-    'idle' | 'connecting' | 'connected' | 'disconnected'
-  >(options.connectionState ?? 'connected');
+  const connectionState = signal<RoomConnectionState>(
+    options.connectionState ?? 'connected',
+  );
   const lastError = signal<string | null>(null);
   const lastNotice = signal<string | null>(options.lastNotice ?? null);
   const lastSystemNotice = signal<SystemNotice | null>(
@@ -202,7 +224,7 @@ export function createRoomServiceStub(options: {
   );
   const chat = computed(() => snapshot()?.chat ?? []);
 
-  return {
+  const roomService = {
     snapshot,
     participantId,
     participantToken,
@@ -251,6 +273,8 @@ export function createRoomServiceStub(options: {
     clearRoomClosedEvent: vi.fn(() => roomClosed.set(null)),
     closingRoom: signal(false),
   };
+
+  return roomService;
 }
 
 export function createSnapshot(
