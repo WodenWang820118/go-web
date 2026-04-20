@@ -9,6 +9,18 @@ Use this reference when the task list needs more than the slim core file.
 - Keep tasks small enough that one agent can implement and verify them without mixing unrelated concerns.
 - Put the highest-risk slice early so failure happens before broad implementation investment.
 
+## Decision-Complete Tasks
+
+Each task should be detailed enough that another engineer or agent can execute it without inventing missing steps.
+
+Good task shape:
+
+- one behavioral outcome
+- the likely touch points
+- explicit acceptance criteria
+- the exact verification command or checkpoint
+- the dependency on prior slices, if any
+
 ## Recommended Task Shape
 
 Each task should answer:
@@ -18,6 +30,8 @@ Each task should answer:
 - What commands or checks verify the task?
 - What tasks must happen first?
 - What files or subsystems are likely involved?
+
+If a task says "run tests" or "verify manually," tighten it into a concrete command or user flow.
 
 ## Dependency Graph
 
@@ -53,3 +67,8 @@ Insert checkpoints between phases when:
 - review should happen before the next slice compounds the change
 
 Checkpoint wording should be explicit about what must pass before implementation continues.
+
+Examples:
+
+- "Checkpoint: contract approved before UI integration begins"
+- "Checkpoint: implementation review passes before sync plumbing changes"

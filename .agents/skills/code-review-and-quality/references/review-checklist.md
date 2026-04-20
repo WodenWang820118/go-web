@@ -6,6 +6,11 @@ Use this checklist to ensure all five axes of the review are covered.
 
 `## Review: [PR/Change title]`
 
+### Pre-Review Package
+- [ ] The change description explains what changed and why.
+- [ ] The related spec, bug, or task context is available.
+- [ ] The verification story is included.
+
 ### Context
 - [ ] I understand what this change does and why it's needed.
 
@@ -13,7 +18,7 @@ Use this checklist to ensure all five axes of the review are covered.
 - [ ] Tests exist for the change.
 - [ ] Tests cover the behavior, not just the implementation.
 - [ ] Edge cases are tested (nulls, empty, zero, etc.).
-- [ ] The tests would fail if the behavior was broken (i.e., they are not "liar" tests).
+- [ ] The tests would fail if the behavior was broken.
 
 ### Correctness
 - [ ] The code does what the spec/task requires.
@@ -22,7 +27,7 @@ Use this checklist to ensure all five axes of the review are covered.
 ### Readability & Simplicity
 - [ ] Variable and function names are clear and descriptive.
 - [ ] The control flow is easy to follow.
-- [ ] The code is not "clever" at the expense of being readable.
+- [ ] The code is not clever at the expense of readability.
 - [ ] There is no unnecessary complexity or premature generalization.
 
 ### Architecture
@@ -34,7 +39,7 @@ Use this checklist to ensure all five axes of the review are covered.
 ### Security
 - [ ] User input is validated and sanitized at system boundaries.
 - [ ] Secrets are not stored in the code.
-- [ ] There are no obvious injection vulnerabilities (SQLi, XSS).
+- [ ] There are no obvious injection vulnerabilities.
 - [ ] Authentication and authorization are checked where necessary.
 
 ### Performance
@@ -43,7 +48,7 @@ Use this checklist to ensure all five axes of the review are covered.
 - [ ] List endpoints are paginated.
 
 ### Verification Story
-- [ ] The changed behavior has a clear verification story (tests, build, manual proof, or repo-specific verification flow).
+- [ ] The changed behavior has a clear verification story.
 - [ ] Residual risk is stated plainly when evidence is partial.
 
 ### Docs & Release Freshness
@@ -53,6 +58,11 @@ Use this checklist to ensure all five axes of the review are covered.
 ### Adversarial Challenge
 - [ ] I looked for failure modes beyond the happy path.
 - [ ] I considered authorization, malformed input, stale state, concurrency, and rollback behavior where relevant.
+
+### Feedback Loop
+- [ ] Findings are labeled `Critical`, `Important`, or `Nitpick`.
+- [ ] Related findings are grouped by root cause where possible.
+- [ ] The requested follow-up work is small enough to route back through the right checkpoint.
 
 ### Final Verdict
 - [ ] **Approve** - This change is a net positive and is ready to merge.

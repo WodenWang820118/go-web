@@ -27,6 +27,7 @@ Entry routing skill for minimal context loading. Use it to understand the reques
    - solution-framed request, fuzzy problem statement, or unclear ambition/scope: `product-and-scope-review`
    - new feature or significant change: `spec-driven-development`
    - bug or failing behavior: `debugging-and-error-recovery`
+   - actionable review findings, critique, or reviewer comments that need remediation: `address-review-feedback`
    - post-implementation verification or evidence gathering: `qa-verification`
    - release closeout, docs freshness, or handoff completeness: `release-readiness`
    - UI-heavy work: `frontend-ui-engineering`

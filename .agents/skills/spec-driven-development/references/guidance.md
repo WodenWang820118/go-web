@@ -1,41 +1,49 @@
 # Guidance for Spec-Driven Development
 
-This document provides detailed guidance on writing effective specifications.
+The goal of a spec is to expose assumptions and make the intended change reviewable before implementation begins.
 
-## The Philosophy
+## Recommendation-First Clarification
 
-The goal of a spec is not just to document a plan, but to force clarity and expose hidden assumptions *before* you invest time in writing code. A good spec is a tool for thinking.
+- Resolve discoverable facts from the repo first.
+- If ambiguity remains, ask narrow questions that materially change scope, contracts, or success criteria.
+- When possible, recommend a default instead of presenting a blank choice.
 
-## Workflow Explained
+## What a Good Spec Covers
 
-### 1. Surfacing Assumptions
+- **Objective:** what changes and why it matters
+- **Current state:** the relevant repo truth or baseline
+- **Approach:** the intended technical direction and boundaries
+- **Verification:** the tests, reviews, and evidence that will prove the change
+- **Non-goals:** what is intentionally excluded
+- **Open questions or assumptions:** anything that could still change the plan
 
-This is the most critical step. Before you write a single line of the spec, list everything you are assuming about the user's request.
+## Sectioned Drafting
 
--   **Bad Assumption:** "User wants a button."
--   **Good Assumption:** "I assume the user wants a new primary-action button on the main user dashboard. This button's text should be 'Create New Project', and clicking it should open the `CreateProject` modal. This action will not require any new API endpoints."
+Draft the spec in short, reviewable sections instead of dumping everything at once:
 
-List these assumptions and ask the user for confirmation. This single step can prevent significant rework.
+1. user or operator outcome
+2. scope boundaries
+3. technical shape
+4. verification story
+5. unresolved assumptions
 
-### 2. Drafting the Specification
+This keeps the review focused and surfaces disagreements earlier.
 
-Use the provided template. The goal is to be concise but complete.
+## Spec Quality Bar
 
--   **Objective:** Explain the "what" and the "why." What is being built? Why is it valuable?
--   **Tech Stack:** Be specific. Don't just say "React," say "React 18 with TypeScript, using functional components and Hooks."
--   **Project Structure:** Don't list every file. Show the key directories and where the new files will go.
--   **Code Style:** A small, representative snippet is more valuable than a long explanation. Show, don't just tell.
--   **Testing Strategy:** What is your philosophy for this feature? (e.g., "We will aim for 80% unit test coverage on new services, with one end-to-end test for the primary user flow.")
--   **Boundaries and Non-Goals:** What is explicitly *out* of scope for this change? Be clear about what you will *not* be doing.
--   **Success Criteria:** This should be a list of testable outcomes. (e.g., "1. When the user clicks the 'Create' button, a POST request is sent to `/api/projects`. 2. If the request is successful, the user is redirected to the new project's page.")
--   **Open Questions:** It is a sign of strength, not weakness, to have open questions. It shows you are thinking deeply about the problem.
+A reviewer should be able to answer these questions from the spec alone:
 
-### 3. The Review Checkpoint
+- what problem is being solved
+- what is in scope and out of scope
+- what public or internal contracts are changing
+- how the work will be verified
+- what could still go wrong
 
-The `Plan Review` is not a rubber stamp. It is a critical part of the process. A reviewer should be able to understand the entire proposed change just from reading the spec. They should be able to identify architectural flaws, missed edge cases, or security risks at this stage, where the cost of fixing them is lowest.
+If the reviewer cannot answer those questions, the spec is still too vague.
 
-## Common Pitfalls
+## Common Failure Modes
 
--   **Writing the spec *after* the code:** This is just documentation, not planning. It provides no upfront value.
--   **Being too vague:** A spec that says "The code will be high quality" is useless. A spec that provides a linting command and a code snippet is useful.
--   **Skipping the review:** A spec that hasn't been reviewed is just a collection of your own assumptions.
+- writing the spec after implementation has already started
+- burying the real user outcome under implementation detail
+- leaving verification as a generic statement instead of concrete checks
+- skipping non-goals and forcing implementers to infer scope boundaries
