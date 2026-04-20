@@ -10,14 +10,13 @@ import {
 test('parseCliArgs keeps estimate-only defaults for evaluate', () => {
   const parsed = parseCliArgs(['evaluate']);
 
-  assert.deepEqual(parsed, {
-    abSamples: 0,
-    command: 'evaluate',
-    repos: [],
-    rounds: 32,
-    seed: 20260419,
-    smallDiffThresholdChars: 1024,
-  } satisfies ParsedLocalReviewerCliArgs);
+  assert.equal(parsed.abSamples, 0);
+  assert.equal(parsed.command, 'evaluate');
+  assert.equal(parsed.jobs > 0, true);
+  assert.deepEqual(parsed.repos, []);
+  assert.equal(parsed.rounds, 32);
+  assert.equal(parsed.seed, 20260419);
+  assert.equal(parsed.smallDiffThresholdChars, 1024);
 });
 
 test('parseCliArgs reads repeated repo flags and numeric overrides', () => {
@@ -31,6 +30,8 @@ test('parseCliArgs reads repeated repo flags and numeric overrides', () => {
     '2048',
     '--ab-samples',
     '4',
+    '--jobs',
+    '3',
     '--repo',
     'gx.go',
     '--repo',
@@ -40,6 +41,7 @@ test('parseCliArgs reads repeated repo flags and numeric overrides', () => {
   assert.deepEqual(parsed, {
     abSamples: 4,
     command: 'evaluate',
+    jobs: 3,
     repos: ['gx.go', '../local-reviewer-cli'],
     rounds: 40,
     seed: 7,

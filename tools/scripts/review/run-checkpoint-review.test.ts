@@ -5,7 +5,7 @@ import {
   buildReviewPrompt,
   createReviewExecution,
   executeReviewFlow,
-  getReviewProviderOrder,
+  getReviewExecutionPlan,
   parseCliArgs,
   type ReviewExecution,
 } from './run-checkpoint-review.ts';
@@ -31,37 +31,68 @@ test('parseCliArgs reads the supported checkpoint review flags', () => {
   assert.equal(parsed.contextFile, 'review.md');
 });
 
-test('getReviewProviderOrder follows the repo checkpoint fallback rules', () => {
+test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => {
   assert.deepEqual(
-    getReviewProviderOrder({
+    getReviewExecutionPlan({
       checkpoint: 'plan',
+      focus: 'general',
       provider: 'auto',
     }),
-    ['copilot', 'gemini', 'codex']
+    [
+      execution('plan', 'copilot', 'general', 'claude-sonnet-4.6'),
+      execution('plan', 'copilot', 'general', 'gpt-5-mini'),
+      execution('plan', 'gemini', 'general', 'gemini-2.5-pro'),
+      execution('plan', 'codex', 'general'),
+    ]
   );
 
   assert.deepEqual(
-    getReviewProviderOrder({
+    getReviewExecutionPlan({
       checkpoint: 'implementation',
+      focus: 'general',
       provider: 'auto',
     }),
-    ['gemini', 'copilot', 'codex']
+    [
+      execution('implementation', 'gemini', 'general', 'gemini-3-flash-preview'),
+      execution('implementation', 'copilot', 'general', 'claude-sonnet-4.6'),
+      execution('implementation', 'copilot', 'general', 'gpt-5-mini'),
+      execution('implementation', 'codex', 'general'),
+    ]
   );
 
   assert.deepEqual(
-    getReviewProviderOrder({
+    getReviewExecutionPlan({
       checkpoint: 'test',
+      focus: 'tests',
       provider: 'auto',
     }),
-    ['copilot', 'codex']
+    [
+      execution('test', 'copilot', 'tests', 'claude-sonnet-4.6'),
+      execution('test', 'copilot', 'tests', 'gpt-5-mini'),
+      execution('test', 'codex', 'tests'),
+    ]
   );
 
   assert.deepEqual(
-    getReviewProviderOrder({
+    getReviewExecutionPlan({
       checkpoint: 'pre-merge',
+      focus: 'general',
       provider: 'copilot',
     }),
-    ['copilot']
+    [
+      execution('pre-merge', 'copilot', 'general', 'claude-sonnet-4.6'),
+      execution('pre-merge', 'copilot', 'general', 'gpt-5-mini'),
+    ]
+  );
+
+  assert.deepEqual(
+    getReviewExecutionPlan({
+      checkpoint: 'test',
+      focus: 'tests',
+      provider: 'copilot',
+      model: 'gpt-5-mini',
+    }),
+    [execution('test', 'copilot', 'tests', 'gpt-5-mini')]
   );
 });
 
@@ -77,6 +108,20 @@ test('createReviewExecution applies provider-specific model defaults', () => {
       provider: 'gemini',
       focus: 'general',
       model: 'gemini-3-flash-preview',
+    }
+  );
+
+  assert.deepEqual(
+    createReviewExecution({
+      checkpoint: 'plan',
+      provider: 'copilot',
+      focus: 'architecture',
+    }),
+    {
+      checkpoint: 'plan',
+      provider: 'copilot',
+      focus: 'architecture',
+      model: 'claude-sonnet-4.6',
     }
   );
 
@@ -111,14 +156,14 @@ test('buildReviewPrompt includes the checkpoint, focus, and supplied context', (
   assert.match(prompt, /Changed files: scripts\/review-gate\/shared\.ts/);
 });
 
-test('executeReviewFlow fails fast for an explicit unavailable provider', async () => {
+test('executeReviewFlow fails fast for a single explicit unavailable provider', async () => {
   await assert.rejects(
     executeReviewFlow(
       {
         checkpoint: 'plan',
         context: 'smoke',
         focus: 'general',
-        provider: 'copilot',
+        provider: 'gemini',
       },
       {
         cacheUnavailable() {
@@ -138,11 +183,11 @@ test('executeReviewFlow fails fast for an explicit unavailable provider', async 
         },
       }
     ),
-    /Copilot CLI review is unavailable: quota exhausted/
+    /Gemini CLI review is unavailable: quota exhausted/
   );
 });
 
-test('executeReviewFlow skips Gemini for test checkpoints and falls back to Codex', async () => {
+test('executeReviewFlow falls back to Copilot GPT-5 mini before leaving Copilot', async () => {
   const probed: string[] = [];
 
   const output = await executeReviewFlow(
@@ -160,8 +205,46 @@ test('executeReviewFlow skips Gemini for test checkpoints and falls back to Code
           return undefined;
         },
         async probe(execution) {
-          probed.push(execution.provider);
-          if (execution.provider === 'copilot') {
+          probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
+          if (execution.model === 'claude-sonnet-4.6') {
+            return { available: false, reason: 'quota exhausted' };
+          }
+
+          return { available: true };
+        },
+        async run(execution) {
+          return execution.model ?? execution.provider;
+        },
+      }
+    );
+
+  assert.deepEqual(probed, [
+    'copilot:claude-sonnet-4.6',
+    'copilot:gpt-5-mini',
+  ]);
+  assert.equal(output, 'gpt-5-mini');
+});
+
+test('executeReviewFlow skips Gemini for test checkpoints and falls back to Codex', async () => {
+  const probed: string[] = [];
+
+  const output = await executeReviewFlow(
+    {
+      checkpoint: 'test',
+      context: 'smoke',
+      focus: 'tests',
+      provider: 'auto',
+    },
+    {
+      cacheUnavailable() {
+        return undefined;
+      },
+      log() {
+        return undefined;
+      },
+      async probe(execution) {
+        probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
+        if (execution.provider === 'copilot') {
           return { available: false, reason: 'quota exhausted' };
         }
 
@@ -173,7 +256,11 @@ test('executeReviewFlow skips Gemini for test checkpoints and falls back to Code
     }
   );
 
-  assert.deepEqual(probed, ['copilot', 'codex']);
+  assert.deepEqual(probed, [
+    'copilot:claude-sonnet-4.6',
+    'copilot:gpt-5-mini',
+    'codex:<none>',
+  ]);
   assert.equal(output, 'codex');
 });
 
@@ -249,6 +336,20 @@ test('executeReviewFlow reports all unavailable providers when auto routing is e
         },
       }
     ),
-    /Attempted providers:[\s\S]*copilot: copilot down[\s\S]*gemini: gemini down[\s\S]*codex: codex down/
+    /Attempted providers:[\s\S]*copilot:claude-sonnet-4\.6: copilot down[\s\S]*copilot:gpt-5-mini: copilot down[\s\S]*gemini:gemini-2\.5-pro: gemini down[\s\S]*codex: codex down/
   );
 });
+
+function execution(
+  checkpoint: ReviewExecution['checkpoint'],
+  provider: ReviewExecution['provider'],
+  focus: string,
+  model?: string,
+): ReviewExecution {
+  return {
+    checkpoint,
+    provider,
+    focus,
+    model,
+  };
+}

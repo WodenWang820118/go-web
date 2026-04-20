@@ -288,6 +288,7 @@ test('summarizeEvaluation writes evaluation artifacts and verdicts', () => {
     const output = summarizeEvaluation({
       config: {
         abSampleCount: 0,
+        jobs: 2,
         repoNames: ['gx.law-prep'],
         rounds: 1,
         seed: 1,
@@ -299,6 +300,7 @@ test('summarizeEvaluation writes evaluation artifacts and verdicts', () => {
     });
 
     assert.match(output.summaryMarkdown, /usable-prefilter/);
+    assert.match(output.summaryMarkdown, /Local parallel jobs: 2/);
     assert.match(output.summaryMarkdown, /Estimated paid review context chars: 0\/20/);
     assert.equal(existsSync(output.artifacts.summaryPath), true);
     assert.equal(existsSync(output.artifacts.samplesPath), true);

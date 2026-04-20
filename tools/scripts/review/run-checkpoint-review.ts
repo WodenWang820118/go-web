@@ -27,6 +27,9 @@ export type ReviewCheckpoint =
 export type ReviewProvider = 'auto' | 'copilot' | 'gemini' | 'codex';
 export type ConcreteReviewProvider = Exclude<ReviewProvider, 'auto'>;
 
+const DEFAULT_COPILOT_CLAUDE_MODEL = 'claude-sonnet-4.6';
+const DEFAULT_COPILOT_GPT5_MINI_MODEL = 'gpt-5-mini';
+
 export interface ParsedCliArgs {
   checkpoint?: ReviewCheckpoint;
   contextFile?: string;
@@ -111,29 +114,146 @@ export function createReviewExecution(input: {
     focus: input.focus,
     model:
       input.model ??
+      (input.provider === 'copilot'
+        ? DEFAULT_COPILOT_CLAUDE_MODEL
+        : undefined) ??
       (input.provider === 'gemini'
         ? getDefaultGeminiModel(input.checkpoint)
         : undefined),
   };
 }
 
-export function getReviewProviderOrder(input: {
+export function getReviewExecutionPlan(input: {
   checkpoint: ReviewCheckpoint;
+  focus: string;
+  model?: string;
   provider: ReviewProvider;
-}): ConcreteReviewProvider[] {
-  if (input.provider !== 'auto') {
-    return [input.provider];
+}): ReviewExecution[] {
+  if (input.provider === 'copilot') {
+    if (input.model) {
+      return [
+        createReviewExecution({
+          checkpoint: input.checkpoint,
+          provider: 'copilot',
+          focus: input.focus,
+          model: input.model,
+        }),
+      ];
+    }
+
+    return [
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_CLAUDE_MODEL,
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
+      }),
+    ];
+  }
+
+  if (input.provider === 'gemini') {
+    return [
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'gemini',
+        focus: input.focus,
+        model: input.model,
+      }),
+    ];
+  }
+
+  if (input.provider === 'codex') {
+    return [
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'codex',
+        focus: input.focus,
+        model: input.model,
+      }),
+    ];
   }
 
   if (input.checkpoint === 'implementation') {
-    return ['gemini', 'copilot', 'codex'];
+    return [
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'gemini',
+        focus: input.focus,
+        model: getDefaultGeminiModel(input.checkpoint),
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_CLAUDE_MODEL,
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'codex',
+        focus: input.focus,
+      }),
+    ];
   }
 
   if (input.checkpoint === 'test') {
-    return ['copilot', 'codex'];
+    return [
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_CLAUDE_MODEL,
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'copilot',
+        focus: input.focus,
+        model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
+      }),
+      createReviewExecution({
+        checkpoint: input.checkpoint,
+        provider: 'codex',
+        focus: input.focus,
+      }),
+    ];
   }
 
-  return ['copilot', 'gemini', 'codex'];
+  return [
+    createReviewExecution({
+      checkpoint: input.checkpoint,
+      provider: 'copilot',
+      focus: input.focus,
+      model: DEFAULT_COPILOT_CLAUDE_MODEL,
+    }),
+    createReviewExecution({
+      checkpoint: input.checkpoint,
+      provider: 'copilot',
+      focus: input.focus,
+      model: DEFAULT_COPILOT_GPT5_MINI_MODEL,
+    }),
+    createReviewExecution({
+      checkpoint: input.checkpoint,
+      provider: 'gemini',
+      focus: input.focus,
+      model: getDefaultGeminiModel(input.checkpoint),
+    }),
+    createReviewExecution({
+      checkpoint: input.checkpoint,
+      provider: 'codex',
+      focus: input.focus,
+    }),
+  ];
 }
 
 export function buildReviewPrompt(
@@ -253,30 +373,28 @@ export async function executeReviewFlow(
   dependencies: ReviewFlowDependencies
 ): Promise<string> {
   const attempted: string[] = [];
-  const fallbackAllowed = input.provider === 'auto';
-
-  for (const provider of getReviewProviderOrder({
+  const executions = getReviewExecutionPlan({
     checkpoint: input.checkpoint,
+    focus: input.focus,
+    model: input.model,
     provider: input.provider,
-  })) {
-    const execution = createReviewExecution({
-      checkpoint: input.checkpoint,
-      provider,
-      focus: input.focus,
-      model: input.model,
-    });
+  });
+  const fallbackAllowed = executions.length > 1;
+
+  for (const execution of executions) {
+    const executionLabel = formatExecutionLabel(execution);
 
     const health = await dependencies.probe(execution);
     if (!health.available) {
-      attempted.push(`${provider}: ${health.reason ?? 'unavailable'}`);
+      attempted.push(`${executionLabel}: ${health.reason ?? 'unavailable'}`);
       if (!fallbackAllowed) {
         throw new Error(
-          `${getProviderDisplayName(provider)} review is unavailable: ${health.reason ?? 'health check failed.'}`
+          `${getProviderDisplayName(execution.provider)} review is unavailable: ${health.reason ?? 'health check failed.'}`
         );
       }
 
       dependencies.log(
-        `${getProviderDisplayName(provider)} review is unavailable: ${health.reason ?? 'health check failed.'}`
+        `${getExecutionDisplayName(execution)} review is unavailable: ${health.reason ?? 'health check failed.'}`
       );
       continue;
     }
@@ -287,10 +405,10 @@ export async function executeReviewFlow(
       if (fallbackAllowed && isRetryableProviderFailure(execution.provider, error)) {
         dependencies.cacheUnavailable(execution, error);
         attempted.push(
-          `${provider}: ${error instanceof Error ? error.message : String(error)}`
+          `${executionLabel}: ${error instanceof Error ? error.message : String(error)}`
         );
         dependencies.log(
-          `${getProviderDisplayName(provider)} review became unavailable during execution. Trying the next fallback.`
+          `${getExecutionDisplayName(execution)} review became unavailable during execution. Trying the next fallback.`
         );
         continue;
       }
@@ -383,7 +501,9 @@ function getDefaultReviewFlowDependencies(): ReviewFlowDependencies {
       );
     },
     log(message) {
-      console.error(message);
+      if (process.env.REVIEW_CHECKPOINT_DEBUG === '1') {
+        console.error(message);
+      }
     },
     probe: probeReviewProviderHealth,
     run: runReviewExecution,
@@ -415,6 +535,22 @@ function getProviderDisplayName(provider: ConcreteReviewProvider): string {
   }
 
   return 'Codex reviewer';
+}
+
+function getExecutionDisplayName(execution: ReviewExecution): string {
+  if (!execution.model) {
+    return getProviderDisplayName(execution.provider);
+  }
+
+  return `${getProviderDisplayName(execution.provider)} (${execution.model})`;
+}
+
+function formatExecutionLabel(execution: ReviewExecution): string {
+  if (!execution.model) {
+    return execution.provider;
+  }
+
+  return `${execution.provider}:${execution.model}`;
 }
 
 function getProviderHealthModel(execution: ReviewExecution): string | undefined {

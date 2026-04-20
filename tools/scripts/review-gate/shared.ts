@@ -6,6 +6,7 @@ const REVIEW_TTL_MS = 2 * 60 * 60 * 1000;
 
 export const SUPPORTED_REVIEWERS = [
   'copilot-claude',
+  'copilot-gpt-5-mini',
   'gemini-2.5-pro',
   'codex-subagent',
 ] as const;
@@ -350,6 +351,6 @@ export function parseHookInput(rawInput: string): HookInput {
 export function buildDenyPayload(reason: string): string {
   return JSON.stringify({
     permissionDecision: 'deny',
-    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan first, Gemini 2.5 Pro if Copilot is unavailable, or the Codex reviewer subagent if both local CLIs are unavailable, then run: node --experimental-strip-types scripts/review-gate/approve-pre-implementation.ts --reviewer <copilot-claude|gemini-2.5-pro|codex-subagent> --focus general --summary "Approved after plan review".`,
+    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan first, GitHub Copilot GPT-5 mini if the Claude path is unavailable, Gemini 2.5 Pro if Copilot is fully unavailable, or the Codex reviewer subagent if both local CLIs are unavailable, then run: node --experimental-strip-types scripts/review-gate/approve-pre-implementation.ts --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus general --summary "Approved after plan review".`,
   });
 }

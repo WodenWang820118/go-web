@@ -57,37 +57,40 @@ export function probeCopilotCliHealth(input: {
     );
   }
 
-  const probeArgs = [
-    '--prompt=-',
-    '--output-format',
-    'text',
-    '--silent',
-    '--no-custom-instructions',
-    '--disable-builtin-mcps',
-    '--mode',
-    'plan',
-  ];
-  if (input.model) {
-    probeArgs.push('--model', input.model);
-  }
-
   const probeResult = runLocalCliCommand({
     command: 'copilot',
     windowsScriptName: 'copilot.ps1',
-    args: probeArgs,
+    args: buildCopilotCommandArgs({
+      disableBuiltinMcps: true,
+      disableCustomInstructions: true,
+      model: input.model,
+      prompt: COPILOT_HEALTH_PROMPT,
+    }),
     cwd: repoRoot,
-    input: COPILOT_HEALTH_PROMPT,
     timeoutMs: COPILOT_HEALTH_TIMEOUT_MS,
   });
 
   const output = stripCopilotFooter(joinOutput(probeResult.stdout, probeResult.stderr));
-  if (!probeResult.error && probeResult.status === 0 && /^OK\b/i.test(output)) {
+  if (!probeResult.error && probeResult.status === 0) {
+    if (/^OK\b/i.test(output.trim())) {
+      return cacheProviderHealth(
+        'copilot',
+        input.model,
+        {
+          available: true,
+          checkedAtMs,
+        },
+        repoRoot
+      );
+    }
+
     return cacheProviderHealth(
       'copilot',
       input.model,
       {
-        available: true,
+        available: false,
         checkedAtMs,
+        reason: 'Copilot CLI probe returned an unexpected response.',
       },
       repoRoot
     );
@@ -106,26 +109,15 @@ export function probeCopilotCliHealth(input: {
 }
 
 export function runCopilotReview(input: CopilotReviewInput): string {
-  const args = [
-    '--experimental',
-    '--prompt=-',
-    '--output-format',
-    'text',
-    '--silent',
-    '--mode',
-    'plan',
-  ];
-
-  if (input.model) {
-    args.push('--model', input.model);
-  }
-
   const result = runLocalCliCommand({
     command: 'copilot',
     windowsScriptName: 'copilot.ps1',
-    args,
+    args: buildCopilotCommandArgs({
+      experimental: true,
+      model: input.model,
+      prompt: input.prompt,
+    }),
     cwd: input.repoRoot ?? process.cwd(),
-    input: input.prompt,
     timeoutMs: COPILOT_REVIEW_TIMEOUT_MS,
   });
 
@@ -142,6 +134,34 @@ export function runCopilotReview(input: CopilotReviewInput): string {
   }
 
   return output.trim();
+}
+
+export function buildCopilotCommandArgs(input: {
+  disableBuiltinMcps?: boolean;
+  disableCustomInstructions?: boolean;
+  experimental?: boolean;
+  model?: string;
+  prompt: string;
+}): string[] {
+  const args = ['-p', input.prompt, '--output-format', 'text', '--silent', '--mode', 'plan'];
+
+  if (input.experimental) {
+    args.unshift('--experimental');
+  }
+
+  if (input.disableCustomInstructions) {
+    args.push('--no-custom-instructions');
+  }
+
+  if (input.disableBuiltinMcps) {
+    args.push('--disable-builtin-mcps');
+  }
+
+  if (input.model) {
+    args.push('--model', input.model);
+  }
+
+  return args;
 }
 
 function classifyCopilotProbeFailure(

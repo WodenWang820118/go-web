@@ -29,6 +29,7 @@ export function runLocalCliCommand(input: LocalCliCommandInput) {
         powershellPath,
         [
           '-NoProfile',
+          '-NonInteractive',
           '-ExecutionPolicy',
           'Bypass',
           '-File',

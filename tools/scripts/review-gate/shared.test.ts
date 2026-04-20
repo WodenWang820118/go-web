@@ -32,6 +32,12 @@ test('parseArgs defaults to the Copilot reviewer and accepts Gemini or Codex fal
   assert.equal(parsed.summary, 'Approved after Gemini review');
   assert.equal(parsed.force, true);
 
+  const copilotMiniParsed = parseArgs([
+    '--reviewer',
+    'copilot-gpt-5-mini',
+  ]);
+  assert.equal(copilotMiniParsed.reviewer, 'copilot-gpt-5-mini');
+
   const codexParsed = parseArgs([
     '--reviewer',
     'codex-subagent',
@@ -41,6 +47,7 @@ test('parseArgs defaults to the Copilot reviewer and accepts Gemini or Codex fal
 
 test('validateReviewerId rejects reviewers outside the allowlist', () => {
   assert.equal(validateReviewerId('copilot-claude'), 'copilot-claude');
+  assert.equal(validateReviewerId('copilot-gpt-5-mini'), 'copilot-gpt-5-mini');
   assert.equal(validateReviewerId('gemini-2.5-pro'), 'gemini-2.5-pro');
   assert.equal(validateReviewerId('codex-subagent'), 'codex-subagent');
   assert.throws(
@@ -69,12 +76,41 @@ test('buildDenyPayload points reviewers to Copilot first and includes Codex fall
 
   assert.equal(payload.permissionDecision, 'deny');
   assert.match(payload.permissionDecisionReason, /Copilot/i);
+  assert.match(payload.permissionDecisionReason, /GPT-5 mini/i);
   assert.match(payload.permissionDecisionReason, /Gemini 2\.5 Pro/i);
   assert.match(payload.permissionDecisionReason, /Codex/i);
   assert.match(
     payload.permissionDecisionReason,
     /approve-pre-implementation\.ts/
   );
+});
+
+test('copilot-gpt-5-mini approvals remain valid through gate evaluation', () => {
+  const approval = createApproval({
+    reviewer: 'copilot-gpt-5-mini',
+    focus: 'general',
+    summary: 'Approved after Copilot GPT-5 mini fallback review',
+    repoContext: {
+      root: 'C:/repo',
+      branch: 'feature/test',
+      head: 'abc123',
+      dirty: false,
+      gitCommand: 'git',
+    },
+  });
+
+  const evaluation = evaluateApproval(approval, {
+    root: 'C:/repo',
+    branch: 'feature/test',
+    head: 'abc123',
+    dirty: false,
+    gitCommand: 'git',
+  });
+
+  assert.deepEqual(evaluation, {
+    valid: true,
+    approval: approval.approval,
+  });
 });
 
 test('codex-subagent approvals remain valid through gate evaluation', () => {

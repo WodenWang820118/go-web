@@ -36,6 +36,7 @@ export interface EvaluationRepoTarget {
 
 export interface LocalReviewerEvaluationConfig {
   abSampleCount: number;
+  jobs: number;
   repoNames: string[];
   rounds: number;
   seed: number;
@@ -766,6 +767,20 @@ export function collectEvaluationSamples(input: {
   });
 }
 
+export function collectRepoCommitCandidates(input: {
+  dependencies: LocalReviewerDependencies;
+  repoName: string;
+  repoRoot: string;
+  seed: number;
+}): EvaluationSample[] {
+  return sampleRepoCommits(
+    input.repoRoot,
+    input.repoName,
+    input.dependencies,
+    input.seed,
+  );
+}
+
 export function selectAbSamples(
   samples: ReadonlyArray<EvaluationSample>,
   desiredCount = 4,
@@ -1028,6 +1043,7 @@ function renderEvaluationSummary(
     '# Local Reviewer Evaluation Summary',
     '',
     `- Benchmark mode: ${config.abSampleCount > 0 ? `estimate + ${reviewerResults.length} A/B review sample(s)` : 'estimate-only'}`,
+    `- Local parallel jobs: ${config.jobs}`,
     `- Repo pool: ${config.repoNames.join(', ')}`,
     `- Requested rounds: ${config.rounds}`,
     `- Small diff threshold: ${config.smallDiffThresholdChars} chars`,

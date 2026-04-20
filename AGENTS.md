@@ -72,16 +72,16 @@ The ideal review path is:
 3. the reviewer performs the checkpoint review using the matching reviewer agent or prompt
 4. the primary tool continues only after the review is addressed
 
-If Copilot Claude is unavailable in the current environment, fall back to Gemini CLI where defined below, otherwise use the matching local reviewer persona or Codex reviewer subagent.
+If the scripted Copilot Claude path is unavailable in the current environment, fall back to Copilot GPT-5 mini first, then to Gemini CLI where defined below, otherwise use the matching local reviewer persona or Codex reviewer subagent.
 
 ### Required checkpoints
 
 1. `Plan review`: produce a spec or implementation plan, then send it to a second reviewer.
-   Default: GitHub Copilot Claude. If the plan is high-risk, Copilot quota is exhausted, or Copilot is otherwise unavailable, use `gemini-2.5-pro`. If Gemini is also unavailable, use the matching Codex reviewer subagent.
+   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, fall back to GitHub Copilot GPT-5 mini. If Copilot is fully unavailable after both Copilot models, use `gemini-2.5-pro`. If Gemini is also unavailable, use the matching Codex reviewer subagent.
 2. `Test review`: after writing tests but before running the broad sign-off suite or using those tests as approval evidence, send the test strategy and assertions to a second reviewer.
-   Default: GitHub Copilot Claude. If Copilot is unavailable, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
+   Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, fall back to GitHub Copilot GPT-5 mini. If Copilot is fully unavailable after both Copilot models, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
 3. `Implementation review`: after the first working implementation, self-check, and reviewable verification story are ready, send the change to a second reviewer.
-   Default: Gemini Flash Preview using the CLI model id `gemini-3-flash-preview`. If Gemini is unavailable, fall back to GitHub Copilot Claude, then to the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
+   Default: Gemini Flash Preview using the CLI model id `gemini-3-flash-preview`. If Gemini is unavailable, fall back to GitHub Copilot Claude Sonnet 4.6, then GitHub Copilot GPT-5 mini, then to the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
 
 For browser-verifiable `go-web` tasks, `proofshot` can be used after implementation and before final sign-off, typically through `qa-verification`, to generate screenshots, session video, and a local proof summary for human review.
 
@@ -91,7 +91,7 @@ For browser-verifiable `go-web` tasks, `proofshot` can be used after implementat
 - If a reviewer reports a high-risk issue, stop, fix it, and re-run the relevant checkpoint before continuing.
 - Implementation review is mandatory when a task touches 3 or more files, changes data flow, updates permissions or auth, changes persistent state, modifies process lifecycle, or alters an external contract.
 - Pre-merge review must include the appropriate specialist reviewer for public APIs, auth, secrets, filesystem access, shell execution, or network behavior.
-- Before the first implementation change on a clean worktree, open the gate by running `pnpm review:approve-pre-implementation -- --reviewer <copilot-claude|gemini-2.5-pro|codex-subagent> --focus <area> --summary "<approval summary>"` after the plan review passes.
+- Before the first implementation change on a clean worktree, open the gate by running `pnpm review:approve-pre-implementation -- --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus <area> --summary "<approval summary>"` after the plan review passes.
 - Use `pnpm review:status` to inspect the gate and `pnpm review:reset` to clear it manually when needed.
 
 ## Reviewer Routing
@@ -129,10 +129,11 @@ Expected repo workflow:
 
 - `.github/copilot-instructions.md` is a bridge file. It must not override this workflow.
 - Prefer project skills from `.agents/skills`.
-- GitHub Copilot on a Claude-family model is the preferred reviewer for plan reviews, test reviews, and escalated implementation reviews.
+- GitHub Copilot Claude Sonnet 4.6 is the preferred scripted reviewer for plan reviews, test reviews, and escalated implementation reviews.
 - Before using Copilot CLI for a scripted checkpoint review, confirm the local CLI is installed and that a constant low-cost probe still succeeds. Treat a failed probe as unavailability and fall back instead of sending the full review payload.
 - Copilot hooks in `.github/hooks/review-gate.json` are the hard guardrail for pre-implementation review on a clean worktree.
 - When using Copilot CLI and Rubber Duck is available, prefer a Claude-family orchestrator and enable `/experimental`.
+- When the scripted Copilot Claude path is unavailable, the review wrappers should retry with Copilot GPT-5 mini before leaving Copilot.
 - Trigger Rubber Duck critique after a plan is drafted, after an escalated multi-file implementation review, and after tests are written but before they are executed.
 - If Rubber Duck is unavailable, use the matching reviewer agent in `.github/agents` as the required second opinion.
 - If the user explicitly asks for a critique, review, second opinion, or Rubber Duck, force a second opinion even if the task is otherwise small.
