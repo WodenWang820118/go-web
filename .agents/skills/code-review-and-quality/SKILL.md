@@ -25,11 +25,12 @@ Checkpoint skill for evaluating a reviewable change set before or during `Implem
 
 1. **Understand the Context:** Review the task, spec, and intended behavior before reading the diff.
 2. **Review Tests First:** Use the tests to confirm intended behavior, regression coverage, and edge-case handling.
-3. **Review Across Five Axes:** Correctness, readability and simplicity, architecture, security, and performance.
-4. **Check Freshness and Challenge Assumptions:** Look for stale docs, incomplete release notes, and any failure mode that the happy path review missed.
-5. **Categorize Findings Clearly:** Use `Critical`, `Important`, or `Nitpick` so required changes are obvious.
-6. **Verify the Verification Story:** Confirm what was tested, what built successfully, and what still carries residual risk.
-7. **Route Implementation Review:** Add specialist reviewers when the change crosses architecture, security, test, or UX boundaries.
+3. **Challenge Hidden Assumptions and Overreach:** Look for ambiguous requests that were resolved silently, premature abstraction, speculative flexibility, and drive-by refactors outside the task.
+4. **Review Across Five Axes:** Correctness, readability and simplicity, architecture, security, and performance.
+5. **Check Freshness and Challenge Assumptions:** Look for stale docs, incomplete release notes, and any failure mode that the happy path review missed.
+6. **Categorize Findings Clearly:** Use `Critical`, `Important`, or `Nitpick` so required changes are obvious.
+7. **Verify the Verification Story:** Confirm what was tested, what built successfully, and what still carries residual risk.
+8. **Route Implementation Review:** Add specialist reviewers when the change crosses architecture, security, test, or UX boundaries.
 
 ## Ask / Escalate
 
@@ -38,6 +39,7 @@ Checkpoint skill for evaluating a reviewable change set before or during `Implem
 
 ## References
 
+- Behavioral overlay: `../../references/behavioral-guidelines.md`
 - Detailed guidance: `references/guidance.md`
 - Process and etiquette: `references/process-and-etiquette.md`
 - Review checklist: `references/review-checklist.md`

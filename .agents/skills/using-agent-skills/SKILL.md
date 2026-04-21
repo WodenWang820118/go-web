@@ -20,9 +20,9 @@ Entry routing skill for minimal context loading. Use it to understand the reques
 
 ## Core Workflow
 
-1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, ask 1 decision question before repo exploration.
-2. **Bounded Discovery:** Otherwise, prefer repo truth. Use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
-3. **Clarification Budget:** Ask at most 1 pre-scan question and 1 post-scan question. If high-impact ambiguity remains after that budget, stop and ask or escalate. Do not continue on conflicting assumptions.
+1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, name the interpretations and ask 1 decision question before repo exploration. Do not pick silently.
+2. **Bounded Discovery:** Otherwise, prefer repo truth. State any assumption that materially affects scope, contracts, or safety, then use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
+3. **Clarification Budget:** Ask at most 1 pre-scan question and 1 post-scan question. If high-impact ambiguity remains after that budget, stop and ask or escalate. Do not continue on conflicting assumptions or hidden confusion.
 4. **Workflow Selection:** Choose 1 next skill:
    - solution-framed request, fuzzy problem statement, or unclear ambition/scope: `product-and-scope-review`
    - new feature or significant change: `spec-driven-development`
@@ -37,11 +37,12 @@ Entry routing skill for minimal context loading. Use it to understand the reques
 
 ## Ask / Escalate
 
-- Ask when ambiguity would change architecture, public contracts, auth or security boundaries, persistent data, or require broad exploration.
+- Ask when ambiguity would change architecture, public contracts, auth or security boundaries, persistent data, require broad exploration, or still has multiple plausible interpretations after bounded discovery.
 - Escalate reviewer routing and checkpoint defaults through `references/reviewer-routing.md` rather than restating the full lifecycle here.
 
 ## References
 
+- Behavioral overlay: `../../references/behavioral-guidelines.md`
 - Skill catalog: `references/skills-catalog.md`
 - Reviewer routing and checkpoint defaults: `references/reviewer-routing.md`
 - Stack conventions: `.agents/stack-conventions.md`
