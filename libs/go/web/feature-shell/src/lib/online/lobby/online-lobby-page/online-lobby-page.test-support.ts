@@ -32,12 +32,34 @@ class DummyRoomPageComponent {}
 })
 class DummySetupPageComponent {}
 
+type StubSignal<T> = ReturnType<typeof signal<T>>;
+type StubMock = ReturnType<typeof vi.fn>;
+
+export interface LobbyServiceStub {
+  rooms: StubSignal<LobbyRoomSummary[]>;
+  onlineParticipants: StubSignal<LobbyOnlineParticipantSummary[]>;
+  loading: StubSignal<boolean>;
+  lastError: StubSignal<string | null>;
+  hasRooms: ReturnType<typeof computed<boolean>>;
+  refresh: StubMock;
+}
+
+export interface RoomServiceStub {
+  displayName: StubSignal<string>;
+  creating: StubSignal<boolean>;
+  joining: StubSignal<boolean>;
+  lastError: StubSignal<string | null>;
+  clearTransientMessages: StubMock;
+  createRoom: StubMock;
+  joinRoom: StubMock;
+}
+
 /**
  * Renders the lobby route with reusable service stubs and viewport-aware media queries.
  */
 export async function renderLobby(
-  lobbyService: ReturnType<typeof createLobbyServiceStub>,
-  roomService: ReturnType<typeof createRoomServiceStub>,
+  lobbyService: LobbyServiceStub,
+  roomService: RoomServiceStub,
   viewport: 'desktop' | 'mobile' = 'desktop',
 ) {
   stubMatchMedia(viewport === 'desktop');
@@ -101,7 +123,7 @@ export function createLobbyServiceStub(
   options?: {
     lastError?: string | null;
   },
-) {
+): LobbyServiceStub {
   const roomsSignal = signal(rooms);
   const onlineParticipantsSignal = signal(onlineParticipants);
   const loading = signal(false);
@@ -127,7 +149,7 @@ export function createRoomServiceStub(options?: {
   createRoomResult?: Observable<CreateRoomResponse>;
   joinRoomResult?: Observable<void>;
   lastError?: string | null;
-}) {
+}): RoomServiceStub {
   const displayName = signal('');
   const creating = signal(false);
   const joining = signal(false);

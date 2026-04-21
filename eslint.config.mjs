@@ -56,6 +56,8 @@ export default [
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/*.test-support.ts',
+      '**/test-support/**/*.ts',
+      '**/test-support/**/*.tsx',
       '**/*test-helpers.ts',
       '**/testing/**/*.ts',
       'apps/go-web-e2e/src/test-support/**/*.ts',

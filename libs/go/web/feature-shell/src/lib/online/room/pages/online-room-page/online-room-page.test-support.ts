@@ -332,7 +332,7 @@ export function createSeatedSnapshot(options?: {
  */
 export function createHostedMatch(
   options: {
-    boardSize?: number;
+    boardSize?: HostedMatchSnapshot['settings']['boardSize'];
     captures?: HostedMatchSnapshot['state']['captures'];
     consecutivePasses?: number;
     lastMove?: HostedMatchSnapshot['state']['lastMove'];
@@ -350,7 +350,8 @@ export function createHostedMatch(
   } = {},
 ): HostedMatchSnapshot {
   const mode = options.mode ?? 'go';
-  const boardSize = options.boardSize ?? (mode === 'gomoku' ? 15 : 19);
+  const boardSize: HostedMatchSnapshot['settings']['boardSize'] =
+    options.boardSize ?? (mode === 'gomoku' ? 15 : 19);
   const defaultMessage =
     options.phase === 'finished' && options.result?.summary
       ? options.result.summary
