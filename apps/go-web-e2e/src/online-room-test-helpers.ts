@@ -1,9 +1,8 @@
 import { APIResponse, expect, Page, Request } from '@playwright/test';
 
-const goServerOrigin = (process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000').replace(
-  /\/+$/,
-  ''
-);
+const goServerOrigin = (
+  process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000'
+).replace(/\/+$/, '');
 const goServerOriginStorageKey = 'gx.go.serverOrigin';
 
 export async function useEnglish(page: Page): Promise<void> {
@@ -14,7 +13,7 @@ export async function useEnglish(page: Page): Promise<void> {
     {
       key: goServerOriginStorageKey,
       value: goServerOrigin,
-    }
+    },
   );
   await page.goto('/');
   await page.getByTestId('locale-option-en').click();
@@ -34,14 +33,14 @@ export async function waitForApiHealth(): Promise<void> {
       },
       {
         timeout: 30000,
-      }
+      },
     )
     .toBe(true);
 }
 
 export async function createHostedRoom(
   page: Page,
-  displayName: string
+  displayName: string,
 ): Promise<string> {
   const displayNameInput = page.getByTestId('lobby-display-name-input');
   const createRoomButton = page.getByTestId('online-lobby-create-button');
@@ -51,7 +50,7 @@ export async function createHostedRoom(
   await expect(createRoomButton).toBeEnabled();
 
   const createRoomResponsePromise = page.waitForResponse(
-    response => {
+    (response) => {
       const responseUrl = new URL(response.url());
 
       return (
@@ -62,10 +61,10 @@ export async function createHostedRoom(
     },
     {
       timeout: 20000,
-    }
+    },
   );
   const roomBootstrapResponsePromise = page.waitForResponse(
-    response => {
+    (response) => {
       const responseUrl = new URL(response.url());
 
       return (
@@ -76,7 +75,7 @@ export async function createHostedRoom(
     },
     {
       timeout: 20000,
-    }
+    },
   );
 
   await createRoomButton.click();
@@ -93,48 +92,54 @@ export async function createHostedRoom(
       `Expected POST ${goServerOrigin}/api/rooms to succeed.`,
       `Status: ${createRoomResponse.status()} ${createRoomResponse.statusText()}`,
       `Body: ${rawBody || '<empty>'}`,
-    ].join('\n')
+    ].join('\n'),
   ).toBeTruthy();
   expect(
     requestHeaders['content-type'] ?? '',
-    'Expected create-room request to send JSON.'
+    'Expected create-room request to send JSON.',
   ).toContain('application/json');
-  expect(requestBody, 'Expected create-room request to include a JSON body.').not.toBeNull();
+  expect(
+    requestBody,
+    'Expected create-room request to include a JSON body.',
+  ).not.toBeNull();
   expect(requestBody).toEqual({
     displayName,
   });
 
   expect(
     payload,
-    `Expected create-room response to include a JSON body. Body: ${rawBody || '<empty>'}`
+    `Expected create-room response to include a JSON body. Body: ${rawBody || '<empty>'}`,
   ).not.toBeNull();
   const roomId = typeof payload?.roomId === 'string' ? payload.roomId : '';
 
   expect(
     roomId,
-    `Expected create-room response to include roomId. Body: ${rawBody || '<empty>'}`
+    `Expected create-room response to include roomId. Body: ${rawBody || '<empty>'}`,
   ).not.toBe('');
 
   const roomBootstrapResponse = await roomBootstrapResponsePromise;
   expect(
     normalizePath(new URL(roomBootstrapResponse.url()).pathname),
-    'Expected the room page bootstrap request to load the created room.'
+    'Expected the room page bootstrap request to load the created room.',
   ).toBe(`/api/rooms/${roomId}`);
   expect(roomBootstrapResponse.ok()).toBeTruthy();
 
-  await page.waitForURL(url => normalizePath(url.pathname) === `/online/room/${roomId}`, {
-    timeout: 20000,
-  });
+  await page.waitForURL(
+    (url) => normalizePath(url.pathname) === `/online/room/${roomId}`,
+    {
+      timeout: 20000,
+    },
+  );
   expect(new URL(page.url()).origin).toBe(appOrigin);
-  expect(normalizePath(new URL(page.url()).pathname)).toBe(`/online/room/${roomId}`);
+  expect(normalizePath(new URL(page.url()).pathname)).toBe(
+    `/online/room/${roomId}`,
+  );
   await expect(page.getByTestId('room-layout')).toBeVisible();
 
   return roomId;
 }
 
-async function readCreateRoomResponse(
-  response: APIResponse
-): Promise<{
+async function readCreateRoomResponse(response: APIResponse): Promise<{
   payload: {
     roomId?: unknown;
   } | null;

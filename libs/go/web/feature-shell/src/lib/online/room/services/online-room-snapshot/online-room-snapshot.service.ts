@@ -15,7 +15,7 @@ const CHAT_HISTORY_LIMIT = 100;
 export class OnlineRoomSnapshotService {
   applyRoomPresence(
     snapshot: RoomSnapshot,
-    event: RoomPresenceEvent
+    event: RoomPresenceEvent,
   ): RoomSnapshot {
     return {
       ...snapshot,
@@ -24,14 +24,20 @@ export class OnlineRoomSnapshotService {
     };
   }
 
-  applyGameUpdated(snapshot: RoomSnapshot, event: GameUpdatedEvent): RoomSnapshot {
+  applyGameUpdated(
+    snapshot: RoomSnapshot,
+    event: GameUpdatedEvent,
+  ): RoomSnapshot {
     return {
       ...snapshot,
       match: event.match ? structuredClone(event.match) : null,
     };
   }
 
-  applyChatMessage(snapshot: RoomSnapshot, event: ChatMessageEvent): RoomSnapshot {
+  applyChatMessage(
+    snapshot: RoomSnapshot,
+    event: ChatMessageEvent,
+  ): RoomSnapshot {
     return {
       ...snapshot,
       chat: [...snapshot.chat, event.message].slice(-CHAT_HISTORY_LIMIT),

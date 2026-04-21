@@ -200,7 +200,9 @@ function createOnlineRoomServiceStub() {
   const participantId = signal<string | null>(null);
   const participantToken = signal<string | null>(null);
   const displayName = signal('Host');
-  const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>('ready');
+  const bootstrapState = signal<'idle' | 'loading' | 'ready' | 'missing'>(
+    'ready',
+  );
   const connectionState = signal<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >('connected');
@@ -216,13 +218,17 @@ function createOnlineRoomServiceStub() {
   } | null>(null);
   const match = computed(() => snapshot()?.match ?? null);
   const participants = computed(() => snapshot()?.participants ?? []);
-  const nextMatchSettings = computed(() => snapshot()?.nextMatchSettings ?? null);
+  const nextMatchSettings = computed(
+    () => snapshot()?.nextMatchSettings ?? null,
+  );
   const rematch = computed(() => snapshot()?.rematch ?? null);
   const autoStartBlockedUntilSeatChange = computed(
     () => snapshot()?.autoStartBlockedUntilSeatChange ?? false,
   );
   const viewer = computed(
-    () => participants().find(item => item.participantId === participantId()) ?? null,
+    () =>
+      participants().find((item) => item.participantId === participantId()) ??
+      null,
   );
   const viewerSeat = computed(() => viewer()?.seat ?? null);
   const isHost = computed(() => viewer()?.isHost ?? false);
@@ -280,9 +286,17 @@ function createOnlineRoomServiceStub() {
     kickParticipant: vi.fn(),
     closeRoom: vi.fn().mockReturnValue(of(void 0)),
     closeRoomWithKeepalive: vi.fn().mockResolvedValue(undefined),
-    markRoomClosed: vi.fn((event: { roomId: string; message: { key: string; params?: Record<string, string | number | boolean | null | undefined> } }) => {
-      roomClosed.set(event);
-    }),
+    markRoomClosed: vi.fn(
+      (event: {
+        roomId: string;
+        message: {
+          key: string;
+          params?: Record<string, string | number | boolean | null | undefined>;
+        };
+      }) => {
+        roomClosed.set(event);
+      },
+    ),
     clearTransientMessages: vi.fn(),
     roomClosed,
     clearRoomClosedEvent: vi.fn(() => roomClosed.set(null)),

@@ -31,7 +31,9 @@ type LocalMatchCommand =
 export class GameSessionStore {
   private readonly port = inject(GAME_SESSION_PORT);
   private readonly rulesEngines = inject(GameRulesEngineService);
-  private readonly snapshotSignal = signal<GameSessionSnapshot | null>(this.port.read());
+  private readonly snapshotSignal = signal<GameSessionSnapshot | null>(
+    this.port.read(),
+  );
 
   readonly snapshot = this.snapshotSignal.asReadonly();
   readonly settings = computed(() => this.snapshotSignal()?.settings ?? null);
@@ -96,7 +98,7 @@ export class GameSessionStore {
       const nextState = engine.toggleDeadGroup?.(
         snapshot.state,
         snapshot.settings,
-        point
+        point,
       );
 
       if (!nextState) {
@@ -140,7 +142,10 @@ export class GameSessionStore {
     }
 
     const engine = this.rulesEngines.get('go');
-    const nextState = engine.finalizeScoring?.(snapshot.state, snapshot.settings);
+    const nextState = engine.finalizeScoring?.(
+      snapshot.state,
+      snapshot.settings,
+    );
 
     if (!nextState) {
       return createMessage('local.play.error.finalize_score_failed');
@@ -161,11 +166,9 @@ export class GameSessionStore {
       return createMessage('local.play.error.start_before_move');
     }
 
-    const result = this.rulesEngines.get(snapshot.settings.mode).applyMove(
-      snapshot.state,
-      snapshot.settings,
-      command
-    );
+    const result = this.rulesEngines
+      .get(snapshot.settings.mode)
+      .applyMove(snapshot.state, snapshot.settings, command);
 
     if (!result.ok) {
       return result.error ?? createMessage('local.play.error.move_rejected');

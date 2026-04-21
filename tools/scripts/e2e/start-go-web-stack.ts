@@ -17,11 +17,11 @@ const goServerPort = new URL(goServerOrigin).port || '3000';
 const goServerHealthUrl = new URL('/api/health', goServerOrigin).toString();
 const e2eRoomCreateAttemptsPerWindow = resolvePositiveIntegerEnvOverride(
   process.env.GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW,
-  100
+  100,
 );
 const e2eRoomJoinAttemptsPerWindow = resolvePositiveIntegerEnvOverride(
   process.env.GO_ROOM_JOIN_ATTEMPTS_PER_WINDOW,
-  100
+  100,
 );
 
 async function isUrlReady(url: string): Promise<boolean> {
@@ -92,7 +92,11 @@ async function shutdown(exitCode: number): Promise<void> {
   process.exit(exitCode);
 }
 
-function startNxTarget(label: string, args: string[], env = {}): ReturnType<typeof spawn> {
+function startNxTarget(
+  label: string,
+  args: string[],
+  env = {},
+): ReturnType<typeof spawn> {
   const child = spawn(`${npmCommand} exec -- nx run ${args.join(' ')}`, {
     cwd: workspaceRoot,
     stdio: 'inherit',
@@ -128,7 +132,7 @@ function startNxTarget(label: string, args: string[], env = {}): ReturnType<type
 
 function resolvePositiveIntegerEnvOverride(
   value: string | undefined,
-  fallback: number
+  fallback: number,
 ): string {
   if (!value || !/^[1-9]\d*$/.test(value)) {
     return String(fallback);
@@ -141,7 +145,7 @@ async function ensureServer(
   label: string,
   url: string,
   nxTarget: string,
-  env = {}
+  env = {},
 ): Promise<void> {
   if (await isUrlReady(url)) {
     console.log(`${label} already available at ${url}`);
@@ -170,7 +174,11 @@ async function main(): Promise<void> {
     GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW: e2eRoomCreateAttemptsPerWindow,
     GO_ROOM_JOIN_ATTEMPTS_PER_WINDOW: e2eRoomJoinAttemptsPerWindow,
   });
-  await ensureServer('go-web', baseUrl, `go-web:serve-static --port=${webPort}`);
+  await ensureServer(
+    'go-web',
+    baseUrl,
+    `go-web:serve-static --port=${webPort}`,
+  );
 
   console.log('Go web e2e stack is ready.');
   keepAliveTimer = setInterval(() => {

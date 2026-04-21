@@ -20,7 +20,10 @@ export function parsePointKey(key: string): BoardPoint {
 /**
  * Compares two points, treating `null` values as comparable sentinels.
  */
-export function pointEquals(left: BoardPoint | null, right: BoardPoint | null): boolean {
+export function pointEquals(
+  left: BoardPoint | null,
+  right: BoardPoint | null,
+): boolean {
   if (!left || !right) {
     return left === right;
   }
@@ -31,8 +34,13 @@ export function pointEquals(left: BoardPoint | null, right: BoardPoint | null): 
 /**
  * Returns whether a point lies inside a board of the given size.
  */
-export function isPointInBounds(point: BoardPoint, boardSize: BoardSize): boolean {
-  return point.x >= 0 && point.y >= 0 && point.x < boardSize && point.y < boardSize;
+export function isPointInBounds(
+  point: BoardPoint,
+  boardSize: BoardSize,
+): boolean {
+  return (
+    point.x >= 0 && point.y >= 0 && point.x < boardSize && point.y < boardSize
+  );
 }
 
 /**

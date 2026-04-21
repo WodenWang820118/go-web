@@ -6,16 +6,16 @@ Nx workspace for the Go multiplayer stack, built from Angular, Nest, and shared 
 
 ### Go stack
 
-| Project | Path | Purpose |
-| --- | --- | --- |
-| `go-web` | `apps/go-web` | Angular frontend and composition root |
-| `go-server` | `apps/go-server` | Nest backend for hosted rooms and realtime events |
-| `go-web-e2e` | `apps/go-web-e2e` | Playwright end-to-end tests for the Go app |
-| `@gx/go/feature-shell` | `libs/go/web/feature-shell` | Lazy route shell and page-level feature orchestration |
-| `@gx/go/state` | `libs/go/web/state` | Client state, guards, adapters, and frontend config tokens |
-| `@gx/go/ui` | `libs/go/web/ui` | Standalone presentational Angular components |
-| `@gx/go/domain` | `libs/go/shared/domain` | Pure rules engine, board utilities, and domain types |
-| `@gx/go/contracts` | `libs/go/shared/contracts` | Shared room DTOs and socket payloads for frontend/backend |
+| Project                | Path                        | Purpose                                                    |
+| ---------------------- | --------------------------- | ---------------------------------------------------------- |
+| `go-web`               | `apps/go-web`               | Angular frontend and composition root                      |
+| `go-server`            | `apps/go-server`            | Nest backend for hosted rooms and realtime events          |
+| `go-web-e2e`           | `apps/go-web-e2e`           | Playwright end-to-end tests for the Go app                 |
+| `@gx/go/feature-shell` | `libs/go/web/feature-shell` | Lazy route shell and page-level feature orchestration      |
+| `@gx/go/state`         | `libs/go/web/state`         | Client state, guards, adapters, and frontend config tokens |
+| `@gx/go/ui`            | `libs/go/web/ui`            | Standalone presentational Angular components               |
+| `@gx/go/domain`        | `libs/go/shared/domain`     | Pure rules engine, board utilities, and domain types       |
+| `@gx/go/contracts`     | `libs/go/shared/contracts`  | Shared room DTOs and socket payloads for frontend/backend  |
 
 ## Local development
 

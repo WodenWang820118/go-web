@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { HostedMatchSnapshot } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';

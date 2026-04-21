@@ -30,11 +30,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     @Inject(RoomsSnapshotMapper)
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsErrorsService)
-    private readonly roomsErrors: RoomsErrorsService
+    private readonly roomsErrors: RoomsErrorsService,
   ) {
     this.cleanupTimer = setInterval(
       () => this.store.pruneExpiredRooms(),
-      60 * 1000
+      60 * 1000,
     );
   }
 
@@ -42,7 +42,7 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     this.assertAttemptWithinLimit(
       requesterKey,
       CREATE_ATTEMPTS_PER_WINDOW,
-      'room.error.too_many_create_attempts'
+      'room.error.too_many_create_attempts',
     );
 
     const sanitizedName = this.sanitizeDisplayName(displayName);
@@ -63,12 +63,12 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     roomId: string,
     displayName: string,
     participantToken: string | undefined,
-    requesterKey: string
+    requesterKey: string,
   ): JoinRoomResponse {
     this.assertAttemptWithinLimit(
       requesterKey,
       JOIN_ATTEMPTS_PER_WINDOW,
-      'room.error.too_many_join_attempts'
+      'room.error.too_many_join_attempts',
     );
 
     const room = this.store.getRoomRecord(roomId);
@@ -82,8 +82,10 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     const uniqueDisplayName = createUniqueDisplayName(
       sanitizedName,
       [...room.participants.values()]
-        .filter(currentParticipant => currentParticipant.id !== participant?.id)
-        .map(currentParticipant => currentParticipant.displayName)
+        .filter(
+          (currentParticipant) => currentParticipant.id !== participant?.id,
+        )
+        .map((currentParticipant) => currentParticipant.displayName),
     );
 
     if (participant) {
@@ -92,7 +94,7 @@ export class RoomsLifecycleService implements OnModuleDestroy {
       participant = this.store.createParticipant(
         uniqueDisplayName,
         false,
-        this.store.timestamp()
+        this.store.timestamp(),
       );
       room.participants.set(participant.id, participant);
       room.tokenIndex.set(participant.token, participant.id);
@@ -111,32 +113,35 @@ export class RoomsLifecycleService implements OnModuleDestroy {
 
   getRoom(roomId: string): GetRoomResponse {
     return {
-      snapshot: this.snapshotMapper.toSnapshot(this.store.getRoomRecord(roomId)),
+      snapshot: this.snapshotMapper.toSnapshot(
+        this.store.getRoomRecord(roomId),
+      ),
     };
   }
 
   listRooms(): ListRoomsResponse {
     const lobbyRooms = [...this.store.rooms.values()].filter(
-      room => !this.store.isRoomOffline(room)
+      (room) => !this.store.isRoomOffline(room),
     );
     const rooms = lobbyRooms
-      .map(room => this.snapshotMapper.toLobbySummary(room))
-      .sort((left, right) => this.snapshotMapper.compareLobbyRooms(left, right));
+      .map((room) => this.snapshotMapper.toLobbySummary(room))
+      .sort((left, right) =>
+        this.snapshotMapper.compareLobbyRooms(left, right),
+      );
 
     return {
       rooms,
-      onlineParticipants: this.snapshotMapper.toLobbyOnlineParticipants(
-        lobbyRooms
-      ),
+      onlineParticipants:
+        this.snapshotMapper.toLobbyOnlineParticipants(lobbyRooms),
     };
   }
 
   closeRoom(roomId: string, participantToken: string): CloseRoomResult {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
-    const socketIds = [...room.participants.values()].flatMap(participant =>
-      [...participant.socketIds]
-    );
+    const socketIds = [...room.participants.values()].flatMap((participant) => [
+      ...participant.socketIds,
+    ]);
 
     for (const socketId of socketIds) {
       this.store.socketIndex.delete(socketId);
@@ -159,10 +164,13 @@ export class RoomsLifecycleService implements OnModuleDestroy {
   connectParticipantSocket(
     roomId: string,
     participantToken: string,
-    socketId: string
+    socketId: string,
   ): RoomSnapshot {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
 
     participant.socketIds.add(socketId);
     participant.online = true;
@@ -214,11 +222,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
   private assertAttemptWithinLimit(
     key: string,
     limit: number,
-    messageKey: string
+    messageKey: string,
   ): void {
     const now = Date.now();
     const timestamps = (this.store.attemptWindows.get(key) ?? []).filter(
-      timestamp => now - timestamp < THROTTLE_WINDOW_MS
+      (timestamp) => now - timestamp < THROTTLE_WINDOW_MS,
     );
 
     if (timestamps.length >= limit) {

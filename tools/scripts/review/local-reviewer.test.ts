@@ -61,7 +61,9 @@ test('writePrefilterOutput includes hybrid additive fields without breaking key=
   const writes: string[] = [];
   const originalWrite = process.stdout.write;
   process.stdout.write = ((chunk: string | Uint8Array) => {
-    writes.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+    writes.push(
+      typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'),
+    );
     return true;
   }) as typeof process.stdout.write;
 

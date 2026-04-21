@@ -20,7 +20,9 @@ test('host confirms leaving a room, which closes it and removes it from the lobb
   await expect(page).toHaveURL(/\/$/, {
     timeout: 10000,
   });
-  await expect(page.getByTestId('lobby-message-rail')).toContainText('Room closed.');
+  await expect(page.getByTestId('lobby-message-rail')).toContainText(
+    'Room closed.',
+  );
   await expect(page.getByTestId(`lobby-room-${roomId}`)).toHaveCount(0);
 
   await page.goto(`/online/room/${roomId}`);
@@ -42,7 +44,10 @@ test('guests return to the lobby when the host closes the room', async ({
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
-    await guestPage.getByTestId('join-room-form').getByLabel('Display name').fill('Guest');
+    await guestPage
+      .getByTestId('join-room-form')
+      .getByLabel('Display name')
+      .fill('Guest');
     await guestPage.getByRole('button', { name: 'Join room' }).click();
     await expect(guestPage.getByTestId('join-room-form')).toHaveCount(0);
     await expect(guestPage.getByTestId('room-layout')).toBeVisible();
@@ -62,7 +67,9 @@ test('guests return to the lobby when the host closes the room', async ({
     );
 
     await guestPage.goto(`/online/room/${roomId}`);
-    await expect(guestPage.getByText('This room could not be found.')).toBeVisible();
+    await expect(
+      guestPage.getByText('This room could not be found.'),
+    ).toBeVisible();
   } finally {
     await guestContext.close();
   }

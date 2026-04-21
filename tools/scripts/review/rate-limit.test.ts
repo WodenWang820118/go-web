@@ -22,7 +22,7 @@ test('getInterRequestDelayMs waits only for the remaining start-to-start interva
       nowMs: now,
       lastStartedAtMs: Date.UTC(2026, 3, 17, 9, 0, 5),
     }),
-    5000
+    5000,
   );
 
   assert.equal(
@@ -31,7 +31,7 @@ test('getInterRequestDelayMs waits only for the remaining start-to-start interva
       nowMs: now,
       lastStartedAtMs: Date.UTC(2026, 3, 17, 8, 59, 0),
     }),
-    0
+    0,
   );
 });
 
@@ -46,7 +46,7 @@ test('getRetryDelayMs follows the configured backoff schedule', () => {
   assert.equal(getRetryDelayMs('gemini-3-flash-preview', 4), 30000);
   assert.equal(
     getModelRateLimitPolicy('gemini-3.1-flash-preview').model,
-    'gemini-3-flash-preview'
+    'gemini-3-flash-preview',
   );
 });
 
@@ -68,7 +68,7 @@ test('rate-limit state round-trips through the workspace cache', () => {
           },
         },
       },
-      tempRoot
+      tempRoot,
     );
 
     const restored = loadRateLimitState(tempRoot);

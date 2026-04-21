@@ -19,6 +19,17 @@ Project skills live in `.agents/skills`, reviewer personas live in `.agents/revi
 - A repo-level pre-implementation gate is enforced through `.github/hooks/review-gate.json`. On a clean worktree, Copilot will deny mutating tool calls until a plan review approval is recorded.
 - `proofshot` is an optional repo-local verification helper for browser-verifiable UI work. It does not replace tests, and it does not participate in the pre-implementation gate.
 
+## Behavioral Overlay
+
+Adopt the following Karpathy-inspired behavioral overlay to improve agent precision and reliability inside the existing phased workflow:
+
+- `Think Before Coding`: surface assumptions, present multiple plausible interpretations when ambiguity matters, and ask instead of silently choosing.
+- `Simplicity First`: prefer the minimum code and process change that solves today's problem. Avoid speculative abstractions, configurability, or edge-case machinery that the request does not need.
+- `Surgical Changes`: touch only the files and lines needed for the task. Clean up only the orphans created by the current change unless broader cleanup is explicitly requested.
+- `Goal-Driven Execution`: turn vague tasks into explicit success criteria, verification steps, and checkpoints before declaring the work done.
+
+These principles augment the repo's phase boundaries, review checkpoints, and gate rules. They do not replace the existing workflow.
+
 ## Phased Context Loading
 
 The agent must operate in distinct phases, loading context incrementally. A later-phase skill is not part of entry context unless a repo rule explicitly requires it.
@@ -34,7 +45,7 @@ The agent must operate in distinct phases, loading context incrementally. A late
 - **Workflow:**
   1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, ask 1 decision question before repo exploration.
   2. **Bounded Discovery:** Otherwise, prefer repo truth over asking. Use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
-  3. **Clarification Budget:** After bounded discovery, ask at most 1 follow-up question if high-impact ambiguity remains. Budget exhaustion never authorizes proceeding through unresolved ambiguity that would change architecture, public contracts, security boundaries, persistent data, or require broad exploration.
+  3. **Clarification Budget:** After bounded discovery, ask at most 1 post-scan follow-up question if high-impact ambiguity remains. Together with the intent-gate question, the total clarification budget is 1 pre-scan question and 1 post-scan question. Budget exhaustion never authorizes proceeding through unresolved ambiguity that would change architecture, public contracts, security boundaries, persistent data, or require broad exploration.
   4. **Workflow Selection:** Choose 1 primary next skill for the planning or repo-workflow phase.
 
 ### Phase 2: Planning

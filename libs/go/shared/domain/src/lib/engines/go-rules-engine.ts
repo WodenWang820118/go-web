@@ -63,7 +63,11 @@ export class GoRulesEngine implements RulesEngine {
     }
   }
 
-  toggleDeadGroup(state: MatchState, settings: MatchSettings, point: BoardPoint): MatchState {
+  toggleDeadGroup(
+    state: MatchState,
+    settings: MatchSettings,
+    point: BoardPoint,
+  ): MatchState {
     if (state.phase !== 'scoring' || !state.scoring) {
       return state;
     }
@@ -81,7 +85,9 @@ export class GoRulesEngine implements RulesEngine {
     }
 
     const deadStones = new Set(state.scoring.deadStones);
-    const shouldRemove = group.stones.every(stone => deadStones.has(pointKey(stone)));
+    const shouldRemove = group.stones.every((stone) =>
+      deadStones.has(pointKey(stone)),
+    );
 
     for (const stone of group.stones) {
       const key = pointKey(stone);
@@ -104,7 +110,7 @@ export class GoRulesEngine implements RulesEngine {
           : 'game.go.state.group_marked_dead',
         {
           player: createMessage(`common.player.${color}`),
-        }
+        },
       ),
     };
   }
@@ -119,7 +125,11 @@ export class GoRulesEngine implements RulesEngine {
     return this.finishByScore(state, state.scoring);
   }
 
-  private placeStone(state: MatchState, settings: MatchSettings, point: BoardPoint) {
+  private placeStone(
+    state: MatchState,
+    settings: MatchSettings,
+    point: BoardPoint,
+  ) {
     if (getCell(state.board, point) !== null) {
       return failure(state, 'game.error.intersection_occupied');
     }
@@ -159,7 +169,8 @@ export class GoRulesEngine implements RulesEngine {
 
     if (
       state.previousBoardHashes.length >= 2 &&
-      nextHash === state.previousBoardHashes[state.previousBoardHashes.length - 2]
+      nextHash ===
+        state.previousBoardHashes[state.previousBoardHashes.length - 2]
     ) {
       return failure(state, 'game.go.error.ko_repeat');
     }
@@ -169,11 +180,17 @@ export class GoRulesEngine implements RulesEngine {
       [player]: state.captures[player] + capturedPoints.length,
     };
 
-    const moveRecord = createMoveRecord(state, player, { type: 'place', point }, nextBoard, {
-      phaseAfterMove: 'playing',
-      capturesAfterMove: nextCaptures,
-      capturedPoints,
-    });
+    const moveRecord = createMoveRecord(
+      state,
+      player,
+      { type: 'place', point },
+      nextBoard,
+      {
+        phaseAfterMove: 'playing',
+        capturesAfterMove: nextCaptures,
+        capturedPoints,
+      },
+    );
 
     return success({
       ...state,
@@ -206,29 +223,39 @@ export class GoRulesEngine implements RulesEngine {
     const scoring = willAutoFinalize
       ? buildScoringState(state.board, new Set<string>(), settings.komi)
       : null;
-    const moveRecord = createMoveRecord(state, player, { type: 'pass' }, state.board, {
-      phaseAfterMove: willAutoFinalize ? 'finished' : 'playing',
-      capturesAfterMove: state.captures,
-    });
+    const moveRecord = createMoveRecord(
+      state,
+      player,
+      { type: 'pass' },
+      state.board,
+      {
+        phaseAfterMove: willAutoFinalize ? 'finished' : 'playing',
+        capturesAfterMove: state.captures,
+      },
+    );
     const nextState: MatchState = {
       ...state,
       phase: willAutoFinalize ? 'finished' : 'playing',
       nextPlayer: otherPlayer(player),
       moveHistory: [...state.moveHistory, moveRecord],
-      previousBoardHashes: [...state.previousBoardHashes, boardHash(state.board)],
+      previousBoardHashes: [
+        ...state.previousBoardHashes,
+        boardHash(state.board),
+      ],
       lastMove: moveRecord,
       consecutivePasses,
-      message:
-        willAutoFinalize
-          ? createMessage('game.go.state.scoring_started')
-          : createMessage('game.go.state.next_turn_after_pass', {
-              player: createMessage(`common.player.${otherPlayer(player)}`),
-            }),
+      message: willAutoFinalize
+        ? createMessage('game.go.state.scoring_started')
+        : createMessage('game.go.state.next_turn_after_pass', {
+            player: createMessage(`common.player.${otherPlayer(player)}`),
+          }),
       scoring,
       result: null,
     };
 
-    return willAutoFinalize && scoring ? this.finishByScore(nextState, scoring) : nextState;
+    return willAutoFinalize && scoring
+      ? this.finishByScore(nextState, scoring)
+      : nextState;
   }
 
   private resign(state: MatchState, resignedBy: PlayerColor): MatchState {
@@ -241,7 +268,7 @@ export class GoRulesEngine implements RulesEngine {
       {
         phaseAfterMove: 'finished',
         capturesAfterMove: state.captures,
-      }
+      },
     );
     const summary = createMessage('game.result.win_by_resignation', {
       winner: createMessage(`common.player.${winner}`),
@@ -252,7 +279,10 @@ export class GoRulesEngine implements RulesEngine {
       phase: 'finished',
       nextPlayer: winner,
       moveHistory: [...state.moveHistory, moveRecord],
-      previousBoardHashes: [...state.previousBoardHashes, boardHash(state.board)],
+      previousBoardHashes: [
+        ...state.previousBoardHashes,
+        boardHash(state.board),
+      ],
       lastMove: moveRecord,
       result: {
         winner,
@@ -266,11 +296,15 @@ export class GoRulesEngine implements RulesEngine {
 
   private finishByScore(
     state: MatchState,
-    scoring: NonNullable<MatchState['scoring']>
+    scoring: NonNullable<MatchState['scoring']>,
   ): MatchState {
     const { score } = scoring;
     const winner =
-      score.black === score.white ? 'draw' : score.black > score.white ? 'black' : 'white';
+      score.black === score.white
+        ? 'draw'
+        : score.black > score.white
+          ? 'black'
+          : 'white';
     const margin = Math.abs(score.black - score.white);
     const summary =
       winner === 'draw'

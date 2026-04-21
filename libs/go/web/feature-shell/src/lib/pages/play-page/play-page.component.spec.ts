@@ -56,7 +56,9 @@ function createGameSessionStoreStub() {
   const state = signal({
     mode: 'go' as const,
     boardSize: 9 as const,
-    board: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => null)),
+    board: Array.from({ length: 9 }, () =>
+      Array.from({ length: 9 }, () => null),
+    ),
     phase: 'finished' as const,
     nextPlayer: 'black' as const,
     captures: {

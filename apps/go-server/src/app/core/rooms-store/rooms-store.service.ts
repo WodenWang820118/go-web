@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DEFAULT_GO_KOMI, GoMessageDescriptor, PlayerColor } from '@gx/go/domain';
+import {
+  DEFAULT_GO_KOMI,
+  GoMessageDescriptor,
+  PlayerColor,
+} from '@gx/go/domain';
 import { SystemNotice } from '@gx/go/contracts';
 import {
   ROOM_ID_ALPHABET,
@@ -7,9 +11,7 @@ import {
   ROOM_IDLE_TTL_MS,
   THROTTLE_WINDOW_MS,
 } from '../rooms-config/rooms.constants';
-import {
-  RoomsErrorsService,
-} from '../rooms-errors/rooms-errors.service';
+import { RoomsErrorsService } from '../rooms-errors/rooms-errors.service';
 import {
   ParticipantRecord,
   RoomRecord,
@@ -27,13 +29,13 @@ export class RoomsStore {
 
   constructor(
     @Inject(RoomsErrorsService)
-    private readonly roomsErrors: RoomsErrorsService
+    private readonly roomsErrors: RoomsErrorsService,
   ) {}
 
   createParticipant(
     displayName: string,
     isHost: boolean,
-    joinedAt: string
+    joinedAt: string,
   ): ParticipantRecord {
     return {
       id: this.createId(),
@@ -93,16 +95,18 @@ export class RoomsStore {
 
   tryGetParticipantByToken(
     room: RoomRecord,
-    participantToken: string
+    participantToken: string,
   ): ParticipantRecord | null {
     const participantId = room.tokenIndex.get(participantToken.trim());
 
-    return participantId ? room.participants.get(participantId) ?? null : null;
+    return participantId
+      ? (room.participants.get(participantId) ?? null)
+      : null;
   }
 
   getParticipantByToken(
     room: RoomRecord,
-    participantToken: string
+    participantToken: string,
   ): ParticipantRecord {
     const participant = this.tryGetParticipantByToken(room, participantToken);
 
@@ -115,7 +119,7 @@ export class RoomsStore {
 
   getParticipantById(
     room: RoomRecord,
-    participantId: string
+    participantId: string,
   ): ParticipantRecord {
     const participant = room.participants.get(participantId);
 
@@ -128,7 +132,7 @@ export class RoomsStore {
 
   assertHostParticipant(
     room: RoomRecord,
-    participantToken: string
+    participantToken: string,
   ): ParticipantRecord {
     const participant = this.getParticipantByToken(room, participantToken);
 
@@ -141,7 +145,7 @@ export class RoomsStore {
 
   getSeatHolder(
     room: RoomRecord,
-    color: PlayerColor
+    color: PlayerColor,
   ): ParticipantRecord | null {
     for (const participant of room.participants.values()) {
       if (participant.seat === color) {
@@ -153,7 +157,9 @@ export class RoomsStore {
   }
 
   isRoomOffline(room: RoomRecord): boolean {
-    return [...room.participants.values()].every(participant => !participant.online);
+    return [...room.participants.values()].every(
+      (participant) => !participant.online,
+    );
   }
 
   touchRoom(room: RoomRecord): void {
@@ -178,7 +184,7 @@ export class RoomsStore {
 
     for (const [key, timestamps] of this.attemptWindows.entries()) {
       const active = timestamps.filter(
-        timestamp => now - timestamp < THROTTLE_WINDOW_MS
+        (timestamp) => now - timestamp < THROTTLE_WINDOW_MS,
       );
 
       if (active.length === 0) {

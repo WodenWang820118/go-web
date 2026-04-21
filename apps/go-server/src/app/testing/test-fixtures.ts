@@ -50,7 +50,7 @@ export async function createNestTestApp(): Promise<NestTestAppContext> {
 
 export async function closeNestTestApp(
   context: NestTestAppContext,
-  sockets: Socket[] = []
+  sockets: Socket[] = [],
 ): Promise<void> {
   for (const socket of sockets) {
     socket.disconnect();
@@ -61,7 +61,7 @@ export async function closeNestTestApp(
 
 export function openRoomSocket(
   baseUrl: string,
-  transports: Array<'websocket' | 'polling'> = ['websocket']
+  transports: Array<'websocket' | 'polling'> = ['websocket'],
 ): Socket {
   return io(baseUrl, {
     path: '/socket.io',
@@ -79,7 +79,7 @@ export function waitForConnect(socket: Socket): Promise<void> {
 }
 
 export function once<T>(socket: Socket, event: string): Promise<T> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     socket.once(event, resolve);
   });
 }
@@ -88,7 +88,7 @@ export function onceWhere<T>(
   socket: Socket,
   event: string,
   predicate: (payload: T) => boolean,
-  timeoutMs = 5000
+  timeoutMs = 5000,
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -114,17 +114,33 @@ export async function finishGomokuMatchOverSocket(
   hostSocket: Socket,
   guestSocket: Socket,
   host: CreateRoomResponse,
-  guest: JoinRoomResponse
+  guest: JoinRoomResponse,
 ): Promise<void> {
   const sequence = [
     { socket: hostSocket, token: host.participantToken, point: { x: 0, y: 0 } },
-    { socket: guestSocket, token: guest.participantToken, point: { x: 0, y: 1 } },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 0, y: 1 },
+    },
     { socket: hostSocket, token: host.participantToken, point: { x: 1, y: 0 } },
-    { socket: guestSocket, token: guest.participantToken, point: { x: 1, y: 1 } },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 1, y: 1 },
+    },
     { socket: hostSocket, token: host.participantToken, point: { x: 2, y: 0 } },
-    { socket: guestSocket, token: guest.participantToken, point: { x: 2, y: 1 } },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 2, y: 1 },
+    },
     { socket: hostSocket, token: host.participantToken, point: { x: 3, y: 0 } },
-    { socket: guestSocket, token: guest.participantToken, point: { x: 3, y: 1 } },
+    {
+      socket: guestSocket,
+      token: guest.participantToken,
+      point: { x: 3, y: 1 },
+    },
     { socket: hostSocket, token: host.participantToken, point: { x: 4, y: 0 } },
   ];
 
@@ -133,7 +149,8 @@ export async function finishGomokuMatchOverSocket(
     const nextUpdate = onceWhere<{ match: { state: { phase: string } } }>(
       move.socket === hostSocket ? guestSocket : hostSocket,
       'game.updated',
-      event => event.match.state.phase === (finishedMove ? 'finished' : 'playing')
+      (event) =>
+        event.match.state.phase === (finishedMove ? 'finished' : 'playing'),
     );
 
     move.socket.emit('game.command', {
@@ -154,18 +171,22 @@ export function createRoomsServicesTestContext(): RoomsServicesTestContext {
   const store = new RoomsStore(roomsErrors);
   const snapshotMapper = new RoomsSnapshotMapper(store);
   const rulesEngines = new RoomsRulesEngineService();
-  const lifecycle = new RoomsLifecycleService(store, snapshotMapper, roomsErrors);
+  const lifecycle = new RoomsLifecycleService(
+    store,
+    snapshotMapper,
+    roomsErrors,
+  );
   const match = new RoomsMatchService(
     store,
     snapshotMapper,
     rulesEngines,
-    roomsErrors
+    roomsErrors,
   );
   const chat = new RoomsChatService(store, snapshotMapper, roomsErrors);
   const moderation = new RoomsModerationService(
     store,
     snapshotMapper,
-    roomsErrors
+    roomsErrors,
   );
 
   return {
@@ -186,7 +207,7 @@ export function finishGomokuMatch(
   match: RoomsMatchService,
   roomId: string,
   hostToken: string,
-  guestToken: string
+  guestToken: string,
 ): void {
   const sequence = [
     { token: hostToken, point: { x: 0, y: 0 } },

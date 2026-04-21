@@ -12,7 +12,11 @@ import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { Subject } from 'rxjs';
 import { Socket, io } from 'socket.io-client';
 
-export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
+export type ConnectionState =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'disconnected';
 
 /**
  * Thin websocket adapter for hosted room realtime events.

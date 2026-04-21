@@ -108,13 +108,13 @@ export function getRepoContext(cwd = process.cwd()): RepoContext {
   const branch = trySpawn(
     gitCommand,
     ['rev-parse', '--abbrev-ref', 'HEAD'],
-    root
+    root,
   );
   const head = trySpawn(gitCommand, ['rev-parse', 'HEAD'], root);
   const dirtyOutput = trySpawn(
     gitCommand,
     ['status', '--porcelain', '--untracked-files=all'],
-    root
+    root,
   );
 
   return {
@@ -146,7 +146,7 @@ export function loadState(repoRoot = process.cwd()): ReviewGateState | null {
 
 export function saveState(
   state: ReviewGateState,
-  repoRoot = process.cwd()
+  repoRoot = process.cwd(),
 ): void {
   const statePath = getStatePath(repoRoot);
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
@@ -166,7 +166,7 @@ export function validateReviewerId(reviewer: string): SupportedReviewer {
   }
 
   throw new Error(
-    `Unsupported reviewer "${reviewer}". Expected one of: ${SUPPORTED_REVIEWERS.join(', ')}.`
+    `Unsupported reviewer "${reviewer}". Expected one of: ${SUPPORTED_REVIEWERS.join(', ')}.`,
   );
 }
 
@@ -195,8 +195,10 @@ export function createApproval(input: {
 
 export function evaluateApproval(
   state: ReviewGateState | null,
-  repoContext: RepoContext
-): { valid: true; approval: ReviewApproval } | { valid: false; reason: string } {
+  repoContext: RepoContext,
+):
+  | { valid: true; approval: ReviewApproval }
+  | { valid: false; reason: string } {
   const approval = state?.approval;
 
   if (!approval) {
@@ -307,8 +309,8 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
     typeof toolArgs === 'string'
       ? toolArgs
       : typeof toolArgs?.command === 'string'
-      ? toolArgs.command
-      : '';
+        ? toolArgs.command
+        : '';
 
   if (isReviewGateCommand(command)) {
     return false;
@@ -340,7 +342,7 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
 export function isReviewGateCommand(command: string): boolean {
   return (
     /review-gate[\\/](approve-pre-implementation|status|reset)\.ts/i.test(
-      command
+      command,
     ) || /\breview:(approve-pre-implementation|status|reset)\b/i.test(command)
   );
 }

@@ -1,4 +1,10 @@
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { from, EMPTY, catchError, take, tap } from 'rxjs';
 import { OnlineRoomShareChipViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomService } from '../../../../services/online-room/online-room.service';
@@ -11,7 +17,8 @@ export class OnlineRoomPageShareService {
   private readonly destroyRef = inject(DestroyRef);
   private shareCopyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-  readonly shareCopyFeedbackState = signal<OnlineRoomShareChipViewModel['feedbackState']>('idle');
+  readonly shareCopyFeedbackState =
+    signal<OnlineRoomShareChipViewModel['feedbackState']>('idle');
   readonly shareChip = computed<OnlineRoomShareChipViewModel>(() => ({
     shareUrl: this.onlineRoom.shareUrl(),
     shareLabel: this.view.i18n.t('room.hero.share'),
@@ -20,7 +27,9 @@ export class OnlineRoomPageShareService {
     retryAriaLabel: `${this.view.i18n.t('room.hero.retry_copy_link')} · ${this.view.connectionLabel()}`,
     copiedMessage: this.view.i18n.t('room.hero.copy_complete'),
     copyFailedMessage: this.view.i18n.t('room.hero.copy_failed'),
-    manualCopyInstruction: this.view.i18n.t('room.hero.copy_manual_instruction'),
+    manualCopyInstruction: this.view.i18n.t(
+      'room.hero.copy_manual_instruction',
+    ),
     manualUrlAriaLabel: this.view.i18n.t('room.hero.manual_url_label'),
     dismissLabel: this.view.i18n.t('common.action.close'),
     connectionState: this.view.connectionState(),
@@ -62,7 +71,7 @@ export class OnlineRoomPageShareService {
           this.onlineRoom.clearTransientMessages();
           return EMPTY;
         }),
-        take(1)
+        take(1),
       )
       .subscribe();
   }

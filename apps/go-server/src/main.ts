@@ -17,7 +17,7 @@ async function bootstrap() {
   } catch (error) {
     if ((error as { code?: string }).code === 'EADDRINUSE') {
       Logger.error(
-        `Port ${port} is already in use at ${host}. Please ensure the port is available (e.g., stop any existing services).`
+        `Port ${port} is already in use at ${host}. Please ensure the port is available (e.g., stop any existing services).`,
       );
       process.exit(1);
     } else {

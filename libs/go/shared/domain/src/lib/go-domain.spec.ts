@@ -1,4 +1,9 @@
-import { boardHash, cloneBoard, createBoard, setCell } from './board/board-state';
+import {
+  boardHash,
+  cloneBoard,
+  createBoard,
+  setCell,
+} from './board/board-state';
 import { buildScoringState } from './engines/go/go-scoring';
 import { GoRulesEngine } from './engines/go-rules-engine';
 import { DEFAULT_GO_KOMI, MatchSettings, MatchState } from './types';
@@ -36,7 +41,10 @@ describe('GoRulesEngine', () => {
       { x: 6, y: 6 },
       { x: 1, y: 2 },
     ]) {
-      const result = engine.applyMove(state, settings, { type: 'place', point: move });
+      const result = engine.applyMove(state, settings, {
+        type: 'place',
+        point: move,
+      });
       state = result.state;
     }
 
@@ -108,19 +116,27 @@ describe('GoRulesEngine', () => {
       scoring: buildScoringState(board, new Set<string>(), settings.komi),
     };
 
-    const toggled = engine.toggleDeadGroup(scoringState, settings, { x: 1, y: 1 });
+    const toggled = engine.toggleDeadGroup(scoringState, settings, {
+      x: 1,
+      y: 1,
+    });
 
     expect(toggled.scoring?.deadStones).toContain('1,1');
-    expect((toggled.scoring?.score.black ?? 0) > (scoringState.scoring?.score.black ?? 0)).toBe(
-      true
-    );
+    expect(
+      (toggled.scoring?.score.black ?? 0) >
+        (scoringState.scoring?.score.black ?? 0),
+    ).toBe(true);
   });
 
   it('finishes immediately on resignation', () => {
-    const state = engine.applyMove(engine.createInitialState(settings), settings, {
-      type: 'resign',
-      player: 'black',
-    }).state;
+    const state = engine.applyMove(
+      engine.createInitialState(settings),
+      settings,
+      {
+        type: 'resign',
+        player: 'black',
+      },
+    ).state;
 
     expect(state.phase).toBe('finished');
     expect(state.result?.winner).toBe('white');

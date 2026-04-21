@@ -73,11 +73,14 @@ describe('OnlineRoomPageComponent > reconnect and recovery', () => {
         participantId: 'guest-1',
         participantToken: 'token-2',
       });
-      const getRoom = vi.fn().mockReturnValue(
-        throwError(
-          () => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }),
-        ),
-      );
+      const getRoom = vi
+        .fn()
+        .mockReturnValue(
+          throwError(
+            () =>
+              new HttpErrorResponse({ status: 404, statusText: 'Not Found' }),
+          ),
+        );
 
       const harness = await renderOnlineRoomPage(roomService, {
         roomsApi: {

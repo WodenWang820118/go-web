@@ -14,7 +14,7 @@ if (!evaluation.valid) {
   console.log(`Reason: ${evaluation.reason}`);
   if (repoContext.dirty) {
     console.log(
-      'Note: The worktree is dirty, but approval is still required for additional mutating actions.'
+      'Note: The worktree is dirty, but approval is still required for additional mutating actions.',
     );
   }
   process.exit(0);
@@ -27,6 +27,6 @@ console.log(`Approved at: ${evaluation.approval.approvedAt}`);
 console.log(`Expires at: ${evaluation.approval.expiresAt}`);
 if (repoContext.dirty) {
   console.log(
-    'Note: The worktree is dirty, but the active approval still governs additional mutating actions.'
+    'Note: The worktree is dirty, but the active approval still governs additional mutating actions.',
   );
 }

@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -122,7 +128,8 @@ export class OnlineRoomSidebarSeatCardComponent {
 
   protected avatarInitial(): string {
     const label =
-      this.seat().occupant?.displayName ?? this.i18n.playerLabel(this.seat().color);
+      this.seat().occupant?.displayName ??
+      this.i18n.playerLabel(this.seat().color);
     return label.trim().charAt(0).toUpperCase() || '?';
   }
 

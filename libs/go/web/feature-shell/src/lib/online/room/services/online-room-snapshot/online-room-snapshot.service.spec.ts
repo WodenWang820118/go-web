@@ -13,7 +13,7 @@ describe('OnlineRoomSnapshotService', () => {
         message: `Message ${index}`,
         sentAt: '2026-03-20T00:00:00.000Z',
         system: false,
-      }))
+      })),
     );
 
     const updated = snapshots.applyChatMessage(snapshot, {
@@ -35,7 +35,7 @@ describe('OnlineRoomSnapshotService', () => {
 
   it('builds a share url only when room id and origin are available', () => {
     expect(snapshots.buildRoomShareUrl('ROOM42', 'https://gx.go')).toBe(
-      'https://gx.go/online/room/ROOM42'
+      'https://gx.go/online/room/ROOM42',
     );
     expect(snapshots.buildRoomShareUrl(null, 'https://gx.go')).toBe('');
     expect(snapshots.buildRoomShareUrl('ROOM42', '')).toBe('');

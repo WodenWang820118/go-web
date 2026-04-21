@@ -9,7 +9,7 @@ export function findWinningLine(
   board: BoardMatrix,
   point: BoardPoint,
   color: PlayerColor,
-  winLength = 5
+  winLength = 5,
 ): BoardPoint[] | null {
   const boardSize = board.length as BoardSize;
   const directions = [
@@ -20,7 +20,13 @@ export function findWinningLine(
   ];
 
   for (const direction of directions) {
-    const line = collectDirectionalLine(board, point, color, boardSize, direction);
+    const line = collectDirectionalLine(
+      board,
+      point,
+      color,
+      boardSize,
+      direction,
+    );
 
     if (line.length >= winLength) {
       return line;
@@ -35,7 +41,7 @@ function collectDirectionalLine(
   origin: BoardPoint,
   color: PlayerColor,
   boardSize: BoardSize,
-  direction: { x: number; y: number }
+  direction: { x: number; y: number },
 ): BoardPoint[] {
   const backwards: BoardPoint[] = [];
   const forwards: BoardPoint[] = [origin];
@@ -45,7 +51,10 @@ function collectDirectionalLine(
     y: origin.y - direction.y,
   };
 
-  while (isPointInBounds(current, boardSize) && getCell(board, current) === color) {
+  while (
+    isPointInBounds(current, boardSize) &&
+    getCell(board, current) === color
+  ) {
     backwards.push(current);
     current = {
       x: current.x - direction.x,
@@ -58,7 +67,10 @@ function collectDirectionalLine(
     y: origin.y + direction.y,
   };
 
-  while (isPointInBounds(current, boardSize) && getCell(board, current) === color) {
+  while (
+    isPointInBounds(current, boardSize) &&
+    getCell(board, current) === color
+  ) {
     forwards.push(current);
     current = {
       x: current.x + direction.x,

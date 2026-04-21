@@ -16,10 +16,7 @@ const GEMINI_MODEL_ALIASES: Record<string, string> = {
   'gemini-3.1-flash-preview': 'gemini-3-flash-preview',
 };
 
-const MODEL_POLICIES: Record<
-  string,
-  Omit<ModelRateLimitPolicy, 'model'>
-> = {
+const MODEL_POLICIES: Record<string, Omit<ModelRateLimitPolicy, 'model'>> = {
   'gemini-2.5-pro': {
     targetIntervalMs: 38000,
     retryDelaysMs: [35000, 50000, 75000],
@@ -68,7 +65,9 @@ export function loadRateLimitState(repoRoot = process.cwd()): RateLimitState {
   }
 
   try {
-    const raw = JSON.parse(fs.readFileSync(statePath, 'utf8')) as Partial<RateLimitState>;
+    const raw = JSON.parse(
+      fs.readFileSync(statePath, 'utf8'),
+    ) as Partial<RateLimitState>;
     return {
       models: raw.models ?? {},
     };
@@ -79,7 +78,7 @@ export function loadRateLimitState(repoRoot = process.cwd()): RateLimitState {
 
 export function saveRateLimitState(
   state: RateLimitState,
-  repoRoot = process.cwd()
+  repoRoot = process.cwd(),
 ): void {
   const statePath = getRateLimitStatePath(repoRoot);
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
@@ -99,7 +98,7 @@ export function getInterRequestDelayMs(input: {
 
   return Math.max(
     0,
-    policy.targetIntervalMs - (input.nowMs - input.lastStartedAtMs)
+    policy.targetIntervalMs - (input.nowMs - input.lastStartedAtMs),
   );
 }
 
@@ -111,7 +110,7 @@ export function getRetryDelayMs(model: string, attempt: number): number {
 export function recordRequestStart(
   model: string,
   startedAtMs: number,
-  repoRoot = process.cwd()
+  repoRoot = process.cwd(),
 ): void {
   const normalizedModel = normalizeGeminiModel(model);
   const state = loadRateLimitState(repoRoot);
@@ -127,7 +126,7 @@ export function getGeminiLockPath(repoRoot = process.cwd()): string {
 
 export async function acquireGeminiLock(
   repoRoot = process.cwd(),
-  waitTimeoutMs = 5 * 60 * 1000
+  waitTimeoutMs = 5 * 60 * 1000,
 ): Promise<() => void> {
   const lockPath = getGeminiLockPath(repoRoot);
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
@@ -143,7 +142,10 @@ export async function acquireGeminiLock(
       fs.writeFileSync(lockPath, lockToken, { flag: 'wx' });
       return () => {
         try {
-          if (fs.existsSync(lockPath) && fs.readFileSync(lockPath, 'utf8') === lockToken) {
+          if (
+            fs.existsSync(lockPath) &&
+            fs.readFileSync(lockPath, 'utf8') === lockToken
+          ) {
             fs.rmSync(lockPath, { force: true });
           }
         } catch {
@@ -175,7 +177,9 @@ function isLockStale(lockPath: string): boolean {
     const raw = JSON.parse(fs.readFileSync(lockPath, 'utf8')) as {
       createdAtMs?: number;
     };
-    return !raw.createdAtMs || Date.now() - raw.createdAtMs > GEMINI_LOCK_STALE_MS;
+    return (
+      !raw.createdAtMs || Date.now() - raw.createdAtMs > GEMINI_LOCK_STALE_MS
+    );
   } catch {
     return true;
   }

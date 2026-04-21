@@ -9,21 +9,17 @@ import { createMessage, GoMessageDescriptor } from '@gx/go/domain';
 const MAX_DISPLAY_NAME_LENGTH = 24;
 const MAX_PARTICIPANT_TOKEN_LENGTH = 128;
 
-function flattenValidationErrors(
-  errors: ValidationError[]
-): ValidationError[] {
-  return errors.flatMap(error =>
-    error.children?.length
-      ? flattenValidationErrors(error.children)
-      : [error]
+function flattenValidationErrors(errors: ValidationError[]): ValidationError[] {
+  return errors.flatMap((error) =>
+    error.children?.length ? flattenValidationErrors(error.children) : [error],
   );
 }
 
 function validationMessages(errors: ValidationError[]): GoMessageDescriptor[] {
-  return flattenValidationErrors(errors).flatMap(error => {
+  return flattenValidationErrors(errors).flatMap((error) => {
     const keys = Object.keys(error.constraints ?? {});
 
-    return keys.map(key => {
+    return keys.map((key) => {
       switch (`${error.property}:${key}`) {
         case 'displayName:minLength':
           return createMessage('room.error.display_name_required');
@@ -66,14 +62,14 @@ export function configureApp(app: INestApplication): void {
   // #region Validation
   app.useGlobalPipes(
     new ValidationPipe({
-      exceptionFactory: errors =>
+      exceptionFactory: (errors) =>
         new BadRequestException({
           message: validationMessages(errors),
         }),
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-    })
+    }),
   );
   // #endregion
 

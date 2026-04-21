@@ -78,7 +78,7 @@ export class GoI18nService {
 
   t(
     key: GoTranslationKey | string,
-    params?: GoMessageDescriptor['params']
+    params?: GoMessageDescriptor['params'],
   ): string {
     const template =
       GO_TRANSLATIONS[this.localeSignal()][key as GoTranslationKey] ?? key;
@@ -94,9 +94,7 @@ export class GoI18nService {
     });
   }
 
-  translateMessage(
-    descriptor: GoMessageDescriptor | null | undefined
-  ): string {
+  translateMessage(descriptor: GoMessageDescriptor | null | undefined): string {
     if (!descriptor) {
       return '';
     }
@@ -132,7 +130,7 @@ export class GoI18nService {
       help: Array.from({ length: helpCount }, (_, index) =>
         this.t(`mode.${mode}.help.${index}`, {
           komi: DEFAULT_GO_KOMI,
-        })
+        }),
       ),
       setupHint: this.t(`mode.${mode}.setup_hint`),
     };

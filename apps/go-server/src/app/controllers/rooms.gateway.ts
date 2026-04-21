@@ -9,7 +9,6 @@ import {
 } from '@nestjs/websockets';
 import {
   type ChatSendPayload,
-  type CommandErrorEvent,
   type GameCommandPayload,
   type GameRematchResponsePayload,
   type GameStartPayload,
@@ -21,14 +20,14 @@ import {
   type SeatReleasePayload,
   type SystemNotice,
 } from '@gx/go/contracts';
-import { createMessage, isMessageDescriptor } from '@gx/go/domain';
-import { HttpException, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RoomsChatService } from '../features/rooms-chat/rooms-chat.service';
 import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
 import { RoomsMatchService } from '../features/rooms-match/rooms-match.service';
 import { RoomsModerationService } from '../features/rooms-moderation/rooms-moderation.service';
 import { RoomsRealtimeBroadcasterService } from '../core/rooms-realtime/rooms-realtime-broadcaster.service';
+import { createCommandErrorEvent } from './rooms-gateway.errors';
 
 /**
  * Bridges hosted room websocket events to the room facade and broadcast helpers.
@@ -53,7 +52,7 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
     @Inject(RoomsModerationService)
     private readonly roomsModerationService: RoomsModerationService,
     @Inject(RoomsRealtimeBroadcasterService)
-    private readonly realtime: RoomsRealtimeBroadcasterService
+    private readonly realtime: RoomsRealtimeBroadcasterService,
   ) {}
 
   afterInit(server: Server): void {
@@ -72,11 +71,11 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('room.join')
   handleRoomJoin(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: RoomJoinPayload
+    @MessageBody() payload: RoomJoinPayload,
   ): void {
     try {
       const previousSnapshot = this.roomsLifecycleService.disconnectSocket(
-        client.id
+        client.id,
       );
 
       if (previousSnapshot) {
@@ -92,7 +91,7 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
       const snapshot = this.roomsLifecycleService.connectParticipantSocket(
         payload.roomId,
         payload.participantToken,
-        client.id
+        client.id,
       );
 
       void client.join(this.roomChannel(snapshot.roomId));
@@ -108,7 +107,7 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('seat.claim')
   handleSeatClaim(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: SeatClaimPayload
+    @MessageBody() payload: SeatClaimPayload,
   ): void {
     this.handleMutation(
       client,
@@ -116,26 +115,29 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
         this.roomsMatchService.claimSeat(
           payload.roomId,
           payload.participantToken,
-          payload.color
+          payload.color,
         ),
-      true
+      true,
     );
   }
 
   @SubscribeMessage('seat.release')
   handleSeatRelease(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: SeatReleasePayload
+    @MessageBody() payload: SeatReleasePayload,
   ): void {
     this.handleMutation(client, () =>
-      this.roomsMatchService.releaseSeat(payload.roomId, payload.participantToken)
+      this.roomsMatchService.releaseSeat(
+        payload.roomId,
+        payload.participantToken,
+      ),
     );
   }
 
   @SubscribeMessage('game.start')
   handleGameStart(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: GameStartPayload
+    @MessageBody() payload: GameStartPayload,
   ): void {
     this.handleMutation(
       client,
@@ -143,16 +145,16 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
         this.roomsMatchService.startMatch(
           payload.roomId,
           payload.participantToken,
-          payload.settings
+          payload.settings,
         ),
-      true
+      true,
     );
   }
 
   @SubscribeMessage('game.command')
   handleGameCommand(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: GameCommandPayload
+    @MessageBody() payload: GameCommandPayload,
   ): void {
     this.handleMutation(
       client,
@@ -160,30 +162,30 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
         this.roomsMatchService.applyGameCommand(
           payload.roomId,
           payload.participantToken,
-          payload.command
+          payload.command,
         ),
-      true
+      true,
     );
   }
 
   @SubscribeMessage('room.settings.update')
   handleRoomSettingsUpdate(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: RoomSettingsUpdatePayload
+    @MessageBody() payload: RoomSettingsUpdatePayload,
   ): void {
     this.handleMutation(client, () =>
       this.roomsMatchService.updateNextMatchSettings(
         payload.roomId,
         payload.participantToken,
-        payload.settings
-      )
+        payload.settings,
+      ),
     );
   }
 
   @SubscribeMessage('game.rematch.respond')
   handleGameRematchResponse(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: GameRematchResponsePayload
+    @MessageBody() payload: GameRematchResponsePayload,
   ): void {
     this.handleMutation(
       client,
@@ -191,9 +193,9 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
         this.roomsMatchService.respondToRematch(
           payload.roomId,
           payload.participantToken,
-          payload.accepted
+          payload.accepted,
         ),
-      true
+      true,
     );
   }
   // #endregion
@@ -202,20 +204,19 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('chat.send')
   handleChatSend(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: ChatSendPayload
+    @MessageBody() payload: ChatSendPayload,
   ): void {
     try {
       const result = this.roomsChatService.sendChatMessage(
         payload.roomId,
         payload.participantToken,
-        payload.message
+        payload.message,
       );
 
-      this.server.to(this.roomChannel(payload.roomId)).emit('chat.message', {
-        roomId: payload.roomId,
-        message: result.message,
+      this.realtime.broadcastChatMessage(payload.roomId, result.message);
+      this.realtime.broadcastMutationResult(result, {
+        publishPresence: false,
       });
-      this.realtime.broadcastRoomSnapshot(result.snapshot);
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -224,51 +225,46 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('host.mute')
   handleMute(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: HostModerationPayload
+    @MessageBody() payload: HostModerationPayload,
   ): void {
     this.handleMutation(client, () =>
       this.roomsModerationService.muteParticipant(
         payload.roomId,
         payload.participantToken,
-        payload.targetParticipantId
-      )
+        payload.targetParticipantId,
+      ),
     );
   }
 
   @SubscribeMessage('host.unmute')
   handleUnmute(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: HostModerationPayload
+    @MessageBody() payload: HostModerationPayload,
   ): void {
     this.handleMutation(client, () =>
       this.roomsModerationService.unmuteParticipant(
         payload.roomId,
         payload.participantToken,
-        payload.targetParticipantId
-      )
+        payload.targetParticipantId,
+      ),
     );
   }
 
   @SubscribeMessage('host.kick')
   handleKick(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: HostModerationPayload
+    @MessageBody() payload: HostModerationPayload,
   ): void {
     try {
       const result = this.roomsModerationService.kickParticipant(
         payload.roomId,
         payload.participantToken,
-        payload.targetParticipantId
+        payload.targetParticipantId,
       );
 
-      this.realtime.broadcastRoomSnapshot(result.snapshot);
-      this.realtime.broadcastPresence(result.snapshot);
-
-      if (result.notice) {
-        this.realtime.broadcastNotice(result.snapshot.roomId, result.notice);
-      }
-
-      this.realtime.disconnectSockets(result.kickedSocketIds);
+      this.realtime.broadcastMutationResult(result, {
+        disconnectSocketIds: result.kickedSocketIds,
+      });
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -282,21 +278,14 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
       snapshot: RoomSnapshot;
       notice?: SystemNotice;
     },
-    publishGameState = false
+    publishGameState = false,
   ): void {
     try {
       const result = operation();
 
-      this.realtime.broadcastRoomSnapshot(result.snapshot);
-      this.realtime.broadcastPresence(result.snapshot);
-
-      if (publishGameState) {
-        this.realtime.broadcastGameState(result.snapshot);
-      }
-
-      if (result.notice) {
-        this.realtime.broadcastNotice(result.snapshot.roomId, result.notice);
-      }
+      this.realtime.broadcastMutationResult(result, {
+        publishGameState,
+      });
     } catch (error) {
       this.emitCommandError(client, error);
     }
@@ -308,31 +297,7 @@ export class RoomsGateway implements OnGatewayDisconnect, OnGatewayInit {
    * Converts Nest exceptions into the localized socket error payload expected by clients.
    */
   private emitCommandError(client: Socket, error: unknown): void {
-    const payload: CommandErrorEvent = {
-      code: 'internal_error',
-      message: createMessage('room.error.unexpected_server_error'),
-    };
-
-    if (error instanceof HttpException) {
-      const response = error.getResponse();
-      const message =
-        typeof response === 'string'
-          ? null
-          : Array.isArray((response as { message?: unknown }).message)
-            ? (response as { message: unknown[] }).message.find(isMessageDescriptor) ??
-              null
-            : isMessageDescriptor((response as { message?: unknown }).message)
-              ? (response as { message: ReturnType<typeof createMessage> }).message
-              : null;
-
-      payload.code = String(error.getStatus());
-
-      if (message) {
-        payload.message = message;
-      }
-    }
-
-    client.emit('command.error', payload);
+    client.emit('command.error', createCommandErrorEvent(error));
   }
 
   private roomChannel(roomId: string): string {

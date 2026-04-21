@@ -50,15 +50,12 @@ const ZH_GAME = {
 } as const;
 
 const ZH_ROOM_SHARED = {
-  'room.error.too_many_create_attempts':
-    '建立房間的次數過多，請稍後再試。',
-  'room.error.too_many_join_attempts':
-    '加入房間的次數過多，請稍後再試。',
+  'room.error.too_many_create_attempts': '建立房間的次數過多，請稍後再試。',
+  'room.error.too_many_join_attempts': '加入房間的次數過多，請稍後再試。',
   'room.error.seat_already_claimed': '該座位已被認領。',
   'room.error.no_player_seat': '你目前不在玩家座位上。',
   'room.error.match_must_finish': '必須先完成目前對局，才能開始新的一局。',
-  'room.error.both_seats_required':
-    '黑方與白方座位都必須有人後才能開始對局。',
+  'room.error.both_seats_required': '黑方與白方座位都必須有人後才能開始對局。',
   'room.error.spectators_cannot_play': '觀戰者不能送出對局指令。',
   'room.error.dead_group_toggle_unavailable':
     '只有在圍棋算地階段才能切換死子標記。',
@@ -83,16 +80,12 @@ const ZH_ROOM_SHARED = {
   'room.error.host_only_action': '只有房主可以執行此操作。',
   'room.error.seat_change_while_live': '對局進行中時不能更換座位。',
   'room.error.unsupported_mode': '不支援的對局模式。',
-  'room.error.invalid_go_board_size':
-    '圍棋只能使用 9x9、13x13 或 19x19 棋盤。',
-  'room.error.invalid_gomoku_board_size':
-    '五子棋只能使用 15x15 棋盤。',
+  'room.error.invalid_go_board_size': '圍棋只能使用 9x9、13x13 或 19x19 棋盤。',
+  'room.error.invalid_gomoku_board_size': '五子棋只能使用 15x15 棋盤。',
   'room.error.display_name_required': '顯示名稱為必填。',
-  'room.error.display_name_too_long':
-    '顯示名稱長度不可超過 {{max}} 個字元。',
+  'room.error.display_name_too_long': '顯示名稱長度不可超過 {{max}} 個字元。',
   'room.error.chat_required': '聊天訊息不能為空。',
-  'room.error.chat_too_long':
-    '聊天訊息長度不可超過 {{max}} 個字元。',
+  'room.error.chat_too_long': '聊天訊息長度不可超過 {{max}} 個字元。',
   'room.error.unexpected_server_error': '伺服器發生未預期的錯誤。',
   'room.notice.seat_moved': '{{displayName}}移動到了{{seat}}。',
   'room.notice.seat_claimed': '{{displayName}}已認領{{seat}}。',
@@ -114,7 +107,8 @@ const ZH_ROOM_SHARED = {
   'room.validation.komi_invalid': '貼目必須在允許範圍內。',
   'room.validation.invalid_payload': '請求內容格式無效。',
   'room.client.join_required': '請先加入房間，再使用房內操作。',
-  'room.client.realtime_unavailable': '請先等待房間即時連線完成，再使用房內操作。',
+  'room.client.realtime_unavailable':
+    '請先等待房間即時連線完成，再使用房內操作。',
   'room.client.unexpected_network_error': '網路連線發生未預期的錯誤。',
   'lobby.error.load_failed': '無法載入線上房間。',
   'lobby.notice.room_closed_self': '房間已關閉。',
@@ -255,13 +249,15 @@ const ZH_HOSTED_UI = {
   'room.hero.manual_url_label': '可手動複製的房間連結',
   'room.page.back_to_lobby': '返回大廳',
   'room.leave.confirm.header': '確定要離開房間嗎？',
-  'room.leave.confirm.message': '離開後會一併關閉這個房間，所有仍在房內的人都會被帶回大廳。',
+  'room.leave.confirm.message':
+    '離開後會一併關閉這個房間，所有仍在房內的人都會被帶回大廳。',
   'room.leave.confirm.accept': '離開並關閉房間',
   'room.leave.confirm.reject': '留在房間',
   'room.page.loading': '正在載入線上房間狀態...',
   'room.page.missing.label': '房間無法使用',
   'room.page.missing.title': '找不到這個房間。',
-  'room.page.missing.description': '房間可能因長時間無人而過期，或是連結不正確。',
+  'room.page.missing.description':
+    '房間可能因長時間無人而過期，或是連結不正確。',
   'room.page.missing.action': '返回大廳',
   'room.page.live_board': '即時棋盤',
   'room.page.turn': '輪到',
@@ -275,8 +271,10 @@ const ZH_HOSTED_UI = {
     '玩家可以認領黑白座位，觀戰者也能提早加入並在房內聊天。',
   'room.join.title.spectator': '以觀戰者加入',
   'room.join.title.pre_match': '以玩家或觀戰者加入',
-  'room.join.description.spectator': '對局進行中時只能觀戰與聊天，需等本局結束後才能入座。',
-  'room.join.description.pre_match': '先輸入顯示名稱加入房間，再認領座位或開始聊天。',
+  'room.join.description.spectator':
+    '對局進行中時只能觀戰與聊天，需等本局結束後才能入座。',
+  'room.join.description.pre_match':
+    '先輸入顯示名稱加入房間，再認領座位或開始聊天。',
   'room.connection.connected': '已連線',
   'room.connection.connecting': '連線中',
   'room.connection.reconnecting': '重新連線中',
@@ -325,9 +323,11 @@ const ZH_HOSTED_UI = {
   'lobby.loading': '正在載入線上房間...',
   'lobby.empty.label': '目前沒有房間',
   'lobby.empty.title': '線上大廳現在是空的。',
-  'lobby.empty.description': '在下方建立下一個房間後，它就會成為玩家加入聊天的第一站。',
+  'lobby.empty.description':
+    '在下方建立下一個房間後，它就會成為玩家加入聊天的第一站。',
   'lobby.section.live.title': '進行中房間',
-  'lobby.section.live.caption': '對局進行中的房間仍會開放給想觀戰與聊天的使用者。',
+  'lobby.section.live.caption':
+    '對局進行中的房間仍會開放給想觀戰與聊天的使用者。',
   'lobby.section.ready.title': '可開局房間',
   'lobby.section.waiting.title': '等待中房間',
   'lobby.section.empty': '目前還沒有{{section}}。',
@@ -392,7 +392,8 @@ const ZH_HOSTED_UI = {
     '上一場再來一局被婉拒了。請先釋放或調整座位，再重新啟用自動開始。',
   'room.next_match.eyebrow': '下一場',
   'room.next_match.title': '下一局設定',
-  'room.next_match.description': '房間自動開始新對局時，會使用這組已儲存的設定。',
+  'room.next_match.description':
+    '房間自動開始新對局時，會使用這組已儲存的設定。',
   'room.next_match.save': '儲存下一局',
   'room.next_match.locked.rematch':
     '再來一局提示還在等待玩家回應時，設定會暫時鎖定。',
@@ -424,4 +425,3 @@ export const ZH_TW_TRANSLATIONS = {
   ...ZH_LOCAL_UI,
   ...ZH_HOSTED_UI,
 } as const;
-

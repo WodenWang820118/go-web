@@ -42,7 +42,10 @@ describe('OnlineRoomSidebarComponent', () => {
     fixture.componentRef.setInput('realtimeConnected', true);
     fixture.componentRef.setInput('canChangeSeats', true);
     fixture.componentRef.setInput('joinCardTitle', 'Join the room');
-    fixture.componentRef.setInput('joinCardDescription', 'Pick a display name.');
+    fixture.componentRef.setInput(
+      'joinCardDescription',
+      'Pick a display name.',
+    );
     fixture.componentRef.setInput('seats', seats);
     fixture.componentRef.setInput('participants', participants);
     fixture.componentRef.setInput('match', liveMatch);
@@ -84,11 +87,21 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(
       root.querySelector('[data-testid="room-sidebar-message-warning"]'),
     ).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-players"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-rematch"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="room-sidebar-chat"]')).not.toBeNull();
-    expect(root.querySelectorAll('[data-testid="room-sidebar-chat-metric"]')).toHaveLength(2);
-    expect(root.querySelector('[data-testid="room-sidebar-actions"]')).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-players"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-rematch"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-chat"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelectorAll('[data-testid="room-sidebar-chat-metric"]'),
+    ).toHaveLength(2);
+    expect(
+      root.querySelector('[data-testid="room-sidebar-actions"]'),
+    ).not.toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
   });
 
@@ -99,12 +112,17 @@ describe('OnlineRoomSidebarComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('[data-testid="room-sidebar-identity"]')).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-sidebar-identity"]'),
+    ).not.toBeNull();
     expect(root.querySelector('[data-testid="join-room-form"]')).not.toBeNull();
   });
 
   it('bubbles seat, rematch, and match action events through the sidebar', () => {
-    const claimEmit = vi.spyOn(fixture.componentInstance.claimSeatRequested, 'emit');
+    const claimEmit = vi.spyOn(
+      fixture.componentInstance.claimSeatRequested,
+      'emit',
+    );
     const releaseEmit = vi.spyOn(
       fixture.componentInstance.releaseSeatRequested,
       'emit',
@@ -128,10 +146,22 @@ describe('OnlineRoomSidebarComponent', () => {
     );
     const root = fixture.nativeElement as HTMLElement;
 
-    (root.querySelector('[data-testid="claim-white"]') as HTMLButtonElement).click();
-    (root.querySelector('[data-testid="release-black"]') as HTMLButtonElement).click();
-    (root.querySelectorAll('[data-testid="room-sidebar-rematch"] button')[0] as HTMLButtonElement).click();
-    (root.querySelectorAll('[data-testid="room-sidebar-rematch"] button')[1] as HTMLButtonElement).click();
+    (
+      root.querySelector('[data-testid="claim-white"]') as HTMLButtonElement
+    ).click();
+    (
+      root.querySelector('[data-testid="release-black"]') as HTMLButtonElement
+    ).click();
+    (
+      root.querySelectorAll(
+        '[data-testid="room-sidebar-rematch"] button',
+      )[0] as HTMLButtonElement
+    ).click();
+    (
+      root.querySelectorAll(
+        '[data-testid="room-sidebar-rematch"] button',
+      )[1] as HTMLButtonElement
+    ).click();
 
     const actionButtons = Array.from(
       root.querySelectorAll('[data-testid="room-sidebar-actions"] button'),

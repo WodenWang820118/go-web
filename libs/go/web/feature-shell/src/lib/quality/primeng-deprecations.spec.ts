@@ -26,7 +26,10 @@ describe('PrimeNG deprecated inputs', () => {
         dirname(fileURLToPath(import.meta.url)),
       );
       const deprecatedInputs = readDeprecatedPrimeNgInputs(workspaceRoot);
-      const findings = findDeprecatedPrimeNgUsage(workspaceRoot, deprecatedInputs);
+      const findings = findDeprecatedPrimeNgUsage(
+        workspaceRoot,
+        deprecatedInputs,
+      );
 
       expect(findings, formatFindings(findings)).toEqual([]);
     },
@@ -57,7 +60,12 @@ function findWorkspaceRoot(startDirectory: string): string {
 function readDeprecatedPrimeNgInputs(
   workspaceRoot: string,
 ): DeprecatedPrimeNgInput[] {
-  const primengTypesDirectory = join(workspaceRoot, 'node_modules', 'primeng', 'types');
+  const primengTypesDirectory = join(
+    workspaceRoot,
+    'node_modules',
+    'primeng',
+    'types',
+  );
   const inputs = new Map<string, DeprecatedPrimeNgInput>();
 
   for (const entry of readdirSync(primengTypesDirectory)) {

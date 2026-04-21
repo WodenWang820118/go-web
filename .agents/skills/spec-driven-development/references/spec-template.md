@@ -15,17 +15,17 @@ A clear, high-level summary of the feature and the problem it solves. Answer the
 
 ### Tech Stack
 
--   **Language/Framework:** [e.g., TypeScript, Angular 17, Java 21, Spring Boot 3]
--   **API (if applicable):** [e.g., REST, GraphQL]
--   **Database (if applicable):** [e.g., PostgreSQL]
--   **Key Libraries/Dependencies:** [e.g., NgRx for state management, MapStruct for object mapping]
+- **Language/Framework:** [e.g., TypeScript, Angular 17, Java 21, Spring Boot 3]
+- **API (if applicable):** [e.g., REST, GraphQL]
+- **Database (if applicable):** [e.g., PostgreSQL]
+- **Key Libraries/Dependencies:** [e.g., NgRx for state management, MapStruct for object mapping]
 
 ### Commands
 
--   **Build:** `pnpm nx build my-app`
--   **Test:** `pnpm nx test my-app`
--   **Lint:** `pnpm nx lint my-app`
--   **Run:** `pnpm nx serve my-app`
+- **Build:** `pnpm nx build my-app`
+- **Test:** `pnpm nx test my-app`
+- **Lint:** `pnpm nx lint my-app`
+- **Run:** `pnpm nx serve my-app`
 
 ### Project Structure
 
@@ -63,17 +63,17 @@ export class NewFeatureComponent {
 
 ## 3. Testing Strategy
 
--   **Unit Tests:** [e.g., Jest will be used to cover all new services and helper functions.]
--   **Integration Tests:** [e.g., We will add one test to verify the interaction between the service and the component.]
--   **End-to-End (E2E) Tests:** [e.g., An E2E test will be added to simulate the full user flow in Playwright.]
+- **Unit Tests:** [e.g., Jest will be used to cover all new services and helper functions.]
+- **Integration Tests:** [e.g., We will add one test to verify the interaction between the service and the component.]
+- **End-to-End (E2E) Tests:** [e.g., An E2E test will be added to simulate the full user flow in Playwright.]
 
 ## 4. Boundaries & Non-Goals
 
 What is explicitly **out of scope** for this work.
 
--   This feature will not include user authentication.
--   This change will not involve any database schema migrations.
--   Performance optimization will be handled in a separate task.
+- This feature will not include user authentication.
+- This change will not involve any database schema migrations.
+- Performance optimization will be handled in a separate task.
 
 ## 5. Success Criteria
 

@@ -10,8 +10,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1",
+          'CMD-SHELL',
+          'wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1',
         ]
       interval: 30s
       timeout: 5s
@@ -31,10 +31,7 @@ services:
         condition: service_healthy
     healthcheck:
       test:
-        [
-          "CMD-SHELL",
-          "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1",
-        ]
+        ['CMD-SHELL', 'wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1']
       interval: 30s
       timeout: 5s
       retries: 5
@@ -42,7 +39,7 @@ services:
     networks:
       - gx-go
     ports:
-      - "8080:80"
+      - '8080:80'
     restart: unless-stopped
 
 networks:

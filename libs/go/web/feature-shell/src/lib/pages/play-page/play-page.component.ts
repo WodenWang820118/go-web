@@ -16,7 +16,11 @@ import {
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
-import { GameBoardComponent, MatchSidebarComponent, StoneBadgeComponent } from '@gx/go/ui';
+import {
+  GameBoardComponent,
+  MatchSidebarComponent,
+  StoneBadgeComponent,
+} from '@gx/go/ui';
 import { map } from 'rxjs';
 
 interface ConfirmationCopy {
@@ -55,7 +59,9 @@ export class PlayPageComponent {
   protected readonly store = inject(GameSessionStore);
   protected readonly helpVisible = signal(false);
   protected readonly resultVisible = signal(false);
-  protected readonly confirmationState = signal<ConfirmationDialogState | null>(null);
+  protected readonly confirmationState = signal<ConfirmationDialogState | null>(
+    null,
+  );
   protected readonly banner = signal<PlayBanner | null>(null);
 
   private readonly route = inject(ActivatedRoute);
@@ -63,12 +69,12 @@ export class PlayPageComponent {
 
   protected readonly mode = toSignal(
     this.route.paramMap.pipe(
-      map(params => params.get('mode')),
-      map(mode => (isGameMode(mode) ? mode : null))
+      map((params) => params.get('mode')),
+      map((mode) => (isGameMode(mode) ? mode : null)),
     ),
     {
       initialValue: null,
-    }
+    },
   );
   protected readonly meta = computed(() => {
     const mode = this.mode();
@@ -80,10 +86,9 @@ export class PlayPageComponent {
     const command = this.state()?.lastMove?.command;
     return command?.type === 'place' ? command.point : null;
   });
-  protected readonly copy = computed<Record<
-    'resign' | 'restart' | 'newSetup',
-    ConfirmationCopy
-  >>(() => ({
+  protected readonly copy = computed<
+    Record<'resign' | 'restart' | 'newSetup', ConfirmationCopy>
+  >(() => ({
     resign: {
       header: this.i18n.t('play.confirm.resign.header'),
       message: this.i18n.t('play.confirm.resign.message'),
@@ -123,7 +128,7 @@ export class PlayPageComponent {
   protected finalizeScoring(): void {
     this.reportAction(
       this.store.finalizeScoring(),
-      'play.toast.scoring_unavailable'
+      'play.toast.scoring_unavailable',
     );
   }
 
@@ -131,7 +136,7 @@ export class PlayPageComponent {
     this.openConfirmation('resign', () => {
       this.reportAction(
         this.store.resign(),
-        'play.toast.resignation_unavailable'
+        'play.toast.resignation_unavailable',
       );
     });
   }
@@ -143,7 +148,7 @@ export class PlayPageComponent {
         this.setBanner(
           'success',
           this.i18n.t('play.toast.match_restarted.summary'),
-          this.i18n.t('play.toast.match_restarted.detail')
+          this.i18n.t('play.toast.match_restarted.detail'),
         );
       }
     });
@@ -153,9 +158,9 @@ export class PlayPageComponent {
     const mode = this.mode();
 
     this.openConfirmation('newSetup', async () => {
-        this.store.clearMatch();
-        this.resultVisible.set(false);
-        await this.router.navigate(['/setup', mode ?? 'go']);
+      this.store.clearMatch();
+      this.resultVisible.set(false);
+      await this.router.navigate(['/setup', mode ?? 'go']);
     });
   }
 
@@ -187,14 +192,14 @@ export class PlayPageComponent {
   }
 
   protected translateMessage(
-    message: GoMessageDescriptor | null | undefined
+    message: GoMessageDescriptor | null | undefined,
   ): string {
     return this.i18n.translateMessage(message);
   }
 
   private reportAction(
     error: GoMessageDescriptor | null,
-    summaryKey: string
+    summaryKey: string,
   ): void {
     if (!error) {
       return;
@@ -203,13 +208,13 @@ export class PlayPageComponent {
     this.setBanner(
       'warn',
       this.i18n.t(summaryKey),
-      this.i18n.translateMessage(error)
+      this.i18n.translateMessage(error),
     );
   }
 
   private openConfirmation(
     key: 'resign' | 'restart' | 'newSetup',
-    accept: () => void | Promise<void>
+    accept: () => void | Promise<void>,
   ): void {
     this.confirmationState.set({
       ...this.copy()[key],
@@ -220,7 +225,7 @@ export class PlayPageComponent {
   private setBanner(
     tone: PlayBanner['tone'],
     summary: string,
-    detail: string
+    detail: string,
   ): void {
     this.banner.set({
       tone,

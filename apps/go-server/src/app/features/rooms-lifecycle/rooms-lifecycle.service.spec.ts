@@ -40,7 +40,7 @@ describe('RoomsLifecycleService', () => {
     it('allows up to the create-attempt limit within the window', () => {
       for (let i = 0; i < CREATE_ATTEMPTS_PER_WINDOW; i++) {
         expect(() =>
-          lifecycle.createRoom(`Room ${i + 1}`, requesterKey)
+          lifecycle.createRoom(`Room ${i + 1}`, requesterKey),
         ).not.toThrow();
       }
     });
@@ -53,7 +53,7 @@ describe('RoomsLifecycleService', () => {
       expectCreateRoomThrottled(
         lifecycle,
         `Room ${CREATE_ATTEMPTS_PER_WINDOW + 1}`,
-        requesterKey
+        requesterKey,
       );
     });
 
@@ -68,11 +68,11 @@ describe('RoomsLifecycleService', () => {
       expectCreateRoomThrottled(
         lifecycle,
         `Room ${CREATE_ATTEMPTS_PER_WINDOW + 1}`,
-        requesterA
+        requesterA,
       );
 
       expect(() =>
-        lifecycle.createRoom('Requester B room', requesterB)
+        lifecycle.createRoom('Requester B room', requesterB),
       ).not.toThrow();
     });
 
@@ -84,7 +84,7 @@ describe('RoomsLifecycleService', () => {
       expectCreateRoomThrottled(
         lifecycle,
         `Room ${CREATE_ATTEMPTS_PER_WINDOW + 1}`,
-        requesterKey
+        requesterKey,
       );
 
       vi.advanceTimersByTime(THROTTLE_WINDOW_MS - 1);
@@ -92,7 +92,7 @@ describe('RoomsLifecycleService', () => {
       expectCreateRoomThrottled(
         lifecycle,
         `Room ${CREATE_ATTEMPTS_PER_WINDOW + 2}`,
-        requesterKey
+        requesterKey,
       );
 
       vi.advanceTimersByTime(2);
@@ -100,8 +100,8 @@ describe('RoomsLifecycleService', () => {
       expect(() =>
         lifecycle.createRoom(
           `Room ${CREATE_ATTEMPTS_PER_WINDOW + 3}`,
-          requesterKey
-        )
+          requesterKey,
+        ),
       ).not.toThrow();
     });
   });
@@ -139,7 +139,11 @@ describe('RoomsLifecycleService', () => {
     it('retains rooms that have online participants even if past the TTL', () => {
       vi.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
       const host = lifecycle.createRoom('Active Room', 'create:test');
-      lifecycle.connectParticipantSocket(host.roomId, host.participantToken, 'socket-1');
+      lifecycle.connectParticipantSocket(
+        host.roomId,
+        host.participantToken,
+        'socket-1',
+      );
 
       vi.advanceTimersByTime(ROOM_IDLE_TTL_MS + 1000);
       store.pruneExpiredRooms();
@@ -150,7 +154,11 @@ describe('RoomsLifecycleService', () => {
     it('prunes rooms that became empty and reached the TTL', () => {
       vi.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
       const host = lifecycle.createRoom('Was Active', 'create:test');
-      lifecycle.connectParticipantSocket(host.roomId, host.participantToken, 'socket-1');
+      lifecycle.connectParticipantSocket(
+        host.roomId,
+        host.participantToken,
+        'socket-1',
+      );
 
       // Room becomes empty
       lifecycle.disconnectSocket('socket-1');
@@ -164,32 +172,42 @@ describe('RoomsLifecycleService', () => {
 
   it('reuses an existing participant token when rejoining a room', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     const resumed = lifecycle.joinRoom(
       host.roomId,
       'Guest Renamed',
       guest.participantToken,
-      'join:test'
+      'join:test',
     );
 
     expect(resumed.resumed).toBe(true);
     expect(resumed.participantId).toBe(guest.participantId);
     expect(
       resumed.snapshot.participants.find(
-        participant => participant.participantId === guest.participantId
-      )?.displayName
+        (participant) => participant.participantId === guest.participantId,
+      )?.displayName,
     ).toBe('Guest Renamed');
   });
 
   it('suffixes duplicate display names for different participants', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Host', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Host',
+      undefined,
+      'join:test',
+    );
 
     expect(
       guest.snapshot.participants.find(
-        participant => participant.participantId === guest.participantId
-      )?.displayName
+        (participant) => participant.participantId === guest.participantId,
+      )?.displayName,
     ).toBe('Host (2)');
   });
 
@@ -199,7 +217,7 @@ describe('RoomsLifecycleService', () => {
     const connected = lifecycle.connectParticipantSocket(
       host.roomId,
       host.participantToken,
-      'socket-1'
+      'socket-1',
     );
 
     expect(connected.participants[0]?.online).toBe(true);
@@ -211,10 +229,23 @@ describe('RoomsLifecycleService', () => {
 
   it('lets the host close the room and removes it immediately', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
-    lifecycle.connectParticipantSocket(host.roomId, host.participantToken, 'socket-host');
-    lifecycle.connectParticipantSocket(host.roomId, guest.participantToken, 'socket-guest');
+    lifecycle.connectParticipantSocket(
+      host.roomId,
+      host.participantToken,
+      'socket-host',
+    );
+    lifecycle.connectParticipantSocket(
+      host.roomId,
+      guest.participantToken,
+      'socket-guest',
+    );
 
     const closed = lifecycle.closeRoom(host.roomId, host.participantToken);
 
@@ -234,10 +265,15 @@ describe('RoomsLifecycleService', () => {
 
   it('rejects close-room requests from non-host participants', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     expect(() =>
-      lifecycle.closeRoom(host.roomId, guest.participantToken)
+      lifecycle.closeRoom(host.roomId, guest.participantToken),
     ).toThrow(ForbiddenException);
   });
 });
@@ -245,7 +281,7 @@ describe('RoomsLifecycleService', () => {
 function expectCreateRoomThrottled(
   lifecycle: RoomsLifecycleService,
   displayName: string,
-  requesterKey: string
+  requesterKey: string,
 ): void {
   try {
     lifecycle.createRoom(displayName, requesterKey);
@@ -253,7 +289,7 @@ function expectCreateRoomThrottled(
   } catch (error) {
     expect(error).toBeInstanceOf(HttpException);
     expect((error as HttpException).getStatus()).toBe(
-      HttpStatus.TOO_MANY_REQUESTS
+      HttpStatus.TOO_MANY_REQUESTS,
     );
   }
 }

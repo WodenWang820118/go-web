@@ -54,10 +54,13 @@ export class GameBoardComponent {
 
   readonly points = computed(() => getAllPoints(this.boardSize()));
   readonly boardPixels = computed(
-    () => this.padding * 2 + this.cellSize * (this.boardSize() - 1)
+    () => this.padding * 2 + this.cellSize * (this.boardSize() - 1),
   );
   readonly linePositions = computed(() =>
-    Array.from({ length: this.boardSize() }, (_, index) => this.padding + index * this.cellSize)
+    Array.from(
+      { length: this.boardSize() },
+      (_, index) => this.padding + index * this.cellSize,
+    ),
   );
   readonly ghostPoint = computed(() => {
     if (this.phase() !== 'playing') {
@@ -73,16 +76,15 @@ export class GameBoardComponent {
     return hoverPoint;
   });
   readonly winningPointKeys = computed(
-    () => new Set(this.winningLine().map(point => pointKey(point)))
+    () => new Set(this.winningLine().map((point) => pointKey(point))),
   );
   readonly deadStoneKeys = computed(() => new Set(this.deadStones()));
   readonly starPoints = computed(() => this.resolveStarPoints());
-  readonly ariaLabel = computed(
-    () =>
-      this.i18n.t('ui.game_board.aria_label', {
-        mode: this.i18n.t(`common.mode.${this.mode()}`),
-        size: this.boardSize(),
-      })
+  readonly ariaLabel = computed(() =>
+    this.i18n.t('ui.game_board.aria_label', {
+      mode: this.i18n.t(`common.mode.${this.mode()}`),
+      size: this.boardSize(),
+    }),
   );
   protected readonly pointEquals = pointEquals;
   protected readonly pointKey = pointKey;
@@ -93,7 +95,9 @@ export class GameBoardComponent {
       const centerPoint = { x: Math.floor(size / 2), y: Math.floor(size / 2) };
       const point = this.keyboardPoint();
 
-      this.keyboardPoint.set(isPointInBounds(point, size) ? point : centerPoint);
+      this.keyboardPoint.set(
+        isPointInBounds(point, size) ? point : centerPoint,
+      );
     });
   }
 
@@ -177,13 +181,19 @@ export class GameBoardComponent {
         nextPoint = { ...current, y: Math.max(0, current.y - 1) };
         break;
       case 'ArrowDown':
-        nextPoint = { ...current, y: Math.min(this.boardSize() - 1, current.y + 1) };
+        nextPoint = {
+          ...current,
+          y: Math.min(this.boardSize() - 1, current.y + 1),
+        };
         break;
       case 'ArrowLeft':
         nextPoint = { ...current, x: Math.max(0, current.x - 1) };
         break;
       case 'ArrowRight':
-        nextPoint = { ...current, x: Math.min(this.boardSize() - 1, current.x + 1) };
+        nextPoint = {
+          ...current,
+          x: Math.min(this.boardSize() - 1, current.x + 1),
+        };
         break;
       case 'Enter':
       case ' ':
@@ -221,8 +231,14 @@ export class GameBoardComponent {
     const maxIndex = this.boardSize() - 1;
 
     return {
-      x: this.clampCoordinate(Math.round((svgX - this.padding) / this.cellSize), maxIndex),
-      y: this.clampCoordinate(Math.round((svgY - this.padding) / this.cellSize), maxIndex),
+      x: this.clampCoordinate(
+        Math.round((svgX - this.padding) / this.cellSize),
+        maxIndex,
+      ),
+      y: this.clampCoordinate(
+        Math.round((svgY - this.padding) / this.cellSize),
+        maxIndex,
+      ),
     };
   }
 
@@ -239,16 +255,16 @@ export class GameBoardComponent {
     const anchors =
       size === 19 ? [3, 9, 15] : size === 13 ? [3, 6, 9] : [2, 4, 6];
 
-    const points = anchors.flatMap(x => anchors.map(y => ({ x, y })));
+    const points = anchors.flatMap((x) => anchors.map((y) => ({ x, y })));
 
     if (size === 9) {
       return points.filter(
-        point =>
+        (point) =>
           (point.x === 2 && point.y === 2) ||
           (point.x === 2 && point.y === 6) ||
           (point.x === 4 && point.y === 4) ||
           (point.x === 6 && point.y === 2) ||
-          (point.x === 6 && point.y === 6)
+          (point.x === 6 && point.y === 6),
       );
     }
 

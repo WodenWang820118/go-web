@@ -160,7 +160,8 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
         decision_basis: report.decision_basis,
         report,
         review_context_mode: reviewContextSelection.mode,
-        small_diff_threshold_chars: reviewContextSelection.smallDiffThresholdChars,
+        small_diff_threshold_chars:
+          reviewContextSelection.smallDiffThresholdChars,
       };
       const artifacts = writePrefilterArtifacts({
         repoRoot,
@@ -216,7 +217,8 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
         local_review_error: errorText,
         report: null,
         review_context_mode: reviewContextSelection.mode,
-        small_diff_threshold_chars: reviewContextSelection.smallDiffThresholdChars,
+        small_diff_threshold_chars:
+          reviewContextSelection.smallDiffThresholdChars,
       };
       const artifacts = writePrefilterArtifacts({
         repoRoot,
@@ -522,7 +524,9 @@ async function runHybridGptWorkerProcess(input: {
     args: [
       '__hybrid-gpt-review',
       '--changed-files-base64',
-      Buffer.from(JSON.stringify(input.changedFiles), 'utf8').toString('base64'),
+      Buffer.from(JSON.stringify(input.changedFiles), 'utf8').toString(
+        'base64',
+      ),
       '--diff-base64',
       Buffer.from(input.diffText, 'utf8').toString('base64'),
     ],
@@ -827,7 +831,11 @@ function parseHybridGptWorkerArgs(argv: string[]): {
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
     if (current === '--changed-files-base64') {
-      parsed.changedFilesBase64 = readPossiblyEmptyStringFlag(argv, index, current);
+      parsed.changedFilesBase64 = readPossiblyEmptyStringFlag(
+        argv,
+        index,
+        current,
+      );
       sawChangedFilesBase64 = true;
       index += 1;
       continue;
@@ -974,7 +982,11 @@ async function runNodeWorker(input: {
         return;
       }
 
-      reject(new Error(stderr.trim() || stdout.trim() || `Worker exited with code ${code}.`));
+      reject(
+        new Error(
+          stderr.trim() || stdout.trim() || `Worker exited with code ${code}.`,
+        ),
+      );
     });
   });
 }
@@ -997,7 +1009,10 @@ async function mapLimit<TItem, TResult>(
       while (nextIndex < items.length) {
         const currentIndex = nextIndex;
         nextIndex += 1;
-        results[currentIndex] = await mapper(items[currentIndex]!, currentIndex);
+        results[currentIndex] = await mapper(
+          items[currentIndex]!,
+          currentIndex,
+        );
       }
     }),
   );

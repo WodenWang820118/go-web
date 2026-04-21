@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  extractCodexAgentMessage,
-  resolveCodexReviewerId,
-} from './codex.ts';
+import { extractCodexAgentMessage, resolveCodexReviewerId } from './codex.ts';
 
 test('resolveCodexReviewerId routes checkpoints and focus to the expected reviewer', () => {
   assert.equal(
@@ -12,7 +9,7 @@ test('resolveCodexReviewerId routes checkpoints and focus to the expected review
       checkpoint: 'plan',
       focus: 'general',
     }),
-    'architecture-reviewer'
+    'architecture-reviewer',
   );
 
   assert.equal(
@@ -20,7 +17,7 @@ test('resolveCodexReviewerId routes checkpoints and focus to the expected review
       checkpoint: 'implementation',
       focus: 'security',
     }),
-    'security-reviewer'
+    'security-reviewer',
   );
 
   assert.equal(
@@ -28,7 +25,7 @@ test('resolveCodexReviewerId routes checkpoints and focus to the expected review
       checkpoint: 'test',
       focus: 'tests',
     }),
-    'test-reviewer'
+    'test-reviewer',
   );
 
   assert.equal(
@@ -36,7 +33,7 @@ test('resolveCodexReviewerId routes checkpoints and focus to the expected review
       checkpoint: 'implementation',
       focus: 'ux accessibility',
     }),
-    'ux-reviewer'
+    'ux-reviewer',
   );
 });
 

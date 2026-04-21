@@ -18,7 +18,9 @@ describe('LocalGameSessionAdapter', () => {
       state: {
         mode: 'gomoku',
         boardSize: 15,
-        board: Array.from({ length: 15 }, () => Array.from({ length: 15 }, () => null)),
+        board: Array.from({ length: 15 }, () =>
+          Array.from({ length: 15 }, () => null),
+        ),
         phase: 'playing',
         nextPlayer: 'black',
         captures: { black: 0, white: 0 },

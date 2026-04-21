@@ -17,7 +17,10 @@ import {
 
 class MockSocket {
   readonly emitted: Array<{ event: string; payload?: unknown }> = [];
-  private readonly handlers = new Map<string, Array<(payload?: unknown) => void>>();
+  private readonly handlers = new Map<
+    string,
+    Array<(payload?: unknown) => void>
+  >();
   connected = false;
 
   on(event: string, handler: (payload?: unknown) => void): this {
@@ -172,7 +175,7 @@ describe('OnlineRoomService', () => {
   it('stores the created-room identity and connects realtime after room creation', () => {
     let createdRoomId = '';
 
-    service.createRoom('Host').subscribe(response => {
+    service.createRoom('Host').subscribe((response) => {
       createdRoomId = response.roomId;
     });
 
@@ -220,9 +223,11 @@ describe('OnlineRoomService', () => {
 
     expect(service.connectionState()).toBe('disconnected');
     expect(service.lastError()).toBe(
-      i18n.t('room.client.realtime_unavailable')
+      i18n.t('room.client.realtime_unavailable'),
     );
-    expect(socket.emitted.some(event => event.event === 'seat.claim')).toBe(false);
+    expect(socket.emitted.some((event) => event.event === 'seat.claim')).toBe(
+      false,
+    );
   });
 
   it('requires joining the room before sending realtime actions', () => {
@@ -360,9 +365,11 @@ describe('OnlineRoomService', () => {
       i18n.t('room.notice.seat_claimed', {
         displayName: 'Guest',
         seat: i18n.t('common.seat.black'),
-      })
+      }),
     );
-    expect(service.lastSystemNotice()?.message.key).toBe('room.notice.seat_claimed');
+    expect(service.lastSystemNotice()?.message.key).toBe(
+      'room.notice.seat_claimed',
+    );
     expect(service.lastError()).toBe(i18n.t('room.error.not_your_turn'));
   });
 
@@ -423,7 +430,9 @@ describe('OnlineRoomService', () => {
   });
 
   it('uses a keepalive fetch request when the host unloads the page', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchSpy);
 
     service.joinRoom('ROOM42', 'Host').subscribe();

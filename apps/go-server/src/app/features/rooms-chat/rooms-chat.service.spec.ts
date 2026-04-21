@@ -26,11 +26,15 @@ describe('RoomsChatService', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
 
     for (let index = 0; index < 5; index += 1) {
-      chat.sendChatMessage(host.roomId, host.participantToken, `Hello ${index}`);
+      chat.sendChatMessage(
+        host.roomId,
+        host.participantToken,
+        `Hello ${index}`,
+      );
     }
 
     expect(() =>
-      chat.sendChatMessage(host.roomId, host.participantToken, 'Too much')
+      chat.sendChatMessage(host.roomId, host.participantToken, 'Too much'),
     ).toThrow(HttpException);
   });
 
@@ -38,7 +42,7 @@ describe('RoomsChatService', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
 
     expect(() =>
-      chat.sendChatMessage(host.roomId, host.participantToken, '   ')
+      chat.sendChatMessage(host.roomId, host.participantToken, '   '),
     ).toThrow(BadRequestException);
   });
 });

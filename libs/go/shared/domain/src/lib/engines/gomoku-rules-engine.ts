@@ -60,7 +60,11 @@ export class GomokuRulesEngine implements RulesEngine {
     }
   }
 
-  private placeStone(state: MatchState, settings: MatchSettings, point: { x: number; y: number }) {
+  private placeStone(
+    state: MatchState,
+    settings: MatchSettings,
+    point: { x: number; y: number },
+  ) {
     if (getCell(state.board, point) !== null) {
       return failure(state, 'game.error.intersection_occupied');
     }
@@ -71,7 +75,12 @@ export class GomokuRulesEngine implements RulesEngine {
 
     setCell(nextBoard, point, player);
 
-    const moveRecord = createMoveRecord(state, player, { type: 'place', point }, nextBoard);
+    const moveRecord = createMoveRecord(
+      state,
+      player,
+      { type: 'place', point },
+      nextBoard,
+    );
     const winningLine = findWinningLine(nextBoard, point, player, 5);
 
     if (winningLine) {
@@ -85,7 +94,10 @@ export class GomokuRulesEngine implements RulesEngine {
         phase: 'finished',
         nextPlayer: opponent,
         moveHistory: [...state.moveHistory, moveRecord],
-        previousBoardHashes: [...state.previousBoardHashes, boardHash(nextBoard)],
+        previousBoardHashes: [
+          ...state.previousBoardHashes,
+          boardHash(nextBoard),
+        ],
         lastMove: moveRecord,
         winnerLine: winningLine,
         message: summary,
@@ -107,7 +119,10 @@ export class GomokuRulesEngine implements RulesEngine {
         phase: 'finished',
         nextPlayer: opponent,
         moveHistory: [...state.moveHistory, moveRecord],
-        previousBoardHashes: [...state.previousBoardHashes, boardHash(nextBoard)],
+        previousBoardHashes: [
+          ...state.previousBoardHashes,
+          boardHash(nextBoard),
+        ],
         lastMove: moveRecord,
         winnerLine: [],
         message: summary,
@@ -145,7 +160,7 @@ export class GomokuRulesEngine implements RulesEngine {
       {
         phaseAfterMove: 'finished',
         capturesAfterMove: state.captures,
-      }
+      },
     );
     const summary = createMessage('game.result.win_by_resignation', {
       winner: createMessage(`common.player.${winner}`),
@@ -156,7 +171,10 @@ export class GomokuRulesEngine implements RulesEngine {
       phase: 'finished',
       nextPlayer: winner,
       moveHistory: [...state.moveHistory, moveRecord],
-      previousBoardHashes: [...state.previousBoardHashes, boardHash(state.board)],
+      previousBoardHashes: [
+        ...state.previousBoardHashes,
+        boardHash(state.board),
+      ],
       lastMove: moveRecord,
       winnerLine: [],
       message: summary,
