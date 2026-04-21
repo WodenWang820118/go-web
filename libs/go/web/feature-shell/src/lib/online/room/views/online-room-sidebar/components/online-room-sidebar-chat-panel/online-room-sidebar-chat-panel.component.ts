@@ -79,13 +79,13 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
       <div class="mt-4 flex min-h-0 flex-1 flex-col gap-4">
         <div
           #chatList
-          class="go-hosted-scroll grid min-h-0 flex-1 gap-3 overflow-auto rounded-[1rem] border border-stone-900/10 bg-white/78 p-2 pr-1 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.03)]"
+          class="go-hosted-scroll grid min-h-0 flex-1 gap-3 overflow-auto rounded-[0.375rem] border border-stone-900/10 bg-white/78 p-2 pr-1 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.03)]"
           data-testid="room-sidebar-chat-list"
         >
           @if (messages().length > 0) {
             @for (message of messages(); track message.id) {
               <article
-                class="rounded-[1rem] border border-stone-900/10 bg-white/80 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.05)]"
+                class="rounded-[0.375rem] border border-stone-900/10 bg-white/80 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.05)]"
                 [attr.data-testid]="'room-sidebar-chat-message-' + message.id"
               >
                 <div class="flex items-center justify-between gap-3">
@@ -108,7 +108,7 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
             }
           } @else {
             <p
-              class="grid min-h-[6.5rem] place-items-center rounded-[1rem] border border-dashed border-stone-900/15 px-4 py-6 text-center text-sm leading-6 text-stone-700"
+              class="grid min-h-[6.5rem] place-items-center rounded-[0.375rem] border border-dashed border-stone-900/15 px-4 py-6 text-center text-sm leading-6 text-stone-700"
               data-testid="room-sidebar-chat-empty"
             >
               {{ i18n.t('room.chat.empty') }}
@@ -117,7 +117,7 @@ import { OnlineRoomChatFormGroup } from '../../../../contracts/online-room-form.
         </div>
 
         <form
-          class="grid gap-3 rounded-[1rem] border border-stone-900/10 bg-white/88 p-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.04)]"
+          class="grid gap-3 rounded-[0.375rem] border border-stone-900/10 bg-white/88 p-3 shadow-[inset_0_0_0_1px_rgba(77,62,40,0.04)]"
           data-testid="room-sidebar-chat-composer"
           [formGroup]="chatForm()"
           (ngSubmit)="sendRequested.emit()"

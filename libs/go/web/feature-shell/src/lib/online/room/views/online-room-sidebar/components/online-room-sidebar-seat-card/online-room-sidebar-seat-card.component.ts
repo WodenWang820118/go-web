@@ -28,7 +28,7 @@ import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.
     >
       <div class="flex items-start gap-3">
         <div
-          class="grid h-16 w-16 min-w-16 place-items-center rounded-[1rem] bg-[radial-gradient(circle_at_30%_25%,_rgba(255,200,120,0.45),_transparent_38%),linear-gradient(180deg,_#f0a33d,_#ac5a18)] text-center text-[1.35rem] font-extrabold text-amber-950"
+          class="grid h-16 w-16 min-w-16 place-items-center rounded-[0.375rem] bg-[radial-gradient(circle_at_30%_25%,_rgba(255,200,120,0.45),_transparent_38%),linear-gradient(180deg,_#f0a33d,_#ac5a18)] text-center text-[1.35rem] font-extrabold text-amber-950"
           aria-hidden="true"
         >
           <span>{{ avatarInitial() }}</span>
@@ -66,24 +66,19 @@ import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.
 
       <div class="mt-4 flex items-center justify-between gap-3">
         <div
-          class="inline-flex min-h-[2.5rem] items-center gap-2 rounded-full bg-black/35 px-3 py-2 text-amber-100"
+          class="inline-flex min-h-[2.5rem] items-center rounded-[0.375rem] bg-black/35 px-3 py-2 text-amber-100"
           aria-hidden="true"
         >
           <span class="font-mono text-base font-extrabold tracking-[0.08em]"
             >--:--</span
           >
-          <span
-            class="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-stone-300"
-          >
-            {{ i18n.t('room.sidebar.decorative_clock') }}
-          </span>
         </div>
 
         @if (seat().isViewerSeat && canChangeSeats()) {
           <button
             pButton
             type="button"
-            class="go-hosted-button-secondary"
+            class="go-hosted-button-secondary shrink-0 whitespace-nowrap"
             [attr.data-testid]="'release-' + seat().color"
             [disabled]="!realtimeConnected()"
             (click)="releaseSeatRequested.emit()"
@@ -94,7 +89,7 @@ import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.
           <button
             pButton
             type="button"
-            class="go-hosted-button-primary"
+            class="go-hosted-button-primary shrink-0 whitespace-nowrap"
             [attr.data-testid]="'claim-' + seat().color"
             [disabled]="!realtimeConnected()"
             (click)="claimSeatRequested.emit(seat().color)"

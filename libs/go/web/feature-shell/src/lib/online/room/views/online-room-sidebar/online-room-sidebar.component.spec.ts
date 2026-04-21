@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { provideRouter } from '@angular/router';
+import { GoI18nService } from '@gx/go/state';
 import {
   ChatMessage,
   HostedMatchSnapshot,
@@ -177,6 +178,26 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(passEmit).toHaveBeenCalled();
     expect(resignEmit).toHaveBeenCalled();
     expect(backEmit).toHaveBeenCalled();
+  });
+
+  it('keeps the decorative timer and renders seat actions on one line', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+    const claimButton = root.querySelector(
+      '[data-testid="claim-white"]',
+    ) as HTMLButtonElement | null;
+    const releaseButton = root.querySelector(
+      '[data-testid="release-black"]',
+    ) as HTMLButtonElement | null;
+
+    expect(root.textContent).toContain('--:--');
+    expect(root.textContent).not.toContain(
+      i18n.t('room.sidebar.decorative_clock'),
+    );
+    expect(claimButton?.className).toContain('whitespace-nowrap');
+    expect(claimButton?.className).toContain('shrink-0');
+    expect(releaseButton?.className).toContain('whitespace-nowrap');
+    expect(releaseButton?.className).toContain('shrink-0');
   });
 
   it('submits chat on Enter but keeps Shift+Enter for multiline drafts', () => {
