@@ -316,27 +316,50 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
     return false;
   }
 
-  const patterns = [
-    /\bapply_patch\b/i,
-    /\bsed\s+-i\b/i,
-    /\bperl\s+-pi\b/i,
-    /\b(prettier|eslint)\b.*--write\b/i,
-    /\b(rm|mv|cp|mkdir|touch)\b/i,
-    /\b(rmdir|chmod|chown)\b/i,
-    /\b(Remove-Item|Move-Item|Copy-Item|New-Item|Set-Content|Add-Content|Out-File|Rename-Item|Clear-Content)\b/i,
-    /\b(Invoke-Expression|iex)\b/i,
-    /\bgit\s+(apply|am|checkout|switch|restore|reset|revert|clean|rm|mv|commit|merge|rebase|cherry-pick)\b/i,
-    /\bgit\s+stash\s+(apply|pop)\b/i,
-    /\bgit\s+worktree\s+(add|move|remove|prune)\b/i,
-    /\b(pnpm|npm|yarn|bun)\s+(install|add|remove|update|up|dedupe|unlink|link)\b/i,
-    /\bpip(?:3)?\s+install\b/i,
-    /\bpoetry\s+(add|remove|install|update|lock)\b/i,
-    /\|\s*(sh|bash|pwsh|powershell)\b/i,
-    /\btee\b/i,
+  const trimmedCommand = command.trim();
+  if (!trimmedCommand) {
+    return false;
+  }
+
+  const riskyShellSyntaxPatterns = [
     />{1,2}\s*\S/,
+    /<{1,2}\s*\S/,
+    /(^|[\s)])(&&|\|\||;)(?=\s|$)/,
+    /\|(?!\|)/,
+    /\$\(/,
+    /`[^`]+`/,
+    /\b(powershell|pwsh)\b.*\s-(EncodedCommand|enc|e)\b/i,
   ];
 
-  return patterns.some((pattern) => pattern.test(command));
+  if (
+    riskyShellSyntaxPatterns.some((pattern) => pattern.test(trimmedCommand))
+  ) {
+    return true;
+  }
+
+  // Fail closed for anything that is not on the read-only allowlist.
+  const readOnlyPatterns = [
+    /^(Get-Content|type|cat)\b/i,
+    /^(Get-ChildItem|ls|dir|tree)\b/i,
+    /^(pwd|Get-Location)\b/i,
+    /^(rg|findstr|Select-String|wc|head|tail|more|less|sort|uniq|echo|Write-Output|Test-Path|stat|where|Get-Command)\b/i,
+    /^git\s+(status|diff|show|log|rev-parse|ls-files)\b/i,
+    /^git\s+branch\s+(--show-current|--list|-a|-r)\b/i,
+    /^git\s+remote\s+get-url\b/i,
+    /^gh\s+(auth\s+status|pr\s+(list|view|status)|repo\s+view|issue\s+view)\b/i,
+    /^node(?:\.exe)?\s+(-v|--version|-h|--help)\b/i,
+    /^python(?:3)?\s+(-V|--version|-h|--help)\b/i,
+    /^pip(?:3)?\s+(--version|help|list|show)\b/i,
+    /^poetry\s+(--version|help|show|env\s+list)\b/i,
+    /^(npm|pnpm|yarn|bun)\s+(--version|help|list|ls|view|why)\b/i,
+    /^npx\s+(-v|--version|-h|--help)\b/i,
+    /^(docker|podman)\s+(--version|version|info|images|ps|inspect)\b/i,
+    /^go\s+(version|env|list)\b/i,
+    /^java\s+-version\b/i,
+    /^dotnet\s+(--version|--info|--list-sdks|--list-runtimes)\b/i,
+  ];
+
+  return !readOnlyPatterns.some((pattern) => pattern.test(trimmedCommand));
 }
 
 export function isReviewGateCommand(command: string): boolean {

@@ -6,7 +6,7 @@ Project skills live in `.agents/skills`, reviewer personas live in `.agents/revi
 ## Canonical Context
 
 - Follow `AGENTS.md` first, then load the smallest relevant set of skills.
-- The preferred review authority is GitHub Copilot running a Claude-family model. Use Gemini CLI as the scripted fallback and default implementation reviewer where this file says so.
+- The preferred review authority is GitHub Copilot running a Claude-family model for plan and test checkpoints. Use Gemini CLI as the default reviewer for non-low-risk implementation work, and allow Codex-first auto-routing only for deterministic low-risk `implementation` or `pre-merge` reviews where this file says so.
 - Skill precedence is fixed:
   1. `AGENTS.md`
   2. local Nx and repo skills in `.agents/skills`
@@ -18,17 +18,6 @@ Project skills live in `.agents/skills`, reviewer personas live in `.agents/revi
 - `.agents/skills/authoring-guide.md` defines the repo-local rules for writing or slimming skills.
 - A repo-level pre-implementation gate is enforced through `.github/hooks/review-gate.json`. On a clean worktree, Copilot will deny mutating tool calls until a plan review approval is recorded.
 - `proofshot` is an optional repo-local verification helper for browser-verifiable UI work. It does not replace tests, and it does not participate in the pre-implementation gate.
-
-## Behavioral Overlay
-
-Adopt the following Karpathy-inspired behavioral overlay to improve agent precision and reliability inside the existing phased workflow:
-
-- `Think Before Coding`: surface assumptions, present multiple plausible interpretations when ambiguity matters, and ask instead of silently choosing.
-- `Simplicity First`: prefer the minimum code and process change that solves today's problem. Avoid speculative abstractions, configurability, or edge-case machinery that the request does not need.
-- `Surgical Changes`: touch only the files and lines needed for the task. Clean up only the orphans created by the current change unless broader cleanup is explicitly requested.
-- `Goal-Driven Execution`: turn vague tasks into explicit success criteria, verification steps, and checkpoints before declaring the work done.
-
-These principles augment the repo's phase boundaries, review checkpoints, and gate rules. They do not replace the existing workflow.
 
 ## Phased Context Loading
 
@@ -45,7 +34,7 @@ The agent must operate in distinct phases, loading context incrementally. A late
 - **Workflow:**
   1. **Intent Gate:** If the prompt has 2 or more plausible high-impact interpretations, ask 1 decision question before repo exploration.
   2. **Bounded Discovery:** Otherwise, prefer repo truth over asking. Use at most 2 targeted commands or inspect at most 3 files to resolve discoverable facts.
-  3. **Clarification Budget:** After bounded discovery, ask at most 1 post-scan follow-up question if high-impact ambiguity remains. Together with the intent-gate question, the total clarification budget is 1 pre-scan question and 1 post-scan question. Budget exhaustion never authorizes proceeding through unresolved ambiguity that would change architecture, public contracts, security boundaries, persistent data, or require broad exploration.
+  3. **Clarification Budget:** After bounded discovery, ask at most 1 follow-up question if high-impact ambiguity remains. Budget exhaustion never authorizes proceeding through unresolved ambiguity that would change architecture, public contracts, security boundaries, persistent data, or require broad exploration.
   4. **Workflow Selection:** Choose 1 primary next skill for the planning or repo-workflow phase.
 
 ### Phase 2: Planning
@@ -92,7 +81,7 @@ If the scripted Copilot Claude path is unavailable in the current environment, p
 2. `Test review`: after writing tests but before running the broad sign-off suite or using those tests as approval evidence, send the test strategy and assertions to a second reviewer.
    Default: GitHub Copilot Claude Sonnet 4.6. If the normal Copilot Claude path is unavailable or quota exhausted, use `gemini-2.5-pro` before retrying with GitHub Copilot GPT-5 mini. If both local CLIs are unavailable, use the matching local reviewer persona or Codex reviewer subagent instead of silently self-approving.
 3. `Implementation review`: after the first working implementation, self-check, and reviewable verification story are ready, send the change to a second reviewer.
-   Default: Gemini Flash Preview using the CLI model id `gemini-3-flash-preview`. If Gemini is unavailable, fall back to GitHub Copilot Claude Sonnet 4.6, then GitHub Copilot GPT-5 mini, then to the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
+   Default: `pnpm review:implementation` keeps Gemini Flash Preview using the CLI model id `gemini-3-flash-preview` first for normal or sensitive implementation reviews. Its auto router may start with the matching Codex reviewer subagent only when the context contains an explicit small changed-file list, that list exactly matches the repo's current changed-file set, the scope is non-sensitive, and no review or governance surfaces are touched. Otherwise fall back in this order: GitHub Copilot Claude Sonnet 4.6, GitHub Copilot GPT-5 mini, then the matching Codex reviewer subagent. Escalate to GitHub Copilot Claude when blocking findings remain or when the change touches auth, secrets, filesystem, shell execution, network behavior, or public contracts.
 
 For browser-verifiable `go-web` tasks, `proofshot` can be used after implementation and before final sign-off, typically through `qa-verification`, to generate screenshots, session video, and a local proof summary for human review.
 
@@ -102,6 +91,7 @@ For browser-verifiable `go-web` tasks, `proofshot` can be used after implementat
 - If a reviewer reports a high-risk issue, stop, fix it, and re-run the relevant checkpoint before continuing.
 - Implementation review is mandatory when a task touches 3 or more files, changes data flow, updates permissions or auth, changes persistent state, modifies process lifecycle, or alters an external contract.
 - Pre-merge review must include the appropriate specialist reviewer for public APIs, auth, secrets, filesystem access, shell execution, or network behavior.
+- `pre-merge` is an additional wrapper mode only. It does not replace the required `implementation` checkpoint or the pre-implementation gate.
 - Before the first implementation change on a clean worktree, open the gate by running `pnpm review:approve-pre-implementation -- --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus <area> --summary "<approval summary>"` after the plan review passes.
 - Use `pnpm review:status` to inspect the gate and `pnpm review:reset` to clear it manually when needed.
 
@@ -144,7 +134,7 @@ Expected repo workflow:
 - Before using Copilot CLI for a scripted checkpoint review, confirm the local CLI is installed and that a constant low-cost probe still succeeds. Treat a failed probe as unavailability and fall back instead of sending the full review payload.
 - Copilot hooks in `.github/hooks/review-gate.json` are the hard guardrail for pre-implementation review on a clean worktree.
 - When using Copilot CLI and Rubber Duck is available, prefer a Claude-family orchestrator and enable `/experimental`.
-- When the scripted Copilot Claude path is unavailable, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Keep the Copilot-only retry path only when the review is explicitly pinned to `--provider copilot`.
+- For plan, test, and non-low-risk implementation reviews, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Low-risk `implementation` or `pre-merge` auto routing may try the matching Codex reviewer first only when the review context includes an explicit small non-sensitive changed-file list that exactly matches the repo's current changed-file set. Keep the Copilot-only retry path only when the review is explicitly pinned to `--provider copilot`.
 - Trigger Rubber Duck critique after a plan is drafted, after an escalated multi-file implementation review, and after tests are written but before they are executed.
 - If Rubber Duck is unavailable, use the matching reviewer agent in `.github/agents` as the required second opinion.
 - If the user explicitly asks for a critique, review, second opinion, or Rubber Duck, force a second opinion even if the task is otherwise small.
@@ -162,8 +152,10 @@ Expected repo workflow:
 ### Codex CLI
 
 - Keep using `.codex/config.toml` as the repo-local Codex config.
+- Prefer running Codex in WSL for this repository when possible.
 - For non-trivial work, use `pnpm review:plan`, `pnpm review:plan:risky`, `pnpm review:implementation`, and `pnpm review:test` to route checkpoint reviews through the repo-standard wrappers.
 - Use the configured reviewer subagents for plan, implementation, test, and UX/security review checkpoints.
+- Low-risk `implementation` and `pre-merge` auto routing may select Codex first only when the review context includes an explicit small non-sensitive changed-file list that exactly matches the repo's current changed-file set. Plan and test checkpoints remain Copilot-led unless fallback is required.
 - When Copilot CLI or Gemini CLI is not locally usable, the review wrappers should fall back to the matching Codex reviewer subagent instead of silently self-approving.
 
 ## Repo Map

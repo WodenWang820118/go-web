@@ -1156,6 +1156,7 @@ export function resolveEvaluationRepoTargets(
 }
 
 export function buildCheckpointReviewContext(input: {
+  changedFiles: ReadonlyArray<string>;
   diffText: string;
   sample: EvaluationSample;
 }): string {
@@ -1166,6 +1167,9 @@ export function buildCheckpointReviewContext(input: {
     `Head ref: ${input.sample.commit}`,
     `Subject: ${input.sample.subject}`,
     `Kind: ${input.sample.kind}`,
+    '',
+    'Changed files:',
+    ...input.changedFiles.map((file) => `- ${normalizeHybridPath(file)}`),
     '',
     'Diff to review:',
     input.diffText.trim(),
@@ -1400,7 +1404,15 @@ export function evaluateSampleWithCheckpointReview(input: {
   sample: EvaluationSample;
 }): EvaluationReviewerResult {
   const startedAt = Date.now();
+  const changedFiles = collectChangedFiles({
+    baseRef: input.sample.baseRef,
+    dependencies: input.dependencies,
+    headRef: input.sample.commit,
+    repoRoot: input.sample.repoRoot,
+    staged: false,
+  });
   const context = buildCheckpointReviewContext({
+    changedFiles,
     diffText: collectDiffText({
       baseRef: input.sample.baseRef,
       dependencies: input.dependencies,
