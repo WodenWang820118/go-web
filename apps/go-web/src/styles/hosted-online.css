@@ -1,0 +1,240 @@
+@layer base {
+  :root {
+    --go-hosted-radius-shell: 1.75rem;
+    --go-hosted-radius-card: 1.25rem;
+    --go-hosted-radius-soft: 1rem;
+    --go-hosted-radius-pill: 999px;
+    --go-hosted-shadow-panel: 0 24px 60px rgba(15, 23, 42, 0.28);
+  }
+}
+
+@layer components {
+  .go-safe-page {
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .go-hosted-panel-dark {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--go-hosted-radius-shell);
+    background:
+      linear-gradient(180deg, rgba(34, 39, 46, 0.98), rgba(16, 18, 22, 0.98)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+    color: rgb(245 245 244);
+    box-shadow: var(--go-hosted-shadow-panel);
+  }
+
+  .go-hosted-panel-dark-soft {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--go-hosted-radius-card);
+    background: rgba(7, 10, 14, 0.32);
+    color: rgb(245 245 244);
+  }
+
+  .go-hosted-panel-light {
+    border-radius: var(--go-hosted-radius-card);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(248, 244, 233, 0.94),
+        rgba(228, 223, 210, 0.94)
+      ),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+    color: rgb(41 37 36);
+    box-shadow: inset 0 0 0 1px rgba(77, 62, 40, 0.08);
+  }
+
+  .go-hosted-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.28em];
+    color: rgba(251, 191, 36, 0.72);
+  }
+
+  .go-hosted-eyebrow-muted {
+    @apply text-xs font-semibold uppercase tracking-[0.22em];
+    color: rgba(214, 211, 209, 0.56);
+  }
+
+  .go-hosted-copy {
+    @apply text-sm leading-6;
+    color: rgb(214 211 209);
+  }
+
+  .go-hosted-copy-muted {
+    @apply text-sm leading-6;
+    color: rgba(214, 211, 209, 0.74);
+  }
+
+  .go-hosted-pill,
+  .go-hosted-pill.p-tag {
+    @apply rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em];
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(245, 245, 244, 0.9);
+  }
+
+  .go-hosted-pill-soft,
+  .go-hosted-pill-soft.p-tag {
+    @apply rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em];
+    border-color: rgba(77, 62, 40, 0.12);
+    background: rgba(77, 62, 40, 0.08);
+    color: rgba(41, 37, 36, 0.8);
+  }
+
+  .go-hosted-metric-card {
+    @apply inline-flex items-center gap-2.5 rounded-[1rem] border px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em];
+    border-color: rgba(77, 62, 40, 0.12);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.88),
+        rgba(245, 239, 227, 0.82)
+      ),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+    color: rgba(41, 37, 36, 0.82);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+      0 8px 18px rgba(77, 62, 40, 0.08);
+  }
+
+  .go-hosted-metric-card__count {
+    @apply text-sm font-extrabold leading-none tracking-[0.02em];
+    color: rgba(28, 25, 23, 0.88);
+  }
+
+  .go-hosted-metric-card__label {
+    @apply whitespace-nowrap;
+  }
+
+  .go-hosted-metric-card__dot {
+    @apply h-2 w-2 rounded-full;
+    box-shadow: 0 0 0.55rem rgba(120, 113, 108, 0.25);
+  }
+
+  .go-hosted-metric-card__dot--online {
+    background: rgb(16 185 129);
+    box-shadow: 0 0 0.6rem rgba(16, 185, 129, 0.35);
+  }
+
+  .go-hosted-metric-card__dot--spectator {
+    background: rgb(217 119 6);
+    box-shadow: 0 0 0.6rem rgba(217, 119, 6, 0.28);
+  }
+
+  .go-hosted-pill-subtle,
+  .go-hosted-pill-subtle.p-tag {
+    @apply rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] whitespace-nowrap;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(248, 244, 232, 0.88);
+  }
+
+  .go-hosted-message.p-message {
+    @apply text-sm;
+    border-radius: var(--go-hosted-radius-soft);
+  }
+
+  .go-hosted-message--error.p-message {
+    background: rgba(127, 29, 29, 0.55);
+    color: #ffd8d8;
+  }
+
+  .go-hosted-message--notice.p-message {
+    background: rgba(6, 95, 70, 0.5);
+    color: #d8fff0;
+  }
+
+  .go-hosted-message--warning.p-message {
+    background: rgba(146, 64, 14, 0.52);
+    color: #ffefcb;
+  }
+
+  .go-hosted-button-primary,
+  .go-hosted-button-primary.p-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border-0 px-4 py-2.5 text-sm font-semibold transition;
+    background: linear-gradient(180deg, #dcb85d, #bd8b2d);
+    color: #1f1d18;
+  }
+
+  .go-hosted-button-primary:hover:not(:disabled),
+  .go-hosted-button-primary.p-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .go-hosted-button-secondary,
+  .go-hosted-button-secondary.p-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgb(245 245 244);
+  }
+
+  .go-hosted-button-secondary:hover:not(:disabled),
+  .go-hosted-button-secondary.p-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .go-hosted-button-secondary:disabled,
+  .go-hosted-button-secondary.p-button:disabled,
+  .go-hosted-button-primary:disabled,
+  .go-hosted-button-primary.p-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+  }
+
+  .go-hosted-input.p-inputtext,
+  input.go-hosted-input {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm outline-none transition;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgb(250 250 249);
+  }
+
+  .go-hosted-input.p-inputtext:focus,
+  input.go-hosted-input:focus {
+    border-color: rgba(220, 184, 93, 0.68);
+  }
+
+  .go-hosted-input-light.p-inputtext,
+  input.go-hosted-input-light {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm outline-none transition;
+    border-color: rgba(77, 62, 40, 0.14);
+    background: rgba(255, 255, 255, 0.82);
+    color: rgb(41 37 36);
+  }
+
+  .go-hosted-input-light.p-inputtext:focus,
+  input.go-hosted-input-light:focus {
+    border-color: rgba(220, 184, 93, 0.6);
+  }
+
+  .go-hosted-textarea.p-textarea,
+  textarea.go-hosted-textarea {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm leading-6 outline-none transition;
+    border-color: rgba(77, 62, 40, 0.14);
+    background: rgba(255, 255, 255, 0.82);
+    color: rgb(41 37 36);
+  }
+
+  .go-hosted-textarea.p-textarea:focus,
+  textarea.go-hosted-textarea:focus {
+    border-color: rgba(220, 184, 93, 0.6);
+  }
+
+  .go-hosted-scroll {
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .go-hosted-surface-warm {
+    border: 1px solid rgba(248, 205, 137, 0.26);
+    border-radius: var(--go-hosted-radius-card);
+    background:
+      linear-gradient(180deg, rgba(38, 25, 10, 0.95), rgba(25, 18, 8, 0.95)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+    color: #f6ead3;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
+  }
+}

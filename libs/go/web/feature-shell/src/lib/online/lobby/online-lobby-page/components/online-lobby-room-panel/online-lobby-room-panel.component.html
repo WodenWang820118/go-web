@@ -1,0 +1,244 @@
+<section
+  class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,_rgba(24,29,35,0.98),_rgba(13,16,20,0.98))] shadow-xl shadow-slate-950/25"
+  data-testid="lobby-room-panel"
+>
+  <lib-go-online-lobby-identity-bar
+    [sections]="sections()"
+    [activeStatus]="activeStatus()"
+    [displayName]="displayName()"
+    [canSubmitIdentity]="canSubmitIdentity()"
+    [creating]="creating()"
+    [stats]="activeStats()"
+    [message]="actionMessage()"
+    [messageIsError]="actionMessageIsError()"
+    [isMdUp]="isMdUp()"
+    (activeStatusChange)="activeStatusChange.emit($event)"
+    (createRoomRequested)="createRoomRequested.emit()"
+  />
+
+  @if (loading()) {
+    <div
+      class="flex flex-1 items-center justify-center px-4 py-8 text-sm text-stone-400"
+    >
+      {{ i18n.t('lobby.loading') }}
+    </div>
+  } @else if (activeRows().length > 0) {
+    @if (isMdUp()) {
+      <div
+        #roomTableScroll
+        data-testid="lobby-room-table-scroll"
+        class="min-h-0 flex-1 overflow-y-auto"
+        tabindex="0"
+        [attr.aria-label]="i18n.t('lobby.panel.room_list')"
+      >
+        <table
+          class="min-w-full table-fixed border-collapse text-left text-sm text-stone-200"
+        >
+          <thead
+            data-testid="lobby-room-table-head"
+            class="sticky top-0 z-10 bg-[rgba(8,11,16,0.96)] text-[0.72rem] uppercase tracking-[0.2em] text-stone-500 backdrop-blur"
+          >
+            <tr>
+              <th class="w-[20%] px-4 py-3 font-semibold">
+                {{ i18n.t('lobby.table.room') }}
+              </th>
+              <th class="w-[16%] px-4 py-3 font-semibold">
+                {{ i18n.t('lobby.table.mode') }}
+              </th>
+              <th class="w-[26%] px-4 py-3 font-semibold lg:hidden">
+                {{ i18n.t('room.participants.seats') }}
+              </th>
+              <th class="hidden w-[16%] px-4 py-3 font-semibold lg:table-cell">
+                {{ i18n.t('lobby.table.black') }}
+              </th>
+              <th class="hidden w-[16%] px-4 py-3 font-semibold lg:table-cell">
+                {{ i18n.t('lobby.table.white') }}
+              </th>
+              <th class="w-[14%] px-4 py-3 font-semibold">
+                {{ i18n.t('lobby.table.people_online') }}
+              </th>
+              <th class="w-[12%] px-4 py-3 font-semibold">
+                {{ i18n.t('lobby.table.status') }}
+              </th>
+              <th class="w-[7rem] px-4 py-3 font-semibold">
+                {{ i18n.t('lobby.table.action') }}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (row of activeRows(); track row.roomId) {
+              <tr
+                class="border-t border-white/6 align-top transition hover:bg-white/[0.04]"
+                [attr.data-testid]="'lobby-room-' + row.roomId"
+              >
+                <td class="px-4 py-4 align-top">
+                  <div class="space-y-1">
+                    <a
+                      class="inline-flex max-w-full items-center font-semibold text-stone-50 transition hover:text-amber-200"
+                      [attr.data-testid]="'online-lobby-open-' + row.roomId"
+                      [routerLink]="['/online/room', row.roomId]"
+                    >
+                      <span class="truncate">{{ row.roomLabel }}</span>
+                    </a>
+                    <p
+                      class="truncate text-xs uppercase tracking-[0.16em] text-stone-500"
+                    >
+                      {{ row.hostLabel }}
+                    </p>
+                  </div>
+                </td>
+                <td class="px-4 py-4 align-top text-stone-300">
+                  <span class="line-clamp-2">{{ row.modeLabel }}</span>
+                </td>
+                <td class="px-4 py-4 align-top lg:hidden">
+                  <div class="space-y-2 text-xs leading-5 text-stone-300">
+                    <div class="flex items-center gap-2">
+                      <span class="text-stone-500">{{
+                        i18n.t('lobby.table.black')
+                      }}</span>
+                      <span class="truncate">{{ row.seatSummary.black }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-stone-500">{{
+                        i18n.t('lobby.table.white')
+                      }}</span>
+                      <span class="truncate">{{ row.seatSummary.white }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td
+                  class="hidden px-4 py-4 align-top text-stone-300 lg:table-cell"
+                >
+                  <span class="line-clamp-2">{{ row.blackSeat }}</span>
+                </td>
+                <td
+                  class="hidden px-4 py-4 align-top text-stone-300 lg:table-cell"
+                >
+                  <span class="line-clamp-2">{{ row.whiteSeat }}</span>
+                </td>
+                <td class="px-4 py-4 align-top text-stone-300">
+                  {{ row.peopleOnlineLabel }}
+                </td>
+                <td class="px-4 py-4 align-top">
+                  <p-tag severity="contrast" [value]="row.statusLabel" />
+                </td>
+                <td class="w-[7rem] px-4 py-4 align-top">
+                  <button
+                    type="button"
+                    class="inline-flex w-full items-center justify-center whitespace-nowrap rounded-sm bg-stone-50 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    [attr.data-testid]="'online-lobby-row-action-' + row.roomId"
+                    [disabled]="joining() || !canSubmitIdentity()"
+                    (click)="onJoinRoomRequested(row.room)"
+                  >
+                    {{
+                      joining()
+                        ? i18n.t('room.participants.joining_room')
+                        : row.actionLabel
+                    }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="grid gap-3 p-4">
+        @for (row of activeRows(); track row.roomId) {
+          <article
+            class="rounded-md border border-white/10 bg-white/[0.03] p-4 text-left"
+            [attr.data-testid]="'lobby-mobile-room-' + row.roomId"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <a
+                  class="inline-flex max-w-full items-center font-semibold text-stone-50 transition hover:text-amber-200"
+                  [attr.data-testid]="'online-lobby-mobile-open-' + row.roomId"
+                  [routerLink]="['/online/room', row.roomId]"
+                >
+                  <span class="truncate">{{ row.roomLabel }}</span>
+                </a>
+                <p
+                  class="mt-1 truncate text-xs uppercase tracking-[0.16em] text-stone-500"
+                >
+                  {{ row.hostLabel }}
+                </p>
+              </div>
+              <p-tag severity="contrast" [value]="row.statusLabel" />
+            </div>
+
+            <div class="mt-4 grid gap-3 text-sm text-stone-300">
+              <div>
+                <p
+                  class="text-[0.68rem] uppercase tracking-[0.18em] text-stone-500"
+                >
+                  {{ i18n.t('lobby.table.mode') }}
+                </p>
+                <p class="mt-1">{{ row.modeLabel }}</p>
+              </div>
+              <div>
+                <p
+                  class="text-[0.68rem] uppercase tracking-[0.18em] text-stone-500"
+                >
+                  {{ i18n.t('room.participants.seats') }}
+                </p>
+                <div class="mt-1 space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-stone-500">{{
+                      i18n.t('lobby.table.black')
+                    }}</span>
+                    <span>{{ row.seatSummary.black }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-stone-500">{{
+                      i18n.t('lobby.table.white')
+                    }}</span>
+                    <span>{{ row.seatSummary.white }}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p
+                  class="text-[0.68rem] uppercase tracking-[0.18em] text-stone-500"
+                >
+                  {{ i18n.t('lobby.table.people_online') }}
+                </p>
+                <p class="mt-1">{{ row.peopleOnlineLabel }}</p>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-sm bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                [attr.data-testid]="'online-lobby-mobile-primary-' + row.roomId"
+                [disabled]="joining() || !canSubmitIdentity()"
+                (click)="onJoinRoomRequested(row.room)"
+              >
+                {{
+                  joining()
+                    ? i18n.t('room.participants.joining_room')
+                    : row.actionLabel
+                }}
+              </button>
+
+              <a
+                class="inline-flex items-center justify-center rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
+                [routerLink]="['/online/room', row.roomId]"
+              >
+                {{ i18n.t('lobby.room.open_room') }}
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  } @else {
+    <div
+      class="flex flex-1 items-center justify-center px-4 py-8 text-sm text-stone-400"
+    >
+      {{ emptySectionLabel(activeSection()?.status ?? activeStatus()) }}
+    </div>
+  }
+</section>

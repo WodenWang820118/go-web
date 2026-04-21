@@ -4,3 +4,15 @@
 /.nx/cache
 /.nx/workspace-data
 .angular
+node_modules
+.cache
+.tmp
+tmp
+out-tsc
+.playwright-mcp
+proofshot-artifacts
+__screenshots__/
+pnpm-lock.yaml
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+*.log

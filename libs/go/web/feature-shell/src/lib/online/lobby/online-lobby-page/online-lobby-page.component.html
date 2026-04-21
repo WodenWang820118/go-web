@@ -1,0 +1,72 @@
+<section
+  class="flex min-h-dvh w-full flex-col px-2 py-3 sm:px-3 md:h-dvh md:max-h-dvh md:overflow-hidden lg:px-4"
+>
+  <lib-go-hosted-shell-header />
+
+  <div class="mt-3 min-h-0 flex-1">
+    @if (isMdUp()) {
+      <div
+        class="grid h-full min-h-0 gap-3 md:grid-rows-[minmax(0,1.45fr)_minmax(0,0.95fr)] lg:grid-cols-[minmax(0,1.85fr)_24rem] lg:grid-rows-1"
+      >
+        <lib-go-online-lobby-room-panel
+          [sections]="sections()"
+          [activeStatus]="activeStatus()"
+          [activeSection]="activeSection()"
+          [activeRows]="activeRows()"
+          [activeStats]="activeSectionStats()"
+          [displayName]="displayName"
+          [canSubmitIdentity]="canSubmitIdentity()"
+          [creating]="onlineRoom.creating()"
+          [joining]="onlineRoom.joining()"
+          [loading]="onlineLobby.loading()"
+          [actionMessage]="actionBarMessage()"
+          [actionMessageIsError]="actionBarMessageIsError()"
+          [isMdUp]="isMdUp()"
+          (activeStatusChange)="setActiveStatus($event)"
+          (createRoomRequested)="createRoom()"
+          (joinRoomRequested)="joinRoom($event)"
+        />
+
+        <div
+          class="grid min-h-0 gap-3 md:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
+        >
+          <lib-go-online-lobby-announcement-panel
+            [cards]="announcementCards()"
+          />
+          <lib-go-online-lobby-online-players-panel
+            [loading]="onlineLobby.loading()"
+            [groups]="onlinePlayerGroups()"
+            [totalOnlinePlayers]="totalOnlinePlayers()"
+          />
+        </div>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        <lib-go-online-lobby-room-panel
+          [sections]="sections()"
+          [activeStatus]="activeStatus()"
+          [activeSection]="activeSection()"
+          [activeRows]="activeRows()"
+          [activeStats]="activeSectionStats()"
+          [displayName]="displayName"
+          [canSubmitIdentity]="canSubmitIdentity()"
+          [creating]="onlineRoom.creating()"
+          [joining]="onlineRoom.joining()"
+          [loading]="onlineLobby.loading()"
+          [actionMessage]="actionBarMessage()"
+          [actionMessageIsError]="actionBarMessageIsError()"
+          [isMdUp]="isMdUp()"
+          (activeStatusChange)="setActiveStatus($event)"
+          (createRoomRequested)="createRoom()"
+          (joinRoomRequested)="joinRoom($event)"
+        />
+        <lib-go-online-lobby-announcement-panel [cards]="announcementCards()" />
+        <lib-go-online-lobby-online-players-panel
+          [loading]="onlineLobby.loading()"
+          [groups]="onlinePlayerGroups()"
+          [totalOnlinePlayers]="totalOnlinePlayers()"
+        />
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,268 @@
+@if (meta(); as meta) {
+  <section
+    class="flex min-h-dvh w-full flex-col px-2 py-3 sm:px-3 md:h-dvh md:max-h-dvh md:overflow-hidden lg:px-4"
+  >
+    <lib-go-hosted-shell-header />
+
+    <div class="mt-3 min-h-0 flex-1">
+      <div
+        class="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1.72fr)_24rem]"
+      >
+        <section
+          class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,_rgba(24,29,35,0.98),_rgba(13,16,20,0.98))] shadow-xl shadow-slate-950/25"
+          data-testid="setup-panel"
+        >
+          <div class="border-b border-white/10 px-4 py-4 sm:px-5">
+            <a
+              routerLink="/"
+              class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-400 transition hover:text-stone-100"
+            >
+              <span aria-hidden="true">&larr;</span>
+              {{ i18n.t('setup.back_to_modes') }}
+            </a>
+
+            <div
+              class="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+            >
+              <div class="max-w-3xl">
+                <p
+                  class="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-stone-500"
+                >
+                  {{ i18n.t('setup.match_setup') }}
+                </p>
+                <h1
+                  class="mt-2 text-2xl font-semibold text-stone-50 sm:text-3xl"
+                >
+                  {{ meta.title }}
+                </h1>
+                <p class="mt-3 text-sm leading-6 text-stone-300">
+                  {{ meta.setupHint }}
+                </p>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <span
+                  class="rounded-sm border border-white/10 bg-white/5 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-300"
+                >
+                  {{ meta.strapline }}
+                </span>
+                <span
+                  class="rounded-sm border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-amber-100"
+                >
+                  {{ meta.objective }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <form
+            class="flex min-h-0 flex-1 flex-col"
+            data-testid="setup-form"
+            [formGroup]="form"
+            (ngSubmit)="startMatch()"
+          >
+            <div class="flex-1 space-y-6 overflow-y-auto px-4 py-4 sm:px-5">
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="space-y-2 text-sm font-medium text-stone-200">
+                  <span>{{ i18n.t('setup.black_player') }}</span>
+                  <input
+                    formControlName="blackName"
+                    data-testid="setup-black-name-input"
+                    class="w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-50 outline-none transition placeholder:text-stone-500 focus:border-amber-300/40 focus:bg-white/10"
+                  />
+                </label>
+
+                <label class="space-y-2 text-sm font-medium text-stone-200">
+                  <span>{{ i18n.t('setup.white_player') }}</span>
+                  <input
+                    formControlName="whiteName"
+                    data-testid="setup-white-name-input"
+                    class="w-full rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-50 outline-none transition placeholder:text-stone-500 focus:border-amber-300/40 focus:bg-white/10"
+                  />
+                </label>
+              </div>
+
+              @if (mode() === 'go') {
+                <fieldset
+                  class="space-y-3"
+                  data-testid="setup-board-size-fieldset"
+                >
+                  <legend class="text-sm font-semibold text-stone-100">
+                    {{ i18n.t('setup.board_size') }}
+                  </legend>
+
+                  <div
+                    class="flex flex-wrap gap-3"
+                    data-testid="setup-board-size-group"
+                  >
+                    @for (option of boardSizeOptions; track option.value) {
+                      <label
+                        class="cursor-pointer"
+                        [attr.data-testid]="
+                          'setup-board-size-option-' + option.value
+                        "
+                      >
+                        <input
+                          type="radio"
+                          formControlName="boardSize"
+                          name="boardSize"
+                          class="peer sr-only"
+                          [attr.value]="option.value"
+                          [value]="option.value"
+                        />
+                        <span
+                          class="inline-flex min-w-24 items-center justify-center rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-200 transition peer-checked:border-amber-300/35 peer-checked:bg-stone-50 peer-checked:text-slate-950 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-amber-300/70 hover:border-white/20 hover:bg-white/10"
+                        >
+                          {{ option.label }}
+                        </span>
+                      </label>
+                    }
+                  </div>
+
+                  <p
+                    class="text-sm text-stone-400"
+                    data-testid="setup-go-komi-note"
+                  >
+                    {{
+                      i18n.t('setup.go_komi_note', { komi: DEFAULT_GO_KOMI })
+                    }}
+                  </p>
+                </fieldset>
+              } @else {
+                <div
+                  class="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-4 text-sm leading-6 text-amber-50"
+                  data-testid="setup-gomoku-fixed-board"
+                >
+                  {{
+                    i18n.t('setup.gomoku_fixed_board', {
+                      size: GOMOKU_BOARD_SIZE,
+                    })
+                  }}
+                </div>
+              }
+            </div>
+
+            <div
+              class="border-t border-white/10 px-4 py-4 sm:px-5"
+              data-testid="setup-submit-bar"
+            >
+              <div
+                class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+              >
+                <p class="text-sm leading-6 text-stone-400">
+                  {{ actionHint() }}
+                </p>
+
+                <button
+                  type="submit"
+                  class="inline-flex items-center justify-center rounded-sm bg-stone-50 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white"
+                  data-testid="setup-start-match-button"
+                >
+                  {{ i18n.t('setup.start_local_match') }}
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <div
+          class="grid min-h-0 gap-3 md:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[minmax(0,1.02fr)_minmax(0,0.98fr)]"
+        >
+          <section
+            class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,_rgba(28,33,39,0.98),_rgba(13,16,20,0.98))] shadow-xl shadow-slate-950/25"
+            data-testid="setup-rules-panel"
+          >
+            <div class="border-b border-white/10 px-4 py-3">
+              <h2
+                id="setup-rules-heading"
+                class="text-sm font-semibold uppercase tracking-[0.22em] text-stone-400"
+              >
+                {{ i18n.t('setup.rules_refresher') }}
+              </h2>
+            </div>
+
+            <div
+              class="min-h-0 overflow-y-auto px-4 py-4"
+              role="region"
+              tabindex="0"
+              aria-labelledby="setup-rules-heading"
+            >
+              <p class="text-base font-semibold text-stone-50">
+                {{ meta.strapline }}
+              </p>
+              <p class="mt-2 text-sm leading-6 text-stone-300">
+                {{ meta.description }}
+              </p>
+
+              <ul class="mt-4 space-y-3">
+                @for (fact of meta.help; track fact) {
+                  <li class="flex gap-3 text-sm leading-6 text-stone-300">
+                    <span
+                      class="mt-2 h-2 w-2 shrink-0 rounded-full bg-amber-400"
+                    ></span>
+                    <span>{{ fact }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </section>
+
+          <section
+            class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,_rgba(28,33,39,0.98),_rgba(13,16,20,0.98))] shadow-xl shadow-slate-950/25"
+            data-testid="setup-summary-panel"
+          >
+            <div
+              class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"
+            >
+              <h2
+                id="setup-summary-heading"
+                class="text-sm font-semibold uppercase tracking-[0.22em] text-stone-400"
+              >
+                {{ i18n.t('setup.start_local_match') }}
+              </h2>
+              <span
+                class="rounded-sm border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-stone-300"
+              >
+                {{ meta.title }}
+              </span>
+            </div>
+
+            <div
+              class="min-h-0 overflow-y-auto px-4 py-4"
+              role="region"
+              tabindex="0"
+              aria-labelledby="setup-summary-heading"
+            >
+              <p class="text-sm leading-6 text-stone-300">
+                {{ meta.objective }}
+              </p>
+
+              <div class="mt-4 space-y-3">
+                @for (fact of setupFacts(); track fact.id) {
+                  <article
+                    class="rounded-md border border-white/8 bg-white/[0.03] px-3 py-3"
+                    [attr.data-testid]="'setup-fact-' + fact.id"
+                  >
+                    <p
+                      class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-500"
+                    >
+                      {{ fact.label }}
+                    </p>
+                    <p class="mt-1 text-sm font-semibold text-stone-50">
+                      {{ fact.value }}
+                    </p>
+                    @if (fact.hint) {
+                      <p class="mt-2 text-sm leading-5 text-stone-400">
+                        {{ fact.hint }}
+                      </p>
+                    }
+                  </article>
+                }
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+}

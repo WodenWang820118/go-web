@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "./scripts/format-files.ts",
+    "./scripts/format-files.test.ts",
+    "./scripts/install-husky.ts",
+    "./scripts/install-husky.test.ts",
+    "./scripts/prepare-husky.ts",
+    "./scripts/prepare-husky.test.ts"
+  ]
+}

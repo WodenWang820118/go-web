@@ -1,0 +1,167 @@
+.room-stage {
+  --room-stage-padding-inline: clamp(0.9rem, 2.2vw, 1.35rem);
+  --room-stage-padding-block: clamp(0.9rem, 2.2vw, 1.2rem);
+  --room-stage-gap: clamp(0.9rem, 2.5vw, 1.35rem);
+  --room-stage-dock-width: 100%;
+  --room-stage-board-limit: 100%;
+  display: grid;
+  min-height: calc(100dvh - 1rem);
+  padding: var(--room-stage-padding-block) var(--room-stage-padding-inline);
+  box-sizing: border-box;
+}
+
+.room-stage__layout {
+  display: grid;
+  align-content: center;
+  gap: var(--room-stage-gap);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.room-stage__board-wrap {
+  --room-stage-board-reserve: 0rem;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: clamp(0.85rem, 2vw, 1.15rem);
+  min-width: 0;
+  min-height: 0;
+}
+
+.room-stage__board-wrap--with-hud {
+  --room-stage-board-reserve: clamp(4.5rem, 7vw, 5.75rem);
+}
+
+.room-stage__board,
+.room-stage__hud {
+  width: min(100%, var(--room-stage-board-limit));
+  max-width: 100%;
+}
+
+.room-stage__board {
+  aspect-ratio: 1 / 1;
+  justify-self: center;
+  overflow: hidden;
+  border-radius: var(--go-hosted-radius-shell, 0.5rem);
+}
+
+.room-stage__board lib-go-game-board {
+  display: block;
+  width: 100%;
+}
+
+.room-stage__hud {
+  justify-self: center;
+}
+
+.room-stage__dock {
+  display: grid;
+  justify-items: end;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.room-stage__share-anchor {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.room-stage__share-anchor lib-go-online-room-share-chip {
+  width: min(100%, 12rem);
+}
+
+.room-stage__empty {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  width: min(100%, 42rem);
+  min-height: 0;
+  margin-inline: auto;
+  padding: clamp(0.5rem, 1vw, 1rem) clamp(0.25rem, 1vw, 0.75rem);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1079px) {
+  .room-stage__dock {
+    justify-items: stretch;
+  }
+
+  .room-stage__share-anchor {
+    padding-inline-start: 0.25rem;
+  }
+}
+
+@media (min-width: 1080px) {
+  .room-stage {
+    --room-stage-gap: clamp(1rem, 1.8vw, 1.5rem);
+    --room-stage-dock-width: clamp(5.75rem, 6vw, 6.5rem);
+    --room-stage-board-limit: min(
+      calc(100dvh - 7.5rem),
+      calc(
+        100vw - var(--room-sidebar-width) - var(--room-stage-dock-width) -
+          6.5rem
+      )
+    );
+  }
+
+  .room-stage__layout {
+    height: 100%;
+    align-items: center;
+  }
+
+  .room-stage__layout--with-dock {
+    grid-template-columns: minmax(0, 1fr) var(--room-stage-dock-width);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .room-stage__layout--with-dock .room-stage__board-wrap {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+    container-type: size;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: stretch;
+  }
+
+  .room-stage__layout--with-dock .room-stage__empty {
+    grid-column: 1;
+    grid-row: 1;
+    width: min(100%, calc(100% - var(--room-stage-gap)));
+  }
+
+  .room-stage__layout--with-dock .room-stage__dock {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+    align-content: end;
+    justify-self: end;
+    width: 100%;
+  }
+
+  .room-stage__layout:not(.room-stage__layout--with-dock)
+    .room-stage__board-wrap {
+    container-type: size;
+    height: 100%;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: stretch;
+  }
+
+  .room-stage__layout:not(.room-stage__layout--with-dock) .room-stage__empty {
+    width: min(100%, calc(100% - var(--room-stage-gap)));
+  }
+
+  @supports (width: 1cqi) {
+    .room-stage__board {
+      width: min(100cqi, calc(100cqb - var(--room-stage-board-reserve)));
+    }
+  }
+
+  .room-stage__share-anchor--board lib-go-online-room-share-chip {
+    width: min(100%, 6rem);
+  }
+}

@@ -171,6 +171,9 @@ importers:
       '@playwright/test':
         specifier: ^1.36.0
         version: 1.58.2
+      '@primeuix/styled':
+        specifier: 0.7.4
+        version: 0.7.4
       '@schematics/angular':
         specifier: 21.1.1
         version: 21.1.1(chokidar@5.0.0)
@@ -219,6 +222,9 @@ importers:
       eslint-plugin-playwright:
         specifier: ^1.6.2
         version: 1.8.3(eslint@9.39.4(jiti@2.4.2))
+      husky:
+        specifier: 9.1.7
+        version: 9.1.7
       jiti:
         specifier: 2.4.2
         version: 2.4.2
@@ -5794,6 +5800,11 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
+
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   hyperdyperid@1.2.0:
     resolution: {integrity: sha512-Y93lCzHYgGWdrJ66yIktxiaGULYc6oGiABxhcO5AufBeOyoIdZF7bIfLaOrbM0iGIOXQQgxxRrFEnb+Y6w1n4A==}
@@ -16027,6 +16038,8 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+
+  husky@9.1.7: {}
 
   hyperdyperid@1.2.0: {}
 
