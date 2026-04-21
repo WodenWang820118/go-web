@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router, UrlTree } from '@angular/router';
 import { isGameMode } from '@gx/go/domain';
-import { GameSessionStore } from '../session/game-session.store';
+import { GameSessionStore } from '../session/game-session-store.service';
 
 @Injectable({ providedIn: 'root' })
 export class GameRouteGuardService {

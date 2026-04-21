@@ -36,7 +36,7 @@ import { OnlineRoomSidebarRematchStatusViewModel } from '../../../../contracts/o
       <div class="grid gap-2">
         @for (status of rematchStatuses(); track status.color) {
           <div
-            class="flex items-center justify-between gap-3 rounded-[1rem] bg-white/5 px-3 py-2.5"
+            class="flex items-center justify-between gap-3 rounded-[0.375rem] bg-white/5 px-3 py-2.5"
           >
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-stone-50">

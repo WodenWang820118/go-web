@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
-import { App } from './app';
+import { AppComponent } from './app.component';
 
 @Component({
   standalone: true,
@@ -15,10 +15,10 @@ class DummyLobbyPageComponent {}
 })
 class DummyRoomPageComponent {}
 
-describe('App', () => {
+describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [AppComponent],
       providers: [
         provideRouter([
           {
@@ -35,13 +35,13 @@ describe('App', () => {
   });
 
   it('creates the root shell', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance).toBeTruthy();
   });
 
   it('renders the active lobby route content', async () => {
     const router = TestBed.inject(Router);
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(AppComponent);
 
     await router.navigateByUrl('/');
     await fixture.whenStable();
@@ -52,7 +52,7 @@ describe('App', () => {
 
   it('renders the active room route content', async () => {
     const router = TestBed.inject(Router);
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(AppComponent);
 
     await router.navigateByUrl('/online/room/ROOM42');
     await fixture.whenStable();

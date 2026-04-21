@@ -14,16 +14,12 @@ import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
-  buildLobbyAnnouncementCards,
-  buildLobbyOnlinePlayerGroups,
-  buildLobbyOverviewStats,
-  buildLobbyTableRows,
-  buildLobbySections,
   LobbyAnnouncementCardViewModel,
   LobbyOnlinePlayerGroupViewModel,
   LobbyOverviewStatsViewModel,
   LobbyRoomTableRowViewModel,
-} from '../online-lobby.presentation';
+  OnlineLobbyPresentationService,
+} from '../online-lobby-presentation.service';
 import { HostedShellHeaderComponent } from '../../shared/hosted-shell-header/hosted-shell-header.component';
 import { OnlineRoomService } from '../../room/services/online-room/online-room.service';
 import { OnlineLobbyService } from '../services/online-lobby/online-lobby.service';
@@ -49,6 +45,7 @@ export class OnlineLobbyPageComponent {
   protected readonly onlineLobby = inject(OnlineLobbyService);
   protected readonly onlineRoom = inject(OnlineRoomService);
   protected readonly flashNotice = inject(OnlineLobbyFlashNoticeService);
+  protected readonly presentation = inject(OnlineLobbyPresentationService);
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -67,7 +64,7 @@ export class OnlineLobbyPageComponent {
   });
 
   protected readonly sections = computed(() =>
-    buildLobbySections(this.i18n, this.onlineLobby.rooms()),
+    this.presentation.buildLobbySections(this.onlineLobby.rooms()),
   );
   protected readonly activeSection = computed(
     () =>
@@ -79,18 +76,22 @@ export class OnlineLobbyPageComponent {
   );
   protected readonly activeRows = computed<
     readonly LobbyRoomTableRowViewModel[]
-  >(() => buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? []));
+  >(() =>
+    this.presentation.buildLobbyTableRows(this.activeSection()?.rooms ?? []),
+  );
   protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(
-    () => buildLobbyOverviewStats(this.activeSection()?.rooms ?? []),
+    () =>
+      this.presentation.buildLobbyOverviewStats(
+        this.activeSection()?.rooms ?? [],
+      ),
   );
   protected readonly announcementCards = computed<
     LobbyAnnouncementCardViewModel[]
-  >(() => buildLobbyAnnouncementCards(this.i18n));
+  >(() => this.presentation.buildLobbyAnnouncementCards());
   protected readonly onlinePlayerGroups = computed<
     LobbyOnlinePlayerGroupViewModel[]
   >(() =>
-    buildLobbyOnlinePlayerGroups(
-      this.i18n,
+    this.presentation.buildLobbyOnlinePlayerGroups(
       this.onlineLobby.onlineParticipants(),
     ),
   );

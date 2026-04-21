@@ -60,7 +60,7 @@
               <th class="w-[12%] px-4 py-3 font-semibold">
                 {{ i18n.t('lobby.table.status') }}
               </th>
-              <th class="w-[12%] px-4 py-3 font-semibold">
+              <th class="w-[7rem] px-4 py-3 font-semibold">
                 {{ i18n.t('lobby.table.action') }}
               </th>
             </tr>
@@ -123,10 +123,10 @@
                 <td class="px-4 py-4 align-top">
                   <p-tag severity="contrast" [value]="row.statusLabel" />
                 </td>
-                <td class="px-4 py-4 align-top">
+                <td class="w-[7rem] px-4 py-4 align-top">
                   <button
                     type="button"
-                    class="inline-flex w-full items-center justify-center rounded-sm bg-stone-50 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    class="inline-flex w-full items-center justify-center whitespace-nowrap rounded-sm bg-stone-50 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                     [attr.data-testid]="'online-lobby-row-action-' + row.roomId"
                     [disabled]="joining() || !canSubmitIdentity()"
                     (click)="onJoinRoomRequested(row.room)"
@@ -211,7 +211,7 @@
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
               <button
                 type="button"
-                class="inline-flex items-center justify-center rounded-sm bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-sm bg-stone-50 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 [attr.data-testid]="'online-lobby-mobile-primary-' + row.roomId"
                 [disabled]="joining() || !canSubmitIdentity()"
                 (click)="onJoinRoomRequested(row.room)"

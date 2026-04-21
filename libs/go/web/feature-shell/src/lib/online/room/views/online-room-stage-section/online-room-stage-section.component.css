@@ -43,7 +43,7 @@
   aspect-ratio: 1 / 1;
   justify-self: center;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: var(--go-hosted-radius-shell, 0.5rem);
 }
 
 .room-stage__board lib-go-game-board {

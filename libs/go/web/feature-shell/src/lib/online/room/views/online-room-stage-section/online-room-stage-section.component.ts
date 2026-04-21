@@ -58,7 +58,7 @@ import {
 
             @if (boardSection().statusLine) {
               <div
-                class="room-stage__hud rounded-[1rem] border border-white/10 bg-white/5 px-4 py-3"
+                class="room-stage__hud rounded-[0.375rem] border border-white/10 bg-white/5 px-4 py-3"
                 data-testid="room-stage-hud"
               >
                 <p class="text-sm leading-6 text-stone-200/80">
