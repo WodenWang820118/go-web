@@ -10,10 +10,10 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { LobbyRoomStatus } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
-  countLabel,
   LobbyOverviewStatsViewModel,
   LobbySectionViewModel,
-} from '../../../online-lobby.presentation';
+  OnlineLobbyPresentationService,
+} from '../../../online-lobby-presentation.service';
 
 @Component({
   selector: 'lib-go-online-lobby-identity-bar',
@@ -24,6 +24,7 @@ import {
 })
 export class OnlineLobbyIdentityBarComponent {
   readonly i18n = inject(GoI18nService);
+  readonly presentation = inject(OnlineLobbyPresentationService);
 
   readonly sections = input.required<readonly LobbySectionViewModel[]>();
   readonly activeStatus = input.required<LobbyRoomStatus>();
@@ -41,7 +42,7 @@ export class OnlineLobbyIdentityBarComponent {
   protected readonly countLabel = (
     count: number,
     unit: 'room' | 'person' | 'online' | 'spectator',
-  ) => countLabel(this.i18n, count, unit);
+  ) => this.presentation.countLabel(count, unit);
 
   protected isActiveStatus(status: LobbyRoomStatus): boolean {
     return this.activeStatus() === status;

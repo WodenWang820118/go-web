@@ -1,6 +1,6 @@
 import { inject, InjectionToken } from '@angular/core';
 import { GameSessionSnapshot } from './game-session.types';
-import { LocalGameSessionAdapter } from './local-game-session.adapter';
+import { LocalGameSessionAdapter } from './local-game-session-adapter.service';
 
 export interface GameSessionPort {
   read(): GameSessionSnapshot | null;

@@ -1,5 +1,5 @@
 import { createMessage } from '@gx/go/domain';
-import { LocalGameSessionAdapter } from '../session/local-game-session.adapter';
+import { LocalGameSessionAdapter } from '../session/local-game-session-adapter.service';
 
 describe('LocalGameSessionAdapter', () => {
   it('stores snapshots in memory and returns safe clones', () => {

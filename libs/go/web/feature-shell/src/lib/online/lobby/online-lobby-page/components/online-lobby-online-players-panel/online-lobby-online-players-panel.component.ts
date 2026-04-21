@@ -6,9 +6,9 @@ import {
 } from '@angular/core';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
-  countLabel,
   LobbyOnlinePlayerGroupViewModel,
-} from '../../../online-lobby.presentation';
+  OnlineLobbyPresentationService,
+} from '../../../online-lobby-presentation.service';
 
 @Component({
   selector: 'lib-go-online-lobby-online-players-panel',
@@ -21,6 +21,7 @@ import {
 })
 export class OnlineLobbyOnlinePlayersPanelComponent {
   readonly i18n = inject(GoI18nService);
+  readonly presentation = inject(OnlineLobbyPresentationService);
 
   readonly loading = input.required<boolean>();
   readonly groups =
@@ -30,5 +31,5 @@ export class OnlineLobbyOnlinePlayersPanelComponent {
   protected readonly countLabel = (
     count: number,
     unit: 'room' | 'person' | 'online' | 'spectator',
-  ) => countLabel(this.i18n, count, unit);
+  ) => this.presentation.countLabel(count, unit);
 }

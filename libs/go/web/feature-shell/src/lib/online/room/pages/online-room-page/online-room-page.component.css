@@ -1,12 +1,13 @@
-.room-shell,
-::ng-deep .room-event-dialog {
+lib-go-online-room-page .room-shell,
+.room-event-dialog {
   --go-hosted-radius-shell: 0.5rem;
   --go-hosted-radius-card: 0.375rem;
   --go-hosted-radius-soft: 0.25rem;
   --go-hosted-radius-pill: 0.375rem;
 }
 
-.room-shell
+lib-go-online-room-page
+  .room-shell
   :is(
     .go-hosted-button-primary,
     .go-hosted-button-primary.p-button,
@@ -28,8 +29,7 @@
     .go-hosted-textarea.p-textarea,
     .go-hosted-surface-warm
   ),
-::ng-deep
-  .room-event-dialog
+.room-event-dialog
   :is(
     .go-hosted-button-primary,
     .go-hosted-button-primary.p-button,
@@ -54,27 +54,27 @@
   border-radius: var(--go-hosted-radius-card);
 }
 
-::ng-deep .room-event-dialog.p-dialog {
+.room-event-dialog.p-dialog {
   border-radius: var(--go-hosted-radius-card);
   overflow: hidden;
 }
 
-.room-layout {
+lib-go-online-room-page .room-layout {
   --room-sidebar-width: 30rem;
   align-items: stretch;
 }
 
-lib-go-online-room-sidebar {
+lib-go-online-room-page lib-go-online-room-sidebar {
   min-height: 0;
 }
 
-lib-go-online-room-stage-section {
+lib-go-online-room-page lib-go-online-room-stage-section {
   min-height: 0;
   min-width: 0;
 }
 
 @media (min-width: 1080px) {
-  .room-layout {
+  lib-go-online-room-page .room-layout {
     grid-template-columns: minmax(0, 1fr) var(--room-sidebar-width);
     height: 100dvh;
     overflow: hidden;
@@ -82,7 +82,7 @@ lib-go-online-room-stage-section {
 }
 
 @media (max-width: 1079px) {
-  .room-layout {
+  lib-go-online-room-page .room-layout {
     min-height: auto;
   }
 }

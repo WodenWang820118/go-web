@@ -13,23 +13,13 @@ import {
   OnlineRoomStageViewModel,
 } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomService } from '../../../../services/online-room/online-room.service';
-import {
-  buildRoomBoardSection,
-  buildRoomLoadingStatusView,
-  buildRoomMissingStatusView,
-  buildRoomRematchStatuses,
-  buildRoomSeatViewModels,
-  buildRoomSidebarMessages,
-  buildRoomStageViewModel,
-  connectionStateLabel,
-  findRoomRematchViewerSeat,
-  isLiveHostedMatch,
-} from '../../online-room-page.presentation';
+import { OnlineRoomPagePresentationService } from '../../online-room-page-presentation.service';
 
 @Injectable()
 export class OnlineRoomPageViewStateService {
   readonly onlineRoom = inject(OnlineRoomService);
   readonly i18n = inject(GoI18nService);
+  readonly presentation = inject(OnlineRoomPagePresentationService);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -51,18 +41,23 @@ export class OnlineRoomPageViewStateService {
   readonly realtimeConnected = computed(
     () => this.connectionState() === 'connected',
   );
-  readonly isLiveMatch = computed(() => isLiveHostedMatch(this.match()));
+  readonly isLiveMatch = computed(() =>
+    this.presentation.isLiveHostedMatch(this.match()),
+  );
   readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
-    return buildRoomStageViewModel(this.i18n, this.snapshot(), this.match());
+    return this.presentation.buildRoomStageViewModel(
+      this.snapshot(),
+      this.match(),
+    );
   });
   readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
-    buildRoomLoadingStatusView(this.i18n, this.roomId()),
+    this.presentation.buildRoomLoadingStatusView(this.roomId()),
   );
   readonly missingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
-    buildRoomMissingStatusView(this.i18n),
+    this.presentation.buildRoomMissingStatusView(),
   );
   readonly seats = computed<OnlineRoomSeatViewModel[]>(() => {
-    return buildRoomSeatViewModels(this.snapshot(), {
+    return this.presentation.buildRoomSeatViewModels(this.snapshot(), {
       participantId: this.onlineRoom.participantId(),
       viewerSeat: this.onlineRoom.viewerSeat(),
       canChangeSeats: this.onlineRoom.canChangeSeats(),
@@ -85,7 +80,10 @@ export class OnlineRoomPageViewStateService {
       this.match()?.state.phase === 'playing',
   );
   readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
-    findRoomRematchViewerSeat(this.onlineRoom.participantId(), this.rematch()),
+    this.presentation.findRoomRematchViewerSeat(
+      this.onlineRoom.participantId(),
+      this.rematch(),
+    ),
   );
   readonly canRespondToRematch = computed(() => {
     const viewerSeat = this.rematchViewerSeat();
@@ -99,8 +97,7 @@ export class OnlineRoomPageViewStateService {
   readonly rematchStatuses = computed<
     OnlineRoomSidebarRematchStatusViewModel[]
   >(() => {
-    return buildRoomRematchStatuses(
-      this.i18n,
+    return this.presentation.buildRoomRematchStatuses(
       this.participants(),
       this.rematch(),
       this.onlineRoom.participantId(),
@@ -117,7 +114,7 @@ export class OnlineRoomPageViewStateService {
       : this.i18n.t('room.join.description.pre_match'),
   );
   readonly connectionLabel = computed(() =>
-    connectionStateLabel(this.i18n, this.connectionState()),
+    this.presentation.connectionStateLabel(this.connectionState()),
   );
   readonly chatHelperText = computed(() => {
     if (!this.onlineRoom.participantId()) {
@@ -140,7 +137,7 @@ export class OnlineRoomPageViewStateService {
       : null,
   );
   readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
-    return buildRoomSidebarMessages(this.i18n, {
+    return this.presentation.buildRoomSidebarMessages({
       lastError: this.onlineRoom.lastError(),
       lastNotice: this.onlineRoom.lastNotice(),
       lastSystemNotice: this.onlineRoom.lastSystemNotice(),
@@ -152,7 +149,7 @@ export class OnlineRoomPageViewStateService {
     });
   });
   readonly boardSection = computed<OnlineRoomBoardSectionViewModel>(() =>
-    buildRoomBoardSection(this.i18n, {
+    this.presentation.buildRoomBoardSection({
       lastPlacedPoint: this.lastPlacedPoint(),
       canInteractBoard: this.onlineRoom.canInteractBoard(),
       realtimeConnected: this.realtimeConnected(),

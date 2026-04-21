@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { LobbyAnnouncementCardViewModel } from '../../../online-lobby.presentation';
+import { LobbyAnnouncementCardViewModel } from '../../../online-lobby-presentation.service';
 
 @Component({
   selector: 'lib-go-online-lobby-announcement-panel',

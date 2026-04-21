@@ -1,19 +1,30 @@
+import { TestBed } from '@angular/core/testing';
+import { GoI18nService } from '@gx/go/state/i18n';
 import {
   LobbyOnlineParticipantSummary,
   LobbyRoomSummary,
 } from '@gx/go/contracts';
-import {
-  buildLobbyAnnouncementCards,
-  buildLobbyOnlinePlayerGroups,
-  buildLobbyOverviewStats,
-  buildLobbySections,
-  buildLobbyTableRows,
-  emptySectionLabel,
-} from './online-lobby.presentation';
+import { OnlineLobbyPresentationService } from './online-lobby-presentation.service';
 
-describe('online-lobby.presentation', () => {
+describe('OnlineLobbyPresentationService', () => {
+  let service: OnlineLobbyPresentationService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        OnlineLobbyPresentationService,
+        {
+          provide: GoI18nService,
+          useValue: createI18n('en'),
+        },
+      ],
+    });
+
+    service = TestBed.inject(OnlineLobbyPresentationService);
+  });
+
   it('orders sections as live, ready, then waiting', () => {
-    const sections = buildLobbySections(createI18n('en'), [
+    const sections = service.buildLobbySections([
       createRoom('ROOM2', 'ready'),
       createRoom('ROOM3', 'waiting'),
       createRoom('ROOM1', 'live'),
@@ -28,7 +39,7 @@ describe('online-lobby.presentation', () => {
   });
 
   it('aggregates lobby overview stats from all rooms', () => {
-    const stats = buildLobbyOverviewStats([
+    const stats = service.buildLobbyOverviewStats([
       createRoom('LIVE1', 'live'),
       createRoom('READY1', 'ready'),
       {
@@ -49,9 +60,7 @@ describe('online-lobby.presentation', () => {
   });
 
   it('builds compact table rows with seat and count values', () => {
-    const [row] = buildLobbyTableRows(createI18n('en'), [
-      createRoom('ROOM9', 'waiting'),
-    ]);
+    const [row] = service.buildLobbyTableRows([createRoom('ROOM9', 'waiting')]);
 
     expect(row).toEqual(
       expect.objectContaining({
@@ -68,7 +77,7 @@ describe('online-lobby.presentation', () => {
   });
 
   it('builds pending-mode rows and live-room actions', () => {
-    const [row] = buildLobbyTableRows(createI18n('en'), [
+    const [row] = service.buildLobbyTableRows([
       {
         ...createRoom('LIVE10', 'live'),
         mode: null,
@@ -89,22 +98,26 @@ describe('online-lobby.presentation', () => {
   });
 
   it('builds announcement cards for guide and ad slots', () => {
-    const cards = buildLobbyAnnouncementCards(createI18n('en'));
+    const cards = service.buildLobbyAnnouncementCards();
 
     expect(cards).toEqual([
-      expect.objectContaining({
+      {
         id: 'guide',
+        title: 'Lobby notice slot',
+        copy: 'Guide copy',
         tone: 'guide',
-      }),
-      expect.objectContaining({
+      },
+      {
         id: 'ad',
+        title: 'Ad slot reserved',
+        copy: 'Ad copy',
         tone: 'ad',
-      }),
+      },
     ]);
   });
 
   it('groups online players by activity and renders host plus seat badges', () => {
-    const groups = buildLobbyOnlinePlayerGroups(createI18n('en'), [
+    const groups = service.buildLobbyOnlinePlayerGroups([
       createOnlineParticipant({
         participantId: 'p1',
         roomId: 'LIVE1',
@@ -151,9 +164,12 @@ describe('online-lobby.presentation', () => {
   });
 
   it('returns an empty-section label for the requested status', () => {
-    expect(emptySectionLabel(createI18n('en'), 'ready')).toContain(
-      'No ready rooms yet.',
-    );
+    expect(service.emptySectionLabel('ready')).toContain('No ready rooms yet.');
+  });
+
+  it('pluralizes count labels through the injected i18n service', () => {
+    expect(service.countLabel(1, 'room')).toBe('1 room');
+    expect(service.countLabel(2, 'room')).toBe('2 rooms');
   });
 });
 
@@ -239,6 +255,14 @@ function createI18n(locale: 'en' | 'zh-TW') {
 
       if (key === 'lobby.section.empty') {
         return `No ${String(params?.section ?? '')} yet.`;
+      }
+
+      if (key === 'lobby.count.room.one') {
+        return `${String(params?.count ?? 0)} room`;
+      }
+
+      if (key === 'lobby.count.room.other') {
+        return `${String(params?.count ?? 0)} rooms`;
       }
 
       return key;

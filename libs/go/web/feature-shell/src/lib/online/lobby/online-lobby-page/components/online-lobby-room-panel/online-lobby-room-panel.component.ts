@@ -13,11 +13,11 @@ import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { TagModule } from 'primeng/tag';
 import {
-  emptySectionLabel,
   LobbyOverviewStatsViewModel,
   LobbyRoomTableRowViewModel,
   LobbySectionViewModel,
-} from '../../../online-lobby.presentation';
+  OnlineLobbyPresentationService,
+} from '../../../online-lobby-presentation.service';
 import { OnlineLobbyIdentityBarComponent } from '../online-lobby-identity-bar/online-lobby-identity-bar.component';
 import { FormControl } from '@angular/forms';
 
@@ -33,6 +33,7 @@ import { FormControl } from '@angular/forms';
 })
 export class OnlineLobbyRoomPanelComponent {
   readonly i18n = inject(GoI18nService);
+  readonly presentation = inject(OnlineLobbyPresentationService);
 
   readonly sections = input.required<readonly LobbySectionViewModel[]>();
   readonly activeStatus = input.required<LobbyRoomStatus>();
@@ -56,7 +57,7 @@ export class OnlineLobbyRoomPanelComponent {
     viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
 
   protected readonly emptySectionLabel = (status: LobbyRoomStatus) =>
-    emptySectionLabel(this.i18n, status);
+    this.presentation.emptySectionLabel(status);
 
   constructor() {
     effect(() => {
