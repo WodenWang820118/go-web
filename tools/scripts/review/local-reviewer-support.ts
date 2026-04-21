@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
@@ -57,7 +63,11 @@ export interface LocalReviewDoctorReport {
   advisory_only: boolean;
   runtime: string;
   runtime_provider: 'foundry' | 'ollama';
-  checks: Array<{ name: string; status: 'ok' | 'warn' | 'error'; detail: string }>;
+  checks: Array<{
+    name: string;
+    status: 'ok' | 'warn' | 'error';
+    detail: string;
+  }>;
   profiles: LocalReviewProfile[];
   missing_instruction_profiles: string[];
   summary: string;
@@ -281,7 +291,9 @@ const EVALUATION_KIND_ORDER: EvaluationSample['kind'][] = [
   'multi-file-refactor',
   'workspace-config',
 ];
-const EVALUATION_KIND_WEIGHTS: Readonly<Record<EvaluationSample['kind'], number>> = {
+const EVALUATION_KIND_WEIGHTS: Readonly<
+  Record<EvaluationSample['kind'], number>
+> = {
   'higher-risk': 1,
   'small-ts': 7,
   general: 8,
@@ -329,18 +341,23 @@ const SENSITIVE_REVIEW_AREAS: Array<{
     | 'persistent state';
   pattern: RegExp;
 }> = [
-  { category: 'auth', pattern: /\b(auth|oauth|login|session|jwt|permission|role)\b/i },
+  {
+    category: 'auth',
+    pattern: /\b(auth|oauth|login|session|jwt|permission|role)\b/i,
+  },
   {
     category: 'secrets',
     pattern: /\b(secret|token|apikey|api[_-]?key|password|credential)\b/i,
   },
   {
     category: 'filesystem',
-    pattern: /\b(filesystem|readfile|writefile|unlink|readdir|mkdir|rename|path\.)\b/i,
+    pattern:
+      /\b(filesystem|readfile|writefile|unlink|readdir|mkdir|rename|path\.)\b/i,
   },
   {
     category: 'shell',
-    pattern: /\b(shell|child_process|spawnsync|spawn\(|execsync|exec\(|powershell)\b/i,
+    pattern:
+      /\b(shell|child_process|spawnsync|spawn\(|execsync|exec\(|powershell)\b/i,
   },
   {
     category: 'network',
@@ -348,11 +365,13 @@ const SENSITIVE_REVIEW_AREAS: Array<{
   },
   {
     category: 'public contract',
-    pattern: /\b(controller|dto|schema|openapi|graphql|api contract|public contract)\b/i,
+    pattern:
+      /\b(controller|dto|schema|openapi|graphql|api contract|public contract)\b/i,
   },
   {
     category: 'persistent state',
-    pattern: /\b(migration|database|sql|persist|storage|repository|prisma|typeorm)\b/i,
+    pattern:
+      /\b(migration|database|sql|persist|storage|repository|prisma|typeorm)\b/i,
   },
 ];
 const HYBRID_ANGULAR_PATH_PATTERNS = [
@@ -469,7 +488,8 @@ export function resolveLocalReviewerRepoRoot(
   env: NodeJS.ProcessEnv = process.env,
 ): string {
   const candidate = resolve(
-    env.LOCAL_REVIEWER_CLI_PATH ?? resolve(repoRoot, '..', 'local-reviewer-cli'),
+    env.LOCAL_REVIEWER_CLI_PATH ??
+      resolve(repoRoot, '..', 'local-reviewer-cli'),
   );
   const packageJsonPath = resolve(candidate, 'package.json');
   const cliEntryPath = resolve(
@@ -598,13 +618,18 @@ export function runLocalReviewerReview(input: {
   } else if (input.baseRef && input.headRef) {
     subcommandArgs.push('--base', input.baseRef, '--head', input.headRef);
   } else {
-    throw new Error('Review mode requires either staged=true or base/head refs.');
+    throw new Error(
+      'Review mode requires either staged=true or base/head refs.',
+    );
   }
   subcommandArgs.push('--json');
 
   return runLocalReviewerJsonCommand<LocalReviewReport>({
     dependencies: input.dependencies,
-    env: buildLocalReviewerRequestedProfilesEnv(input.env, input.requestedProfiles),
+    env: buildLocalReviewerRequestedProfilesEnv(
+      input.env,
+      input.requestedProfiles,
+    ),
     targetRepoRoot: input.targetRepoRoot,
     toolRepoRoot: input.toolRepoRoot,
     subcommandArgs,
@@ -629,7 +654,11 @@ export function collectDiffText(input: {
         '--no-ext-diff',
       ];
 
-  const result = runGitCommand(input.repoRoot, args.filter(Boolean), input.dependencies);
+  const result = runGitCommand(
+    input.repoRoot,
+    args.filter(Boolean),
+    input.dependencies,
+  );
   return result.stdout.trim();
 }
 
@@ -643,7 +672,11 @@ export function collectChangedFiles(input: {
   const args = input.staged
     ? ['diff', '--cached', '--name-only']
     : ['diff', '--name-only', input.baseRef ?? '', input.headRef ?? ''];
-  const result = runGitCommand(input.repoRoot, args.filter(Boolean), input.dependencies);
+  const result = runGitCommand(
+    input.repoRoot,
+    args.filter(Boolean),
+    input.dependencies,
+  );
 
   return result.stdout
     .split(/\r?\n/)
@@ -717,7 +750,9 @@ export function runHybridGptReview(input: {
     return {
       provider,
       model,
-      status: isCopilotUnavailableError(error) ? 'unavailable' : 'runtime-error',
+      status: isCopilotUnavailableError(error)
+        ? 'unavailable'
+        : 'runtime-error',
       overall_risk: null,
       confidence: null,
       needs_local_deep_review: true,
@@ -911,7 +946,8 @@ export function getEscalationReasons(input: {
 
   if (
     input.findings.some(
-      (finding) => finding.severity === 'critical' || finding.severity === 'high',
+      (finding) =>
+        finding.severity === 'critical' || finding.severity === 'high',
     )
   ) {
     reasons.push('local reviewer reported a critical/high finding');
@@ -1008,7 +1044,9 @@ export function buildPrefilterFailureContext(input: {
       ? condensedFiles.map((file) => `- ${file}`)
       : ['- none']),
     ...(input.changedFiles.length > condensedFiles.length
-      ? [`- ... ${input.changedFiles.length - condensedFiles.length} more file(s)`]
+      ? [
+          `- ... ${input.changedFiles.length - condensedFiles.length} more file(s)`,
+        ]
       : []),
     '',
     'findings:',
@@ -1068,7 +1106,11 @@ export function writePrefilterArtifacts(input: {
   const reportPath = resolve(artifactRoot, PREFILTER_REPORT_FILE);
   const contextPath = resolve(artifactRoot, PREFILTER_CONTEXT_FILE);
   const reviewContextPath = resolve(artifactRoot, REVIEWER_CONTEXT_FILE);
-  writeFileSync(reportPath, JSON.stringify(input.reportPayload, null, 2), 'utf8');
+  writeFileSync(
+    reportPath,
+    JSON.stringify(input.reportPayload, null, 2),
+    'utf8',
+  );
   writeFileSync(contextPath, `${input.contextMarkdown.trim()}\n`, 'utf8');
   writeFileSync(
     reviewContextPath,
@@ -1084,7 +1126,9 @@ export function resolveEvaluationRepoTargets(
   requestedRepos: ReadonlyArray<string> = [],
 ): EvaluationRepoTarget[] {
   const repoInputs =
-    requestedRepos.length > 0 ? requestedRepos : [...DEFAULT_EVALUATION_REPO_NAMES];
+    requestedRepos.length > 0
+      ? requestedRepos
+      : [...DEFAULT_EVALUATION_REPO_NAMES];
   const resolvedTargets: EvaluationRepoTarget[] = [];
   const seenRoots = new Set<string>();
 
@@ -1099,7 +1143,9 @@ export function resolveEvaluationRepoTargets(
       (!existsSync(resolve(target.root, '.git')) &&
         !existsSync(resolve(target.root, 'package.json')))
     ) {
-      throw new Error(`Unable to find an evaluation repository at ${target.root}.`);
+      throw new Error(
+        `Unable to find an evaluation repository at ${target.root}.`,
+      );
     }
 
     resolvedTargets.push(target);
@@ -1135,7 +1181,12 @@ export function collectEvaluationSamples(input: {
   const rounds = input.rounds ?? DEFAULT_EVALUATION_ROUNDS;
   const seed = input.seed ?? DEFAULT_SAMPLE_SEED;
   const candidates = input.repoTargets.flatMap((repo, index) =>
-    sampleRepoCommits(repo.root, repo.name, input.dependencies, seed + index + 1),
+    sampleRepoCommits(
+      repo.root,
+      repo.name,
+      input.dependencies,
+      seed + index + 1,
+    ),
   );
 
   return selectEvaluationSamples({
@@ -1221,8 +1272,16 @@ export function summarizeEvaluation(input: {
 
   const samplePayload = input.localResults.map((result) => result.sample);
   writeFileSync(samplesPath, JSON.stringify(samplePayload, null, 2), 'utf8');
-  writeFileSync(localResultsPath, JSON.stringify(input.localResults, null, 2), 'utf8');
-  writeFileSync(abResultsPath, JSON.stringify(input.reviewerResults, null, 2), 'utf8');
+  writeFileSync(
+    localResultsPath,
+    JSON.stringify(input.localResults, null, 2),
+    'utf8',
+  );
+  writeFileSync(
+    abResultsPath,
+    JSON.stringify(input.reviewerResults, null, 2),
+    'utf8',
+  );
 
   const summaryMarkdown = renderEvaluationSummary(
     input.localResults,
@@ -1364,7 +1423,9 @@ export function evaluateSampleWithCheckpointReview(input: {
     durationMs: Date.now() - startedAt,
     error:
       result.error?.message ||
-      (result.status === 0 ? undefined : result.stderr.trim() || result.stdout.trim()),
+      (result.status === 0
+        ? undefined
+        : result.stderr.trim() || result.stdout.trim()),
     output: result.stdout.trim(),
     providerAvailable: result.status === 0,
     sample: input.sample,
@@ -1379,10 +1440,16 @@ function renderEvaluationSummary(
 ): string {
   const total = localResults.length;
   const successful = localResults.filter((result) => result.success).length;
-  const parseable = localResults.filter((result) => result.jsonParseable).length;
-  const escalated = localResults.filter((result) => result.recommendedEscalation).length;
+  const parseable = localResults.filter(
+    (result) => result.jsonParseable,
+  ).length;
+  const escalated = localResults.filter(
+    (result) => result.recommendedEscalation,
+  ).length;
   const localMedianMs = median(localResults.map((result) => result.durationMs));
-  const findingMedian = median(localResults.map((result) => result.findingsCount));
+  const findingMedian = median(
+    localResults.map((result) => result.findingsCount),
+  );
   const baselineDiffChars = localResults.reduce(
     (sum, result) => sum + result.diffLength,
     0,
@@ -1410,10 +1477,9 @@ function renderEvaluationSummary(
         entry.sample.repoName === result.sample.repoName &&
         entry.sample.commit === result.sample.commit,
     );
-    const paidContext =
-      result.recommendedEscalation
-        ? `${result.reviewContextMode} (${result.paidReviewContextLength})`
-        : 'not-needed';
+    const paidContext = result.recommendedEscalation
+      ? `${result.reviewContextMode} (${result.paidReviewContextLength})`
+      : 'not-needed';
     return `| ${result.sample.repoName} | ${result.sample.kind} | ${shortHash(result.sample.commit)} | ${result.success ? 'ok' : 'fail'} | ${result.findingsCount} | ${result.recommendedEscalation ? 'yes' : 'no'} | ${paidContext} | ${deriveVerdict(result, reviewer)} |`;
   });
 
@@ -1465,10 +1531,9 @@ function buildHybridGptPrompt(input: {
   ].join('\n');
 }
 
-function parseHybridGptReview(rawOutput: string): Omit<
-  HybridGptReview,
-  'error' | 'model' | 'provider' | 'status'
-> {
+function parseHybridGptReview(
+  rawOutput: string,
+): Omit<HybridGptReview, 'error' | 'model' | 'provider' | 'status'> {
   const payload = extractJsonObject(rawOutput);
   const parsed = JSON.parse(payload) as Record<string, unknown>;
   const overallRisk = normalizeHybridRisk(parsed.overall_risk);
@@ -1505,7 +1570,11 @@ function extractJsonObject(rawOutput: string): string {
 
 function normalizeHybridRisk(value: unknown): HybridRiskLevel {
   const normalized = normalizeOptionalText(value)?.toLowerCase();
-  if (normalized === 'low' || normalized === 'medium' || normalized === 'high') {
+  if (
+    normalized === 'low' ||
+    normalized === 'medium' ||
+    normalized === 'high'
+  ) {
     return normalized;
   }
 
@@ -1514,7 +1583,11 @@ function normalizeHybridRisk(value: unknown): HybridRiskLevel {
 
 function normalizeHybridConfidence(value: unknown): HybridConfidenceLevel {
   const normalized = normalizeOptionalText(value)?.toLowerCase();
-  if (normalized === 'low' || normalized === 'medium' || normalized === 'high') {
+  if (
+    normalized === 'low' ||
+    normalized === 'medium' ||
+    normalized === 'high'
+  ) {
     return normalized;
   }
 
@@ -1523,7 +1596,9 @@ function normalizeHybridConfidence(value: unknown): HybridConfidenceLevel {
 
 function normalizeRequiredText(value: unknown, fieldName: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`Hybrid GPT review returned an invalid ${fieldName} value.`);
+    throw new Error(
+      `Hybrid GPT review returned an invalid ${fieldName} value.`,
+    );
   }
 
   return value.trim();
@@ -1531,7 +1606,9 @@ function normalizeRequiredText(value: unknown, fieldName: string): string {
 
 function normalizeBoolean(value: unknown, fieldName: string): boolean {
   if (typeof value !== 'boolean') {
-    throw new Error(`Hybrid GPT review returned a non-boolean ${fieldName} value.`);
+    throw new Error(
+      `Hybrid GPT review returned a non-boolean ${fieldName} value.`,
+    );
   }
 
   return value;
@@ -1572,7 +1649,10 @@ function normalizeHybridGptFindings(value: unknown): HybridGptFinding[] {
     return {
       severity: normalizeLocalReviewSeverity(finding.severity),
       title: normalizeRequiredText(finding.title, `findings[${index}].title`),
-      detail: normalizeRequiredText(finding.detail, `findings[${index}].detail`),
+      detail: normalizeRequiredText(
+        finding.detail,
+        `findings[${index}].detail`,
+      ),
       file_path: normalizeOptionalText(finding.file_path),
       line: normalizeOptionalLineNumber(finding.line),
       recommendation: normalizeOptionalText(finding.recommendation),
@@ -1667,9 +1747,9 @@ function detectSensitiveReviewAreas(input: {
   diffText: string;
 }): HybridHeuristics['sensitive_categories'] {
   const combinedText = `${input.changedFiles.join('\n')}\n${input.diffText}`;
-  return SENSITIVE_REVIEW_AREAS.filter(({ pattern }) => pattern.test(combinedText)).map(
-    ({ category }) => category,
-  );
+  return SENSITIVE_REVIEW_AREAS.filter(({ pattern }) =>
+    pattern.test(combinedText),
+  ).map(({ category }) => category);
 }
 
 function selectRequestedHybridProfiles(input: {
@@ -1677,10 +1757,14 @@ function selectRequestedHybridProfiles(input: {
   routedProfiles: ReadonlyArray<HybridReviewProfileName>;
 }): HybridReviewProfileName[] {
   const routed = new Set(input.routedProfiles);
-  const intersection = input.gptFocusProfiles.filter((profile) => routed.has(profile));
+  const intersection = input.gptFocusProfiles.filter((profile) =>
+    routed.has(profile),
+  );
 
   if (intersection.length > 0) {
-    return HYBRID_PROFILE_ORDER.filter((profile) => intersection.includes(profile));
+    return HYBRID_PROFILE_ORDER.filter((profile) =>
+      intersection.includes(profile),
+    );
   }
 
   if (input.routedProfiles.length > 0) {
@@ -1732,12 +1816,15 @@ function mergeHybridFindings(input: {
       low: 3,
       info: 4,
     } as const;
-    const severityDelta = severityOrder[left.severity] - severityOrder[right.severity];
+    const severityDelta =
+      severityOrder[left.severity] - severityOrder[right.severity];
     if (severityDelta !== 0) {
       return severityDelta;
     }
 
-    const fileDelta = (left.file_path ?? '').localeCompare(right.file_path ?? '');
+    const fileDelta = (left.file_path ?? '').localeCompare(
+      right.file_path ?? '',
+    );
     if (fileDelta !== 0) {
       return fileDelta;
     }
@@ -1792,7 +1879,8 @@ function getHybridEscalationReasons(input: {
 
   if (
     input.localFindings.some(
-      (finding) => finding.severity === 'critical' || finding.severity === 'high',
+      (finding) =>
+        finding.severity === 'critical' || finding.severity === 'high',
     )
   ) {
     reasons.push('local reviewer reported a critical/high finding');
@@ -1851,7 +1939,9 @@ function deriveSuggestedReviewFocus(
     focus.add(reason);
   }
 
-  return focus.size > 0 ? [...focus] : ['General correctness and missing tests'];
+  return focus.size > 0
+    ? [...focus]
+    : ['General correctness and missing tests'];
 }
 
 function runLocalReviewerJsonCommand<T>(input: {
@@ -1864,7 +1954,13 @@ function runLocalReviewerJsonCommand<T>(input: {
   const result = input.dependencies.runProcess({
     command: 'node',
     args: [
-      resolve(input.toolRepoRoot, 'packages', 'local-reviewer', 'bin', 'local-reviewer.js'),
+      resolve(
+        input.toolRepoRoot,
+        'packages',
+        'local-reviewer',
+        'bin',
+        'local-reviewer.js',
+      ),
       '--repo-root',
       input.targetRepoRoot,
       ...input.subcommandArgs,
@@ -1942,7 +2038,9 @@ function sampleRepoCommits(
   dependencies: LocalReviewerDependencies,
   seed: number,
 ): EvaluationSample[] {
-  const sinceDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  const sinceDate = new Date(
+    Date.now() - 60 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const logResult = runGitCommand(
     repoRoot,
     ['log', '--since', sinceDate, '--no-merges', '--format=%H%x1f%ct%x1f%s'],
@@ -2015,8 +2113,14 @@ function classifySample(
     return 'multi-file-refactor';
   }
 
-  const codeFiles = files.filter((file) => /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(file));
-  if (codeFiles.length === files.length && files.length <= 2 && totalChangedLines <= 120) {
+  const codeFiles = files.filter((file) =>
+    /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/i.test(file),
+  );
+  if (
+    codeFiles.length === files.length &&
+    files.length <= 2 &&
+    totalChangedLines <= 120
+  ) {
     return 'small-ts';
   }
 
@@ -2073,7 +2177,9 @@ export function selectEvaluationSamples(input: {
 
   if (selected.length < input.rounds) {
     const remaining = shuffleWithSeed(
-      input.candidates.filter((sample) => !chosenKeys.has(`${sample.repoName}:${sample.commit}`)),
+      input.candidates.filter(
+        (sample) => !chosenKeys.has(`${sample.repoName}:${sample.commit}`),
+      ),
       input.seed + 101,
     );
     selected.push(...remaining.slice(0, input.rounds - selected.length));

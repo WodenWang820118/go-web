@@ -4,9 +4,7 @@
   "projectType": "application",
   "sourceRoot": "apps/go-web-e2e/src",
   "tags": ["scope:go"],
-  "implicitDependencies": [
-    "go-web"
-  ],
+  "implicitDependencies": ["go-web"],
   "// targets": "to see all targets run: nx show project go-web-e2e --web",
   "targets": {}
 }

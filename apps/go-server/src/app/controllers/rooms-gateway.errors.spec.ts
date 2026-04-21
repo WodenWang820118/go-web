@@ -19,8 +19,8 @@ describe('rooms-gateway.errors', () => {
       createCommandErrorEvent(
         new BadRequestException({
           message,
-        })
-      )
+        }),
+      ),
     ).toEqual({
       code: '400',
       message,
@@ -33,9 +33,13 @@ describe('rooms-gateway.errors', () => {
     expect(
       createCommandErrorEvent(
         new BadRequestException({
-          message: ['ignored', message, createMessage('room.error.not_your_turn')],
-        })
-      )
+          message: [
+            'ignored',
+            message,
+            createMessage('room.error.not_your_turn'),
+          ],
+        }),
+      ),
     ).toEqual({
       code: '400',
       message,
@@ -44,7 +48,7 @@ describe('rooms-gateway.errors', () => {
 
   it('keeps the status code but falls back to the default message for string responses', () => {
     expect(
-      createCommandErrorEvent(new BadRequestException('simple error message'))
+      createCommandErrorEvent(new BadRequestException('simple error message')),
     ).toEqual({
       code: '400',
       message: createMessage('room.error.unexpected_server_error'),

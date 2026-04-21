@@ -40,7 +40,7 @@ export class OnlineRoomsHttpService {
   joinRoom(
     roomId: string,
     displayName: string,
-    participantToken?: string
+    participantToken?: string,
   ): Observable<JoinRoomResponse> {
     return this.http.post<JoinRoomResponse>(`${this.apiBase}/${roomId}/join`, {
       displayName,
@@ -71,9 +71,7 @@ export class OnlineRoomsHttpService {
     }
 
     if (Array.isArray(message)) {
-      return message
-        .map(item => this.i18n.translateMessage(item))
-        .join(', ');
+      return message.map((item) => this.i18n.translateMessage(item)).join(', ');
     }
 
     if (typeof error.message === 'string' && error.message.length > 0) {

@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,6 +11,7 @@ import { LobbyAnnouncementCardViewModel } from '../../../online-lobby.presentati
 @Component({
   selector: 'lib-go-online-lobby-announcement-panel',
   standalone: true,
+  imports: [NgClass],
   templateUrl: './online-lobby-announcement-panel.component.html',
   host: {
     class: 'block min-h-0',

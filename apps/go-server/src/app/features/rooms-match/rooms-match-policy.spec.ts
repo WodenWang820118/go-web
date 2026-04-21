@@ -175,7 +175,7 @@ function createRoomWithTwoParticipants(store: RoomsStore): RoomRecord {
 function assignSeats(store: RoomsStore, room: RoomRecord) {
   const host = store.getParticipantById(room, room.hostParticipantId);
   const guest = [...room.participants.values()].find(
-    participant => participant.id !== room.hostParticipantId
+    (participant) => participant.id !== room.hostParticipantId,
   )!;
 
   host.seat = 'black';

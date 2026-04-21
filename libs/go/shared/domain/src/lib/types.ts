@@ -124,13 +124,13 @@ export const DEFAULT_GO_KOMI = 6.5;
 
 export function createMessage(
   key: string,
-  params?: GoMessageParams
+  params?: GoMessageParams,
 ): GoMessageDescriptor {
   return params ? { key, params } : { key };
 }
 
 export function isMessageDescriptor(
-  value: unknown
+  value: unknown,
 ): value is GoMessageDescriptor {
   return (
     typeof value === 'object' &&

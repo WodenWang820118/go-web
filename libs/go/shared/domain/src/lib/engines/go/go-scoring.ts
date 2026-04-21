@@ -23,7 +23,7 @@ import { parsePointKey, pointKey } from '../../board/point-utils';
 export function buildScoringState(
   board: BoardMatrix,
   deadStoneKeys: Set<string>,
-  komi: number
+  komi: number,
 ): ScoringState {
   const adjustedBoard = cloneBoard(board);
   const boardSize = board.length as MatchState['boardSize'];
@@ -37,7 +37,10 @@ export function buildScoringState(
   const visited = new Set<string>();
 
   for (const point of getAllPoints(boardSize)) {
-    if (getCell(adjustedBoard, point) !== null || visited.has(pointKey(point))) {
+    if (
+      getCell(adjustedBoard, point) !== null ||
+      visited.has(pointKey(point))
+    ) {
       continue;
     }
 
@@ -91,9 +94,12 @@ export function buildScoringState(
         currentScore.whiteTerritory += region.points.length;
       }
 
-      currentScore.black = currentScore.blackStones + currentScore.blackTerritory;
+      currentScore.black =
+        currentScore.blackStones + currentScore.blackTerritory;
       currentScore.white =
-        currentScore.whiteStones + currentScore.whiteTerritory + currentScore.komi;
+        currentScore.whiteStones +
+        currentScore.whiteTerritory +
+        currentScore.komi;
 
       return currentScore;
     },
@@ -105,7 +111,7 @@ export function buildScoringState(
       blackTerritory: 0,
       whiteTerritory: 0,
       komi,
-    }
+    },
   );
 
   return {

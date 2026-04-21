@@ -23,11 +23,12 @@ export class OnlineLobbyOnlinePlayersPanelComponent {
   readonly i18n = inject(GoI18nService);
 
   readonly loading = input.required<boolean>();
-  readonly groups = input.required<readonly LobbyOnlinePlayerGroupViewModel[]>();
+  readonly groups =
+    input.required<readonly LobbyOnlinePlayerGroupViewModel[]>();
   readonly totalOnlinePlayers = input.required<number>();
 
   protected readonly countLabel = (
     count: number,
-    unit: 'room' | 'person' | 'online' | 'spectator'
+    unit: 'room' | 'person' | 'online' | 'spectator',
   ) => countLabel(this.i18n, count, unit);
 }

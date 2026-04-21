@@ -144,7 +144,7 @@ export class OnlineRoomService {
 
   private emit(
     event: OnlineRoomRealtimeEvent,
-    payload: Record<string, unknown> = {}
+    payload: Record<string, unknown> = {},
   ): void {
     this.realtime.emit(event, payload);
   }

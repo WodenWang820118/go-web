@@ -15,7 +15,7 @@ const extraArgs =
 
 if (!subcommand) {
   throw new Error(
-    'Usage: node tools/scripts/proofshot.ts <check|start-web|stop|clean> [proofshot args]'
+    'Usage: node tools/scripts/proofshot.ts <check|start-web|stop|clean> [proofshot args]',
   );
 }
 
@@ -57,7 +57,7 @@ function startWeb(): void {
   args.push(...extraArgs);
 
   console.log(
-    `Starting ProofShot for go-web on port ${requestedPort}. Drive the browser with "proofshot exec ..." or agent-browser commands, then run "pnpm proofshot:stop".`
+    `Starting ProofShot for go-web on port ${requestedPort}. Drive the browser with "proofshot exec ..." or agent-browser commands, then run "pnpm proofshot:stop".`,
   );
   runProofshot(args);
 }
@@ -94,7 +94,7 @@ function checkProofshot(): void {
   const version = (result.stdout ?? '').trim();
   console.log(`ProofShot is available: ${version || proofshot.command}`);
   console.log(
-    'Machine-level setup reminder: run "npm install -g proofshot" and then "proofshot install" once on this machine.'
+    'Machine-level setup reminder: run "npm install -g proofshot" and then "proofshot install" once on this machine.',
   );
 }
 
@@ -110,7 +110,7 @@ function ensureProofshotInstalled(): void {
 
 function printInstallGuidance(): void {
   console.error(
-    'ProofShot CLI not found. Install it globally with "npm install -g proofshot" and then run "proofshot install".'
+    'ProofShot CLI not found. Install it globally with "npm install -g proofshot" and then run "proofshot install".',
   );
 }
 
@@ -171,7 +171,7 @@ function runProofshot(args: string[]): void {
 function spawnProofshot(
   args: string[],
   captureOutput: boolean,
-  overrideCommand?: string
+  overrideCommand?: string,
 ) {
   const command =
     overrideCommand ??

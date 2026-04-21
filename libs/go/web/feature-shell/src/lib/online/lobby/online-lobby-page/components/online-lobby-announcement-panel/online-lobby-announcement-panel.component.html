@@ -19,11 +19,13 @@
     @for (card of cards(); track card.id) {
       <article
         class="rounded-md border px-4 py-4"
-        [class.border-amber-300/30]="card.tone === 'guide'"
-        [class.bg-amber-300/10]="card.tone === 'guide'"
-        [class.border-dashed]="card.tone === 'ad'"
-        [class.border-white/15]="card.tone === 'ad'"
-        [class.bg-white/[0.03]]="card.tone === 'ad'"
+        [ngClass]="{
+          'border-amber-300/30': card.tone === 'guide',
+          'bg-amber-300/10': card.tone === 'guide',
+          'border-dashed': card.tone === 'ad',
+          'border-white/15': card.tone === 'ad',
+          'bg-white/[0.03]': card.tone === 'ad',
+        }"
       >
         <h3 class="text-sm font-semibold text-stone-50">{{ card.title }}</h3>
         <p class="mt-2 text-sm leading-6 text-stone-300">{{ card.copy }}</p>

@@ -8,5 +8,5 @@ export const onlineRoomLeaveGuard: CanDeactivateFn<OnlineRoomLeaveAware> = (
   component,
   _currentRoute,
   _currentState,
-  nextState
+  nextState,
 ) => component.canDeactivateRoomPage(nextState?.url ?? null);

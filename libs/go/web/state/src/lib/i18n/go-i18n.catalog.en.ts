@@ -25,7 +25,8 @@ const EN_GAME = {
   'game.state.next_turn': '{{player}} to move.',
   'game.go.state.opening': 'Black to move. Place the opening stone.',
   'game.go.state.group_restored': '{{player}} group restored for scoring.',
-  'game.go.state.group_marked_dead': '{{player}} group marked dead for scoring.',
+  'game.go.state.group_marked_dead':
+    '{{player}} group marked dead for scoring.',
   'game.go.state.captured_stones': '{{player}} captured {{count}} stone(s).',
   'game.go.state.scoring_started':
     'Scoring phase started. Click groups to mark them dead, then finalize the result.',
@@ -65,11 +66,11 @@ const EN_ROOM_SHARED = {
     'The current match must finish before a new one can start.',
   'room.error.both_seats_required':
     'Both black and white seats must be claimed before starting a match.',
-  'room.error.spectators_cannot_play': 'Spectators cannot submit game commands.',
+  'room.error.spectators_cannot_play':
+    'Spectators cannot submit game commands.',
   'room.error.dead_group_toggle_unavailable':
     'Dead-group toggling is only available during Go scoring.',
-  'room.error.scoring_preview_unavailable':
-    'Unable to update scoring preview.',
+  'room.error.scoring_preview_unavailable': 'Unable to update scoring preview.',
   'room.error.score_finalization_unavailable':
     'Score finalization is only available during Go scoring.',
   'room.error.finalize_scoring_failed': 'Unable to finalize scoring.',
@@ -80,8 +81,7 @@ const EN_ROOM_SHARED = {
     'Players may only resign on their own behalf.',
   'room.error.move_rejected': 'Move rejected.',
   'room.error.you_are_muted': 'You are muted in this room.',
-  'room.error.chat_rate_limited':
-    'You are sending chat messages too quickly.',
+  'room.error.chat_rate_limited': 'You are sending chat messages too quickly.',
   'room.error.host_cannot_be_muted': 'The host cannot be muted.',
   'room.error.host_cannot_be_kicked': 'The host cannot be kicked.',
   'room.error.cannot_kick_active_player':
@@ -90,10 +90,8 @@ const EN_ROOM_SHARED = {
   'room.error.no_match_started': 'No hosted match has been started yet.',
   'room.error.invalid_participant_token':
     'Participant token is invalid for this room.',
-  'room.error.participant_not_found':
-    'Participant was not found in this room.',
-  'room.error.host_only_action':
-    'Only the room host can perform this action.',
+  'room.error.participant_not_found': 'Participant was not found in this room.',
+  'room.error.host_only_action': 'Only the room host can perform this action.',
   'room.error.seat_change_while_live':
     'Seats cannot be changed while a match is in progress.',
   'room.error.unsupported_mode': 'Unsupported game mode.',
@@ -120,7 +118,8 @@ const EN_ROOM_SHARED = {
   'room.notice.seat_claimed': '{{displayName}} claimed the {{seat}}.',
   'room.notice.seat_released': '{{displayName}} released the {{seat}}.',
   'room.notice.match_started': '{{displayName}} started a {{mode}} match.',
-  'room.notice.match_started_auto': 'The next {{mode}} match started automatically.',
+  'room.notice.match_started_auto':
+    'The next {{mode}} match started automatically.',
   'room.notice.next_match_settings_updated':
     'Next match updated to {{mode}} on a {{size}} x {{size}} board.',
   'room.notice.rematch_declined': '{{displayName}} passed on another game.',
@@ -134,8 +133,7 @@ const EN_ROOM_SHARED = {
   'room.validation.display_name_string': 'Display name must be text.',
   'room.validation.participant_token_too_long':
     'Participant tokens must be {{max}} characters or fewer.',
-  'room.validation.participant_token_string':
-    'Participant token must be text.',
+  'room.validation.participant_token_string': 'Participant token must be text.',
   'room.validation.mode_string': 'Mode must be text.',
   'room.validation.board_size_invalid': 'Board size must be a valid integer.',
   'room.validation.komi_invalid': 'Komi must be within the allowed range.',
@@ -302,11 +300,13 @@ const EN_HOSTED_UI = {
   'room.page.live_board': 'Live board',
   'room.page.turn': 'Turn',
   'room.stage.ready.label': 'Ready room',
-  'room.stage.ready.title': 'Both seats are filled and the next match is about to auto-start.',
+  'room.stage.ready.title':
+    'Both seats are filled and the next match is about to auto-start.',
   'room.stage.ready.description':
     'Players are seated, spectators can already chat, and the room will launch the saved next-match settings automatically.',
   'room.stage.blocked.label': 'Lineup paused',
-  'room.stage.blocked.title': 'A seat change is needed before auto-start resumes.',
+  'room.stage.blocked.title':
+    'A seat change is needed before auto-start resumes.',
   'room.stage.blocked.description':
     'The last rematch was declined. Release or change a seat to unlock the next automatic start.',
   'room.stage.waiting.label': 'Waiting room',

@@ -16,7 +16,9 @@ export class OnlineLobbyService {
   private refreshSubscription: Subscription | null = null;
 
   private readonly roomsSignal = signal<LobbyRoomSummary[]>([]);
-  private readonly onlineParticipantsSignal = signal<LobbyOnlineParticipantSummary[]>([]);
+  private readonly onlineParticipantsSignal = signal<
+    LobbyOnlineParticipantSummary[]
+  >([]);
   private readonly loadingSignal = signal(true);
   private readonly lastErrorSignal = signal<string | null>(null);
   private readonly initializedSignal = signal(false);
@@ -46,7 +48,7 @@ export class OnlineLobbyService {
     this.refreshSubscription = this.api
       .listRooms()
       .pipe(
-        tap(response => {
+        tap((response) => {
           this.roomsSignal.set([...response.rooms]);
           this.onlineParticipantsSignal.set([...response.onlineParticipants]);
           this.initializedSignal.set(true);
@@ -61,10 +63,7 @@ export class OnlineLobbyService {
           }
 
           this.lastErrorSignal.set(
-            this.api.describeHttpError(
-              error,
-              'lobby.error.load_failed'
-            )
+            this.api.describeHttpError(error, 'lobby.error.load_failed'),
           );
           return EMPTY;
         }),
@@ -74,7 +73,7 @@ export class OnlineLobbyService {
           }
 
           this.refreshSubscription = null;
-        })
+        }),
       )
       .subscribe();
   }

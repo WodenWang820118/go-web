@@ -29,7 +29,7 @@ export class OnlineRoomRealtimeSyncService {
 
   emit(
     event: OnlineRoomRealtimeEvent,
-    payload: Record<string, unknown> = {}
+    payload: Record<string, unknown> = {},
   ): void {
     const session = this.state.getSessionCredentials();
 
@@ -50,26 +50,34 @@ export class OnlineRoomRealtimeSyncService {
   }
 
   private bindRealtimeEvents(): void {
-    this.socket.roomSnapshot$.subscribe(snapshot => {
+    this.socket.roomSnapshot$.subscribe((snapshot) => {
       this.state.setSnapshot(snapshot);
     });
-    this.socket.roomPresence$.subscribe(event => {
-      this.state.updateSnapshot(snapshot => this.snapshots.applyRoomPresence(snapshot, event));
+    this.socket.roomPresence$.subscribe((event) => {
+      this.state.updateSnapshot((snapshot) =>
+        this.snapshots.applyRoomPresence(snapshot, event),
+      );
     });
-    this.socket.gameUpdated$.subscribe(event => {
-      this.state.updateSnapshot(snapshot => this.snapshots.applyGameUpdated(snapshot, event));
+    this.socket.gameUpdated$.subscribe((event) => {
+      this.state.updateSnapshot((snapshot) =>
+        this.snapshots.applyGameUpdated(snapshot, event),
+      );
     });
-    this.socket.chatMessage$.subscribe(event => {
-      this.state.updateSnapshot(snapshot => this.snapshots.applyChatMessage(snapshot, event));
+    this.socket.chatMessage$.subscribe((event) => {
+      this.state.updateSnapshot((snapshot) =>
+        this.snapshots.applyChatMessage(snapshot, event),
+      );
     });
-    this.socket.notice$.subscribe(event => {
+    this.socket.notice$.subscribe((event) => {
       this.state.setLastSystemNotice(event.notice);
-      this.state.setLastNotice(this.i18n.translateMessage(event.notice.message));
+      this.state.setLastNotice(
+        this.i18n.translateMessage(event.notice.message),
+      );
     });
-    this.socket.commandError$.subscribe(event => {
+    this.socket.commandError$.subscribe((event) => {
       this.state.setLastError(this.i18n.translateMessage(event.message));
     });
-    this.socket.roomClosed$.subscribe(event => {
+    this.socket.roomClosed$.subscribe((event) => {
       if (this.state.closingRoom() || event.roomId !== this.state.roomId()) {
         return;
       }

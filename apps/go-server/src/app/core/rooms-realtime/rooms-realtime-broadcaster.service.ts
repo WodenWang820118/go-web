@@ -33,7 +33,9 @@ export class RoomsRealtimeBroadcasterService {
   }
 
   broadcastRoomSnapshot(snapshot: RoomSnapshot): void {
-    this.server?.to(this.roomChannel(snapshot.roomId)).emit('room.snapshot', snapshot);
+    this.server
+      ?.to(this.roomChannel(snapshot.roomId))
+      .emit('room.snapshot', snapshot);
   }
 
   broadcastPresence(snapshot: RoomSnapshot): void {
@@ -43,7 +45,9 @@ export class RoomsRealtimeBroadcasterService {
       seatState: snapshot.seatState,
     };
 
-    this.server?.to(this.roomChannel(snapshot.roomId)).emit('room.presence', payload);
+    this.server
+      ?.to(this.roomChannel(snapshot.roomId))
+      .emit('room.presence', payload);
   }
 
   broadcastGameState(snapshot: RoomSnapshot): void {
@@ -52,7 +56,9 @@ export class RoomsRealtimeBroadcasterService {
       match: snapshot.match,
     };
 
-    this.server?.to(this.roomChannel(snapshot.roomId)).emit('game.updated', payload);
+    this.server
+      ?.to(this.roomChannel(snapshot.roomId))
+      .emit('game.updated', payload);
   }
 
   broadcastNotice(roomId: string, notice: SystemNotice): void {
@@ -73,7 +79,7 @@ export class RoomsRealtimeBroadcasterService {
 
   broadcastMutationResult(
     result: RealtimeMutationResult,
-    options: RealtimeMutationBroadcastOptions = {}
+    options: RealtimeMutationBroadcastOptions = {},
   ): void {
     this.broadcastRoomSnapshot(result.snapshot);
 

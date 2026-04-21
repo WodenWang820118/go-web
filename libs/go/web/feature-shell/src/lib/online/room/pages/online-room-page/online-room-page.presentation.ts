@@ -47,7 +47,7 @@ interface RoomBoardSectionState {
 export function buildRoomStageViewModel(
   i18n: TranslationReader,
   snapshot: RoomSnapshot | null,
-  match: HostedMatchSnapshot | null
+  match: HostedMatchSnapshot | null,
 ): OnlineRoomStageViewModel | null {
   if (!snapshot || match) {
     return null;
@@ -82,7 +82,7 @@ export function buildRoomStageViewModel(
 
 export function buildRoomLoadingStatusView(
   i18n: TranslationReader,
-  roomId: string | null
+  roomId: string | null,
 ): OnlineRoomPageStatusViewModel {
   return {
     eyebrow: roomId
@@ -95,7 +95,7 @@ export function buildRoomLoadingStatusView(
 }
 
 export function buildRoomMissingStatusView(
-  i18n: TranslationReader
+  i18n: TranslationReader,
 ): OnlineRoomPageStatusViewModel {
   return {
     eyebrow: i18n.t('room.page.missing.label'),
@@ -107,17 +107,18 @@ export function buildRoomMissingStatusView(
 
 export function buildRoomSeatViewModels(
   snapshot: RoomSnapshot | null,
-  options: RoomSeatViewOptions
+  options: RoomSeatViewOptions,
 ): OnlineRoomSeatViewModel[] {
   if (!snapshot) {
     return [];
   }
 
-  return (['black', 'white'] as const).map(color => ({
+  return (['black', 'white'] as const).map((color) => ({
     color,
     occupant:
       snapshot.participants.find(
-        participant => participant.participantId === snapshot.seatState[color]
+        (participant) =>
+          participant.participantId === snapshot.seatState[color],
       ) ?? null,
     canClaim:
       !!options.participantId &&
@@ -134,7 +135,7 @@ export function isLiveHostedMatch(match: HostedMatchSnapshot | null): boolean {
 
 export function findRoomRematchViewerSeat(
   participantId: string | null,
-  rematch: HostedRematchState | null
+  rematch: HostedRematchState | null,
 ): PlayerColor | null {
   if (!participantId || !rematch) {
     return null;
@@ -155,16 +156,17 @@ export function buildRoomRematchStatuses(
   i18n: TranslationReader,
   participants: readonly ParticipantSummary[],
   rematch: HostedRematchState | null,
-  viewerParticipantId: string | null
+  viewerParticipantId: string | null,
 ): OnlineRoomSidebarRematchStatusViewModel[] {
   if (!rematch) {
     return [];
   }
 
-  return (['black', 'white'] as const).map(color => {
+  return (['black', 'white'] as const).map((color) => {
     const participantId = rematch.participants[color];
     const participant = participants.find(
-      currentParticipant => currentParticipant.participantId === participantId
+      (currentParticipant) =>
+        currentParticipant.participantId === participantId,
     );
 
     return {
@@ -178,7 +180,7 @@ export function buildRoomRematchStatuses(
 
 export function connectionStateLabel(
   i18n: TranslationReader,
-  connectionState: 'idle' | 'connecting' | 'connected' | 'disconnected'
+  connectionState: 'idle' | 'connecting' | 'connected' | 'disconnected',
 ): string {
   switch (connectionState) {
     case 'connected':
@@ -194,7 +196,7 @@ export function connectionStateLabel(
 
 export function buildRoomSidebarMessages(
   i18n: TranslationReader,
-  state: RoomSidebarMessageState
+  state: RoomSidebarMessageState,
 ): OnlineRoomSidebarMessageViewModel[] {
   const messages: OnlineRoomSidebarMessageViewModel[] = [];
 
@@ -242,7 +244,7 @@ export function buildRoomSidebarMessages(
 
 export function buildMatchStatusLine(
   i18n: TranslationReader,
-  match: HostedMatchSnapshot | null
+  match: HostedMatchSnapshot | null,
 ): string | null {
   if (
     !match ||
@@ -252,12 +254,14 @@ export function buildMatchStatusLine(
     return null;
   }
 
-  return i18n.translateMessage(match.state.result?.summary ?? match.state.message);
+  return i18n.translateMessage(
+    match.state.result?.summary ?? match.state.message,
+  );
 }
 
 export function buildRoomBoardSection(
   i18n: TranslationReader,
-  state: RoomBoardSectionState
+  state: RoomBoardSectionState,
 ): OnlineRoomBoardSectionViewModel {
   return {
     lastPlacedPoint: state.lastPlacedPoint,

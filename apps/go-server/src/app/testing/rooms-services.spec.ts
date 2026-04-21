@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, HttpException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+} from '@nestjs/common';
 import { vi } from 'vitest';
 
 import {
@@ -23,7 +27,7 @@ describe('rooms services composition', () => {
       host.roomId,
       'Guest',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
@@ -35,7 +39,7 @@ describe('rooms services composition', () => {
     const started = context.match.claimSeat(
       host.roomId,
       guest.participantToken,
-      'white'
+      'white',
     );
 
     expect(started.snapshot.nextMatchSettings).toEqual({
@@ -54,13 +58,13 @@ describe('rooms services composition', () => {
       host.roomId,
       'Guest',
       undefined,
-      'join:test'
+      'join:test',
     );
     const spectator = context.lifecycle.joinRoom(
       host.roomId,
       'Watcher',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
@@ -74,7 +78,7 @@ describe('rooms services composition', () => {
       context.match.applyGameCommand(host.roomId, spectator.participantToken, {
         type: 'place',
         point: { x: 7, y: 7 },
-      })
+      }),
     ).toThrow(ForbiddenException);
   });
 
@@ -84,31 +88,31 @@ describe('rooms services composition', () => {
       host.roomId,
       'Watcher',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     const muted = context.moderation.muteParticipant(
       host.roomId,
       host.participantToken,
-      spectator.participantId
+      spectator.participantId,
     );
 
     expect(
       muted.snapshot.participants.find(
-        participant => participant.participantId === spectator.participantId
-      )?.muted
+        (participant) => participant.participantId === spectator.participantId,
+      )?.muted,
     ).toBe(true);
 
     const kicked = context.moderation.kickParticipant(
       host.roomId,
       host.participantToken,
-      spectator.participantId
+      spectator.participantId,
     );
 
     expect(
       kicked.snapshot.participants.some(
-        participant => participant.participantId === spectator.participantId
-      )
+        (participant) => participant.participantId === spectator.participantId,
+      ),
     ).toBe(false);
   });
 
@@ -119,12 +123,16 @@ describe('rooms services composition', () => {
       context.chat.sendChatMessage(
         host.roomId,
         host.participantToken,
-        `Hello ${index}`
+        `Hello ${index}`,
       );
     }
 
     expect(() =>
-      context.chat.sendChatMessage(host.roomId, host.participantToken, 'Too much')
+      context.chat.sendChatMessage(
+        host.roomId,
+        host.participantToken,
+        'Too much',
+      ),
     ).toThrow(HttpException);
   });
 
@@ -137,7 +145,7 @@ describe('rooms services composition', () => {
       context.lifecycle.connectParticipantSocket(
         liveHost.roomId,
         liveHost.participantToken,
-        'live-host-socket'
+        'live-host-socket',
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:01.000Z'));
@@ -145,12 +153,12 @@ describe('rooms services composition', () => {
         liveHost.roomId,
         'Guest Live',
         undefined,
-        'join:live'
+        'join:live',
       );
       context.lifecycle.connectParticipantSocket(
         liveHost.roomId,
         liveGuest.participantToken,
-        'live-guest-socket'
+        'live-guest-socket',
       );
       context.match.updateNextMatchSettings(
         liveHost.roomId,
@@ -158,17 +166,28 @@ describe('rooms services composition', () => {
         {
           mode: 'gomoku',
           boardSize: 15,
-        }
+        },
       );
-      context.match.claimSeat(liveHost.roomId, liveHost.participantToken, 'black');
-      context.match.claimSeat(liveHost.roomId, liveGuest.participantToken, 'white');
+      context.match.claimSeat(
+        liveHost.roomId,
+        liveHost.participantToken,
+        'black',
+      );
+      context.match.claimSeat(
+        liveHost.roomId,
+        liveGuest.participantToken,
+        'white',
+      );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:02.000Z'));
-      const readyHost = context.lifecycle.createRoom('Host Ready', 'create:ready');
+      const readyHost = context.lifecycle.createRoom(
+        'Host Ready',
+        'create:ready',
+      );
       context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readyHost.participantToken,
-        'ready-host-socket'
+        'ready-host-socket',
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:03.000Z'));
@@ -176,23 +195,23 @@ describe('rooms services composition', () => {
         readyHost.roomId,
         'Guest Ready',
         undefined,
-        'join:ready'
+        'join:ready',
       );
       const readySpectator = context.lifecycle.joinRoom(
         readyHost.roomId,
         'Watcher Ready',
         undefined,
-        'join:ready'
+        'join:ready',
       );
       context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readyGuest.participantToken,
-        'ready-guest-socket'
+        'ready-guest-socket',
       );
       context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
         readySpectator.participantToken,
-        'ready-spectator-socket'
+        'ready-spectator-socket',
       );
       context.match.updateNextMatchSettings(
         readyHost.roomId,
@@ -200,42 +219,50 @@ describe('rooms services composition', () => {
         {
           mode: 'gomoku',
           boardSize: 15,
-        }
+        },
       );
-      context.match.claimSeat(readyHost.roomId, readyHost.participantToken, 'black');
-      context.match.claimSeat(readyHost.roomId, readyGuest.participantToken, 'white');
+      context.match.claimSeat(
+        readyHost.roomId,
+        readyHost.participantToken,
+        'black',
+      );
+      context.match.claimSeat(
+        readyHost.roomId,
+        readyGuest.participantToken,
+        'white',
+      );
       finishGomokuMatch(
         context.match,
         readyHost.roomId,
         readyHost.participantToken,
-        readyGuest.participantToken
+        readyGuest.participantToken,
       );
       context.match.respondToRematch(
         readyHost.roomId,
         readyHost.participantToken,
-        false
+        false,
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:04.000Z'));
       const waitingOlder = context.lifecycle.createRoom(
         'Host Waiting Older',
-        'create:wait-1'
+        'create:wait-1',
       );
       context.lifecycle.connectParticipantSocket(
         waitingOlder.roomId,
         waitingOlder.participantToken,
-        'waiting-older-socket'
+        'waiting-older-socket',
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:05.000Z'));
       const waitingNewer = context.lifecycle.createRoom(
         'Host Waiting Newer',
-        'create:wait-2'
+        'create:wait-2',
       );
       context.lifecycle.connectParticipantSocket(
         waitingNewer.roomId,
         waitingNewer.participantToken,
-        'waiting-newer-socket'
+        'waiting-newer-socket',
       );
 
       vi.setSystemTime(new Date('2026-03-20T00:00:06.000Z'));
@@ -243,7 +270,7 @@ describe('rooms services composition', () => {
 
       const response = context.lifecycle.listRooms();
 
-      expect(response.rooms.map(room => room.roomId)).toEqual([
+      expect(response.rooms.map((room) => room.roomId)).toEqual([
         liveHost.roomId,
         readyHost.roomId,
         waitingNewer.roomId,
@@ -293,7 +320,7 @@ describe('rooms services composition', () => {
             onlineCount: 1,
             spectatorCount: 1,
           }),
-        ])
+        ]),
       );
       expect(response.onlineParticipants).toEqual([
         expect.objectContaining({
@@ -357,7 +384,7 @@ describe('rooms services composition', () => {
       host.roomId,
       'Guest',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
@@ -368,10 +395,10 @@ describe('rooms services composition', () => {
     context.match.claimSeat(host.roomId, guest.participantToken, 'white');
 
     expect(() =>
-      context.match.releaseSeat(host.roomId, host.participantToken)
+      context.match.releaseSeat(host.roomId, host.participantToken),
     ).toThrow(BadRequestException);
     expect(() =>
-      context.match.claimSeat(host.roomId, guest.participantToken, 'black')
+      context.match.claimSeat(host.roomId, guest.participantToken, 'black'),
     ).toThrow(BadRequestException);
   });
 });

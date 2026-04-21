@@ -33,7 +33,9 @@ export const GAME_MODE_LIST = Object.values(GAME_MODE_META);
 /**
  * Narrows a string into a supported game mode.
  */
-export function isGameMode(value: string | null | undefined): value is GameMode {
+export function isGameMode(
+  value: string | null | undefined,
+): value is GameMode {
   return value === 'go' || value === 'gomoku';
 }
 

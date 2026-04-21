@@ -21,7 +21,7 @@ export function createMoveRecord(
     phaseAfterMove?: MatchState['phase'];
     capturesAfterMove?: Record<PlayerColor, number>;
     capturedPoints?: BoardPoint[];
-  } = {}
+  } = {},
 ): MoveRecord {
   const moveNumber = state.moveHistory.length + 1;
 

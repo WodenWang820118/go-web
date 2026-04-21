@@ -4,10 +4,7 @@
   "sourceRoot": "libs/go/web/ui/src",
   "prefix": "lib",
   "projectType": "library",
-  "tags": [
-    "scope:go",
-    "type:ui"
-  ],
+  "tags": ["scope:go", "type:ui"],
   "targets": {
     "lint": {
       "executor": "@nx/eslint:lint"

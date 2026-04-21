@@ -44,7 +44,9 @@ export class GameStatusChipComponent {
       return result?.winner === 'draw'
         ? this.i18n.t('ui.game_status.draw')
         : this.i18n.t('ui.game_status.win', {
-            player: this.i18n.playerLabel(result?.winner === 'white' ? 'white' : 'black'),
+            player: this.i18n.playerLabel(
+              result?.winner === 'white' ? 'white' : 'black',
+            ),
           });
     }
 

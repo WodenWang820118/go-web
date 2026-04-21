@@ -21,7 +21,9 @@ export const GO_SERVER_ORIGIN_STORAGE_KEY = 'gx.go.serverOrigin';
  */
 export function resolveGoServerOrigin(
   location: GoServerOriginLocation | undefined = globalThis.location,
-  storage: GoServerOriginStorage | undefined = typeof globalThis.localStorage === 'undefined'
+  storage:
+    | GoServerOriginStorage
+    | undefined = typeof globalThis.localStorage === 'undefined'
     ? undefined
     : globalThis.localStorage,
 ): string {
@@ -30,7 +32,10 @@ export function resolveGoServerOrigin(
   }
 
   try {
-    return inject(GoServerOriginResolverService).resolveOrigin(location, storage);
+    return inject(GoServerOriginResolverService).resolveOrigin(
+      location,
+      storage,
+    );
   } catch {
     return GoServerOriginResolverService.resolveOriginValue(location, storage);
   }

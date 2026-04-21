@@ -20,8 +20,9 @@ export function createCommandErrorEvent(error: unknown): CommandErrorEvent {
     typeof response === 'string'
       ? null
       : Array.isArray((response as { message?: unknown }).message)
-        ? (response as { message: unknown[] }).message.find(isMessageDescriptor) ??
-          null
+        ? ((response as { message: unknown[] }).message.find(
+            isMessageDescriptor,
+          ) ?? null)
         : isMessageDescriptor((response as { message?: unknown }).message)
           ? (response as { message: ReturnType<typeof createMessage> }).message
           : null;

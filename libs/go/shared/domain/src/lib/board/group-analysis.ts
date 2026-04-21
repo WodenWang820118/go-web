@@ -7,8 +7,12 @@ import { pointKey } from './point-utils';
  */
 export function collectGroup(
   board: BoardMatrix,
-  start: BoardPoint
-): { color: PlayerColor; stones: BoardPoint[]; liberties: BoardPoint[] } | null {
+  start: BoardPoint,
+): {
+  color: PlayerColor;
+  stones: BoardPoint[];
+  liberties: BoardPoint[];
+} | null {
   const color = getCell(board, start);
 
   if (!color) {

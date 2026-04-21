@@ -28,29 +28,29 @@ describe('RoomsModerationService', () => {
       host.roomId,
       'Watcher',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     const muted = moderation.muteParticipant(
       host.roomId,
       host.participantToken,
-      spectator.participantId
+      spectator.participantId,
     );
     const unmuted = moderation.unmuteParticipant(
       host.roomId,
       host.participantToken,
-      spectator.participantId
+      spectator.participantId,
     );
 
     expect(
       muted.snapshot.participants.find(
-        participant => participant.participantId === spectator.participantId
-      )?.muted
+        (participant) => participant.participantId === spectator.participantId,
+      )?.muted,
     ).toBe(true);
     expect(
       unmuted.snapshot.participants.find(
-        participant => participant.participantId === spectator.participantId
-      )?.muted
+        (participant) => participant.participantId === spectator.participantId,
+      )?.muted,
     ).toBe(false);
   });
 
@@ -60,33 +60,33 @@ describe('RoomsModerationService', () => {
       host.roomId,
       'Watcher',
       undefined,
-      'join:test'
+      'join:test',
     );
 
     lifecycle.connectParticipantSocket(
       host.roomId,
       spectator.participantToken,
-      'spectator-1'
+      'spectator-1',
     );
     lifecycle.connectParticipantSocket(
       host.roomId,
       spectator.participantToken,
-      'spectator-2'
+      'spectator-2',
     );
 
     const kicked = moderation.kickParticipant(
       host.roomId,
       host.participantToken,
-      spectator.participantId
+      spectator.participantId,
     );
 
     expect(kicked.kickedSocketIds).toEqual(
-      expect.arrayContaining(['spectator-1', 'spectator-2'])
+      expect.arrayContaining(['spectator-1', 'spectator-2']),
     );
     expect(
       kicked.snapshot.participants.some(
-        participant => participant.participantId === spectator.participantId
-      )
+        (participant) => participant.participantId === spectator.participantId,
+      ),
     ).toBe(false);
   });
 
@@ -97,8 +97,8 @@ describe('RoomsModerationService', () => {
       moderation.muteParticipant(
         host.roomId,
         host.participantToken,
-        host.participantId
-      )
+        host.participantId,
+      ),
     ).toThrow(BadRequestException);
   });
 });

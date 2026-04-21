@@ -14,13 +14,13 @@ export class RoomsModerationService {
     @Inject(RoomsSnapshotMapper)
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsErrorsService)
-    private readonly roomsErrors: RoomsErrorsService
+    private readonly roomsErrors: RoomsErrorsService,
   ) {}
 
   muteParticipant(
     roomId: string,
     participantToken: string,
-    targetParticipantId: string
+    targetParticipantId: string,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
@@ -39,7 +39,7 @@ export class RoomsModerationService {
         this.roomsErrors.roomMessage('room.notice.participant_muted', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
-        })
+        }),
       ),
     };
   }
@@ -47,7 +47,7 @@ export class RoomsModerationService {
   unmuteParticipant(
     roomId: string,
     participantToken: string,
-    targetParticipantId: string
+    targetParticipantId: string,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
@@ -62,7 +62,7 @@ export class RoomsModerationService {
         this.roomsErrors.roomMessage('room.notice.participant_unmuted', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
-        })
+        }),
       ),
     };
   }
@@ -70,7 +70,7 @@ export class RoomsModerationService {
   kickParticipant(
     roomId: string,
     participantToken: string,
-    targetParticipantId: string
+    targetParticipantId: string,
   ): KickResult {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
@@ -105,7 +105,7 @@ export class RoomsModerationService {
         this.roomsErrors.roomMessage('room.notice.participant_removed', {
           actorDisplayName: host.displayName,
           targetDisplayName: target.displayName,
-        })
+        }),
       ),
     };
   }

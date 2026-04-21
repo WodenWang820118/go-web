@@ -26,10 +26,12 @@ interface CodexReviewInput {
 const CODEX_HEALTH_TIMEOUT_MS = 15000;
 const CODEX_REVIEW_TIMEOUT_MS = 3 * 60 * 1000;
 
-export function probeCodexCliHealth(input: {
-  model?: string;
-  repoRoot?: string;
-} = {}): ReviewProviderHealthResult {
+export function probeCodexCliHealth(
+  input: {
+    model?: string;
+    repoRoot?: string;
+  } = {},
+): ReviewProviderHealthResult {
   const repoRoot = input.repoRoot ?? process.cwd();
   const cached = getCachedProviderHealth('codex', undefined, repoRoot);
   if (cached) {
@@ -53,7 +55,7 @@ export function probeCodexCliHealth(input: {
         checkedAtMs,
         reason: 'Codex CLI is not installed or cannot be started locally.',
       },
-      repoRoot
+      repoRoot,
     );
   }
 
@@ -77,10 +79,9 @@ export function probeCodexCliHealth(input: {
         available: false,
         checkedAtMs,
         reason:
-          loginOutput ||
-          'Codex CLI is installed locally but is not logged in.',
+          loginOutput || 'Codex CLI is installed locally but is not logged in.',
       },
-      repoRoot
+      repoRoot,
     );
   }
 
@@ -91,7 +92,7 @@ export function probeCodexCliHealth(input: {
       available: true,
       checkedAtMs,
     },
-    repoRoot
+    repoRoot,
   );
 }
 
@@ -101,7 +102,7 @@ export function isCodexUnavailableError(error: unknown): boolean {
   }
 
   return /\b(login|logged out|authenticate|not authenticated|quota|billing|429|rate limit|subscription|required)\b/i.test(
-    error.message
+    error.message,
   );
 }
 
@@ -166,17 +167,13 @@ export function runCodexReview(input: CodexReviewInput): string {
   const stderr = result.stderr ?? '';
   if (result.error || result.status !== 0) {
     throw new Error(
-      stderr.trim() ||
-        result.error?.message ||
-        'Codex review command failed.'
+      stderr.trim() || result.error?.message || 'Codex review command failed.',
     );
   }
 
   const output = extractCodexAgentMessage(result.stdout ?? '');
   if (!output.trim()) {
-    throw new Error(
-      stderr.trim() || 'Codex review returned no agent message.'
-    );
+    throw new Error(stderr.trim() || 'Codex review returned no agent message.');
   }
 
   return output.trim();
@@ -189,7 +186,7 @@ function buildCodexReviewPrompt(input: {
 }): string {
   const reviewerInstructions = readCodexReviewerInstructions(
     input.reviewerId,
-    input.repoRoot
+    input.repoRoot,
   );
 
   return [
@@ -207,14 +204,21 @@ function buildCodexReviewPrompt(input: {
 
 function readCodexReviewerInstructions(
   reviewerId: CodexReviewerId,
-  repoRoot: string
+  repoRoot: string,
 ): string {
-  const reviewerPath = path.join(repoRoot, '.codex', 'agents', `${reviewerId}.toml`);
+  const reviewerPath = path.join(
+    repoRoot,
+    '.codex',
+    'agents',
+    `${reviewerId}.toml`,
+  );
   const source = readFileSync(reviewerPath, 'utf8');
   const match = source.match(/developer_instructions = """([\s\S]*?)"""/);
 
   if (!match) {
-    throw new Error(`Unable to read Codex reviewer instructions: ${reviewerId}`);
+    throw new Error(
+      `Unable to read Codex reviewer instructions: ${reviewerId}`,
+    );
   }
 
   return match[1].trim();

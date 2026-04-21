@@ -11,11 +11,7 @@ type TranslationReader = {
 };
 
 type RoomBootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
-type RoomConnectionState =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'disconnected';
+type RoomConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
 
 export interface RoomLeaveGuardState {
   isHost: boolean;
@@ -55,7 +51,7 @@ export interface RoomMissingBootstrapState {
 
 export function buildRoomLeaveConfirmationState(
   i18n: TranslationReader,
-  targetUrl: string
+  targetUrl: string,
 ): RoomLeaveConfirmationState {
   return {
     targetUrl,
@@ -66,9 +62,7 @@ export function buildRoomLeaveConfirmationState(
   };
 }
 
-export function shouldInterceptHostLeave(
-  state: RoomLeaveGuardState
-): boolean {
+export function shouldInterceptHostLeave(state: RoomLeaveGuardState): boolean {
   return (
     state.isHost &&
     !!state.roomId &&
@@ -78,7 +72,7 @@ export function shouldInterceptHostLeave(
 }
 
 export function shouldProtectWindowUnload(
-  state: RoomUnloadProtectionState
+  state: RoomUnloadProtectionState,
 ): boolean {
   return (
     shouldInterceptHostLeave(state) &&
@@ -89,7 +83,7 @@ export function shouldProtectWindowUnload(
 }
 
 export function shouldResetRoomClosureProbe(
-  state: RoomClosureProbeState
+  state: RoomClosureProbeState,
 ): boolean {
   return (
     !state.currentRoomId ||
@@ -104,7 +98,7 @@ export function shouldResetRoomClosureProbe(
 }
 
 export function shouldScheduleRoomClosureProbe(
-  state: RoomClosureProbeState
+  state: RoomClosureProbeState,
 ): boolean {
   return (
     !shouldResetRoomClosureProbe(state) &&
@@ -124,7 +118,7 @@ export function canHandleRoomClosureProbe(
     | 'leaving'
     | 'closingRoom'
     | 'allowNextNavigation'
-  >
+  >,
 ): boolean {
   return (
     state.activeProbeRoomId === state.currentRoomId &&
@@ -137,7 +131,7 @@ export function canHandleRoomClosureProbe(
 }
 
 export function shouldMarkClosedRoomFromMissingBootstrap(
-  state: RoomMissingBootstrapState
+  state: RoomMissingBootstrapState,
 ): boolean {
   return (
     !!state.roomId &&

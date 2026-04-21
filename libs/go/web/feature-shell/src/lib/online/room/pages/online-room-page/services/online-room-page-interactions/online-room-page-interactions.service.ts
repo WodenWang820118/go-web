@@ -1,6 +1,9 @@
 import { Injectable, effect, inject } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { MAX_DISPLAY_NAME_LENGTH, createUniqueDisplayName } from '@gx/go/contracts';
+import {
+  MAX_DISPLAY_NAME_LENGTH,
+  createUniqueDisplayName,
+} from '@gx/go/contracts';
 import { BoardPoint, PlayerColor } from '@gx/go/domain';
 import { EMPTY, catchError, take } from 'rxjs';
 import {
@@ -30,7 +33,10 @@ export class OnlineRoomPageInteractionsService {
     effect(() => {
       const displayName = this.onlineRoom.displayName();
 
-      if (displayName && this.joinForm.controls.displayName.value !== displayName) {
+      if (
+        displayName &&
+        this.joinForm.controls.displayName.value !== displayName
+      ) {
         this.joinForm.controls.displayName.setValue(displayName, {
           emitEvent: false,
         });
@@ -48,10 +54,12 @@ export class OnlineRoomPageInteractionsService {
 
     const resolvedDisplayName = createUniqueDisplayName(
       requestedDisplayName,
-      this.view.snapshot()?.participants.map(participant => participant.displayName) ?? [],
+      this.view
+        .snapshot()
+        ?.participants.map((participant) => participant.displayName) ?? [],
       {
         maxLength: MAX_DISPLAY_NAME_LENGTH,
-      }
+      },
     );
 
     if (resolvedDisplayName !== requestedDisplayName) {
@@ -64,7 +72,7 @@ export class OnlineRoomPageInteractionsService {
       .joinRoom(roomId, resolvedDisplayName)
       .pipe(
         catchError(() => EMPTY),
-        take(1)
+        take(1),
       )
       .subscribe();
   }

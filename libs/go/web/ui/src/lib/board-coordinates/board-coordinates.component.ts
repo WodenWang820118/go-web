@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
 import { buildCoordinateLabels, BoardSize } from '@gx/go/domain';
 
 @Component({
@@ -49,6 +54,9 @@ export class BoardCoordinatesComponent {
   readonly boardSize = input<BoardSize>(19);
   readonly labels = computed(() => buildCoordinateLabels(this.boardSize()));
   readonly rows = computed(() =>
-    Array.from({ length: this.boardSize() }, (_, index) => this.boardSize() - index)
+    Array.from(
+      { length: this.boardSize() },
+      (_, index) => this.boardSize() - index,
+    ),
   );
 }

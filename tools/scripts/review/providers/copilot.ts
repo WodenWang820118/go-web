@@ -21,14 +21,16 @@ export function isCopilotUnavailableError(error: unknown): boolean {
   }
 
   return /\b(quota|premium requests|billing|not authenticated|authenticate|login|sign in|required|subscription|entitlement|rate limit|unavailable)\b/i.test(
-    error.message
+    error.message,
   );
 }
 
-export function probeCopilotCliHealth(input: {
-  model?: string;
-  repoRoot?: string;
-} = {}): ReviewProviderHealthResult {
+export function probeCopilotCliHealth(
+  input: {
+    model?: string;
+    repoRoot?: string;
+  } = {},
+): ReviewProviderHealthResult {
   const repoRoot = input.repoRoot ?? process.cwd();
   const cached = getCachedProviderHealth('copilot', input.model, repoRoot);
   if (cached) {
@@ -53,7 +55,7 @@ export function probeCopilotCliHealth(input: {
         checkedAtMs,
         reason: 'Copilot CLI is not installed or cannot be started locally.',
       },
-      repoRoot
+      repoRoot,
     );
   }
 
@@ -70,7 +72,9 @@ export function probeCopilotCliHealth(input: {
     timeoutMs: COPILOT_HEALTH_TIMEOUT_MS,
   });
 
-  const output = stripCopilotFooter(joinOutput(probeResult.stdout, probeResult.stderr));
+  const output = stripCopilotFooter(
+    joinOutput(probeResult.stdout, probeResult.stderr),
+  );
   if (!probeResult.error && probeResult.status === 0) {
     if (/^OK\b/i.test(output.trim())) {
       return cacheProviderHealth(
@@ -80,7 +84,7 @@ export function probeCopilotCliHealth(input: {
           available: true,
           checkedAtMs,
         },
-        repoRoot
+        repoRoot,
       );
     }
 
@@ -92,7 +96,7 @@ export function probeCopilotCliHealth(input: {
         checkedAtMs,
         reason: 'Copilot CLI probe returned an unexpected response.',
       },
-      repoRoot
+      repoRoot,
     );
   }
 
@@ -104,7 +108,7 @@ export function probeCopilotCliHealth(input: {
       checkedAtMs,
       reason: classifyCopilotProbeFailure(output, probeResult.error?.message),
     },
-    repoRoot
+    repoRoot,
   );
 }
 
@@ -125,7 +129,7 @@ export function runCopilotReview(input: CopilotReviewInput): string {
 
   if (result.error || result.status !== 0) {
     throw new Error(
-      output || result.error?.message || 'Copilot review command failed.'
+      output || result.error?.message || 'Copilot review command failed.',
     );
   }
 
@@ -143,7 +147,15 @@ export function buildCopilotCommandArgs(input: {
   model?: string;
   prompt: string;
 }): string[] {
-  const args = ['-p', input.prompt, '--output-format', 'text', '--silent', '--mode', 'plan'];
+  const args = [
+    '-p',
+    input.prompt,
+    '--output-format',
+    'text',
+    '--silent',
+    '--mode',
+    'plan',
+  ];
 
   if (input.experimental) {
     args.unshift('--experimental');
@@ -166,7 +178,7 @@ export function buildCopilotCommandArgs(input: {
 
 function classifyCopilotProbeFailure(
   output: string,
-  errorMessage?: string
+  errorMessage?: string,
 ): string {
   const message = [output, errorMessage].filter(Boolean).join('\n').trim();
 
@@ -174,11 +186,19 @@ function classifyCopilotProbeFailure(
     return 'Copilot CLI probe failed without returning output.';
   }
 
-  if (/\b(not authenticated|authenticate|login|sign in|credential|token|required)\b/i.test(message)) {
+  if (
+    /\b(not authenticated|authenticate|login|sign in|credential|token|required)\b/i.test(
+      message,
+    )
+  ) {
     return 'Copilot CLI is installed locally but is not logged in.';
   }
 
-  if (/\b(quota|premium requests|billing|subscription|rate limit|429|entitlement)\b/i.test(message)) {
+  if (
+    /\b(quota|premium requests|billing|subscription|rate limit|429|entitlement)\b/i.test(
+      message,
+    )
+  ) {
     return 'Copilot CLI is installed locally but does not currently have available request capacity.';
   }
 

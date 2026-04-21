@@ -15,7 +15,7 @@ function normalizeDisplayName(value: string): string {
 export function createUniqueDisplayName(
   requestedName: string,
   existingNames: Iterable<string>,
-  options: UniqueDisplayNameOptions = {}
+  options: UniqueDisplayNameOptions = {},
 ): string {
   const normalizedName = normalizeDisplayName(requestedName);
 

@@ -21,7 +21,7 @@ describe('RoomsMatchService', () => {
       store,
       snapshotMapper,
       rulesEngines,
-      roomsErrors
+      roomsErrors,
     );
   });
 
@@ -31,7 +31,12 @@ describe('RoomsMatchService', () => {
 
   it('auto-starts with the saved next-match settings after the second seat is claimed', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
@@ -39,7 +44,11 @@ describe('RoomsMatchService', () => {
     });
 
     match.claimSeat(host.roomId, host.participantToken, 'black');
-    const started = match.claimSeat(host.roomId, guest.participantToken, 'white');
+    const started = match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white',
+    );
 
     expect(started.snapshot.nextMatchSettings).toEqual({
       mode: 'gomoku',
@@ -53,7 +62,12 @@ describe('RoomsMatchService', () => {
 
   it('creates a rematch gate when a hosted match finishes and starts again after both players accept', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
@@ -62,7 +76,12 @@ describe('RoomsMatchService', () => {
 
     match.claimSeat(host.roomId, host.participantToken, 'black');
     match.claimSeat(host.roomId, guest.participantToken, 'white');
-    finishGomokuMatch(match, host.roomId, host.participantToken, guest.participantToken);
+    finishGomokuMatch(
+      match,
+      host.roomId,
+      host.participantToken,
+      guest.participantToken,
+    );
 
     const finishedSnapshot = lifecycle.getRoom(host.roomId).snapshot;
 
@@ -78,11 +97,19 @@ describe('RoomsMatchService', () => {
       },
     });
 
-    const waiting = match.respondToRematch(host.roomId, host.participantToken, true);
+    const waiting = match.respondToRematch(
+      host.roomId,
+      host.participantToken,
+      true,
+    );
     expect(waiting.snapshot.rematch?.responses.black).toBe('accepted');
     expect(waiting.snapshot.match?.state.phase).toBe('finished');
 
-    const restarted = match.respondToRematch(host.roomId, guest.participantToken, true);
+    const restarted = match.respondToRematch(
+      host.roomId,
+      guest.participantToken,
+      true,
+    );
     expect(restarted.snapshot.rematch).toBeNull();
     expect(restarted.snapshot.match?.state.phase).toBe('playing');
     expect(restarted.snapshot.match?.state.moveHistory).toHaveLength(0);
@@ -90,7 +117,12 @@ describe('RoomsMatchService', () => {
 
   it('blocks a new game after a rematch decline until a seat changes', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
@@ -99,9 +131,18 @@ describe('RoomsMatchService', () => {
 
     match.claimSeat(host.roomId, host.participantToken, 'black');
     match.claimSeat(host.roomId, guest.participantToken, 'white');
-    finishGomokuMatch(match, host.roomId, host.participantToken, guest.participantToken);
+    finishGomokuMatch(
+      match,
+      host.roomId,
+      host.participantToken,
+      guest.participantToken,
+    );
 
-    const declined = match.respondToRematch(host.roomId, host.participantToken, false);
+    const declined = match.respondToRematch(
+      host.roomId,
+      host.participantToken,
+      false,
+    );
     expect(declined.snapshot.rematch).toBeNull();
     expect(declined.snapshot.autoStartBlockedUntilSeatChange).toBe(true);
     expect(declined.snapshot.match?.state.phase).toBe('finished');
@@ -110,21 +151,30 @@ describe('RoomsMatchService', () => {
       match.startMatch(host.roomId, host.participantToken, {
         mode: 'gomoku',
         boardSize: 15,
-      })
+      }),
     ).toThrow(BadRequestException);
 
     const released = match.releaseSeat(host.roomId, host.participantToken);
     expect(released.snapshot.autoStartBlockedUntilSeatChange).toBe(false);
     expect(released.snapshot.seatState.black).toBeNull();
 
-    const restarted = match.claimSeat(host.roomId, host.participantToken, 'black');
+    const restarted = match.claimSeat(
+      host.roomId,
+      host.participantToken,
+      'black',
+    );
     expect(restarted.snapshot.match?.state.phase).toBe('playing');
     expect(restarted.snapshot.rematch).toBeNull();
   });
 
   it('cancels a pending rematch if one of the seated players leaves a seat', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
-    const guest = lifecycle.joinRoom(host.roomId, 'Guest', undefined, 'join:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
 
     match.updateNextMatchSettings(host.roomId, host.participantToken, {
       mode: 'gomoku',
@@ -133,14 +183,23 @@ describe('RoomsMatchService', () => {
 
     match.claimSeat(host.roomId, host.participantToken, 'black');
     match.claimSeat(host.roomId, guest.participantToken, 'white');
-    finishGomokuMatch(match, host.roomId, host.participantToken, guest.participantToken);
+    finishGomokuMatch(
+      match,
+      host.roomId,
+      host.participantToken,
+      guest.participantToken,
+    );
     match.respondToRematch(host.roomId, host.participantToken, true);
 
     const released = match.releaseSeat(host.roomId, host.participantToken);
     expect(released.snapshot.rematch).toBeNull();
     expect(released.snapshot.autoStartBlockedUntilSeatChange).toBe(false);
 
-    const restarted = match.claimSeat(host.roomId, host.participantToken, 'black');
+    const restarted = match.claimSeat(
+      host.roomId,
+      host.participantToken,
+      'black',
+    );
     expect(restarted.snapshot.match?.state.phase).toBe('playing');
   });
 });
@@ -149,7 +208,7 @@ function finishGomokuMatch(
   match: RoomsMatchService,
   roomId: string,
   hostToken: string,
-  guestToken: string
+  guestToken: string,
 ): void {
   const sequence = [
     { token: hostToken, point: { x: 0, y: 0 } },

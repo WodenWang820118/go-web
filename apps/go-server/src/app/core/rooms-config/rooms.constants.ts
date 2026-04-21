@@ -12,7 +12,7 @@ export const MAX_DISPLAY_NAME_LENGTH = 24;
 
 function readPositiveIntegerOverride(
   override: string | undefined,
-  fallback: number
+  fallback: number,
 ): number {
   if (!override || !/^[1-9]\d*$/.test(override)) {
     return fallback;
@@ -23,9 +23,9 @@ function readPositiveIntegerOverride(
 
 export const CREATE_ATTEMPTS_PER_WINDOW = readPositiveIntegerOverride(
   process.env.GO_ROOM_CREATE_ATTEMPTS_PER_WINDOW,
-  DEFAULT_CREATE_ATTEMPTS_PER_WINDOW
+  DEFAULT_CREATE_ATTEMPTS_PER_WINDOW,
 );
 export const JOIN_ATTEMPTS_PER_WINDOW = readPositiveIntegerOverride(
   process.env.GO_ROOM_JOIN_ATTEMPTS_PER_WINDOW,
-  DEFAULT_JOIN_ATTEMPTS_PER_WINDOW
+  DEFAULT_JOIN_ATTEMPTS_PER_WINDOW,
 );

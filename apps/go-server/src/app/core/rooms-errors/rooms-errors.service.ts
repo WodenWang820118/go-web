@@ -46,7 +46,7 @@ export class RoomsErrorsService {
       {
         message: this.roomMessage(key, params),
       },
-      HttpStatus.TOO_MANY_REQUESTS
+      HttpStatus.TOO_MANY_REQUESTS,
     );
   }
 }

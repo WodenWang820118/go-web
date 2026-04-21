@@ -16,8 +16,8 @@ describe('rooms-match-settings', () => {
           mode: 'go',
           boardSize: 19,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -33,8 +33,8 @@ describe('rooms-match-settings', () => {
           boardSize: 19,
           komi: Number.NaN,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -50,8 +50,8 @@ describe('rooms-match-settings', () => {
           boardSize: 19,
           komi: null as unknown as number,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -61,7 +61,7 @@ describe('rooms-match-settings', () => {
 
   it.each([9, 13])(
     'accepts valid go board size %i and preserves the provided komi',
-    boardSize => {
+    (boardSize) => {
       expect(
         normalizeHostedStartSettings(
           {
@@ -69,14 +69,14 @@ describe('rooms-match-settings', () => {
             boardSize,
             komi: 7.5,
           },
-          roomsErrors
-        )
+          roomsErrors,
+        ),
       ).toEqual({
         mode: 'go',
         boardSize,
         komi: 7.5,
       });
-    }
+    },
   );
 
   it('normalizes gomoku starts to the fixed board size and zero komi', () => {
@@ -87,8 +87,8 @@ describe('rooms-match-settings', () => {
           boardSize: 15,
           komi: 6.5,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toEqual({
       mode: 'gomoku',
       boardSize: 15,
@@ -103,8 +103,8 @@ describe('rooms-match-settings', () => {
           mode: 'go',
           boardSize: 15,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toThrow(BadRequestException);
   });
 
@@ -116,8 +116,8 @@ describe('rooms-match-settings', () => {
           boardSize: 8,
           komi: 0,
         },
-        roomsErrors
-      )
+        roomsErrors,
+      ),
     ).toThrow(BadRequestException);
   });
 
@@ -130,8 +130,8 @@ describe('rooms-match-settings', () => {
           komi: 0,
         },
         'Host',
-        'Guest'
-      )
+        'Guest',
+      ),
     ).toEqual({
       mode: 'gomoku',
       boardSize: 15,

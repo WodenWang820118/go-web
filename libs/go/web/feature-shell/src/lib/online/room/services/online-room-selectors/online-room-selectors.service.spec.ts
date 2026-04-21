@@ -18,17 +18,29 @@ describe('OnlineRoomSelectorsService', () => {
 
     expect(service.selectRoomParticipants(snapshot)).toHaveLength(2);
     expect(service.selectHostedMatch(snapshot)?.state.phase).toBe('playing');
-    expect(service.selectViewer(snapshot.participants, 'host-1')?.displayName).toBe('Host');
     expect(
-      service.selectViewerSeat(service.selectViewer(snapshot.participants, 'host-1'))
+      service.selectViewer(snapshot.participants, 'host-1')?.displayName,
+    ).toBe('Host');
+    expect(
+      service.selectViewerSeat(
+        service.selectViewer(snapshot.participants, 'host-1'),
+      ),
     ).toBe('black');
   });
 
   it('only allows board interaction when the phase rules permit it', () => {
-    expect(service.selectCanInteractBoard(createMatch('playing'), 'black')).toBe(true);
-    expect(service.selectCanInteractBoard(createMatch('playing'), 'white')).toBe(false);
-    expect(service.selectCanInteractBoard(createMatch('scoring'), 'white')).toBe(true);
-    expect(service.selectCanInteractBoard(createMatch('finished'), 'black')).toBe(false);
+    expect(
+      service.selectCanInteractBoard(createMatch('playing'), 'black'),
+    ).toBe(true);
+    expect(
+      service.selectCanInteractBoard(createMatch('playing'), 'white'),
+    ).toBe(false);
+    expect(
+      service.selectCanInteractBoard(createMatch('scoring'), 'white'),
+    ).toBe(true);
+    expect(
+      service.selectCanInteractBoard(createMatch('finished'), 'black'),
+    ).toBe(false);
   });
 
   it('allows seat changes only before a match starts or after it finishes', () => {
@@ -80,7 +92,9 @@ function createSnapshot(match: HostedMatchSnapshot | null): RoomSnapshot {
   };
 }
 
-function createMatch(phase: 'playing' | 'scoring' | 'finished'): HostedMatchSnapshot {
+function createMatch(
+  phase: 'playing' | 'scoring' | 'finished',
+): HostedMatchSnapshot {
   return {
     settings: {
       mode: 'go',

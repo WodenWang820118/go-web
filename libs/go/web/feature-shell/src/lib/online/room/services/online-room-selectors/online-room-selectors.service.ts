@@ -1,5 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HostedMatchSnapshot, ParticipantSummary, RoomSnapshot } from '@gx/go/contracts';
+import {
+  HostedMatchSnapshot,
+  ParticipantSummary,
+  RoomSnapshot,
+} from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 
 @Injectable({ providedIn: 'root' })
@@ -18,15 +22,16 @@ export class OnlineRoomSelectorsService {
 
   selectViewer(
     participants: readonly ParticipantSummary[],
-    participantId: string | null
+    participantId: string | null,
   ): ParticipantSummary | null {
     if (!participantId) {
       return null;
     }
 
     return (
-      participants.find(participant => participant.participantId === participantId) ??
-      null
+      participants.find(
+        (participant) => participant.participantId === participantId,
+      ) ?? null
     );
   }
 
@@ -44,7 +49,7 @@ export class OnlineRoomSelectorsService {
 
   selectIsActivePlayer(
     match: HostedMatchSnapshot | null,
-    seat: PlayerColor | null
+    seat: PlayerColor | null,
   ): boolean {
     return (
       !!match &&
@@ -56,7 +61,7 @@ export class OnlineRoomSelectorsService {
 
   selectCanInteractBoard(
     match: HostedMatchSnapshot | null,
-    seat: PlayerColor | null
+    seat: PlayerColor | null,
   ): boolean {
     if (!match || !seat || match.state.phase === 'finished') {
       return false;

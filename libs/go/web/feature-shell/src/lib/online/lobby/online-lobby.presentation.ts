@@ -67,7 +67,11 @@ export interface LobbyOnlinePlayerGroupViewModel {
   players: LobbyOnlinePlayerViewModel[];
 }
 
-const LOBBY_SECTION_ORDER: readonly LobbyRoomStatus[] = ['live', 'ready', 'waiting'];
+const LOBBY_SECTION_ORDER: readonly LobbyRoomStatus[] = [
+  'live',
+  'ready',
+  'waiting',
+];
 const ONLINE_PLAYER_ORDER: readonly LobbyOnlineParticipantActivity[] = [
   'playing',
   'seated',
@@ -76,17 +80,17 @@ const ONLINE_PLAYER_ORDER: readonly LobbyOnlineParticipantActivity[] = [
 
 export function buildLobbySections(
   i18n: TranslationReader,
-  rooms: readonly LobbyRoomSummary[]
+  rooms: readonly LobbyRoomSummary[],
 ): LobbySectionViewModel[] {
-  return LOBBY_SECTION_ORDER.map(status => ({
+  return LOBBY_SECTION_ORDER.map((status) => ({
     status,
     title: i18n.t(`lobby.section.${status}.title`),
-    rooms: rooms.filter(room => room.status === status),
+    rooms: rooms.filter((room) => room.status === status),
   }));
 }
 
 export function buildLobbyOverviewStats(
-  rooms: readonly LobbyRoomSummary[]
+  rooms: readonly LobbyRoomSummary[],
 ): LobbyOverviewStatsViewModel {
   return rooms.reduce<LobbyOverviewStatsViewModel>(
     (stats, room) => {
@@ -109,15 +113,15 @@ export function buildLobbyOverviewStats(
       liveCount: 0,
       readyCount: 0,
       waitingCount: 0,
-    }
+    },
   );
 }
 
 export function buildLobbyTableRows(
   i18n: TranslationReader,
-  rooms: readonly LobbyRoomSummary[]
+  rooms: readonly LobbyRoomSummary[],
 ): LobbyRoomTableRowViewModel[] {
-  return rooms.map(room => {
+  return rooms.map((room) => {
     const blackSeat = seatLabel(i18n, room.players.black, 'black');
     const whiteSeat = seatLabel(i18n, room.players.white, 'white');
 
@@ -141,7 +145,7 @@ export function buildLobbyTableRows(
 }
 
 export function buildLobbyAnnouncementCards(
-  i18n: TranslationReader
+  i18n: TranslationReader,
 ): LobbyAnnouncementCardViewModel[] {
   return [
     {
@@ -161,12 +165,12 @@ export function buildLobbyAnnouncementCards(
 
 export function buildLobbyOnlinePlayerGroups(
   i18n: TranslationReader,
-  participants: readonly LobbyOnlineParticipantSummary[]
+  participants: readonly LobbyOnlineParticipantSummary[],
 ): LobbyOnlinePlayerGroupViewModel[] {
-  return ONLINE_PLAYER_ORDER.map(activity => {
+  return ONLINE_PLAYER_ORDER.map((activity) => {
     const players = participants
-      .filter(participant => participant.activity === activity)
-      .map<LobbyOnlinePlayerViewModel>(participant => ({
+      .filter((participant) => participant.activity === activity)
+      .map<LobbyOnlinePlayerViewModel>((participant) => ({
         participantId: participant.participantId,
         displayName: participant.displayName,
         roomId: participant.roomId,
@@ -180,19 +184,19 @@ export function buildLobbyOnlinePlayerGroups(
       count: players.length,
       players,
     };
-  }).filter(group => group.count > 0);
+  }).filter((group) => group.count > 0);
 }
 
 export function roomStatusLabel(
   i18n: TranslationReader,
-  status: LobbyRoomStatus
+  status: LobbyRoomStatus,
 ): string {
   return i18n.t(`lobby.status.${status}`);
 }
 
 export function roomModeLabel(
   i18n: TranslationReader,
-  room: LobbyRoomSummary
+  room: LobbyRoomSummary,
 ): string {
   if (!room.mode || !room.boardSize) {
     return i18n.t('lobby.room.mode_pending');
@@ -206,7 +210,7 @@ export function roomModeLabel(
 
 export function roomActionLabel(
   i18n: TranslationReader,
-  room: LobbyRoomSummary
+  room: LobbyRoomSummary,
 ): string {
   return room.status === 'live'
     ? i18n.t('lobby.room.action.live')
@@ -216,7 +220,7 @@ export function roomActionLabel(
 export function seatLabel(
   i18n: TranslationReader,
   name: string | null,
-  color: 'black' | 'white'
+  color: 'black' | 'white',
 ): string {
   return (
     name ??
@@ -229,7 +233,7 @@ export function seatLabel(
 export function countLabel(
   i18n: TranslationReader,
   count: number,
-  unit: 'room' | 'person' | 'online' | 'spectator'
+  unit: 'room' | 'person' | 'online' | 'spectator',
 ): string {
   return i18n.t(`lobby.count.${unit}.${count === 1 ? 'one' : 'other'}`, {
     count,
@@ -242,7 +246,7 @@ export function roomCardLabel(i18n: TranslationReader, roomId: string): string {
 
 export function emptySectionLabel(
   i18n: TranslationReader,
-  status: LobbyRoomStatus
+  status: LobbyRoomStatus,
 ): string {
   return i18n.t('lobby.section.empty', {
     section: i18n.t(`lobby.section.${status}.title`).toLowerCase(),
@@ -251,7 +255,7 @@ export function emptySectionLabel(
 
 function playerRoleBadges(
   i18n: TranslationReader,
-  participant: LobbyOnlineParticipantSummary
+  participant: LobbyOnlineParticipantSummary,
 ): string[] {
   const badges: string[] = [];
 

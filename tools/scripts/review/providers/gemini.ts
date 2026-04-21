@@ -51,7 +51,7 @@ export async function probeGeminiCliHealth(input: {
         checkedAtMs,
         reason: 'Gemini CLI is not installed or cannot be started locally.',
       },
-      repoRoot
+      repoRoot,
     );
   }
 
@@ -73,7 +73,7 @@ export async function probeGeminiCliHealth(input: {
           ? undefined
           : 'Gemini CLI probe returned an unexpected response.',
       },
-      repoRoot
+      repoRoot,
     );
   } catch (error) {
     return cacheProviderHealth(
@@ -84,13 +84,13 @@ export async function probeGeminiCliHealth(input: {
         checkedAtMs,
         reason: error instanceof Error ? error.message : String(error),
       },
-      repoRoot
+      repoRoot,
     );
   }
 }
 
 export async function runGeminiReview(
-  input: GeminiReviewInput
+  input: GeminiReviewInput,
 ): Promise<string> {
   return runGeminiTextCommand(input);
 }
@@ -101,7 +101,7 @@ export function isGeminiUnavailableError(error: unknown): boolean {
   }
 
   return /\b(not authenticated|authenticate|login|sign in|api key|quota|429|MODEL_CAPACITY_EXHAUSTED|RESOURCE_EXHAUSTED|rateLimitExceeded|No capacity available|Requested entity was not found)\b/i.test(
-    error.message
+    error.message,
   );
 }
 
@@ -113,7 +113,7 @@ function cleanGeminiOutput(output: string): string {
   return output
     .split(/\r?\n/)
     .map((line) =>
-      line.replace(/^MCP issues detected\. Run \/mcp list for status\.?/i, '')
+      line.replace(/^MCP issues detected\. Run \/mcp list for status\.?/i, ''),
     )
     .filter((line) => line.trim().length > 0)
     .join('\n')
@@ -122,7 +122,7 @@ function cleanGeminiOutput(output: string): string {
 
 function isGeminiCapacityError(output: string): boolean {
   return /\b429\b|MODEL_CAPACITY_EXHAUSTED|RESOURCE_EXHAUSTED|rateLimitExceeded|No capacity available/i.test(
-    output
+    output,
   );
 }
 
@@ -131,7 +131,7 @@ function isGeminiModelNotFound(output: string): boolean {
 }
 
 async function runGeminiTextCommand(
-  input: GeminiReviewInput & { timeoutMs?: number }
+  input: GeminiReviewInput & { timeoutMs?: number },
 ): Promise<string> {
   const repoRoot = input.repoRoot ?? process.cwd();
   const releaseLock = await acquireGeminiLock(repoRoot);
@@ -149,7 +149,11 @@ async function runGeminiTextCommand(
       await sleep(waitBeforeStartMs);
     }
 
-    for (let attempt = 0; attempt <= policy.retryDelaysMs.length; attempt += 1) {
+    for (
+      let attempt = 0;
+      attempt <= policy.retryDelaysMs.length;
+      attempt += 1
+    ) {
       recordRequestStart(policy.model, Date.now(), repoRoot);
 
       const result = runLocalCliCommand({
@@ -170,9 +174,14 @@ async function runGeminiTextCommand(
         timeoutMs: input.timeoutMs ?? policy.requestTimeoutMs,
       });
 
-      const output = cleanGeminiOutput(joinOutput(result.stdout, result.stderr));
+      const output = cleanGeminiOutput(
+        joinOutput(result.stdout, result.stderr),
+      );
 
-      if (result.error?.name === 'TimeoutError' || result.signal === 'SIGTERM') {
+      if (
+        result.error?.name === 'TimeoutError' ||
+        result.signal === 'SIGTERM'
+      ) {
         if (attempt < policy.retryDelaysMs.length) {
           await sleep(getRetryDelayMs(policy.model, attempt));
           continue;
@@ -196,13 +205,13 @@ async function runGeminiTextCommand(
 
       if (result.error || result.status !== 0) {
         throw new Error(
-          output || result.error?.message || 'Gemini review command failed.'
+          output || result.error?.message || 'Gemini review command failed.',
         );
       }
 
       if (!output.trim()) {
         throw new Error(
-          `Gemini review returned no output for model ${policy.model}.`
+          `Gemini review returned no output for model ${policy.model}.`,
         );
       }
 

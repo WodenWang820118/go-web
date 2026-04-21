@@ -195,9 +195,12 @@ export class OnlineRoomSidebarChatPanelComponent implements AfterViewChecked {
   ngAfterViewChecked(): void {
     const messages = this.messages();
     const latestMessageId =
-      messages.length > 0 ? messages[messages.length - 1]?.id ?? null : null;
+      messages.length > 0 ? (messages[messages.length - 1]?.id ?? null) : null;
 
-    if (!latestMessageId || latestMessageId === this.lastAutoScrolledMessageId) {
+    if (
+      !latestMessageId ||
+      latestMessageId === this.lastAutoScrolledMessageId
+    ) {
       return;
     }
 

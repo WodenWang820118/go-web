@@ -27,7 +27,11 @@ export interface OnlineRoomShareChipViewModel {
   readonly manualCopyInstruction: string;
   readonly manualUrlAriaLabel: string;
   readonly dismissLabel: string;
-  readonly connectionState: 'idle' | 'connecting' | 'connected' | 'disconnected';
+  readonly connectionState:
+    | 'idle'
+    | 'connecting'
+    | 'connected'
+    | 'disconnected';
   readonly connectionLabel: string;
   readonly feedbackState: OnlineRoomShareChipFeedbackState;
 }

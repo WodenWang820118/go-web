@@ -218,16 +218,16 @@ export class MatchSidebarComponent {
   });
 
   readonly recentMoves = computed<MoveRecord[]>(() =>
-    [...(this.state()?.moveHistory ?? [])].reverse()
+    [...(this.state()?.moveHistory ?? [])].reverse(),
   );
 
   readonly canPass = computed(
-    () => this.settings()?.mode === 'go' && this.state()?.phase === 'playing'
+    () => this.settings()?.mode === 'go' && this.state()?.phase === 'playing',
   );
 
   readonly canResign = computed(() => this.state()?.phase === 'playing');
 
   readonly canFinalizeScoring = computed(
-    () => this.settings()?.mode === 'go' && this.state()?.phase === 'scoring'
+    () => this.settings()?.mode === 'go' && this.state()?.phase === 'scoring',
   );
 }

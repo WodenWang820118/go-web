@@ -21,16 +21,19 @@ export class RoomsChatService {
     @Inject(RoomsSnapshotMapper)
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsErrorsService)
-    private readonly roomsErrors: RoomsErrorsService
+    private readonly roomsErrors: RoomsErrorsService,
   ) {}
 
   sendChatMessage(
     roomId: string,
     participantToken: string,
-    message: string
+    message: string,
   ): ChatResult {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
 
     if (participant.muted) {
       throw this.roomsErrors.forbidden('room.error.you_are_muted');
@@ -39,7 +42,7 @@ export class RoomsChatService {
     const sanitizedMessage = this.sanitizeChatMessage(message);
     const now = Date.now();
     participant.chatTimestamps = participant.chatTimestamps.filter(
-      timestamp => now - timestamp < CHAT_WINDOW_MS
+      (timestamp) => now - timestamp < CHAT_WINDOW_MS,
     );
 
     if (participant.chatTimestamps.length >= CHAT_MESSAGES_PER_WINDOW) {

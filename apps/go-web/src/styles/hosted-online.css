@@ -10,8 +10,7 @@
 
 @layer components {
   .go-safe-page {
-    padding:
-      max(0.5rem, env(safe-area-inset-top))
+    padding: max(0.5rem, env(safe-area-inset-top))
       max(0.5rem, env(safe-area-inset-right))
       max(0.5rem, env(safe-area-inset-bottom))
       max(0.5rem, env(safe-area-inset-left));
@@ -37,7 +36,11 @@
   .go-hosted-panel-light {
     border-radius: var(--go-hosted-radius-card);
     background:
-      linear-gradient(180deg, rgba(248, 244, 233, 0.94), rgba(228, 223, 210, 0.94)),
+      linear-gradient(
+        180deg,
+        rgba(248, 244, 233, 0.94),
+        rgba(228, 223, 210, 0.94)
+      ),
       linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
     color: rgb(41 37 36);
     box-shadow: inset 0 0 0 1px rgba(77, 62, 40, 0.08);
@@ -83,7 +86,11 @@
     @apply inline-flex items-center gap-2.5 rounded-[1rem] border px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em];
     border-color: rgba(77, 62, 40, 0.12);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(245, 239, 227, 0.82)),
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.88),
+        rgba(245, 239, 227, 0.82)
+      ),
       linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
     color: rgba(41, 37, 36, 0.82);
     box-shadow:

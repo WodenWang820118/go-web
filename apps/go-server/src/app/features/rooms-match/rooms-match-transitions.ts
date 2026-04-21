@@ -8,9 +8,7 @@ import type {
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rules-engine.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
-import {
-  buildHostedMatchSettings,
-} from './rooms-match-settings';
+import { buildHostedMatchSettings } from './rooms-match-settings';
 import {
   createHostedRematchState,
   getAutoStartReadiness,
@@ -28,30 +26,30 @@ export function applyHostedGameCommand(
   room: RoomRecord,
   participant: ParticipantRecord,
   command: GameCommand,
-  dependencies: RoomsMatchTransitionDependencies
+  dependencies: RoomsMatchTransitionDependencies,
 ): void {
   const match = requireMatch(room, dependencies.roomsErrors);
 
   if (!participant.seat) {
-    throw dependencies.roomsErrors.forbidden('room.error.spectators_cannot_play');
+    throw dependencies.roomsErrors.forbidden(
+      'room.error.spectators_cannot_play',
+    );
   }
 
   if (command.type === 'toggle-dead') {
     if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
       throw dependencies.roomsErrors.badRequest(
-        'room.error.dead_group_toggle_unavailable'
+        'room.error.dead_group_toggle_unavailable',
       );
     }
 
-    const nextState = dependencies.rulesEngines.get('go').toggleDeadGroup?.(
-      match.state,
-      match.settings,
-      command.point
-    );
+    const nextState = dependencies.rulesEngines
+      .get('go')
+      .toggleDeadGroup?.(match.state, match.settings, command.point);
 
     if (!nextState) {
       throw dependencies.roomsErrors.badRequest(
-        'room.error.scoring_preview_unavailable'
+        'room.error.scoring_preview_unavailable',
       );
     }
 
@@ -65,18 +63,17 @@ export function applyHostedGameCommand(
   if (command.type === 'finalize-scoring') {
     if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
       throw dependencies.roomsErrors.badRequest(
-        'room.error.score_finalization_unavailable'
+        'room.error.score_finalization_unavailable',
       );
     }
 
-    const nextState = dependencies.rulesEngines.get('go').finalizeScoring?.(
-      match.state,
-      match.settings
-    );
+    const nextState = dependencies.rulesEngines
+      .get('go')
+      .finalizeScoring?.(match.state, match.settings);
 
     if (!nextState) {
       throw dependencies.roomsErrors.badRequest(
-        'room.error.finalize_scoring_failed'
+        'room.error.finalize_scoring_failed',
       );
     }
 
@@ -86,15 +83,22 @@ export function applyHostedGameCommand(
 
   if (match.state.phase !== 'playing') {
     throw dependencies.roomsErrors.badRequest(
-      'room.error.match_not_accepting_moves'
+      'room.error.match_not_accepting_moves',
     );
   }
 
-  if (command.type !== 'resign' && match.state.nextPlayer !== participant.seat) {
+  if (
+    command.type !== 'resign' &&
+    match.state.nextPlayer !== participant.seat
+  ) {
     throw dependencies.roomsErrors.forbidden('room.error.not_your_turn');
   }
 
-  if (command.type === 'resign' && command.player && command.player !== participant.seat) {
+  if (
+    command.type === 'resign' &&
+    command.player &&
+    command.player !== participant.seat
+  ) {
     throw dependencies.roomsErrors.forbidden('room.error.resign_only_for_self');
   }
 
@@ -122,7 +126,7 @@ export function applyHostedGameCommand(
 
 export function maybeStartNextMatch(
   room: RoomRecord,
-  dependencies: RoomsMatchTransitionDependencies
+  dependencies: RoomsMatchTransitionDependencies,
 ): GoMessageDescriptor | null {
   const readiness = getAutoStartReadiness(room, dependencies.store);
 
@@ -130,28 +134,23 @@ export function maybeStartNextMatch(
     const matchSettings = startMatchWithCurrentSeats(
       room,
       room.nextMatchSettings,
-      dependencies
+      dependencies,
     );
     dependencies.logger.log(
-      `[auto-start] started in room ${room.id} with ${matchSettings.mode} ${matchSettings.boardSize}x${matchSettings.boardSize} (black: ${matchSettings.players.black}, white: ${matchSettings.players.white})`
+      `[auto-start] started in room ${room.id} with ${matchSettings.mode} ${matchSettings.boardSize}x${matchSettings.boardSize} (black: ${matchSettings.players.black}, white: ${matchSettings.players.white})`,
     );
 
     return dependencies.roomsErrors.roomMessage(
       'room.notice.match_started_auto',
       {
         mode: dependencies.roomsErrors.roomMessage(
-          `common.mode.${matchSettings.mode}`
+          `common.mode.${matchSettings.mode}`,
         ),
-      }
+      },
     );
   }
 
-  logAutoStartSkip(
-    room,
-    readiness.reason,
-    dependencies,
-    readiness.extra
-  );
+  logAutoStartSkip(room, readiness.reason, dependencies, readiness.extra);
 
   return null;
 }
@@ -159,7 +158,7 @@ export function maybeStartNextMatch(
 export function startMatchWithCurrentSeats(
   room: RoomRecord,
   settings: GameStartSettings,
-  dependencies: RoomsMatchTransitionDependencies
+  dependencies: RoomsMatchTransitionDependencies,
 ): MatchSettings {
   const black = dependencies.store.getSeatHolder(room, 'black');
   const white = dependencies.store.getSeatHolder(room, 'white');
@@ -173,7 +172,7 @@ export function startMatchWithCurrentSeats(
   const matchSettings = buildHostedMatchSettings(
     settings,
     black.displayName,
-    white.displayName
+    white.displayName,
   );
 
   room.match = {
@@ -193,7 +192,7 @@ export function updateFinishedMatchState(
   room: RoomRecord,
   match: NonNullable<RoomRecord['match']>,
   nextState: NonNullable<RoomRecord['match']>['state'],
-  store: RoomsStore
+  store: RoomsStore,
 ): void {
   room.match = {
     ...match,
@@ -216,19 +215,21 @@ function logAutoStartSkip(
   room: RoomRecord,
   reason: string,
   dependencies: RoomsMatchTransitionDependencies,
-  extra: Record<string, unknown> = {}
+  extra: Record<string, unknown> = {},
 ): void {
   dependencies.logger.debug(
-    `[auto-start.skip] room=${room.id} reason=${reason} context=${JSON.stringify({
-      matchPhase: room.match?.state.phase ?? null,
-      autoStartBlockedUntilSeatChange: room.autoStartBlockedUntilSeatChange,
-      hasRematch: room.rematch !== null,
-      seatState: {
-        black: dependencies.store.getSeatHolder(room, 'black')?.id ?? null,
-        white: dependencies.store.getSeatHolder(room, 'white')?.id ?? null,
+    `[auto-start.skip] room=${room.id} reason=${reason} context=${JSON.stringify(
+      {
+        matchPhase: room.match?.state.phase ?? null,
+        autoStartBlockedUntilSeatChange: room.autoStartBlockedUntilSeatChange,
+        hasRematch: room.rematch !== null,
+        seatState: {
+          black: dependencies.store.getSeatHolder(room, 'black')?.id ?? null,
+          white: dependencies.store.getSeatHolder(room, 'white')?.id ?? null,
+        },
+        ...extra,
       },
-      ...extra,
-    })}`
+    )}`,
   );
 }
 

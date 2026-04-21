@@ -1,0 +1,30 @@
+{
+  "name": "workspace-tooling",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools/scripts",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:tooling"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "pnpm format:check"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": {
+        "command": "pnpm exec vitest run -c tools/vitest.config.mts"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": {
+        "command": "tsc --noEmit -p tools/tsconfig.tooling.json"
+      }
+    }
+  }
+}

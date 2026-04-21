@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 
-export type GoServerOriginLocation = Pick<Location, 'protocol' | 'hostname' | 'port'>;
+export type GoServerOriginLocation = Pick<
+  Location,
+  'protocol' | 'hostname' | 'port'
+>;
 export type GoServerOriginStorage = Pick<Storage, 'getItem'>;
 
 function readGlobalStorage(): GoServerOriginStorage | undefined {

@@ -38,10 +38,7 @@ class MockStorage implements Storage {
   }
 }
 
-TestBed.initTestEnvironment(
-  BrowserTestingModule,
-  platformBrowserTesting()
-);
+TestBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 
 describe('GoI18nService', () => {
   const originalDocument = globalThis.document;
@@ -110,7 +107,7 @@ describe('GoI18nService', () => {
       service.t('game.result.win_by_points', {
         winner: createMessage('common.player.white'),
         margin: 6.5,
-      })
+      }),
     ).toBe('White wins by 6.5 points.');
   });
 
@@ -134,12 +131,14 @@ describe('GoI18nService', () => {
 
   it('keeps the en and zh-TW catalogs in parity', () => {
     expect(Object.keys(ZH_TW_TRANSLATIONS).sort()).toEqual(
-      Object.keys(EN_TRANSLATIONS).sort()
+      Object.keys(EN_TRANSLATIONS).sort(),
     );
   });
 });
 
-function installBrowserGlobals(initialValues?: Record<string, string>): MockStorage {
+function installBrowserGlobals(
+  initialValues?: Record<string, string>,
+): MockStorage {
   const storage = new MockStorage();
 
   for (const [key, value] of Object.entries(initialValues ?? {})) {

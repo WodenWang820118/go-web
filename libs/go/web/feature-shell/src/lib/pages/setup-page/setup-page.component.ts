@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,7 +25,9 @@ import { map } from 'rxjs';
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     @if (meta()) {
-      <section class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10 sm:px-6 lg:px-8">
+      <section
+        class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10 sm:px-6 lg:px-8"
+      >
         <a
           routerLink="/"
           class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
@@ -30,9 +37,15 @@ import { map } from 'rxjs';
         </a>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section class="overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10">
-            <div class="border-b border-stone-200/80 bg-[linear-gradient(135deg,_rgba(254,249,240,0.98),_rgba(255,255,255,0.92))] px-6 py-6">
-              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+          <section
+            class="overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-xl shadow-amber-950/10"
+          >
+            <div
+              class="border-b border-stone-200/80 bg-[linear-gradient(135deg,_rgba(254,249,240,0.98),_rgba(255,255,255,0.92))] px-6 py-6"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500"
+              >
                 {{ i18n.t('setup.match_setup') }}
               </p>
               <h1 class="mt-2 text-3xl font-semibold text-stone-950">
@@ -77,13 +90,27 @@ import { map } from 'rxjs';
                       <button
                         type="button"
                         class="rounded-full border px-4 py-2 text-sm font-semibold transition"
-                        [class.border-stone-950]="form.controls.boardSize.value === option.value"
-                        [class.bg-stone-950]="form.controls.boardSize.value === option.value"
-                        [class.text-stone-50]="form.controls.boardSize.value === option.value"
-                        [class.border-stone-200]="form.controls.boardSize.value !== option.value"
-                        [class.bg-white]="form.controls.boardSize.value !== option.value"
-                        [class.text-stone-700]="form.controls.boardSize.value !== option.value"
-                        [class.hover:border-stone-400]="form.controls.boardSize.value !== option.value"
+                        [class.border-stone-950]="
+                          form.controls.boardSize.value === option.value
+                        "
+                        [class.bg-stone-950]="
+                          form.controls.boardSize.value === option.value
+                        "
+                        [class.text-stone-50]="
+                          form.controls.boardSize.value === option.value
+                        "
+                        [class.border-stone-200]="
+                          form.controls.boardSize.value !== option.value
+                        "
+                        [class.bg-white]="
+                          form.controls.boardSize.value !== option.value
+                        "
+                        [class.text-stone-700]="
+                          form.controls.boardSize.value !== option.value
+                        "
+                        [class.hover:border-stone-400]="
+                          form.controls.boardSize.value !== option.value
+                        "
                         (click)="form.controls.boardSize.setValue(option.value)"
                       >
                         {{ option.label }}
@@ -91,11 +118,15 @@ import { map } from 'rxjs';
                     }
                   </div>
                   <p class="text-sm text-stone-500">
-                    {{ i18n.t('setup.go_komi_note', { komi: DEFAULT_GO_KOMI }) }}
+                    {{
+                      i18n.t('setup.go_komi_note', { komi: DEFAULT_GO_KOMI })
+                    }}
                   </p>
                 </div>
               } @else {
-                <div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+                <div
+                  class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+                >
                   {{
                     i18n.t('setup.gomoku_fixed_board', {
                       size: GOMOKU_BOARD_SIZE,
@@ -113,12 +144,18 @@ import { map } from 'rxjs';
             </form>
           </section>
 
-          <section class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/85 text-stone-50 shadow-2xl shadow-slate-950/30">
+          <section
+            class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/85 text-stone-50 shadow-2xl shadow-slate-950/30"
+          >
             <div class="border-b border-white/10 px-6 py-6">
-              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/60">
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/60"
+              >
                 {{ i18n.t('setup.rules_refresher') }}
               </p>
-              <h2 class="mt-2 text-2xl font-semibold">{{ meta()!.strapline }}</h2>
+              <h2 class="mt-2 text-2xl font-semibold">
+                {{ meta()!.strapline }}
+              </h2>
             </div>
 
             <div class="space-y-4 px-6 py-6 text-sm leading-6 text-stone-300">
@@ -150,18 +187,18 @@ export class SetupPageComponent {
 
   protected readonly mode = toSignal(
     this.route.paramMap.pipe(
-      map(params => params.get('mode')),
-      map(mode => (isGameMode(mode) ? mode : null))
+      map((params) => params.get('mode')),
+      map((mode) => (isGameMode(mode) ? mode : null)),
     ),
     {
       initialValue: null,
-    }
+    },
   );
   protected readonly meta = computed(() => {
     const mode = this.mode();
     return mode ? this.i18n.gameModeMeta(mode) : null;
   });
-  protected readonly boardSizeOptions = GO_BOARD_SIZES.map(size => ({
+  protected readonly boardSizeOptions = GO_BOARD_SIZES.map((size) => ({
     label: `${size} x ${size}`,
     value: size,
   }));
@@ -185,16 +222,17 @@ export class SetupPageComponent {
 
     this.store.startMatch({
       mode,
-      boardSize: mode === 'go' ? this.form.controls.boardSize.value : GOMOKU_BOARD_SIZE,
+      boardSize:
+        mode === 'go' ? this.form.controls.boardSize.value : GOMOKU_BOARD_SIZE,
       komi: mode === 'go' ? DEFAULT_GO_KOMI : 0,
       players: {
         black: sanitizeName(
           this.form.controls.blackName.value,
-          this.i18n.playerLabel('black')
+          this.i18n.playerLabel('black'),
         ),
         white: sanitizeName(
           this.form.controls.whiteName.value,
-          this.i18n.playerLabel('white')
+          this.i18n.playerLabel('white'),
         ),
       },
     });

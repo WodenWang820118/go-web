@@ -43,7 +43,7 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
       execution('plan', 'gemini', 'general', 'gemini-2.5-pro'),
       execution('plan', 'copilot', 'general', 'gpt-5-mini'),
       execution('plan', 'codex', 'general'),
-    ]
+    ],
   );
 
   assert.deepEqual(
@@ -53,11 +53,16 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
       provider: 'auto',
     }),
     [
-      execution('implementation', 'gemini', 'general', 'gemini-3-flash-preview'),
+      execution(
+        'implementation',
+        'gemini',
+        'general',
+        'gemini-3-flash-preview',
+      ),
       execution('implementation', 'copilot', 'general', 'claude-sonnet-4.6'),
       execution('implementation', 'copilot', 'general', 'gpt-5-mini'),
       execution('implementation', 'codex', 'general'),
-    ]
+    ],
   );
 
   assert.deepEqual(
@@ -71,7 +76,7 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
       execution('test', 'gemini', 'tests', 'gemini-2.5-pro'),
       execution('test', 'copilot', 'tests', 'gpt-5-mini'),
       execution('test', 'codex', 'tests'),
-    ]
+    ],
   );
 
   assert.deepEqual(
@@ -83,7 +88,7 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
     [
       execution('pre-merge', 'copilot', 'general', 'claude-sonnet-4.6'),
       execution('pre-merge', 'copilot', 'general', 'gpt-5-mini'),
-    ]
+    ],
   );
 
   assert.deepEqual(
@@ -93,7 +98,7 @@ test('getReviewExecutionPlan follows the repo checkpoint fallback rules', () => 
       provider: 'copilot',
       model: 'gpt-5-mini',
     }),
-    [execution('test', 'copilot', 'tests', 'gpt-5-mini')]
+    [execution('test', 'copilot', 'tests', 'gpt-5-mini')],
   );
 });
 
@@ -109,7 +114,7 @@ test('createReviewExecution applies provider-specific model defaults', () => {
       provider: 'gemini',
       focus: 'general',
       model: 'gemini-3-flash-preview',
-    }
+    },
   );
 
   assert.deepEqual(
@@ -123,7 +128,7 @@ test('createReviewExecution applies provider-specific model defaults', () => {
       provider: 'copilot',
       focus: 'architecture',
       model: 'claude-sonnet-4.6',
-    }
+    },
   );
 
   assert.deepEqual(
@@ -137,7 +142,7 @@ test('createReviewExecution applies provider-specific model defaults', () => {
       provider: 'codex',
       focus: 'architecture',
       model: undefined,
-    }
+    },
   );
 });
 
@@ -149,7 +154,7 @@ test('buildReviewPrompt includes the checkpoint, focus, and supplied context', (
       focus: 'security',
       model: 'gemini-3-flash-preview',
     },
-    'Changed files: scripts/review-gate/shared.ts'
+    'Changed files: scripts/review-gate/shared.ts',
   );
 
   assert.match(prompt, /Checkpoint: implementation/);
@@ -182,9 +187,9 @@ test('executeReviewFlow fails fast for a single explicit unavailable provider', 
         async run() {
           return 'should not run';
         },
-      }
+      },
     ),
-    /Gemini CLI review is unavailable: quota exhausted/
+    /Gemini CLI review is unavailable: quota exhausted/,
   );
 });
 
@@ -197,27 +202,27 @@ test('executeReviewFlow prefers Gemini before Copilot GPT-5 mini in auto routing
       context: 'smoke',
       focus: 'tests',
       provider: 'auto',
+    },
+    {
+      cacheUnavailable() {
+        return undefined;
       },
-      {
-        cacheUnavailable() {
-          return undefined;
-        },
-        log() {
-          return undefined;
-        },
-        async probe(execution) {
-          probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
-          if (execution.model === 'claude-sonnet-4.6') {
-            return { available: false, reason: 'quota exhausted' };
-          }
+      log() {
+        return undefined;
+      },
+      async probe(execution) {
+        probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
+        if (execution.model === 'claude-sonnet-4.6') {
+          return { available: false, reason: 'quota exhausted' };
+        }
 
-          return { available: true };
-        },
-        async run(execution) {
-          return execution.model ?? execution.provider;
-        },
-      }
-    );
+        return { available: true };
+      },
+      async run(execution) {
+        return execution.model ?? execution.provider;
+      },
+    },
+  );
 
   assert.deepEqual(probed, [
     'copilot:claude-sonnet-4.6',
@@ -245,7 +250,10 @@ test('executeReviewFlow falls back to Copilot GPT-5 mini before Codex after Gemi
       },
       async probe(execution) {
         probed.push(`${execution.provider}:${execution.model ?? '<none>'}`);
-        if (execution.provider === 'copilot' || execution.provider === 'gemini') {
+        if (
+          execution.provider === 'copilot' ||
+          execution.provider === 'gemini'
+        ) {
           return { available: false, reason: 'quota exhausted' };
         }
 
@@ -254,7 +262,7 @@ test('executeReviewFlow falls back to Copilot GPT-5 mini before Codex after Gemi
       async run(execution) {
         return execution.provider;
       },
-    }
+    },
   );
 
   assert.deepEqual(probed, [
@@ -276,20 +284,20 @@ test('executeReviewFlow retries the next provider after a retryable runtime fail
       context: 'smoke',
       focus: 'general',
       provider: 'auto',
-      },
-      {
-        cacheUnavailable(execution, error) {
+    },
+    {
+      cacheUnavailable(execution, error) {
         cached.push({
           provider: execution.provider,
           reason: error instanceof Error ? error.message : String(error),
         });
-        },
-        log() {
-          return undefined;
-        },
-        async probe() {
-          return { available: true };
-        },
+      },
+      log() {
+        return undefined;
+      },
+      async probe() {
+        return { available: true };
+      },
       async run(execution) {
         ran.push(execution.provider);
         if (execution.provider === 'gemini') {
@@ -298,7 +306,7 @@ test('executeReviewFlow retries the next provider after a retryable runtime fail
 
         return execution.provider;
       },
-    }
+    },
   );
 
   assert.equal(output, 'copilot');
@@ -336,9 +344,9 @@ test('executeReviewFlow reports all unavailable providers when auto routing is e
         async run() {
           return 'should not run';
         },
-      }
+      },
     ),
-    /Attempted providers:[\s\S]*copilot:claude-sonnet-4\.6: copilot down[\s\S]*gemini:gemini-2\.5-pro: gemini down[\s\S]*copilot:gpt-5-mini: copilot down[\s\S]*codex: codex down/
+    /Attempted providers:[\s\S]*copilot:claude-sonnet-4\.6: copilot down[\s\S]*gemini:gemini-2\.5-pro: gemini down[\s\S]*copilot:gpt-5-mini: copilot down[\s\S]*codex: codex down/,
   );
 });
 

@@ -9,7 +9,7 @@ import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service
 
 export function normalizeHostedStartSettings(
   settings: GameStartSettings,
-  roomsErrors: RoomsErrorsService
+  roomsErrors: RoomsErrorsService,
 ): GameStartSettings {
   if (settings.mode !== 'go' && settings.mode !== 'gomoku') {
     throw roomsErrors.badRequest('room.error.unsupported_mode');
@@ -44,12 +44,12 @@ export function normalizeHostedStartSettings(
 export function buildHostedMatchSettings(
   settings: GameStartSettings,
   blackName: string,
-  whiteName: string
+  whiteName: string,
 ): MatchSettings {
   return {
     mode: settings.mode,
     boardSize: settings.boardSize as MatchSettings['boardSize'],
-    komi: settings.mode === 'go' ? settings.komi ?? DEFAULT_GO_KOMI : 0,
+    komi: settings.mode === 'go' ? (settings.komi ?? DEFAULT_GO_KOMI) : 0,
     players: {
       black: blackName,
       white: whiteName,

@@ -48,7 +48,10 @@ describe('GomokuRulesEngine', () => {
       { x: 0, y: 3 },
       { x: 7, y: 7 },
     ]) {
-      state = engine.applyMove(state, settings, { type: 'place', point: move }).state;
+      state = engine.applyMove(state, settings, {
+        type: 'place',
+        point: move,
+      }).state;
     }
 
     expect(state.phase).toBe('finished');
@@ -72,7 +75,10 @@ describe('GomokuRulesEngine', () => {
       { x: 0, y: 4 },
       { x: 8, y: 8 },
     ]) {
-      state = engine.applyMove(state, settings, { type: 'place', point: move }).state;
+      state = engine.applyMove(state, settings, {
+        type: 'place',
+        point: move,
+      }).state;
     }
 
     expect(state.phase).toBe('finished');
@@ -82,7 +88,9 @@ describe('GomokuRulesEngine', () => {
 
   it('supports resignation and blocks pass commands', () => {
     const initialState = engine.createInitialState(settings);
-    const passResult = engine.applyMove(initialState, settings, { type: 'pass' });
+    const passResult = engine.applyMove(initialState, settings, {
+      type: 'pass',
+    });
     const resignedState = engine.applyMove(initialState, settings, {
       type: 'resign',
       player: 'white',

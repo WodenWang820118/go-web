@@ -31,7 +31,7 @@ describe('OnlineRoomRealtimeSyncService', () => {
           useValue: {
             t: vi.fn((key: string) => key),
             translateMessage: vi.fn(
-              (message: { key: string }) => `translated:${message.key}`
+              (message: { key: string }) => `translated:${message.key}`,
             ),
           },
         },
@@ -69,7 +69,9 @@ describe('OnlineRoomRealtimeSyncService', () => {
     });
 
     expect(mockSocket.emit).not.toHaveBeenCalled();
-    expect(mockState.setLastError).toHaveBeenCalledWith('room.client.join_required');
+    expect(mockState.setLastError).toHaveBeenCalledWith(
+      'room.client.join_required',
+    );
   });
 
   it('surfaces a realtime-unavailable error when the socket emit fails', () => {
@@ -82,7 +84,7 @@ describe('OnlineRoomRealtimeSyncService', () => {
       participantToken: 'token-1',
     });
     expect(mockState.setLastError).toHaveBeenCalledWith(
-      'room.client.realtime_unavailable'
+      'room.client.realtime_unavailable',
     );
   });
 
@@ -127,9 +129,9 @@ function createSocketMock() {
     chatMessageSubject,
     commandError$: commandErrorSubject.asObservable(),
     commandErrorSubject,
-    connectionState: signal<'idle' | 'connecting' | 'connected' | 'disconnected'>(
-      'idle'
-    ).asReadonly(),
+    connectionState: signal<
+      'idle' | 'connecting' | 'connected' | 'disconnected'
+    >('idle').asReadonly(),
     emit: vi.fn(() => true),
     gameUpdated$: gameUpdatedSubject.asObservable(),
     gameUpdatedSubject,

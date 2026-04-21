@@ -34,10 +34,12 @@ export class OnlineRoomPageViewStateService {
   private readonly route = inject(ActivatedRoute);
 
   readonly roomId = toSignal(
-    this.route.paramMap.pipe(map(params => params.get('roomId')?.toUpperCase() ?? null)),
+    this.route.paramMap.pipe(
+      map((params) => params.get('roomId')?.toUpperCase() ?? null),
+    ),
     {
       initialValue: null,
-    }
+    },
   );
   readonly snapshot = this.onlineRoom.snapshot;
   readonly match = this.onlineRoom.match;
@@ -46,16 +48,18 @@ export class OnlineRoomPageViewStateService {
   readonly nextMatchSettings = this.onlineRoom.nextMatchSettings;
   readonly connectionState = this.onlineRoom.connectionState;
   readonly bootstrapState = this.onlineRoom.bootstrapState;
-  readonly realtimeConnected = computed(() => this.connectionState() === 'connected');
+  readonly realtimeConnected = computed(
+    () => this.connectionState() === 'connected',
+  );
   readonly isLiveMatch = computed(() => isLiveHostedMatch(this.match()));
   readonly roomStage = computed<OnlineRoomStageViewModel | null>(() => {
     return buildRoomStageViewModel(this.i18n, this.snapshot(), this.match());
   });
   readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
-    buildRoomLoadingStatusView(this.i18n, this.roomId())
+    buildRoomLoadingStatusView(this.i18n, this.roomId()),
   );
   readonly missingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
-    buildRoomMissingStatusView(this.i18n)
+    buildRoomMissingStatusView(this.i18n),
   );
   readonly seats = computed<OnlineRoomSeatViewModel[]>(() => {
     return buildRoomSeatViewModels(this.snapshot(), {
@@ -72,16 +76,16 @@ export class OnlineRoomPageViewStateService {
     () =>
       this.realtimeConnected() &&
       this.match()?.settings.mode === 'go' &&
-      this.onlineRoom.isActivePlayer()
+      this.onlineRoom.isActivePlayer(),
   );
   readonly canResign = computed(
     () =>
       this.realtimeConnected() &&
       !!this.onlineRoom.viewerSeat() &&
-      this.match()?.state.phase === 'playing'
+      this.match()?.state.phase === 'playing',
   );
   readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
-    findRoomRematchViewerSeat(this.onlineRoom.participantId(), this.rematch())
+    findRoomRematchViewerSeat(this.onlineRoom.participantId(), this.rematch()),
   );
   readonly canRespondToRematch = computed(() => {
     const viewerSeat = this.rematchViewerSeat();
@@ -92,26 +96,28 @@ export class OnlineRoomPageViewStateService {
       this.rematch()?.responses[viewerSeat] === 'pending'
     );
   });
-  readonly rematchStatuses = computed<OnlineRoomSidebarRematchStatusViewModel[]>(() => {
+  readonly rematchStatuses = computed<
+    OnlineRoomSidebarRematchStatusViewModel[]
+  >(() => {
     return buildRoomRematchStatuses(
       this.i18n,
       this.participants(),
       this.rematch(),
-      this.onlineRoom.participantId()
+      this.onlineRoom.participantId(),
     );
   });
   readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
       ? this.i18n.t('room.join.title.spectator')
-      : this.i18n.t('room.join.title.pre_match')
+      : this.i18n.t('room.join.title.pre_match'),
   );
   readonly joinCardDescription = computed(() =>
     this.isLiveMatch()
       ? this.i18n.t('room.join.description.spectator')
-      : this.i18n.t('room.join.description.pre_match')
+      : this.i18n.t('room.join.description.pre_match'),
   );
   readonly connectionLabel = computed(() =>
-    connectionStateLabel(this.i18n, this.connectionState())
+    connectionStateLabel(this.i18n, this.connectionState()),
   );
   readonly chatHelperText = computed(() => {
     if (!this.onlineRoom.participantId()) {
@@ -131,7 +137,7 @@ export class OnlineRoomPageViewStateService {
   readonly connectionWarning = computed(() =>
     this.onlineRoom.participantId() && !this.realtimeConnected()
       ? this.i18n.t('room.client.realtime_unavailable')
-      : null
+      : null,
   );
   readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
     return buildRoomSidebarMessages(this.i18n, {
@@ -151,7 +157,7 @@ export class OnlineRoomPageViewStateService {
       canInteractBoard: this.onlineRoom.canInteractBoard(),
       realtimeConnected: this.realtimeConnected(),
       match: this.match(),
-    })
+    }),
   );
 
   constructor() {

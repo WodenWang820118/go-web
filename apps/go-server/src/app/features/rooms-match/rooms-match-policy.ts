@@ -20,7 +20,7 @@ export type AutoStartReadiness =
 
 export function canEditNextMatchSettings(
   room: RoomRecord,
-  store: RoomsStore
+  store: RoomsStore,
 ): boolean {
   if (room.rematch) {
     return false;
@@ -30,12 +30,14 @@ export function canEditNextMatchSettings(
     return false;
   }
 
-  return !store.getSeatHolder(room, 'black') || !store.getSeatHolder(room, 'white');
+  return (
+    !store.getSeatHolder(room, 'black') || !store.getSeatHolder(room, 'white')
+  );
 }
 
 export function createHostedRematchState(
   blackParticipantId: string,
-  whiteParticipantId: string
+  whiteParticipantId: string,
 ): HostedRematchState {
   return {
     participants: {
@@ -51,7 +53,7 @@ export function createHostedRematchState(
 
 export function findRematchSeat(
   rematch: HostedRematchState,
-  participantId: string
+  participantId: string,
 ): PlayerColor | null {
   if (rematch.participants.black === participantId) {
     return 'black';
@@ -66,7 +68,7 @@ export function findRematchSeat(
 
 export function getAutoStartReadiness(
   room: RoomRecord,
-  store: RoomsStore
+  store: RoomsStore,
 ): AutoStartReadiness {
   if (room.autoStartBlockedUntilSeatChange) {
     return {
@@ -136,7 +138,7 @@ export function getAutoStartReadiness(
 }
 
 export function isAutoStartReady(
-  readiness: AutoStartReadiness
+  readiness: AutoStartReadiness,
 ): readiness is Extract<AutoStartReadiness, { ready: true }> {
   return readiness.ready;
 }

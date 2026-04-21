@@ -6,19 +6,13 @@
       "request": "launch",
       "name": "Debug go-server with Nx",
       "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "nx",
-        "serve",
-        "go-server"
-      ],
+      "runtimeArgs": ["nx", "serve", "go-server"],
       "env": {
         "NODE_OPTIONS": "--inspect=9230"
       },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/go-server/dist/**/*.(m|c|)js",

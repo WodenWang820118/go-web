@@ -1,7 +1,4 @@
-import {
-  CreateRoomResponse,
-  RoomSnapshot,
-} from '@gx/go/contracts';
+import { CreateRoomResponse, RoomSnapshot } from '@gx/go/contracts';
 import { OnlineRoomIdentityService } from './online-room-identity.service';
 
 describe('OnlineRoomIdentityService', () => {
@@ -19,7 +16,7 @@ describe('OnlineRoomIdentityService', () => {
         displayName: 'Host',
         participantId: 'host-1',
         participantToken: 'token-1',
-      })
+      }),
     ).toBe('Host');
   });
 
@@ -45,7 +42,9 @@ describe('OnlineRoomIdentityService', () => {
       },
     };
 
-    expect(identity.resolveResponseDisplayName('Guest', response)).toBe('Guest (2)');
+    expect(identity.resolveResponseDisplayName('Guest', response)).toBe(
+      'Guest (2)',
+    );
     expect(identity.createStoredRoomIdentity('Guest (2)', response)).toEqual({
       displayName: 'Guest (2)',
       participantId: 'guest-1',

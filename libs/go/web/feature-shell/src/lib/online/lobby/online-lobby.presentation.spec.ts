@@ -19,12 +19,12 @@ describe('online-lobby.presentation', () => {
       createRoom('ROOM1', 'live'),
     ]);
 
-    expect(sections.map(section => section.status)).toEqual([
+    expect(sections.map((section) => section.status)).toEqual([
       'live',
       'ready',
       'waiting',
     ]);
-    expect(sections[0]?.rooms.map(room => room.roomId)).toEqual(['ROOM1']);
+    expect(sections[0]?.rooms.map((room) => room.roomId)).toEqual(['ROOM1']);
   });
 
   it('aggregates lobby overview stats from all rooms', () => {
@@ -63,7 +63,7 @@ describe('online-lobby.presentation', () => {
         peopleOnlineLabel: '2 / 2',
         statusLabel: 'lobby.status.waiting',
         actionLabel: 'Join',
-      })
+      }),
     );
   });
 
@@ -131,7 +131,7 @@ describe('online-lobby.presentation', () => {
       }),
     ]);
 
-    expect(groups.map(group => group.activity)).toEqual([
+    expect(groups.map((group) => group.activity)).toEqual([
       'playing',
       'seated',
       'watching',
@@ -141,18 +141,18 @@ describe('online-lobby.presentation', () => {
         displayName: 'Host Live',
         roomLabel: '#LIVE1',
         roleBadges: ['Host', 'Black'],
-      })
+      }),
     );
     expect(groups[2]?.players[0]).toEqual(
       expect.objectContaining({
         roleBadges: ['Watching'],
-      })
+      }),
     );
   });
 
   it('returns an empty-section label for the requested status', () => {
     expect(emptySectionLabel(createI18n('en'), 'ready')).toContain(
-      'No ready rooms yet.'
+      'No ready rooms yet.',
     );
   });
 });
@@ -248,7 +248,7 @@ function createI18n(locale: 'en' | 'zh-TW') {
 
 function createRoom(
   roomId: string,
-  status: LobbyRoomSummary['status']
+  status: LobbyRoomSummary['status'],
 ): LobbyRoomSummary {
   return {
     roomId,
@@ -269,7 +269,7 @@ function createRoom(
 }
 
 function createOnlineParticipant(
-  overrides: Partial<LobbyOnlineParticipantSummary> = {}
+  overrides: Partial<LobbyOnlineParticipantSummary> = {},
 ): LobbyOnlineParticipantSummary {
   return {
     participantId: 'participant-1',

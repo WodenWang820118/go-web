@@ -8,12 +8,14 @@
             class="inline-flex items-center gap-2 rounded-sm border px-3.5 py-2 text-sm font-semibold transition"
             [attr.data-testid]="'lobby-tab-' + statusSection.status"
             [attr.aria-pressed]="isActiveStatus(statusSection.status)"
-            [class.border-amber-300]="isActiveStatus(statusSection.status)"
-            [class.bg-amber-300]="isActiveStatus(statusSection.status)"
-            [class.text-slate-950]="isActiveStatus(statusSection.status)"
-            [class.border-white/10]="!isActiveStatus(statusSection.status)"
-            [class.bg-white/5]="!isActiveStatus(statusSection.status)"
-            [class.text-stone-200]="!isActiveStatus(statusSection.status)"
+            [ngClass]="{
+              'border-amber-300': isActiveStatus(statusSection.status),
+              'bg-amber-300': isActiveStatus(statusSection.status),
+              'text-slate-950': isActiveStatus(statusSection.status),
+              'border-white/10': !isActiveStatus(statusSection.status),
+              'bg-white/5': !isActiveStatus(statusSection.status),
+              'text-stone-200': !isActiveStatus(statusSection.status),
+            }"
             (click)="activeStatusChange.emit(statusSection.status)"
           >
             <span>{{ statusSection.title }}</span>
@@ -67,12 +69,14 @@
       <div
         data-testid="lobby-message-rail"
         class="min-w-[16rem] flex-1 rounded-md border px-3 py-2 text-sm leading-6 md:max-w-[34rem]"
-        [class.border-rose-400/35]="messageIsError()"
-        [class.bg-rose-500/10]="messageIsError()"
-        [class.text-rose-100]="messageIsError()"
-        [class.border-white/10]="!messageIsError()"
-        [class.bg-white/[0.04]]="!messageIsError()"
-        [class.text-stone-300]="!messageIsError()"
+        [ngClass]="{
+          'border-rose-400/35': messageIsError(),
+          'bg-rose-500/10': messageIsError(),
+          'text-rose-100': messageIsError(),
+          'border-white/10': !messageIsError(),
+          'bg-white/[0.04]': !messageIsError(),
+          'text-stone-300': !messageIsError(),
+        }"
       >
         {{ message() }}
       </div>
@@ -85,12 +89,14 @@
           class="inline-flex items-center gap-2 rounded-sm border px-3.5 py-2 text-sm font-semibold transition"
           [attr.data-testid]="'lobby-tab-' + statusSection.status"
           [attr.aria-pressed]="isActiveStatus(statusSection.status)"
-          [class.border-amber-300]="isActiveStatus(statusSection.status)"
-          [class.bg-amber-300]="isActiveStatus(statusSection.status)"
-          [class.text-slate-950]="isActiveStatus(statusSection.status)"
-          [class.border-white/10]="!isActiveStatus(statusSection.status)"
-          [class.bg-white/5]="!isActiveStatus(statusSection.status)"
-          [class.text-stone-200]="!isActiveStatus(statusSection.status)"
+          [ngClass]="{
+            'border-amber-300': isActiveStatus(statusSection.status),
+            'bg-amber-300': isActiveStatus(statusSection.status),
+            'text-slate-950': isActiveStatus(statusSection.status),
+            'border-white/10': !isActiveStatus(statusSection.status),
+            'bg-white/5': !isActiveStatus(statusSection.status),
+            'text-stone-200': !isActiveStatus(statusSection.status),
+          }"
           (click)="activeStatusChange.emit(statusSection.status)"
         >
           <span>{{ statusSection.title }}</span>
@@ -142,12 +148,14 @@
     <div
       data-testid="lobby-message-rail"
       class="mt-3 rounded-md border px-3 py-2 text-sm leading-6"
-      [class.border-rose-400/35]="messageIsError()"
-      [class.bg-rose-500/10]="messageIsError()"
-      [class.text-rose-100]="messageIsError()"
-      [class.border-white/10]="!messageIsError()"
-      [class.bg-white/[0.04]]="!messageIsError()"
-      [class.text-stone-300]="!messageIsError()"
+      [ngClass]="{
+        'border-rose-400/35': messageIsError(),
+        'bg-rose-500/10': messageIsError(),
+        'text-rose-100': messageIsError(),
+        'border-white/10': !messageIsError(),
+        'bg-white/[0.04]': !messageIsError(),
+        'text-stone-300': !messageIsError(),
+      }"
     >
       {{ message() }}
     </div>

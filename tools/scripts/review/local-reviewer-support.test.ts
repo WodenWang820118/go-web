@@ -50,7 +50,13 @@ test('resolveLocalReviewerRepoRoot finds the sibling workspace', () => {
     writeFileSync(resolve(currentRepo, 'package.json'), '{}', 'utf8');
     writeFileSync(resolve(siblingRepo, 'package.json'), '{}', 'utf8');
     writeFileSync(
-      resolve(siblingRepo, 'packages', 'local-reviewer', 'bin', 'local-reviewer.js'),
+      resolve(
+        siblingRepo,
+        'packages',
+        'local-reviewer',
+        'bin',
+        'local-reviewer.js',
+      ),
       '',
       'utf8',
     );
@@ -74,7 +80,13 @@ test('resolveLocalReviewerRepoRoot respects LOCAL_REVIEWER_CLI_PATH overrides', 
     writeFileSync(resolve(currentRepo, 'package.json'), '{}', 'utf8');
     writeFileSync(resolve(siblingRepo, 'package.json'), '{}', 'utf8');
     writeFileSync(
-      resolve(siblingRepo, 'packages', 'local-reviewer', 'bin', 'local-reviewer.js'),
+      resolve(
+        siblingRepo,
+        'packages',
+        'local-reviewer',
+        'bin',
+        'local-reviewer.js',
+      ),
       '',
       'utf8',
     );
@@ -311,14 +323,20 @@ test('buildHybridReviewReport escalates when either GPT or local review blocks a
   });
 
   assert.equal(report.recommended_escalation, true);
-  assert.match(report.escalation_reasons.join(' '), /GPT reviewer marked the change high risk/);
+  assert.match(
+    report.escalation_reasons.join(' '),
+    /GPT reviewer marked the change high risk/,
+  );
   assert.match(report.escalation_reasons.join(' '), /sensitive area detected/);
   assert.equal(report.merged_findings.length, 1);
   assert.equal(report.findings.length, 1);
   assert.equal(report.merged_findings[0]?.source, 'gpt');
   assert.match(report.summary, /Low-risk change|Hybrid review completed/i);
   assert.equal(report.decision_basis, 'gpt+local');
-  assert.match(buildHybridPrefilterContext({ report }), /gpt_provider=copilot-gpt-5-mini/);
+  assert.match(
+    buildHybridPrefilterContext({ report }),
+    /gpt_provider=copilot-gpt-5-mini/,
+  );
 });
 
 test('writePrefilterArtifacts persists both report and context', () => {
@@ -344,10 +362,9 @@ test('writePrefilterArtifacts persists both report and context', () => {
       readFileSync(artifacts.reviewContextPath, 'utf8'),
       '@@\n+const value = 1;\n',
     );
-    assert.deepEqual(
-      JSON.parse(readFileSync(artifacts.reportPath, 'utf8')),
-      { ok: true },
-    );
+    assert.deepEqual(JSON.parse(readFileSync(artifacts.reportPath, 'utf8')), {
+      ok: true,
+    });
   } finally {
     rmSync(workspace, { force: true, recursive: true });
   }
@@ -463,7 +480,10 @@ test('summarizeEvaluation writes evaluation artifacts and verdicts', () => {
 
     assert.match(output.summaryMarkdown, /usable-prefilter/);
     assert.match(output.summaryMarkdown, /Local parallel jobs: 2/);
-    assert.match(output.summaryMarkdown, /Estimated paid review context chars: 0\/20/);
+    assert.match(
+      output.summaryMarkdown,
+      /Estimated paid review context chars: 0\/20/,
+    );
     assert.equal(existsSync(output.artifacts.summaryPath), true);
     assert.equal(existsSync(output.artifacts.samplesPath), true);
   } finally {
@@ -472,7 +492,12 @@ test('summarizeEvaluation writes evaluation artifacts and verdicts', () => {
 });
 
 function sample(
-  kind: 'small-ts' | 'multi-file-refactor' | 'workspace-config' | 'higher-risk' | 'general',
+  kind:
+    | 'small-ts'
+    | 'multi-file-refactor'
+    | 'workspace-config'
+    | 'higher-risk'
+    | 'general',
   commit: string,
 ) {
   return {
@@ -518,9 +543,7 @@ function reviewReport(findings: LocalReviewFinding[]): LocalReviewReport {
   };
 }
 
-function hybridGptReview(
-  overrides: Partial<HybridGptReview>,
-): HybridGptReview {
+function hybridGptReview(overrides: Partial<HybridGptReview>): HybridGptReview {
   return {
     provider: 'copilot-gpt-5-mini',
     model: 'gpt-5-mini',

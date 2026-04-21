@@ -52,38 +52,50 @@ export class OnlineRoomSessionStateService {
   readonly closingRoom = this.closingRoomSignal.asReadonly();
 
   readonly participants = computed(() =>
-    this.selectors.selectRoomParticipants(this.snapshotSignal())
+    this.selectors.selectRoomParticipants(this.snapshotSignal()),
   );
   readonly match = computed(() =>
-    this.selectors.selectHostedMatch(this.snapshotSignal())
+    this.selectors.selectHostedMatch(this.snapshotSignal()),
   );
   readonly chat = computed(() =>
-    this.selectors.selectChatMessages(this.snapshotSignal())
+    this.selectors.selectChatMessages(this.snapshotSignal()),
   );
   readonly viewer = computed(() =>
-    this.selectors.selectViewer(this.participants(), this.participantIdSignal())
+    this.selectors.selectViewer(
+      this.participants(),
+      this.participantIdSignal(),
+    ),
   );
   readonly nextMatchSettings = computed(
-    () => this.snapshotSignal()?.nextMatchSettings ?? null
+    () => this.snapshotSignal()?.nextMatchSettings ?? null,
   );
   readonly rematch = computed(() => this.snapshotSignal()?.rematch ?? null);
   readonly autoStartBlockedUntilSeatChange = computed(
-    () => this.snapshotSignal()?.autoStartBlockedUntilSeatChange ?? false
+    () => this.snapshotSignal()?.autoStartBlockedUntilSeatChange ?? false,
   );
-  readonly viewerSeat = computed(() => this.selectors.selectViewerSeat(this.viewer()));
-  readonly isHost = computed(() => this.selectors.selectViewerIsHost(this.viewer()));
-  readonly isMuted = computed(() => this.selectors.selectViewerIsMuted(this.viewer()));
+  readonly viewerSeat = computed(() =>
+    this.selectors.selectViewerSeat(this.viewer()),
+  );
+  readonly isHost = computed(() =>
+    this.selectors.selectViewerIsHost(this.viewer()),
+  );
+  readonly isMuted = computed(() =>
+    this.selectors.selectViewerIsMuted(this.viewer()),
+  );
   readonly isActivePlayer = computed(() =>
-    this.selectors.selectIsActivePlayer(this.match(), this.viewerSeat())
+    this.selectors.selectIsActivePlayer(this.match(), this.viewerSeat()),
   );
   readonly canInteractBoard = computed(() =>
-    this.selectors.selectCanInteractBoard(this.match(), this.viewerSeat())
+    this.selectors.selectCanInteractBoard(this.match(), this.viewerSeat()),
   );
   readonly canChangeSeats = computed(() =>
-    this.selectors.selectCanChangeSeats(this.match())
+    this.selectors.selectCanChangeSeats(this.match()),
   );
   readonly shareUrl = computed(() =>
-    this.snapshots.buildRoomShareUrl(this.activeRoomIdSignal(), this.browserOrigin)
+    this.snapshots.buildRoomShareUrl(
+      this.activeRoomIdSignal(),
+      this.browserOrigin,
+    ),
   );
 
   resetForRoom(roomId: string): void {
@@ -115,7 +127,7 @@ export class OnlineRoomSessionStateService {
   applyJoinResponse(
     roomId: string,
     resolvedDisplayName: string,
-    response: JoinResponse
+    response: JoinResponse,
   ): void {
     this.activeRoomIdSignal.set(roomId);
     this.setSnapshot(response.snapshot);

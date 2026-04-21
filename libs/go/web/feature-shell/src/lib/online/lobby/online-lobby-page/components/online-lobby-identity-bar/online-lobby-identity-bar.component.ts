@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,7 +18,7 @@ import {
 @Component({
   selector: 'lib-go-online-lobby-identity-bar',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, NgClass],
   templateUrl: './online-lobby-identity-bar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -39,7 +40,7 @@ export class OnlineLobbyIdentityBarComponent {
 
   protected readonly countLabel = (
     count: number,
-    unit: 'room' | 'person' | 'online' | 'spectator'
+    unit: 'room' | 'person' | 'online' | 'spectator',
   ) => countLabel(this.i18n, count, unit);
 
   protected isActiveStatus(status: LobbyRoomStatus): boolean {

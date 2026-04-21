@@ -19,11 +19,7 @@ import {
   runGeminiReview,
 } from './providers/gemini.ts';
 
-export type ReviewCheckpoint =
-  | 'plan'
-  | 'implementation'
-  | 'test'
-  | 'pre-merge';
+export type ReviewCheckpoint = 'plan' | 'implementation' | 'test' | 'pre-merge';
 export type ReviewProvider = 'auto' | 'copilot' | 'gemini' | 'codex';
 export type ConcreteReviewProvider = Exclude<ReviewProvider, 'auto'>;
 
@@ -46,13 +42,10 @@ export interface ReviewExecution {
 }
 
 export interface ReviewFlowDependencies {
-  cacheUnavailable: (
-    execution: ReviewExecution,
-    error: unknown
-  ) => void;
+  cacheUnavailable: (execution: ReviewExecution, error: unknown) => void;
   log: (message: string) => void;
   probe: (
-    execution: ReviewExecution
+    execution: ReviewExecution,
   ) => Promise<{ available: boolean; reason?: string }>;
   run: (execution: ReviewExecution, context: string) => Promise<string>;
 }
@@ -264,7 +257,7 @@ export function getReviewExecutionPlan(input: {
 
 export function buildReviewPrompt(
   execution: ReviewExecution,
-  context: string
+  context: string,
 ): string {
   const reviewRules = [
     'You are the second-opinion reviewer for this repository.',
@@ -294,14 +287,14 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
   if (!parsed.checkpoint) {
     throw new Error(
-      'Missing --checkpoint. Expected one of: plan, implementation, test, pre-merge.'
+      'Missing --checkpoint. Expected one of: plan, implementation, test, pre-merge.',
     );
   }
 
   const context = await readReviewContext(parsed.contextFile);
   if (!context.trim()) {
     throw new Error(
-      'Review context is required. Pass --context-file <path> or pipe the review context via stdin.'
+      'Review context is required. Pass --context-file <path> or pipe the review context via stdin.',
     );
   }
   const output = await executeReviewFlow(
@@ -312,7 +305,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
       model: parsed.model,
       provider: parsed.provider,
     },
-    getDefaultReviewFlowDependencies()
+    getDefaultReviewFlowDependencies(),
   );
 
   process.stdout.write(`${output.trimEnd()}\n`);
@@ -320,7 +313,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
 async function runReviewExecution(
   execution: ReviewExecution,
-  context: string
+  context: string,
 ): Promise<string> {
   const prompt = buildReviewPrompt(execution, context);
 
@@ -376,7 +369,7 @@ export async function executeReviewFlow(
     model?: string;
     provider: ReviewProvider;
   },
-  dependencies: ReviewFlowDependencies
+  dependencies: ReviewFlowDependencies,
 ): Promise<string> {
   const attempted: string[] = [];
   const executions = getReviewExecutionPlan({
@@ -395,12 +388,12 @@ export async function executeReviewFlow(
       attempted.push(`${executionLabel}: ${health.reason ?? 'unavailable'}`);
       if (!fallbackAllowed) {
         throw new Error(
-          `${getProviderDisplayName(execution.provider)} review is unavailable: ${health.reason ?? 'health check failed.'}`
+          `${getProviderDisplayName(execution.provider)} review is unavailable: ${health.reason ?? 'health check failed.'}`,
         );
       }
 
       dependencies.log(
-        `${getExecutionDisplayName(execution)} review is unavailable: ${health.reason ?? 'health check failed.'}`
+        `${getExecutionDisplayName(execution)} review is unavailable: ${health.reason ?? 'health check failed.'}`,
       );
       continue;
     }
@@ -408,13 +401,16 @@ export async function executeReviewFlow(
     try {
       return await dependencies.run(execution, input.context);
     } catch (error) {
-      if (fallbackAllowed && isRetryableProviderFailure(execution.provider, error)) {
+      if (
+        fallbackAllowed &&
+        isRetryableProviderFailure(execution.provider, error)
+      ) {
         dependencies.cacheUnavailable(execution, error);
         attempted.push(
-          `${executionLabel}: ${error instanceof Error ? error.message : String(error)}`
+          `${executionLabel}: ${error instanceof Error ? error.message : String(error)}`,
         );
         dependencies.log(
-          `${getExecutionDisplayName(execution)} review became unavailable during execution. Trying the next fallback.`
+          `${getExecutionDisplayName(execution)} review became unavailable during execution. Trying the next fallback.`,
         );
         continue;
       }
@@ -429,7 +425,7 @@ export async function executeReviewFlow(
 function readRequiredValue(
   argv: string[],
   index: number,
-  flag: string
+  flag: string,
 ): string {
   const value = argv[index + 1];
   if (!value) {
@@ -450,7 +446,7 @@ function readCheckpointFlag(rawValue?: string): ReviewCheckpoint {
   }
 
   throw new Error(
-    `Unsupported checkpoint "${rawValue ?? ''}". Expected one of: plan, implementation, test, pre-merge.`
+    `Unsupported checkpoint "${rawValue ?? ''}". Expected one of: plan, implementation, test, pre-merge.`,
   );
 }
 
@@ -465,13 +461,11 @@ function readProviderFlag(rawValue?: string): ReviewProvider {
   }
 
   throw new Error(
-    `Unsupported provider "${rawValue ?? ''}". Expected one of: auto, copilot, gemini, codex.`
+    `Unsupported provider "${rawValue ?? ''}". Expected one of: auto, copilot, gemini, codex.`,
   );
 }
 
-async function probeReviewProviderHealth(
-  execution: ReviewExecution
-) {
+async function probeReviewProviderHealth(execution: ReviewExecution) {
   if (execution.provider === 'copilot') {
     return probeCopilotCliHealth({
       model: getProviderHealthModel(execution),
@@ -503,7 +497,7 @@ function getDefaultReviewFlowDependencies(): ReviewFlowDependencies {
           checkedAtMs: Date.now(),
           reason: error instanceof Error ? error.message : String(error),
         },
-        process.cwd()
+        process.cwd(),
       );
     },
     log(message) {
@@ -518,7 +512,7 @@ function getDefaultReviewFlowDependencies(): ReviewFlowDependencies {
 
 function isRetryableProviderFailure(
   provider: ConcreteReviewProvider,
-  error: unknown
+  error: unknown,
 ): boolean {
   if (provider === 'copilot') {
     return isCopilotUnavailableError(error);
@@ -559,7 +553,9 @@ function formatExecutionLabel(execution: ReviewExecution): string {
   return `${execution.provider}:${execution.model}`;
 }
 
-function getProviderHealthModel(execution: ReviewExecution): string | undefined {
+function getProviderHealthModel(
+  execution: ReviewExecution,
+): string | undefined {
   if (execution.provider === 'codex') {
     return undefined;
   }

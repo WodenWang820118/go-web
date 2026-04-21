@@ -19,36 +19,38 @@ export class OnlineRoomIdentityService {
   resolveJoinDisplayName(
     requestedDisplayName: string,
     snapshot: RoomSnapshot | null,
-    storedIdentity: StoredRoomIdentity | null
+    storedIdentity: StoredRoomIdentity | null,
   ): string {
     return createUniqueDisplayName(
       requestedDisplayName,
-      snapshot?.participants.map(participant => participant.displayName) ?? [],
+      snapshot?.participants.map((participant) => participant.displayName) ??
+        [],
       {
         currentName:
           storedIdentity?.participantId && snapshot
-            ? snapshot.participants.find(
-                participant => participant.participantId === storedIdentity.participantId
-              )?.displayName ?? null
+            ? (snapshot.participants.find(
+                (participant) =>
+                  participant.participantId === storedIdentity.participantId,
+              )?.displayName ?? null)
             : null,
-      }
+      },
     );
   }
 
   resolveResponseDisplayName(
     requestedDisplayName: string,
-    response: CreateRoomResponse | JoinRoomResponse
+    response: CreateRoomResponse | JoinRoomResponse,
   ): string {
     return (
       response.snapshot.participants.find(
-        participant => participant.participantId === response.participantId
+        (participant) => participant.participantId === response.participantId,
       )?.displayName ?? requestedDisplayName.trim()
     );
   }
 
   createStoredRoomIdentity(
     displayName: string,
-    response: CreateRoomResponse | JoinRoomResponse
+    response: CreateRoomResponse | JoinRoomResponse,
   ): StoredRoomIdentity {
     return {
       displayName,

@@ -21,14 +21,10 @@ import {
   throwError,
 } from 'rxjs';
 import { OnlineRoomIdentityService } from '../online-room-identity/online-room-identity.service';
-import {
-  OnlineRoomStorageService,
-} from '../online-room-storage/online-room-storage.service';
+import { OnlineRoomStorageService } from '../online-room-storage/online-room-storage.service';
 import { OnlineRoomSocketService } from '../online-room-socket/online-room-socket.service';
 import { OnlineRoomsHttpService } from '../online-rooms-http/online-rooms-http.service';
-import {
-  JOIN_ROOM_REQUIRED_MESSAGE,
-} from '../../contracts/online-room-service.contracts';
+import { JOIN_ROOM_REQUIRED_MESSAGE } from '../../contracts/online-room-service.contracts';
 import { OnlineRoomSessionStateService } from './online-room-session-state.service';
 
 type JoinResponse = CreateRoomResponse | JoinRoomResponse;
@@ -63,7 +59,7 @@ export class OnlineRoomSessionWorkflowService {
     this.bootstrapSubscription = this.api
       .getRoom(normalizedRoomId)
       .pipe(
-        tap(response => {
+        tap((response) => {
           this.state.setSnapshot(cloneRoomSnapshot(response.snapshot));
           this.state.setBootstrapState('ready');
 
@@ -77,15 +73,23 @@ export class OnlineRoomSessionWorkflowService {
           }
 
           return this.api
-            .joinRoom(normalizedRoomId, stored.displayName, stored.participantToken)
+            .joinRoom(
+              normalizedRoomId,
+              stored.displayName,
+              stored.participantToken,
+            )
             .pipe(
-              tap(response => {
-                this.applyJoinResponse(normalizedRoomId, stored.displayName, response);
+              tap((response) => {
+                this.applyJoinResponse(
+                  normalizedRoomId,
+                  stored.displayName,
+                  response,
+                );
               }),
-              map(() => void 0)
+              map(() => void 0),
             );
         }),
-        catchError(error => {
+        catchError((error) => {
           if (error instanceof HttpErrorResponse && error.status === 404) {
             this.state.setBootstrapState('missing');
             this.state.setSnapshot(null);
@@ -94,13 +98,16 @@ export class OnlineRoomSessionWorkflowService {
 
           this.state.setBootstrapState('ready');
           this.state.setLastError(
-            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
+            this.api.describeHttpError(
+              error,
+              'room.client.unexpected_network_error',
+            ),
           );
           return EMPTY;
         }),
         finalize(() => {
           this.bootstrapSubscription = null;
-        })
+        }),
       )
       .subscribe();
   }
@@ -111,18 +118,21 @@ export class OnlineRoomSessionWorkflowService {
       this.state.setLastError(null);
 
       return this.api.createRoom(displayName).pipe(
-        tap(response => {
+        tap((response) => {
           this.applyJoinResponse(response.roomId, displayName, response);
         }),
-        catchError(error => {
+        catchError((error) => {
           this.state.setLastError(
-            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
+            this.api.describeHttpError(
+              error,
+              'room.client.unexpected_network_error',
+            ),
           );
           return throwError(() => error);
         }),
         finalize(() => {
           this.state.setCreating(false);
-        })
+        }),
       );
     });
   }
@@ -137,25 +147,36 @@ export class OnlineRoomSessionWorkflowService {
       const resolvedDisplayName = this.identity.resolveJoinDisplayName(
         displayName,
         this.state.snapshot(),
-        stored
+        stored,
       );
 
       return this.api
-        .joinRoom(normalizedRoomId, resolvedDisplayName, stored?.participantToken)
+        .joinRoom(
+          normalizedRoomId,
+          resolvedDisplayName,
+          stored?.participantToken,
+        )
         .pipe(
-          tap(response => {
-            this.applyJoinResponse(normalizedRoomId, resolvedDisplayName, response);
+          tap((response) => {
+            this.applyJoinResponse(
+              normalizedRoomId,
+              resolvedDisplayName,
+              response,
+            );
           }),
           map(() => void 0),
-          catchError(error => {
+          catchError((error) => {
             this.state.setLastError(
-              this.api.describeHttpError(error, 'room.client.unexpected_network_error')
+              this.api.describeHttpError(
+                error,
+                'room.client.unexpected_network_error',
+              ),
             );
             return throwError(() => error);
           }),
           finalize(() => {
             this.state.setJoining(false);
-          })
+          }),
         );
     });
   }
@@ -171,20 +192,25 @@ export class OnlineRoomSessionWorkflowService {
       this.state.setClosingRoom(true);
       this.state.setLastError(null);
 
-      return this.api.closeRoom(closeRequest.roomId, closeRequest.participantToken).pipe(
-        tap(() => {
-          this.clearClosedRoomState(closeRequest.roomId);
-        }),
-        catchError(error => {
-          this.state.setLastError(
-            this.api.describeHttpError(error, 'room.client.unexpected_network_error')
-          );
-          return throwError(() => error);
-        }),
-        finalize(() => {
-          this.state.setClosingRoom(false);
-        })
-      );
+      return this.api
+        .closeRoom(closeRequest.roomId, closeRequest.participantToken)
+        .pipe(
+          tap(() => {
+            this.clearClosedRoomState(closeRequest.roomId);
+          }),
+          catchError((error) => {
+            this.state.setLastError(
+              this.api.describeHttpError(
+                error,
+                'room.client.unexpected_network_error',
+              ),
+            );
+            return throwError(() => error);
+          }),
+          finalize(() => {
+            this.state.setClosingRoom(false);
+          }),
+        );
     });
   }
 
@@ -229,16 +255,19 @@ export class OnlineRoomSessionWorkflowService {
   private applyJoinResponse(
     roomId: string,
     requestedDisplayName: string,
-    response: JoinResponse
+    response: JoinResponse,
   ): void {
     const resolvedDisplayName = this.identity.resolveResponseDisplayName(
       requestedDisplayName,
-      response
+      response,
     );
 
     this.state.applyJoinResponse(roomId, resolvedDisplayName, response);
 
-    const identity = this.identity.createStoredRoomIdentity(resolvedDisplayName, response);
+    const identity = this.identity.createStoredRoomIdentity(
+      resolvedDisplayName,
+      response,
+    );
     this.storage.set(roomId, identity);
     this.socket.connect(roomId, response.participantToken);
   }

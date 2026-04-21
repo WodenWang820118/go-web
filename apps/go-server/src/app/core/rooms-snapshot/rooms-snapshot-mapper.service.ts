@@ -18,7 +18,7 @@ export class RoomsSnapshotMapper {
 
   toSnapshot(room: RoomRecord): RoomSnapshot {
     const participants = [...room.participants.values()]
-      .map(participant => ({
+      .map((participant) => ({
         participantId: participant.id,
         displayName: participant.displayName,
         seat: participant.seat,
@@ -58,7 +58,7 @@ export class RoomsSnapshotMapper {
     const black = this.store.getSeatHolder(room, 'black');
     const white = this.store.getSeatHolder(room, 'white');
     const onlineCount = [...room.participants.values()].filter(
-      participant => participant.online
+      (participant) => participant.online,
     ).length;
 
     return {
@@ -82,30 +82,33 @@ export class RoomsSnapshotMapper {
       participantCount: room.participants.size,
       onlineCount,
       spectatorCount: [...room.participants.values()].filter(
-        participant => participant.seat === null
+        (participant) => participant.seat === null,
       ).length,
     };
   }
 
   toLobbyOnlineParticipants(
-    rooms: readonly RoomRecord[]
+    rooms: readonly RoomRecord[],
   ): LobbyOnlineParticipantSummary[] {
     const sortedRooms = [...rooms].sort((left, right) =>
-      this.compareLobbyRooms(this.toLobbySummary(left), this.toLobbySummary(right))
+      this.compareLobbyRooms(
+        this.toLobbySummary(left),
+        this.toLobbySummary(right),
+      ),
     );
     const roomOrder = new Map(
-      sortedRooms.map((room, index) => [room.id, index] as const)
+      sortedRooms.map((room, index) => [room.id, index] as const),
     );
 
     return sortedRooms
-      .flatMap(room => {
+      .flatMap((room) => {
         const black = this.store.getSeatHolder(room, 'black');
         const white = this.store.getSeatHolder(room, 'white');
         const status = this.getLobbyStatus(room, black, white);
 
         return [...room.participants.values()]
-          .filter(participant => participant.online)
-          .map<LobbyOnlineParticipantSummary>(participant => ({
+          .filter((participant) => participant.online)
+          .map<LobbyOnlineParticipantSummary>((participant) => ({
             participantId: participant.id,
             displayName: participant.displayName,
             roomId: room.id,
@@ -116,7 +119,7 @@ export class RoomsSnapshotMapper {
           }));
       })
       .sort((left, right) =>
-        this.compareLobbyParticipants(left, right, roomOrder)
+        this.compareLobbyParticipants(left, right, roomOrder),
       );
   }
 
@@ -133,7 +136,7 @@ export class RoomsSnapshotMapper {
   private getLobbyStatus(
     room: RoomRecord,
     black: ParticipantRecord | null,
-    white: ParticipantRecord | null
+    white: ParticipantRecord | null,
   ): LobbyRoomStatus {
     if (room.match && room.match.state.phase !== 'finished') {
       return 'live';
@@ -148,7 +151,7 @@ export class RoomsSnapshotMapper {
 
   private compareLobbyStatus(
     left: LobbyRoomStatus,
-    right: LobbyRoomStatus
+    right: LobbyRoomStatus,
   ): number {
     const order: Record<LobbyRoomStatus, number> = {
       live: 0,
@@ -161,7 +164,7 @@ export class RoomsSnapshotMapper {
 
   private getLobbyParticipantActivity(
     participant: ParticipantRecord,
-    roomStatus: LobbyRoomStatus
+    roomStatus: LobbyRoomStatus,
   ): LobbyOnlineParticipantActivity {
     if (participant.seat === null) {
       return 'watching';
@@ -173,11 +176,11 @@ export class RoomsSnapshotMapper {
   private compareLobbyParticipants(
     left: LobbyOnlineParticipantSummary,
     right: LobbyOnlineParticipantSummary,
-    roomOrder: ReadonlyMap<string, number>
+    roomOrder: ReadonlyMap<string, number>,
   ): number {
     const activityOrder = this.compareLobbyParticipantActivity(
       left.activity,
-      right.activity
+      right.activity,
     );
 
     if (activityOrder !== 0) {
@@ -185,7 +188,8 @@ export class RoomsSnapshotMapper {
     }
 
     const leftRoomOrder = roomOrder.get(left.roomId) ?? Number.MAX_SAFE_INTEGER;
-    const rightRoomOrder = roomOrder.get(right.roomId) ?? Number.MAX_SAFE_INTEGER;
+    const rightRoomOrder =
+      roomOrder.get(right.roomId) ?? Number.MAX_SAFE_INTEGER;
 
     if (leftRoomOrder !== rightRoomOrder) {
       return leftRoomOrder - rightRoomOrder;
@@ -212,7 +216,7 @@ export class RoomsSnapshotMapper {
 
   private compareLobbyParticipantActivity(
     left: LobbyOnlineParticipantActivity,
-    right: LobbyOnlineParticipantActivity
+    right: LobbyOnlineParticipantActivity,
   ): number {
     const order: Record<LobbyOnlineParticipantActivity, number> = {
       playing: 0,
@@ -225,7 +229,7 @@ export class RoomsSnapshotMapper {
 
   private compareLobbyParticipantSeat(
     left: ParticipantRecord['seat'],
-    right: ParticipantRecord['seat']
+    right: ParticipantRecord['seat'],
   ): number {
     const order = {
       black: 0,

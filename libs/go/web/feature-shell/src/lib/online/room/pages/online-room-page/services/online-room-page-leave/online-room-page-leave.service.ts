@@ -60,7 +60,9 @@ export class OnlineRoomPageLeaveService {
       }
 
       this.onlineRoom.clearRoomClosedEvent();
-      this.handleClosedRoomNotice(this.i18n.translateMessage(roomClosed.message));
+      this.handleClosedRoomNotice(
+        this.i18n.translateMessage(roomClosed.message),
+      );
     });
 
     effect(() => {
@@ -81,7 +83,10 @@ export class OnlineRoomPageLeaveService {
         return;
       }
 
-      if (shouldScheduleRoomClosureProbe(probeState) && probeState.currentRoomId) {
+      if (
+        shouldScheduleRoomClosureProbe(probeState) &&
+        probeState.currentRoomId
+      ) {
         this.scheduleRoomClosureProbe(probeState.currentRoomId);
       }
     });
@@ -211,7 +216,7 @@ export class OnlineRoomPageLeaveService {
 
   private openConfirmation(targetUrl: string): void {
     this.leaveConfirmationSignal.set(
-      buildRoomLeaveConfirmationState(this.i18n, targetUrl)
+      buildRoomLeaveConfirmationState(this.i18n, targetUrl),
     );
   }
 
@@ -246,7 +251,7 @@ export class OnlineRoomPageLeaveService {
       void firstValueFrom(
         this.roomsApi.getRoom(roomId).pipe(
           mapTo(false),
-          catchError(error => {
+          catchError((error) => {
             if (
               error instanceof HttpErrorResponse &&
               error.status === 404 &&
@@ -259,8 +264,8 @@ export class OnlineRoomPageLeaveService {
             }
 
             return EMPTY;
-          })
-        )
+          }),
+        ),
       )
         .catch(() => {
           // ignore transport errors; reconnect UI handles transient disconnects

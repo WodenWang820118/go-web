@@ -1,5 +1,8 @@
 import '@angular/compiler';
-import { GO_SERVER_ORIGIN_STORAGE_KEY, resolveGoServerOrigin } from './go-server-origin.token';
+import {
+  GO_SERVER_ORIGIN_STORAGE_KEY,
+  resolveGoServerOrigin,
+} from './go-server-origin.token';
 import { Injector, runInInjectionContext } from '@angular/core';
 import { GoServerOriginResolverService } from './go-server-origin-resolver.service';
 
@@ -17,8 +20,8 @@ describe('resolveGoServerOrigin', () => {
           hostname: 'localhost',
           port: '4200',
         },
-        storage
-      )
+        storage,
+      ),
     ).toBe('http://127.0.0.1:3001');
   });
 
@@ -30,8 +33,8 @@ describe('resolveGoServerOrigin', () => {
           hostname: 'localhost',
           port: '4200',
         },
-        undefined
-      )
+        undefined,
+      ),
     ).toBe('http://localhost:3000');
   });
 
@@ -51,9 +54,9 @@ describe('resolveGoServerOrigin', () => {
         },
       });
 
-      expect(runInInjectionContext(injector, () => resolveGoServerOrigin())).toBe(
-        'http://localhost:3000',
-      );
+      expect(
+        runInInjectionContext(injector, () => resolveGoServerOrigin()),
+      ).toBe('http://localhost:3000');
     } finally {
       Object.defineProperty(globalThis, 'location', {
         configurable: true,

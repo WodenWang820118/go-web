@@ -37,16 +37,19 @@ export class RoomsMatchService {
     @Inject(RoomsRulesEngineService)
     private readonly rulesEngines: RoomsRulesEngineService,
     @Inject(RoomsErrorsService)
-    private readonly roomsErrors: RoomsErrorsService
+    private readonly roomsErrors: RoomsErrorsService,
   ) {}
 
   claimSeat(
     roomId: string,
     participantToken: string,
-    color: PlayerColor
+    color: PlayerColor,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
 
     this.assertSeatChangeAllowed(room);
 
@@ -63,7 +66,7 @@ export class RoomsMatchService {
     participant.seat = color;
     this.handleSeatChange(room);
     this.logger.log(
-      `[seat.claim] ${participant.displayName} (${participant.id}) claimed ${color} in room ${room.id} (previous: ${previousSeat ?? 'none'})`
+      `[seat.claim] ${participant.displayName} (${participant.id}) claimed ${color} in room ${room.id} (previous: ${previousSeat ?? 'none'})`,
     );
 
     return this.finalizeMutation(
@@ -76,13 +79,16 @@ export class RoomsMatchService {
         : this.roomsErrors.roomMessage('room.notice.seat_claimed', {
             displayName: participant.displayName,
             seat: this.roomsErrors.roomMessage(`common.seat.${color}`),
-          })
+          }),
     );
   }
 
   releaseSeat(roomId: string, participantToken: string): MutationResult {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
 
     this.assertSeatChangeAllowed(room);
 
@@ -99,54 +105,60 @@ export class RoomsMatchService {
       this.roomsErrors.roomMessage('room.notice.seat_released', {
         displayName: participant.displayName,
         seat: this.roomsErrors.roomMessage(`common.seat.${releasedSeat}`),
-      })
+      }),
     );
   }
 
   updateNextMatchSettings(
     roomId: string,
     participantToken: string,
-    settings: RoomSettingsUpdatePayload['settings']
+    settings: RoomSettingsUpdatePayload['settings'],
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
 
     this.store.assertHostParticipant(room, participantToken);
 
     if (!this.canEditNextMatchSettings(room)) {
-      throw this.roomsErrors.badRequest('room.error.next_match_settings_locked');
+      throw this.roomsErrors.badRequest(
+        'room.error.next_match_settings_locked',
+      );
     }
 
     const normalizedSettings = normalizeHostedStartSettings(
       settings,
-      this.roomsErrors
+      this.roomsErrors,
     );
     room.nextMatchSettings = normalizedSettings;
 
     return this.finalizeMutation(
       room,
       this.roomsErrors.roomMessage('room.notice.next_match_settings_updated', {
-        mode: this.roomsErrors.roomMessage(`common.mode.${normalizedSettings.mode}`),
+        mode: this.roomsErrors.roomMessage(
+          `common.mode.${normalizedSettings.mode}`,
+        ),
         size: normalizedSettings.boardSize,
-      })
+      }),
     );
   }
 
   startMatch(
     roomId: string,
     participantToken: string,
-    settings: GameStartSettings
+    settings: GameStartSettings,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
     const host = this.store.assertHostParticipant(room, participantToken);
 
     if (room.autoStartBlockedUntilSeatChange) {
       throw this.roomsErrors.badRequest(
-        'room.error.rematch_declined_wait_for_seat_change'
+        'room.error.rematch_declined_wait_for_seat_change',
       );
     }
 
     if (room.rematch) {
-      throw this.roomsErrors.badRequest('room.error.rematch_response_unavailable');
+      throw this.roomsErrors.badRequest(
+        'room.error.rematch_response_unavailable',
+      );
     }
 
     if (room.match && room.match.state.phase !== 'finished') {
@@ -155,12 +167,12 @@ export class RoomsMatchService {
 
     const normalizedSettings = normalizeHostedStartSettings(
       settings,
-      this.roomsErrors
+      this.roomsErrors,
     );
     const matchSettings = startMatchWithCurrentSeats(
       room,
       normalizedSettings,
-      this.getTransitionDependencies()
+      this.getTransitionDependencies(),
     );
 
     return this.finalizeMutation(
@@ -168,21 +180,26 @@ export class RoomsMatchService {
       this.roomsErrors.roomMessage('room.notice.match_started', {
         displayName: host.displayName,
         mode: this.roomsErrors.roomMessage(`common.mode.${matchSettings.mode}`),
-      })
+      }),
     );
   }
 
   respondToRematch(
     roomId: string,
     participantToken: string,
-    accepted: boolean
+    accepted: boolean,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
     const rematch = room.rematch;
 
     if (!rematch || room.match?.state.phase !== 'finished') {
-      throw this.roomsErrors.badRequest('room.error.rematch_response_unavailable');
+      throw this.roomsErrors.badRequest(
+        'room.error.rematch_response_unavailable',
+      );
     }
 
     const color = findRematchSeat(rematch, participant.id);
@@ -198,7 +215,7 @@ export class RoomsMatchService {
         room,
         this.roomsErrors.roomMessage('room.notice.rematch_declined', {
           displayName: participant.displayName,
-        })
+        }),
       );
     }
 
@@ -216,15 +233,18 @@ export class RoomsMatchService {
   applyGameCommand(
     roomId: string,
     participantToken: string,
-    command: GameCommand
+    command: GameCommand,
   ): MutationResult {
     const room = this.store.getRoomRecord(roomId);
-    const participant = this.store.getParticipantByToken(room, participantToken);
+    const participant = this.store.getParticipantByToken(
+      room,
+      participantToken,
+    );
     applyHostedGameCommand(
       room,
       participant,
       command,
-      this.getTransitionDependencies()
+      this.getTransitionDependencies(),
     );
 
     return this.finalizeMutation(room);
@@ -232,27 +252,28 @@ export class RoomsMatchService {
 
   private finalizeMutation(
     room: RoomRecord,
-    noticeMessage: GoMessageDescriptor | null = null
+    noticeMessage: GoMessageDescriptor | null = null,
   ): MutationResult {
     const automaticNotice = maybeStartNextMatch(
       room,
-      this.getTransitionDependencies()
+      this.getTransitionDependencies(),
     );
 
     this.store.touchRoom(room);
 
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
-      notice: automaticNotice ?? noticeMessage
-        ? this.store.createNotice(automaticNotice ?? noticeMessage!)
-        : undefined,
+      notice:
+        (automaticNotice ?? noticeMessage)
+          ? this.store.createNotice(automaticNotice ?? noticeMessage!)
+          : undefined,
     };
   }
 
   private handleSeatChange(room: RoomRecord): void {
     if (resetSeatDependentState(room)) {
       this.logger.log(
-        `[seat.change] reset rematch/auto-start block in room ${room.id}`
+        `[seat.change] reset rematch/auto-start block in room ${room.id}`,
       );
     }
   }

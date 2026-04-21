@@ -36,7 +36,7 @@ export function runLocalCliCommand(input: LocalCliCommandInput) {
           scriptPath,
           ...input.args,
         ],
-        options
+        options,
       );
     }
   }
@@ -82,8 +82,10 @@ export function resolveWindowsScriptPath(scriptName: string): string | null {
     return null;
   }
 
-  return whereResult.stdout
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.length > 0 && existsSync(line)) ?? null;
+  return (
+    whereResult.stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0 && existsSync(line)) ?? null
+  );
 }

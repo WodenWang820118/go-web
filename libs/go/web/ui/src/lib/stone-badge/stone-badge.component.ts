@@ -34,6 +34,6 @@ export class StoneBadgeComponent {
   readonly label = computed(() =>
     this.i18n.t('ui.stone_badge.aria', {
       player: this.i18n.playerLabel(this.color()),
-    })
+    }),
   );
 }

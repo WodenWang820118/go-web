@@ -12,5 +12,5 @@ export const GAME_SESSION_PORT = new InjectionToken<GameSessionPort>(
   'GAME_SESSION_PORT',
   {
     factory: () => inject(LocalGameSessionAdapter),
-  }
+  },
 );

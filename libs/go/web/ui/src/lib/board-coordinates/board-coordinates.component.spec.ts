@@ -17,10 +17,18 @@ describe('BoardCoordinatesComponent', () => {
 
   it('keeps the top and right coordinate rails hidden on small screens', () => {
     const root = fixture.nativeElement as HTMLElement;
-    const top = root.querySelector('[data-testid="board-coordinates-top"]') as HTMLElement;
-    const bottom = root.querySelector('[data-testid="board-coordinates-bottom"]') as HTMLElement;
-    const left = root.querySelector('[data-testid="board-coordinates-left"]') as HTMLElement;
-    const right = root.querySelector('[data-testid="board-coordinates-right"]') as HTMLElement;
+    const top = root.querySelector(
+      '[data-testid="board-coordinates-top"]',
+    ) as HTMLElement;
+    const bottom = root.querySelector(
+      '[data-testid="board-coordinates-bottom"]',
+    ) as HTMLElement;
+    const left = root.querySelector(
+      '[data-testid="board-coordinates-left"]',
+    ) as HTMLElement;
+    const right = root.querySelector(
+      '[data-testid="board-coordinates-right"]',
+    ) as HTMLElement;
 
     expect(top.className).toContain('hidden');
     expect(top.className).toContain('sm:flex');

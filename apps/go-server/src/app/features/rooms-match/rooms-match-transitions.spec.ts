@@ -4,7 +4,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { vi } from 'vitest';
-import type { ParticipantRecord, RoomRecord } from '../../contracts/rooms.types';
+import type {
+  ParticipantRecord,
+  RoomRecord,
+} from '../../contracts/rooms.types';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rules-engine.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
@@ -43,7 +46,7 @@ describe('rooms-match-transitions', () => {
         room,
         host,
         { type: 'place', point: { x: 0, y: 0 } },
-        dependencies
+        dependencies,
       );
 
       expect(room.match?.state.moveHistory).toHaveLength(1);
@@ -61,8 +64,8 @@ describe('rooms-match-transitions', () => {
           room,
           spectator,
           { type: 'place', point: { x: 0, y: 0 } },
-          dependencies
-        )
+          dependencies,
+        ),
       ).toThrow(ForbiddenException);
     });
 
@@ -76,8 +79,8 @@ describe('rooms-match-transitions', () => {
           room,
           host,
           { type: 'toggle-dead', point: { x: 0, y: 0 } },
-          dependencies
-        )
+          dependencies,
+        ),
       ).toThrow(BadRequestException);
     });
 
@@ -91,8 +94,8 @@ describe('rooms-match-transitions', () => {
           room,
           guest,
           { type: 'place', point: { x: 0, y: 0 } },
-          dependencies
-        )
+          dependencies,
+        ),
       ).toThrow(ForbiddenException);
     });
 
@@ -106,8 +109,8 @@ describe('rooms-match-transitions', () => {
           room,
           host,
           { type: 'resign', player: 'white' },
-          dependencies
-        )
+          dependencies,
+        ),
       ).toThrow(ForbiddenException);
     });
 
@@ -121,7 +124,7 @@ describe('rooms-match-transitions', () => {
         room,
         host,
         { type: 'place', point: { x: 0, y: 0 } },
-        dependencies
+        dependencies,
       );
 
       try {
@@ -129,13 +132,11 @@ describe('rooms-match-transitions', () => {
           room,
           guest,
           { type: 'place', point: { x: 0, y: 0 } },
-          dependencies
+          dependencies,
         );
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestException);
-        expect(
-          (error as BadRequestException).getResponse()
-        ).toMatchObject({
+        expect((error as BadRequestException).getResponse()).toMatchObject({
           message: {
             key: 'game.error.intersection_occupied',
           },
@@ -168,13 +169,11 @@ describe('rooms-match-transitions', () => {
           room,
           host,
           { type: 'place', point: { x: 0, y: 0 } },
-          rejectingDependencies
+          rejectingDependencies,
         );
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestException);
-        expect(
-          (error as BadRequestException).getResponse()
-        ).toMatchObject({
+        expect((error as BadRequestException).getResponse()).toMatchObject({
           message: 'custom error message',
         });
       }
@@ -185,12 +184,7 @@ describe('rooms-match-transitions', () => {
       room.autoStartBlockedUntilSeatChange = true;
 
       startGomokuMatch(room, dependencies);
-      applyHostedGameCommand(
-        room,
-        host,
-        { type: 'resign' },
-        dependencies
-      );
+      applyHostedGameCommand(room, host, { type: 'resign' }, dependencies);
 
       expect(room.match?.state.phase).toBe('finished');
       expect(room.rematch).toEqual({
@@ -263,10 +257,10 @@ describe('rooms-match-transitions', () => {
 
       expect(maybeStartNextMatch(room, loggingDependencies)).toBeNull();
       expect(logger.debug).toHaveBeenCalledWith(
-        expect.stringContaining('waiting_for_rematch_responses')
+        expect.stringContaining('waiting_for_rematch_responses'),
       );
       expect(logger.debug).toHaveBeenCalledWith(
-        expect.stringContaining('rematchResponses')
+        expect.stringContaining('rematchResponses'),
       );
     });
 
@@ -301,7 +295,7 @@ describe('rooms-match-transitions', () => {
           boardSize: 15,
           komi: 0,
         },
-        dependencies
+        dependencies,
       );
 
       expect(room.match?.settings.players).toEqual({
@@ -335,12 +329,12 @@ function createRoomWithSeatedPlayers(store: RoomsStore): {
 function addParticipant(
   store: RoomsStore,
   room: RoomRecord,
-  displayName: string
+  displayName: string,
 ): ParticipantRecord {
   const participant = store.createParticipant(
     displayName,
     false,
-    '2026-04-20T00:00:00.000Z'
+    '2026-04-20T00:00:00.000Z',
   );
 
   room.participants.set(participant.id, participant);
@@ -351,7 +345,7 @@ function addParticipant(
 
 function startGomokuMatch(
   room: RoomRecord,
-  dependencies: RoomsMatchTransitionDependencies
+  dependencies: RoomsMatchTransitionDependencies,
 ): void {
   startMatchWithCurrentSeats(
     room,
@@ -360,6 +354,6 @@ function startGomokuMatch(
       boardSize: 15,
       komi: 0,
     },
-    dependencies
+    dependencies,
   );
 }

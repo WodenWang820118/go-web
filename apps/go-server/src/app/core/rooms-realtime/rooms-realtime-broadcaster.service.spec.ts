@@ -79,7 +79,7 @@ describe('RoomsRealtimeBroadcasterService', () => {
       {
         publishGameState: true,
         disconnectSocketIds: ['socket-a', 'socket-b'],
-      }
+      },
     );
 
     expect(emitted).toEqual([
@@ -190,11 +190,14 @@ describe('RoomsRealtimeBroadcasterService', () => {
     };
 
     service.registerServer(server as never);
-    service.broadcastMutationResult({
-      snapshot: createRoomSnapshot(),
-    }, {
-      publishPresence: false,
-    });
+    service.broadcastMutationResult(
+      {
+        snapshot: createRoomSnapshot(),
+      },
+      {
+        publishPresence: false,
+      },
+    );
 
     expect(emitted).toEqual(['room.snapshot']);
   });

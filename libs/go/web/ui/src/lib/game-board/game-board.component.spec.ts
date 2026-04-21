@@ -25,16 +25,20 @@ describe('GameBoardComponent', () => {
   });
 
   it('renders a full set of intersections', () => {
-    const intersections = fixture.nativeElement.querySelectorAll('[data-testid^="intersection-"]');
+    const intersections = fixture.nativeElement.querySelectorAll(
+      '[data-testid^="intersection-"]',
+    );
 
     expect(intersections.length).toBe(225);
   });
 
   it('emits clicks for selected intersections', () => {
     const emitted: Array<{ x: number; y: number }> = [];
-    component.pointSelected.subscribe(value => emitted.push(value));
+    component.pointSelected.subscribe((value) => emitted.push(value));
 
-    const board = fixture.nativeElement.querySelector('.board-surface') as SVGElement;
+    const board = fixture.nativeElement.querySelector(
+      '.board-surface',
+    ) as SVGElement;
     const boardPixels = 944;
 
     Object.defineProperty(board, 'getBoundingClientRect', {
@@ -72,7 +76,7 @@ describe('GameBoardComponent', () => {
 
   it('supports keyboard navigation and enter-to-place', () => {
     const emitted: Array<{ x: number; y: number }> = [];
-    component.pointSelected.subscribe(value => emitted.push(value));
+    component.pointSelected.subscribe((value) => emitted.push(value));
 
     const wrapper = fixture.nativeElement.querySelector('.board-wrapper');
     wrapper.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));

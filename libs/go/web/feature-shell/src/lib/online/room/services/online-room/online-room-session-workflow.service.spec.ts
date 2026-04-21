@@ -42,7 +42,9 @@ describe('OnlineRoomSessionWorkflowService', () => {
           provide: OnlineRoomsHttpService,
           useValue: {
             closeRoom: vi.fn(),
-            closeRoomUrl: vi.fn((roomId: string) => `/api/rooms/${roomId}/close`),
+            closeRoomUrl: vi.fn(
+              (roomId: string) => `/api/rooms/${roomId}/close`,
+            ),
             createRoom: vi.fn(),
             describeHttpError: vi.fn(() => 'network error'),
             getRoom: vi.fn(),
@@ -55,7 +57,9 @@ describe('OnlineRoomSessionWorkflowService', () => {
             createStoredRoomIdentity: vi.fn(),
             normalizeRoomId: vi.fn((roomId: string) => roomId.toUpperCase()),
             resolveJoinDisplayName: vi.fn((displayName: string) => displayName),
-            resolveResponseDisplayName: vi.fn((displayName: string) => displayName),
+            resolveResponseDisplayName: vi.fn(
+              (displayName: string) => displayName,
+            ),
           },
         },
         {

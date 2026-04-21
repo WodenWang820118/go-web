@@ -22,7 +22,10 @@ test('online room auto-starts once both seats are claimed and both players can a
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
-    await guestPage.getByTestId('join-room-form').getByLabel('Display name').fill('Guest');
+    await guestPage
+      .getByTestId('join-room-form')
+      .getByLabel('Display name')
+      .fill('Guest');
     await guestPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(page.getByTestId('claim-black')).toBeVisible();
@@ -34,11 +37,16 @@ test('online room auto-starts once both seats are claimed and both players can a
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Resign' })).toBeVisible();
-    await expect(guestPage.getByRole('button', { name: 'Resign' })).toBeVisible();
+    await expect(
+      guestPage.getByRole('button', { name: 'Resign' }),
+    ).toBeVisible();
 
     await useEnglish(spectatorPage);
     await spectatorPage.goto(`/online/room/${roomId}`);
-    await spectatorPage.getByTestId('join-room-form').getByLabel('Display name').fill('Spectator');
+    await spectatorPage
+      .getByTestId('join-room-form')
+      .getByLabel('Display name')
+      .fill('Spectator');
     await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
@@ -49,8 +57,12 @@ test('online room auto-starts once both seats are claimed and both players can a
     await page.getByRole('button', { name: 'Resign' }).click();
 
     await expect(page.getByTestId('room-resign-result-dialog')).toBeVisible();
-    await expect(guestPage.getByTestId('room-resign-result-dialog')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-resign-result-dialog')).toBeVisible();
+    await expect(
+      guestPage.getByTestId('room-resign-result-dialog'),
+    ).toBeVisible();
+    await expect(
+      spectatorPage.getByTestId('room-resign-result-dialog'),
+    ).toBeVisible();
 
     await page.getByTestId('room-resign-result-dialog-close').click();
     await guestPage.getByTestId('room-resign-result-dialog-close').click();
@@ -58,28 +70,41 @@ test('online room auto-starts once both seats are claimed and both players can a
 
     await expect(page.getByTestId('room-rematch-dialog')).toBeVisible();
     await expect(guestPage.getByTestId('room-rematch-dialog')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-rematch-dialog')).toBeVisible();
-    await expect(spectatorPage.getByTestId('room-rematch-dialog-close')).toBeVisible();
+    await expect(
+      spectatorPage.getByTestId('room-rematch-dialog'),
+    ).toBeVisible();
+    await expect(
+      spectatorPage.getByTestId('room-rematch-dialog-close'),
+    ).toBeVisible();
     await spectatorPage.getByTestId('room-rematch-dialog-close').click();
-    await expect(spectatorPage.getByTestId('room-rematch-dialog')).toHaveCount(0);
+    await expect(spectatorPage.getByTestId('room-rematch-dialog')).toHaveCount(
+      0,
+    );
 
     await page.getByTestId('room-rematch-dialog-accept').click();
-    await expect(guestPage.getByTestId('room-rematch-dialog-status-black')).toContainText(
-      'Ready'
-    );
+    await expect(
+      guestPage.getByTestId('room-rematch-dialog-status-black'),
+    ).toContainText('Ready');
 
     await guestPage.getByTestId('room-rematch-dialog-accept').click();
 
     await expect(page.getByTestId('room-rematch-dialog')).toHaveCount(0);
     await expect(guestPage.getByTestId('room-rematch-dialog')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Resign' })).toBeVisible();
-    await expect(guestPage.getByRole('button', { name: 'Resign' })).toBeVisible();
+    await expect(
+      guestPage.getByRole('button', { name: 'Resign' }),
+    ).toBeVisible();
 
     await page.getByTestId('intersection-0-0').click();
-    await expect(page.getByTestId('intersection-0-0').locator('circle[fill="url(#stone-black)"]'))
-      .toHaveCount(1);
     await expect(
-      guestPage.getByTestId('intersection-0-0').locator('circle[fill="url(#stone-black)"]')
+      page
+        .getByTestId('intersection-0-0')
+        .locator('circle[fill="url(#stone-black)"]'),
+    ).toHaveCount(1);
+    await expect(
+      guestPage
+        .getByTestId('intersection-0-0')
+        .locator('circle[fill="url(#stone-black)"]'),
     ).toHaveCount(1);
   } finally {
     await guestContext.close();
@@ -102,7 +127,10 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
-    await guestPage.getByTestId('join-room-form').getByLabel('Display name').fill('Guest');
+    await guestPage
+      .getByTestId('join-room-form')
+      .getByLabel('Display name')
+      .fill('Guest');
     await guestPage.getByRole('button', { name: 'Join room' }).click();
 
     await page.getByTestId('claim-black').click();
@@ -112,7 +140,9 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await page.getByRole('button', { name: 'Resign' }).click();
 
     await expect(page.getByTestId('room-resign-result-dialog')).toBeVisible();
-    await expect(guestPage.getByTestId('room-resign-result-dialog')).toBeVisible();
+    await expect(
+      guestPage.getByTestId('room-resign-result-dialog'),
+    ).toBeVisible();
 
     await page.getByTestId('room-resign-result-dialog-close').click();
     await guestPage.getByTestId('room-resign-result-dialog-close').click();
@@ -123,17 +153,27 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await page.getByTestId('room-rematch-dialog-decline').click();
 
     await expect(guestPage.getByTestId('room-rematch-dialog')).toHaveCount(0);
-    await expect(page.getByTestId('room-sidebar-message-rematch-blocked')).toBeVisible();
-    await expect(guestPage.getByTestId('room-sidebar-message-rematch-blocked')).toBeVisible();
+    await expect(
+      page.getByTestId('room-sidebar-message-rematch-blocked'),
+    ).toBeVisible();
+    await expect(
+      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
+    ).toBeVisible();
 
     await page.getByTestId('release-black').click();
     await expect(page.getByTestId('claim-black')).toBeVisible();
     await page.getByTestId('claim-black').click();
 
-    await expect(page.getByTestId('room-sidebar-message-rematch-blocked')).toHaveCount(0);
-    await expect(guestPage.getByTestId('room-sidebar-message-rematch-blocked')).toHaveCount(0);
+    await expect(
+      page.getByTestId('room-sidebar-message-rematch-blocked'),
+    ).toHaveCount(0);
+    await expect(
+      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
+    ).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Resign' })).toBeVisible();
-    await expect(guestPage.getByRole('button', { name: 'Resign' })).toBeVisible();
+    await expect(
+      guestPage.getByRole('button', { name: 'Resign' }),
+    ).toBeVisible();
   } finally {
     await guestContext.close();
   }

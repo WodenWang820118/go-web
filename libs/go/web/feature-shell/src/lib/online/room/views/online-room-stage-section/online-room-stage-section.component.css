@@ -101,7 +101,10 @@
     --room-stage-dock-width: clamp(5.75rem, 6vw, 6.5rem);
     --room-stage-board-limit: min(
       calc(100dvh - 7.5rem),
-      calc(100vw - var(--room-sidebar-width) - var(--room-stage-dock-width) - 6.5rem)
+      calc(
+        100vw - var(--room-sidebar-width) - var(--room-stage-dock-width) -
+          6.5rem
+      )
     );
   }
 
@@ -140,7 +143,8 @@
     width: 100%;
   }
 
-  .room-stage__layout:not(.room-stage__layout--with-dock) .room-stage__board-wrap {
+  .room-stage__layout:not(.room-stage__layout--with-dock)
+    .room-stage__board-wrap {
     container-type: size;
     height: 100%;
     grid-template-rows: minmax(0, 1fr) auto;

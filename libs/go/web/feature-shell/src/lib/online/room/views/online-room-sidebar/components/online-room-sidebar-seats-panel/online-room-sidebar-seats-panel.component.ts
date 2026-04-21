@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { HostedMatchSnapshot } from '@gx/go/contracts';
 import { PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -10,7 +16,10 @@ import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-
   standalone: true,
   imports: [OnlineRoomSidebarSeatCardComponent],
   template: `
-    <section class="grid gap-3 xl:grid-cols-2" data-testid="room-sidebar-players">
+    <section
+      class="grid gap-3 xl:grid-cols-2"
+      data-testid="room-sidebar-players"
+    >
       @for (seat of seats(); track seat.color) {
         <lib-go-online-room-sidebar-seat-card
           [seat]="seat"

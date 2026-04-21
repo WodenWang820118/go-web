@@ -65,7 +65,10 @@
       }
 
       @for (point of points(); track pointKey(point)) {
-        <g [attr.data-testid]="dataTestId(point)" [attr.data-point]="pointKey(point)">
+        <g
+          [attr.data-testid]="dataTestId(point)"
+          [attr.data-point]="pointKey(point)"
+        >
           <circle
             [attr.cx]="x(point)"
             [attr.cy]="y(point)"
@@ -78,8 +81,14 @@
               [attr.cx]="x(point)"
               [attr.cy]="y(point)"
               [attr.r]="stoneRadius()"
-              [attr.fill]="stoneColor(point) === 'black' ? 'url(#stone-black)' : 'url(#stone-white)'"
-              [attr.stroke]="stoneColor(point) === 'black' ? '#09090b' : '#e7e5e4'"
+              [attr.fill]="
+                stoneColor(point) === 'black'
+                  ? 'url(#stone-black)'
+                  : 'url(#stone-white)'
+              "
+              [attr.stroke]="
+                stoneColor(point) === 'black' ? '#09090b' : '#e7e5e4'
+              "
               stroke-width="2"
               pointer-events="none"
             />
@@ -112,7 +121,9 @@
               [attr.cx]="x(point)"
               [attr.cy]="y(point)"
               r="5"
-              [attr.fill]="stoneColor(point) === 'black' ? '#fef3c7' : '#1f2937'"
+              [attr.fill]="
+                stoneColor(point) === 'black' ? '#fef3c7' : '#1f2937'
+              "
               pointer-events="none"
             />
           }

@@ -6,7 +6,7 @@ export interface GameSessionSnapshot {
 }
 
 export function cloneSnapshot(
-  snapshot: GameSessionSnapshot | null
+  snapshot: GameSessionSnapshot | null,
 ): GameSessionSnapshot | null {
   if (!snapshot) {
     return null;
