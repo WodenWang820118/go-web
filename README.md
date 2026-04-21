@@ -1,8 +1,16 @@
 # gx.go
 
-Nx workspace for the Go multiplayer stack, built from Angular, Nest, and shared TypeScript libraries.
+`gx.go` is a playable Go + Gomoku app inside an Nx workspace. The current build supports quick local matches, hosted multiplayer rooms, spectators, room chat, and rematch flows, with Angular on the frontend, Nest on the backend, and shared TypeScript domain rules across both.
 
-## Workspace overview
+## What You Can Do Today
+
+- Start local Go on 9x9, 13x13, or 19x19 boards
+- Start local Gomoku on a fixed 15x15 board
+- Create hosted rooms with two player seats plus spectators
+- Watch live games, chat in-room, and use rematch prompts after a result
+- Use the same shared rules engine for frontend and backend match state
+
+## Workspace Overview
 
 ### Go stack
 
@@ -17,7 +25,7 @@ Nx workspace for the Go multiplayer stack, built from Angular, Nest, and shared 
 | `@gx/go/domain`        | `libs/go/shared/domain`     | Pure rules engine, board utilities, and domain types       |
 | `@gx/go/contracts`     | `libs/go/shared/contracts`  | Shared room DTOs and socket payloads for frontend/backend  |
 
-## Local development
+## Local Development
 
 Install dependencies from the repo root:
 
@@ -46,30 +54,79 @@ pnpm nx run go-web:lint
 pnpm nx run go-web:test
 pnpm nx run go-server:lint
 pnpm nx run go-server:test
+pnpm nx run go-web-e2e:e2e
+pnpm nx run-many -t test
 pnpm nx run go-web:build:production
 pnpm nx run go-server:build
 pnpm nx graph
 ```
 
-## Docker + Synology deployment
+## Current Routes
 
-Use the Docker workflow below as the primary deployment path:
+- `/` hosted multiplayer lobby and default app entry
+- `/online` legacy redirect to `/`
+- `/online/new` legacy redirect to `/`
+- `/online/room/:roomId`
+- `/setup/:mode`
+- `/play/:mode`
+
+## Rules In This Build
+
+### Go
+
+- Board sizes: 9x9, 13x13, and 19x19. The default setup size is 19x19.
+- Black always plays first in the product today.
+- Groups with no liberties are captured immediately.
+- Suicide is illegal.
+- Only basic ko is enforced: immediate recapture of the previous position is blocked, but positional superko is not implemented.
+- White receives 6.5 komi.
+- Pass and resign are both supported.
+- Two consecutive passes currently end the game immediately.
+- Scoring currently uses area scoring: stones on the board plus surrounded territory, with komi added for White.
+- The current double-pass flow does not run a dead-group dispute phase or automatic life-and-death detection. In practice, all stones left on the board are counted as alive when the result is finalized.
+- Traditional note: even games are often color-assigned with `nigiri` (one player hides a handful of stones and the other guesses odd or even). The current product does not implement nigiri; players choose seats and Black starts.
+- Traditional note: Go clocks often use byo-yomi, Canadian overtime, or Fischer-style increment depending on the setting. The hosted-room clock in this build is still decorative and does not enforce time.
+
+### Gomoku
+
+- The board is fixed at 15x15.
+- Players alternate placing stones on empty intersections.
+- Pass is not available.
+- Resignation is supported.
+- The current build uses a freestyle-like win condition: any horizontal, vertical, or diagonal line of five or more stones wins immediately.
+- If the board fills without a winning line, the game ends in a draw.
+- Tournament note: competitive Gomoku and Renju often make stricter choices about overlines, exact-five wins, forbidden patterns for Black, or opening-balance rules such as Swap2. None of those are enforced in this build yet.
+
+## Docker And Deployment
+
+### Local Compose Workflow
+
+Use these when you want to run the stack locally with Docker Compose:
 
 ```bash
-pnpm docker:build
-pnpm docker:export
 pnpm docker:up
 pnpm docker:down
 ```
 
-- `pnpm docker:build` runs the Nx `docker:build` targets and tags the images as `gx-go-web:latest` and `gx-go-server:latest`
-- `pnpm docker:export` writes Synology-ready image tarballs to `dist/docker/gx-go-web.tar` and `dist/docker/gx-go-server.tar`
-- `pnpm docker:up` starts the `compose.yml` stack and publishes the web container on port `8080`
-- `pnpm docker:down` stops the Compose stack
+- `pnpm docker:up` runs `docker compose up -d --build`, so it rebuilds the images before starting the stack.
+- `pnpm docker:down` stops the Compose stack.
+- The web container is published on port `8080`.
+
+### Synology Export Workflow
+
+Use this path when you want tarball exports for Synology:
+
+```bash
+pnpm docker:export
+```
+
+- `pnpm docker:export` already runs `pnpm docker:build` before exporting.
+- The exported tarballs are written to `dist/docker/gx-go-web.tar` and `dist/docker/gx-go-server.tar`.
+- If you only want to refresh the local images without exporting tarballs, run `pnpm docker:build`.
 
 The supported Synology deployment guide lives in [deploy/synology/README.md](deploy/synology/README.md).
 
-## Go frontend architecture
+## Go Frontend Architecture
 
 - `apps/go-web` provides `GO_SERVER_ORIGIN` at the composition root and lazy-loads `@gx/go/feature-shell`
 - `@gx/go/feature-shell` owns route containers and multiplayer orchestration
@@ -78,10 +135,11 @@ The supported Synology deployment guide lives in [deploy/synology/README.md](dep
 - `@gx/go/domain` stays framework-free so frontend, backend, and contracts can share the same game model
 - `@gx/go/contracts` is the shared boundary for REST responses and Socket.IO payloads
 
-Current Go routes:
+## What Likely Comes Next
 
-- `/` hosted multiplayer lobby and default app entry
-- `/online` legacy redirect to `/`
-- `/online/room/:roomId`
-- `/setup/:mode`
-- `/play/:mode`
+These are the clearest next-phase issues based on the current implementation and the surrounding rule references:
+
+- Choose and implement a real Go scoring and dispute flow instead of immediate double-pass finalization with every remaining stone treated as alive
+- Decide whether color/opening assignment should stay manual or add a fair selection flow such as nigiri
+- Replace the decorative hosted-room clock with server-authoritative time controls
+- Choose and document an explicit Gomoku ruleset and opening rule instead of leaving the product in a freestyle-like middle ground
