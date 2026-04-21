@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import {
   cacheProviderHealth,
   getCachedProviderHealth,
@@ -11,9 +13,23 @@ interface CopilotReviewInput {
   repoRoot?: string;
 }
 
+interface CopilotProviderDependencies {
+  reasoningEffortSupportCache?: Map<
+    string,
+    '--effort' | '--reasoning-effort' | null
+  >;
+  runCommand?: typeof runLocalCliCommand;
+}
+
 const COPILOT_HEALTH_PROMPT = 'Reply with exactly OK.';
 const COPILOT_HEALTH_TIMEOUT_MS = 30_000;
 const COPILOT_REVIEW_TIMEOUT_MS = 3 * 60 * 1000;
+const COPILOT_REASONING_EFFORT_HELP_TIMEOUT_MS = 15_000;
+const COPILOT_REASONING_EFFORT_LEVEL = 'high';
+const DEFAULT_REASONING_EFFORT_SUPPORT_CACHE = new Map<
+  string,
+  '--effort' | '--reasoning-effort' | null
+>();
 
 export function isCopilotUnavailableError(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -30,7 +46,9 @@ export function probeCopilotCliHealth(
     model?: string;
     repoRoot?: string;
   } = {},
+  dependencies: CopilotProviderDependencies = {},
 ): ReviewProviderHealthResult {
+  const runCommand = dependencies.runCommand ?? runLocalCliCommand;
   const repoRoot = input.repoRoot ?? process.cwd();
   const cached = getCachedProviderHealth('copilot', input.model, repoRoot);
   if (cached) {
@@ -38,7 +56,7 @@ export function probeCopilotCliHealth(
   }
 
   const checkedAtMs = Date.now();
-  const versionResult = runLocalCliCommand({
+  const versionResult = runCommand({
     command: 'copilot',
     windowsScriptName: 'copilot.ps1',
     args: ['--version'],
@@ -59,7 +77,7 @@ export function probeCopilotCliHealth(
     );
   }
 
-  const probeResult = runLocalCliCommand({
+  const probeResult = runCommand({
     command: 'copilot',
     windowsScriptName: 'copilot.ps1',
     args: buildCopilotCommandArgs({
@@ -112,20 +130,57 @@ export function probeCopilotCliHealth(
   );
 }
 
-export function runCopilotReview(input: CopilotReviewInput): string {
-  const result = runLocalCliCommand({
-    command: 'copilot',
-    windowsScriptName: 'copilot.ps1',
-    args: buildCopilotCommandArgs({
-      experimental: true,
+export function runCopilotReview(
+  input: CopilotReviewInput,
+  dependencies: CopilotProviderDependencies = {},
+): string {
+  const runCommand = dependencies.runCommand ?? runLocalCliCommand;
+  const repoRoot = input.repoRoot ?? process.cwd();
+  const reasoningEffortSupportCache =
+    dependencies.reasoningEffortSupportCache ??
+    DEFAULT_REASONING_EFFORT_SUPPORT_CACHE;
+  const reviewArgs = buildCopilotReviewCommandArgs(
+    {
       model: input.model,
       prompt: input.prompt,
-    }),
-    cwd: input.repoRoot ?? process.cwd(),
+      repoRoot,
+    },
+    {
+      reasoningEffortSupportCache,
+      runCommand,
+    },
+  );
+  let result = runCommand({
+    command: 'copilot',
+    windowsScriptName: 'copilot.ps1',
+    args: reviewArgs,
+    cwd: repoRoot,
     timeoutMs: COPILOT_REVIEW_TIMEOUT_MS,
   });
+  let output = stripCopilotFooter(joinOutput(result.stdout, result.stderr));
 
-  const output = stripCopilotFooter(joinOutput(result.stdout, result.stderr));
+  if (
+    (result.error || result.status !== 0) &&
+    reviewArgs.some(
+      (argument) =>
+        argument === '--reasoning-effort' || argument === '--effort',
+    ) &&
+    isUnsupportedReasoningEffortError(output || result.error?.message)
+  ) {
+    reasoningEffortSupportCache.delete(resolve(repoRoot));
+    result = runCommand({
+      command: 'copilot',
+      windowsScriptName: 'copilot.ps1',
+      args: buildCopilotCommandArgs({
+        experimental: true,
+        model: input.model,
+        prompt: input.prompt,
+      }),
+      cwd: repoRoot,
+      timeoutMs: COPILOT_REVIEW_TIMEOUT_MS,
+    });
+    output = stripCopilotFooter(joinOutput(result.stdout, result.stderr));
+  }
 
   if (result.error || result.status !== 0) {
     throw new Error(
@@ -138,6 +193,34 @@ export function runCopilotReview(input: CopilotReviewInput): string {
   }
 
   return output.trim();
+}
+
+export function buildCopilotReviewCommandArgs(
+  input: CopilotReviewInput,
+  dependencies: CopilotProviderDependencies = {},
+): string[] {
+  const args = buildCopilotCommandArgs({
+    experimental: true,
+    model: input.model,
+    prompt: input.prompt,
+  });
+  const repoRoot = input.repoRoot ?? process.cwd();
+  const reasoningEffortSupportCache =
+    dependencies.reasoningEffortSupportCache ??
+    DEFAULT_REASONING_EFFORT_SUPPORT_CACHE;
+  const runCommand = dependencies.runCommand ?? runLocalCliCommand;
+
+  const supportedFlag = supportsCopilotReasoningEffort({
+    reasoningEffortSupportCache,
+    repoRoot,
+    runCommand,
+  });
+
+  if (supportedFlag) {
+    args.push(supportedFlag, COPILOT_REASONING_EFFORT_LEVEL);
+  }
+
+  return args;
 }
 
 export function buildCopilotCommandArgs(input: {
@@ -176,6 +259,40 @@ export function buildCopilotCommandArgs(input: {
   return args;
 }
 
+function supportsCopilotReasoningEffort(input: {
+  reasoningEffortSupportCache: Map<
+    string,
+    '--effort' | '--reasoning-effort' | null
+  >;
+  repoRoot: string;
+  runCommand: typeof runLocalCliCommand;
+}): '--effort' | '--reasoning-effort' | null {
+  const cacheKey = resolve(input.repoRoot);
+  const cached = input.reasoningEffortSupportCache.get(cacheKey);
+  if (typeof cached === 'string' || cached === null) {
+    return cached;
+  }
+
+  const helpResult = input.runCommand({
+    command: 'copilot',
+    windowsScriptName: 'copilot.ps1',
+    args: ['--help'],
+    cwd: input.repoRoot,
+    timeoutMs: COPILOT_REASONING_EFFORT_HELP_TIMEOUT_MS,
+  });
+  if (helpResult.error || helpResult.status !== 0) {
+    return null;
+  }
+  const output = joinOutput(helpResult.stdout, helpResult.stderr);
+  const supportedFlag = output.includes('--reasoning-effort')
+    ? '--reasoning-effort'
+    : output.includes('--effort')
+      ? '--effort'
+      : null;
+  input.reasoningEffortSupportCache.set(cacheKey, supportedFlag);
+  return supportedFlag;
+}
+
 function classifyCopilotProbeFailure(
   output: string,
   errorMessage?: string,
@@ -207,6 +324,19 @@ function classifyCopilotProbeFailure(
   }
 
   return message;
+}
+
+function isUnsupportedReasoningEffortError(message?: string): boolean {
+  if (!message) {
+    return false;
+  }
+
+  return (
+    /\B--reasoning-effort\b|\B--effort\b/i.test(message) &&
+    /\b(unknown|unexpected|unsupported|invalid|not recognized|too many arguments)\b/i.test(
+      message,
+    )
+  );
 }
 
 function joinOutput(stdout?: string | null, stderr?: string | null): string {
