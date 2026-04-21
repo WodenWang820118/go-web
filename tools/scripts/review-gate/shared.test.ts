@@ -86,7 +86,7 @@ test('buildDenyPayload points reviewers to Copilot first, then Gemini, and inclu
   );
 });
 
-test('isMutatingToolUse detects common shell mutation vectors and ignores safe reads', () => {
+test('isMutatingToolUse fails closed for non-allowlisted shell commands', () => {
   assert.equal(
     isMutatingToolUse({
       toolName: 'powershell',
@@ -125,6 +125,13 @@ test('isMutatingToolUse detects common shell mutation vectors and ignores safe r
   assert.equal(
     isMutatingToolUse({
       toolName: 'powershell',
+      toolArgs: { command: 'Get-Content AGENTS.md | Set-Content copy.txt' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
       toolArgs: { command: 'Invoke-Expression $payload' },
     }),
     true,
@@ -142,6 +149,83 @@ test('isMutatingToolUse detects common shell mutation vectors and ignores safe r
       toolArgs: { command: 'pip install pytest' },
     }),
     true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'node scripts/setup.js' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'python -c "print(1)"' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'npm run build' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'pnpm exec nx graph' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'docker run --rm alpine sh -c "echo hi"' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'powershell -EncodedCommand ZgBvAG8A' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'pwsh -enc ZgBvAG8A' },
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'gh pr list --base develop' },
+    }),
+    false,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'node --version' },
+    }),
+    false,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'docker ps' },
+    }),
+    false,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'git branch --show-current' },
+    }),
+    false,
   );
   assert.equal(
     isMutatingToolUse({
@@ -170,6 +254,13 @@ test('isMutatingToolUse detects common shell mutation vectors and ignores safe r
   assert.equal(
     isMutatingToolUse({
       toolName: 'edit',
+    }),
+    true,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: { command: 'unknown-safe-looking-command --flag' },
     }),
     true,
   );

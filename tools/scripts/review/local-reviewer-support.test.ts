@@ -13,6 +13,7 @@ import test from 'node:test';
 
 import {
   analyzeHybridHeuristics,
+  buildCheckpointReviewContext,
   buildHybridPrefilterContext,
   buildHybridReviewReport,
   createHybridGptBypassReview,
@@ -116,6 +117,30 @@ test('createLocalReviewerEnv injects the Ollama defaults', () => {
   assert.equal(env.LOCAL_REVIEWER_DEFAULT_MODEL, 'qwen3:8b');
   assert.equal(env.LOCAL_REVIEWER_OLLAMA_MODEL, 'qwen3:8b');
   assert.equal(env.LOCAL_REVIEWER_OLLAMA_THINK, 'false');
+});
+
+test('buildCheckpointReviewContext includes an explicit changed files section before the diff', () => {
+  const context = buildCheckpointReviewContext({
+    changedFiles: ['apps/law-prep-web/src/app/app.component.ts'],
+    diffText:
+      'diff --git a/apps/law-prep-web/src/app/app.component.ts b/apps/law-prep-web/src/app/app.component.ts',
+    sample: {
+      baseRef: 'abc123',
+      commit: 'def456',
+      committedAtEpoch: 0,
+      fileCount: 1,
+      kind: 'small-ts',
+      repoName: 'gx.law-prep',
+      repoRoot: 'C:/software-dev/gx.law-prep',
+      subject: 'Update copy',
+      totalChangedLines: 4,
+    },
+  });
+
+  assert.match(
+    context,
+    /Changed files:\n- apps\/law-prep-web\/src\/app\/app\.component\.ts\n\nDiff to review:/,
+  );
 });
 
 test('buildWindowsProcessBridgePayload preserves command metadata without shell flattening', () => {

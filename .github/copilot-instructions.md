@@ -10,11 +10,11 @@
 - Use `product-and-scope-review` when the prompt is solution-framed, `qa-verification` when the implementation needs verification evidence, and `release-readiness` when the work needs a final handoff story.
 - Keep the review session on a Claude-family model when possible.
 - When using Copilot CLI, prefer a Claude-family orchestrator and run `/experimental` so Rubber Duck can provide a second opinion.
-- When the scripted Copilot Claude path is unavailable, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Keep the Copilot-only fallback chain only when the review is explicitly pinned to `--provider copilot`.
+- For plan, test, and non-low-risk implementation reviews, the auto-routed review wrappers should prefer Gemini CLI before Copilot GPT-5 mini. Low-risk `implementation` or `pre-merge` auto routing may try the matching Codex reviewer first only when the review context includes an explicit small non-sensitive changed-file list that exactly matches the repo's current changed-file set. Keep the Copilot-only fallback chain only when the review is explicitly pinned to `--provider copilot`.
 - Force a Rubber Duck or second-opinion review after a drafted plan, after any implementation review that was escalated from Gemini, and after tests are written but before they are executed.
 - If Rubber Duck is not available for the current model/account, use the matching reviewer in `.github/agents`.
 - If the user asks for `critique`, `review`, `second opinion`, or `rubber duck`, always trigger a second-opinion pass.
-- Use `pnpm review:plan` for the normal Copilot plan-review path, `pnpm review:test` for the normal Copilot test-review path, and `pnpm review:copilot` when an implementation review needs explicit Copilot escalation.
+- Use `pnpm review:plan` for the normal Copilot plan-review path, `pnpm review:test` for the normal Copilot test-review path, `pnpm review:implementation` for the normal implementation auto-routing path, and `pnpm review:copilot` when an implementation review needs explicit Copilot escalation.
 - If a plan review passes and implementation should begin, open the gate with `pnpm review:approve-pre-implementation -- --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus <area> --summary "<approval summary>"`.
 - If the gate should be closed again, run `pnpm review:reset`.
 - For browser-verifiable UI proof requests, use `qa-verification`; when browser artifacts are needed, run `pnpm proofshot:check`, `pnpm proofshot:start:web`, and `pnpm proofshot:stop`, then review the resulting `proofshot-artifacts/` with the dedicated proofshot review prompt.
