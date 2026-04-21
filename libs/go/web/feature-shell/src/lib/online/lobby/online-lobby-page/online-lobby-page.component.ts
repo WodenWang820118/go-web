@@ -7,10 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {
-  takeUntilDestroyed,
-  toSignal,
-} from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
@@ -56,60 +53,66 @@ export class OnlineLobbyPageComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
+  protected readonly activeStatus = this.activeStatusSignal.asReadonly();
   private readonly mdUpSignal = signal(this.resolveMdUp());
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || '',
     {
       nonNullable: true,
-    }
+    },
   );
-  private readonly displayNameValue = toSignal(
-    this.displayName.valueChanges,
-    {
-      initialValue: this.displayName.value,
-    }
-  );
+  private readonly displayNameValue = toSignal(this.displayName.valueChanges, {
+    initialValue: this.displayName.value,
+  });
 
   protected readonly sections = computed(() =>
-    buildLobbySections(this.i18n, this.onlineLobby.rooms())
+    buildLobbySections(this.i18n, this.onlineLobby.rooms()),
   );
-  protected readonly activeSection = computed(() =>
-    this.sections().find(section => section.status === this.activeStatusSignal()) ??
-    this.sections()[0] ??
-    null
+  protected readonly activeSection = computed(
+    () =>
+      this.sections().find(
+        (section) => section.status === this.activeStatusSignal(),
+      ) ??
+      this.sections()[0] ??
+      null,
   );
-  protected readonly activeRows = computed<readonly LobbyRoomTableRowViewModel[]>(() =>
-    buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? [])
+  protected readonly activeRows = computed<
+    readonly LobbyRoomTableRowViewModel[]
+  >(() => buildLobbyTableRows(this.i18n, this.activeSection()?.rooms ?? []));
+  protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(
+    () => buildLobbyOverviewStats(this.activeSection()?.rooms ?? []),
   );
-  protected readonly activeSectionStats = computed<LobbyOverviewStatsViewModel>(() =>
-    buildLobbyOverviewStats(this.activeSection()?.rooms ?? [])
-  );
-  protected readonly announcementCards = computed<LobbyAnnouncementCardViewModel[]>(() =>
-    buildLobbyAnnouncementCards(this.i18n)
-  );
-  protected readonly onlinePlayerGroups = computed<LobbyOnlinePlayerGroupViewModel[]>(() =>
-    buildLobbyOnlinePlayerGroups(this.i18n, this.onlineLobby.onlineParticipants())
+  protected readonly announcementCards = computed<
+    LobbyAnnouncementCardViewModel[]
+  >(() => buildLobbyAnnouncementCards(this.i18n));
+  protected readonly onlinePlayerGroups = computed<
+    LobbyOnlinePlayerGroupViewModel[]
+  >(() =>
+    buildLobbyOnlinePlayerGroups(
+      this.i18n,
+      this.onlineLobby.onlineParticipants(),
+    ),
   );
   protected readonly totalOnlinePlayers = computed(
-    () => this.onlineLobby.onlineParticipants().length
+    () => this.onlineLobby.onlineParticipants().length,
   );
   protected readonly isMdUp = this.mdUpSignal.asReadonly();
   protected readonly trimmedDisplayName = computed(() =>
-    this.displayNameValue().trim()
+    this.displayNameValue().trim(),
   );
   protected readonly canSubmitIdentity = computed(
-    () => this.trimmedDisplayName().length > 0
+    () => this.trimmedDisplayName().length > 0,
   );
   protected readonly actionBarMessage = computed(
     () =>
       this.onlineRoom.lastError() ??
       this.onlineLobby.lastError() ??
       this.flashNotice.message() ??
-      this.i18n.t('lobby.identity.description')
+      this.i18n.t('lobby.identity.description'),
   );
   protected readonly actionBarMessageIsError = computed(
-    () => !!(this.onlineRoom.lastError() ?? this.onlineLobby.lastError())
+    () => !!(this.onlineRoom.lastError() ?? this.onlineLobby.lastError()),
   );
 
   constructor() {
@@ -138,13 +141,16 @@ export class OnlineLobbyPageComponent {
 
       if (
         sections.some(
-          section => section.status === activeStatus && section.rooms.length > 0
+          (section) =>
+            section.status === activeStatus && section.rooms.length > 0,
         )
       ) {
         return;
       }
 
-      const nextStatus = sections.find(section => section.rooms.length > 0)?.status;
+      const nextStatus = sections.find(
+        (section) => section.rooms.length > 0,
+      )?.status;
 
       if (nextStatus) {
         this.activeStatusSignal.set(nextStatus);
@@ -166,11 +172,11 @@ export class OnlineLobbyPageComponent {
     this.onlineRoom
       .createRoom(displayName)
       .pipe(
-        switchMap(response =>
-          from(this.router.navigate(['/online/room', response.roomId]))
+        switchMap((response) =>
+          from(this.router.navigate(['/online/room', response.roomId])),
         ),
         catchError(() => EMPTY),
-        take(1)
+        take(1),
       )
       .subscribe();
   }
@@ -185,15 +191,20 @@ export class OnlineLobbyPageComponent {
     this.onlineRoom
       .joinRoom(room.roomId, displayName)
       .pipe(
-        switchMap(() => from(this.router.navigate(['/online/room', room.roomId]))),
+        switchMap(() =>
+          from(this.router.navigate(['/online/room', room.roomId])),
+        ),
         catchError(() => EMPTY),
-        take(1)
+        take(1),
       )
       .subscribe();
   }
 
   private bindViewportMode(): void {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
       return;
     }
 
@@ -210,7 +221,8 @@ export class OnlineLobbyPageComponent {
   }
 
   private resolveMdUp(): boolean {
-    return typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+    return typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
       ? true
       : window.matchMedia('(min-width: 768px)').matches;
   }

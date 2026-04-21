@@ -27,7 +27,7 @@ import { FormControl } from '@angular/forms';
   imports: [RouterLink, TagModule, OnlineLobbyIdentityBarComponent],
   templateUrl: './online-lobby-room-panel.component.html',
   host: {
-    class: 'block min-h-0',
+    class: 'block h-full min-h-0',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -52,7 +52,8 @@ export class OnlineLobbyRoomPanelComponent {
   readonly createRoomRequested = output<void>();
   readonly joinRoomRequested = output<LobbyRoomSummary>();
 
-  private readonly roomTableScroll = viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
+  private readonly roomTableScroll =
+    viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
 
   protected readonly emptySectionLabel = (status: LobbyRoomStatus) =>
     emptySectionLabel(this.i18n, status);

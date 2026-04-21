@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { GoI18nService } from '@gx/go/state';
 import { createMessage } from '@gx/go/domain';
 import {
+  createHostedMatch,
   createRoomServiceStub,
+  createSeatedSnapshot,
   createSnapshot,
   queryDialog,
   renderOnlineRoomPage,
@@ -31,32 +33,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
   it('shows ready copy when both seats are filled before the match starts', async () => {
     const roomService = createRoomServiceStub({
-      snapshot: createSnapshot({
-        participants: [
-          {
-            participantId: 'host-1',
-            displayName: 'Host',
-            seat: 'black',
-            isHost: true,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:00:00.000Z',
-          },
-          {
-            participantId: 'guest-1',
-            displayName: 'Guest',
-            seat: 'white',
-            isHost: false,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:01:00.000Z',
-          },
-        ],
-        seatState: {
-          black: 'host-1',
-          white: 'guest-1',
-        },
-      }),
+      snapshot: createSeatedSnapshot(),
       participantId: null,
       participantToken: null,
     });
@@ -71,32 +48,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
   it('shows blocked copy when auto-start is paused after a declined rematch', async () => {
     const roomService = createRoomServiceStub({
-      snapshot: createSnapshot({
-        participants: [
-          {
-            participantId: 'host-1',
-            displayName: 'Host',
-            seat: 'black',
-            isHost: true,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:00:00.000Z',
-          },
-          {
-            participantId: 'guest-1',
-            displayName: 'Guest',
-            seat: 'white',
-            isHost: false,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:01:00.000Z',
-          },
-        ],
-        seatState: {
-          black: 'host-1',
-          white: 'guest-1',
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          autoStartBlockedUntilSeatChange: true,
         },
-        autoStartBlockedUntilSeatChange: true,
       }),
       participantId: null,
       participantToken: null,
@@ -112,53 +67,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
   it('renders the simplified sidebar with chat-integrated room info', async () => {
     const roomService = createRoomServiceStub({
-      snapshot: createSnapshot({
-        participants: [
-          {
-            participantId: 'host-1',
-            displayName: 'Host',
-            seat: 'black',
-            isHost: true,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:00:00.000Z',
-          },
-          {
-            participantId: 'guest-1',
-            displayName: 'Guest',
-            seat: 'white',
-            isHost: false,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:01:00.000Z',
-          },
-        ],
-        seatState: {
-          black: 'host-1',
-          white: 'guest-1',
-        },
-        match: {
-          settings: {
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch({
             mode: 'gomoku',
-            boardSize: 15,
-            komi: 0,
-            players: {
-              black: 'Host',
-              white: 'Guest',
-            },
-          },
-          state: {
-            mode: 'gomoku',
-            boardSize: 15,
-            board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null),
-            ),
-            phase: 'playing',
-            nextPlayer: 'black',
-            captures: {
-              black: 0,
-              white: 0,
-            },
             moveHistory: [
               {
                 id: 'move-1',
@@ -178,17 +90,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
                 },
               },
             ],
-            previousBoardHashes: [],
-            result: null,
-            lastMove: null,
-            consecutivePasses: 0,
-            winnerLine: [],
-            message: createMessage('game.state.next_turn', {
-              player: createMessage('common.player.black'),
-            }),
-            scoring: null,
-          },
-          startedAt: '2026-03-20T00:05:00.000Z',
+          }),
         },
       }),
       participantId: 'guest-1',
@@ -301,55 +203,11 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
   it('keeps the match status hud inside the board column while the share chip stays docked separately', async () => {
     const roomService = createRoomServiceStub({
-      snapshot: createSnapshot({
-        participants: [
-          {
-            participantId: 'host-1',
-            displayName: 'Host',
-            seat: 'black',
-            isHost: true,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:00:00.000Z',
-          },
-          {
-            participantId: 'guest-1',
-            displayName: 'Guest',
-            seat: 'white',
-            isHost: false,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:01:00.000Z',
-          },
-        ],
-        seatState: {
-          black: 'host-1',
-          white: 'guest-1',
-        },
-        match: {
-          settings: {
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch({
             mode: 'gomoku',
-            boardSize: 15,
-            komi: 0,
-            players: {
-              black: 'Host',
-              white: 'Guest',
-            },
-          },
-          state: {
-            mode: 'gomoku',
-            boardSize: 15,
-            board: Array.from({ length: 15 }, () =>
-              Array.from({ length: 15 }, () => null),
-            ),
             phase: 'finished',
-            nextPlayer: 'black',
-            captures: {
-              black: 0,
-              white: 0,
-            },
-            moveHistory: [],
-            previousBoardHashes: [],
             result: {
               summary: createMessage('game.gomoku.result.five_in_row', {
                 winner: createMessage('common.player.black'),
@@ -357,15 +215,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
               winner: 'black',
               score: null,
             },
-            lastMove: null,
-            consecutivePasses: 0,
-            winnerLine: [],
             message: createMessage('game.gomoku.result.five_in_row', {
               winner: createMessage('common.player.black'),
             }),
-            scoring: null,
-          },
-          startedAt: '2026-03-20T00:05:00.000Z',
+          }),
         },
       }),
       participantId: 'host-1',
@@ -395,41 +248,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
   it('omits the stage dock when no share URL is available', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
-        match: {
-          settings: {
-            mode: 'go',
-            boardSize: 19,
-            komi: 6.5,
-            players: {
-              black: 'Host',
-              white: 'Guest',
-            },
-          },
-          state: {
-            mode: 'go',
-            boardSize: 19,
-            board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null),
-            ),
-            phase: 'playing',
-            nextPlayer: 'black',
-            captures: {
-              black: 0,
-              white: 0,
-            },
-            moveHistory: [],
-            previousBoardHashes: [],
-            result: null,
-            lastMove: null,
-            consecutivePasses: 0,
-            winnerLine: [],
-            message: createMessage('game.state.next_turn', {
-              player: createMessage('common.player.black'),
-            }),
-            scoring: null,
-          },
-          startedAt: '2026-03-20T00:05:00.000Z',
-        },
+        match: createHostedMatch(),
       }),
       participantId: 'host-1',
       participantToken: 'token-1',
@@ -470,65 +289,9 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
   it('renders the sidebar action area below chat with back-to-lobby and without finalize score', async () => {
     const roomService = createRoomServiceStub({
-      snapshot: createSnapshot({
-        participants: [
-          {
-            participantId: 'host-1',
-            displayName: 'Host',
-            seat: 'black',
-            isHost: true,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:00:00.000Z',
-          },
-          {
-            participantId: 'guest-1',
-            displayName: 'Guest',
-            seat: 'white',
-            isHost: false,
-            online: true,
-            muted: false,
-            joinedAt: '2026-03-20T00:01:00.000Z',
-          },
-        ],
-        seatState: {
-          black: 'host-1',
-          white: 'guest-1',
-        },
-        match: {
-          settings: {
-            mode: 'go',
-            boardSize: 19,
-            komi: 6.5,
-            players: {
-              black: 'Host',
-              white: 'Guest',
-            },
-          },
-          state: {
-            mode: 'go',
-            boardSize: 19,
-            board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null),
-            ),
-            phase: 'playing',
-            nextPlayer: 'black',
-            captures: {
-              black: 0,
-              white: 0,
-            },
-            moveHistory: [],
-            previousBoardHashes: [],
-            result: null,
-            lastMove: null,
-            consecutivePasses: 0,
-            winnerLine: [],
-            message: createMessage('game.state.next_turn', {
-              player: createMessage('common.player.black'),
-            }),
-            scoring: null,
-          },
-          startedAt: '2026-03-20T00:05:00.000Z',
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch(),
         },
       }),
       participantId: 'host-1',
@@ -587,41 +350,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
   it('does not show an auto-start dialog or sidebar notice when the next match starts', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
-        match: {
-          settings: {
-            mode: 'go',
-            boardSize: 19,
-            komi: 6.5,
-            players: {
-              black: 'Host',
-              white: 'Guest',
-            },
-          },
-          state: {
-            mode: 'go',
-            boardSize: 19,
-            board: Array.from({ length: 19 }, () =>
-              Array.from({ length: 19 }, () => null),
-            ),
-            phase: 'playing',
-            nextPlayer: 'black',
-            captures: {
-              black: 0,
-              white: 0,
-            },
-            moveHistory: [],
-            previousBoardHashes: [],
-            result: null,
-            lastMove: null,
-            consecutivePasses: 0,
-            winnerLine: [],
-            message: createMessage('game.state.next_turn', {
-              player: createMessage('common.player.black'),
-            }),
-            scoring: null,
-          },
-          startedAt: '2026-03-20T00:05:00.000Z',
-        },
+        match: createHostedMatch(),
       }),
       participantId: 'host-1',
       participantToken: 'token-1',

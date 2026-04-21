@@ -5,9 +5,9 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import {
-  LobbyOnlineParticipantSummary,
-  LobbyRoomSummary,
-} from '@gx/go/contracts';
+  createLobbyOnlineParticipant,
+  createLobbyRoomSummary,
+} from '@gx/go/contracts/testing';
 import { createMessage } from '@gx/go/domain';
 import { GO_SERVER_ORIGIN, GoI18nService } from '@gx/go/state';
 import { OnlineLobbyService } from './online-lobby.service';
@@ -42,13 +42,13 @@ describe('OnlineLobbyService', () => {
 
     httpMock.expectOne('/api/rooms').flush({
       rooms: [
-        createRoomSummary({
+        createLobbyRoomSummary({
           roomId: 'ROOM42',
           status: 'waiting',
         }),
       ],
       onlineParticipants: [
-        createOnlineParticipant({
+        createLobbyOnlineParticipant({
           roomId: 'ROOM42',
         }),
       ],
@@ -82,7 +82,7 @@ describe('OnlineLobbyService', () => {
       {
         status: 503,
         statusText: 'Service Unavailable',
-      }
+      },
     );
 
     expect(service.loading()).toBe(false);
@@ -106,40 +106,3 @@ describe('OnlineLobbyService', () => {
     expect(service.lastError()).toBeNull();
   });
 });
-
-function createRoomSummary(
-  overrides: Partial<LobbyRoomSummary> = {}
-): LobbyRoomSummary {
-  return {
-    roomId: 'ROOM01',
-    createdAt: '2026-03-20T00:00:00.000Z',
-    updatedAt: '2026-03-20T00:00:00.000Z',
-    hostDisplayName: 'Host',
-    status: 'waiting',
-    mode: null,
-    boardSize: null,
-    players: {
-      black: null,
-      white: null,
-    },
-    participantCount: 1,
-    onlineCount: 1,
-    spectatorCount: 1,
-    ...overrides,
-  };
-}
-
-function createOnlineParticipant(
-  overrides: Partial<LobbyOnlineParticipantSummary> = {}
-): LobbyOnlineParticipantSummary {
-  return {
-    participantId: 'participant-1',
-    displayName: 'Host',
-    roomId: 'ROOM01',
-    seat: null,
-    isHost: true,
-    joinedAt: '2026-03-20T00:00:00.000Z',
-    activity: 'watching',
-    ...overrides,
-  };
-}

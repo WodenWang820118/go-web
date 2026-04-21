@@ -3,8 +3,18 @@ import { Component, computed, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
-import { createMessage } from '@gx/go/domain';
+import {
+  type HostedMatchSnapshot,
+  type ParticipantSummary,
+  type RoomSnapshot,
+  type SystemNotice,
+} from '@gx/go/contracts';
+import {
+  createParticipantSummary,
+  createRoomSnapshot,
+  createSeatedParticipants,
+} from '@gx/go/contracts/testing';
+import { createBoard, createMessage } from '@gx/go/domain';
 import { provideGoPrimeNGTheme } from '@gx/go/ui';
 import { Base } from 'primeng/base';
 import { Dialog } from 'primeng/dialog';
@@ -26,11 +36,7 @@ const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
 );
 
 type RoomBootstrapState = 'idle' | 'loading' | 'ready' | 'missing';
-type RoomConnectionState =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'disconnected';
+type RoomConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
 type RoomClosedState = {
   roomId: string;
   message: ReturnType<typeof createMessage>;
@@ -264,7 +270,10 @@ export function createRoomServiceStub(options: {
     closeRoom: vi.fn().mockReturnValue(of(void 0)),
     closeRoomWithKeepalive: vi.fn().mockResolvedValue(undefined),
     markRoomClosed: vi.fn(
-      (event: { roomId: string; message: ReturnType<typeof createMessage> }) => {
+      (event: {
+        roomId: string;
+        message: ReturnType<typeof createMessage>;
+      }) => {
         roomClosed.set(event);
       },
     ),
@@ -280,35 +289,104 @@ export function createRoomServiceStub(options: {
 export function createSnapshot(
   overrides: Partial<RoomSnapshot> = {},
 ): RoomSnapshot {
-  return {
+  return createRoomSnapshot({
     roomId: 'ROOM42',
-    createdAt: '2026-03-20T00:00:00.000Z',
-    updatedAt: '2026-03-20T00:00:00.000Z',
-    hostParticipantId: 'host-1',
-    participants: [
-      {
-        participantId: 'host-1',
-        displayName: 'Host',
-        seat: null,
-        isHost: true,
-        online: true,
-        muted: false,
-        joinedAt: '2026-03-20T00:00:00.000Z',
-      },
-    ],
-    seatState: {
-      black: null,
-      white: null,
-    },
-    nextMatchSettings: {
-      mode: 'go',
-      boardSize: 19,
-      komi: 6.5,
-    },
-    rematch: null,
-    autoStartBlockedUntilSeatChange: false,
-    match: null,
-    chat: [],
     ...overrides,
+  });
+}
+
+/**
+ * Creates a participant fixture for room-page tests.
+ */
+export function createParticipant(
+  overrides: Partial<ParticipantSummary> = {},
+): ParticipantSummary {
+  return createParticipantSummary(overrides);
+}
+
+/**
+ * Creates a two-player seated room snapshot that keeps seat ownership aligned.
+ */
+export function createSeatedSnapshot(options?: {
+  guest?: Partial<ParticipantSummary>;
+  host?: Partial<ParticipantSummary>;
+  overrides?: Partial<RoomSnapshot>;
+}): RoomSnapshot {
+  const [host, guest] = createSeatedParticipants({
+    host: options?.host,
+    guest: options?.guest,
+  });
+
+  return createSnapshot({
+    participants: [host, guest],
+    seatState: {
+      black: host.participantId,
+      white: guest.participantId,
+    },
+    ...options?.overrides,
+  });
+}
+
+/**
+ * Creates a hosted-match snapshot with override-friendly defaults for page specs.
+ */
+export function createHostedMatch(
+  options: {
+    boardSize?: number;
+    captures?: HostedMatchSnapshot['state']['captures'];
+    consecutivePasses?: number;
+    lastMove?: HostedMatchSnapshot['state']['lastMove'];
+    message?: HostedMatchSnapshot['state']['message'];
+    mode?: HostedMatchSnapshot['settings']['mode'];
+    moveHistory?: HostedMatchSnapshot['state']['moveHistory'];
+    nextPlayer?: HostedMatchSnapshot['state']['nextPlayer'];
+    phase?: HostedMatchSnapshot['state']['phase'];
+    players?: HostedMatchSnapshot['settings']['players'];
+    previousBoardHashes?: HostedMatchSnapshot['state']['previousBoardHashes'];
+    result?: HostedMatchSnapshot['state']['result'];
+    scoring?: HostedMatchSnapshot['state']['scoring'];
+    startedAt?: string;
+    winnerLine?: HostedMatchSnapshot['state']['winnerLine'];
+  } = {},
+): HostedMatchSnapshot {
+  const mode = options.mode ?? 'go';
+  const boardSize = options.boardSize ?? (mode === 'gomoku' ? 15 : 19);
+  const defaultMessage =
+    options.phase === 'finished' && options.result?.summary
+      ? options.result.summary
+      : createMessage('game.state.next_turn', {
+          player: createMessage('common.player.black'),
+        });
+
+  return {
+    settings: {
+      mode,
+      boardSize,
+      komi: mode === 'gomoku' ? 0 : 6.5,
+      players: options.players ?? {
+        black: 'Host',
+        white: 'Guest',
+      },
+    },
+    state: {
+      mode,
+      boardSize,
+      board: createBoard(boardSize),
+      phase: options.phase ?? 'playing',
+      nextPlayer: options.nextPlayer ?? 'black',
+      captures: options.captures ?? {
+        black: 0,
+        white: 0,
+      },
+      moveHistory: options.moveHistory ?? [],
+      previousBoardHashes: options.previousBoardHashes ?? [],
+      result: options.result ?? null,
+      lastMove: options.lastMove ?? null,
+      consecutivePasses: options.consecutivePasses ?? 0,
+      winnerLine: options.winnerLine ?? [],
+      message: options.message ?? defaultMessage,
+      scoring: options.scoring ?? null,
+    },
+    startedAt: options.startedAt ?? '2026-03-20T00:05:00.000Z',
   };
 }
