@@ -16,6 +16,7 @@ import {
   buildCheckpointReviewContext,
   buildHybridPrefilterContext,
   buildHybridReviewReport,
+  createHybridGptTelemetryContext,
   createHybridGptBypassReview,
   buildPrefilterContext,
   buildPrefilterFailureContext,
@@ -37,6 +38,10 @@ import {
   type LocalReviewFinding,
   type LocalReviewReport,
 } from './local-reviewer-support.ts';
+import {
+  createProviderObservationBucketKey,
+  createProviderTelemetryContext,
+} from './provider-observability.ts';
 
 test('resolveLocalReviewerRepoRoot finds the sibling workspace', () => {
   const workspace = mkdtempSync(join(tmpdir(), 'local-reviewer-support-'));
@@ -362,6 +367,33 @@ test('buildHybridReviewReport escalates when either GPT or local review blocks a
     buildHybridPrefilterContext({ report }),
     /gpt_provider=copilot-gpt-5-mini/,
   );
+});
+
+test('createHybridGptTelemetryContext keeps hybrid GPT observations separate from checkpoint review buckets', () => {
+  const checkpointBucket = createProviderObservationBucketKey({
+    ...createProviderTelemetryContext({
+      callsite: 'checkpoint-review',
+      checkpoint: 'implementation',
+    }),
+    model: 'gpt-5-mini',
+    operation: 'review',
+    provider: 'copilot',
+  });
+  const hybridBucket = createProviderObservationBucketKey({
+    ...createHybridGptTelemetryContext(),
+    model: 'gpt-5-mini',
+    operation: 'review',
+    provider: 'copilot',
+  });
+
+  assert.notEqual(checkpointBucket, hybridBucket);
+  assert.match(checkpointBucket, /checkpoint-review/);
+  assert.match(checkpointBucket, /\bimplementation\b/);
+  assert.doesNotMatch(checkpointBucket, /hybrid-gpt-review/);
+  assert.match(hybridBucket, /hybrid-gpt-review/);
+  assert.match(hybridBucket, /:none:/);
+  assert.doesNotMatch(hybridBucket, /checkpoint-review/);
+  assert.doesNotMatch(hybridBucket, /\bimplementation\b/);
 });
 
 test('writePrefilterArtifacts persists both report and context', () => {

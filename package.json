@@ -36,6 +36,7 @@
     "review:gemini": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --provider gemini",
     "review:copilot": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --provider copilot",
     "review:checkpoint": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts",
+    "review:providers:doctor": "node --experimental-strip-types tools/scripts/review/provider-doctor.ts",
     "review:plan": "node --experimental-strip-types tools/scripts/review/run-checkpoint-review.ts --checkpoint plan --provider auto --focus general",
     "review:local:prefilter": "node --experimental-strip-types tools/scripts/review/local-reviewer.ts prefilter",
     "review:evaluate:local": "node --experimental-strip-types tools/scripts/review/local-reviewer.ts evaluate",
