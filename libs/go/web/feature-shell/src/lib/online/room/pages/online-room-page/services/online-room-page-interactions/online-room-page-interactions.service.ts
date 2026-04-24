@@ -116,9 +116,15 @@ export class OnlineRoomPageInteractionsService {
     });
   }
 
-  finalizeScoring(): void {
+  confirmScoring(): void {
     this.onlineRoom.sendGameCommand({
-      type: 'finalize-scoring',
+      type: 'confirm-scoring',
+    });
+  }
+
+  disputeScoring(): void {
+    this.onlineRoom.sendGameCommand({
+      type: 'dispute-scoring',
     });
   }
 

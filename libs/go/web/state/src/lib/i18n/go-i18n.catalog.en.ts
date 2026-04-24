@@ -29,7 +29,10 @@ const EN_GAME = {
     '{{player}} group marked dead for scoring.',
   'game.go.state.captured_stones': '{{player}} captured {{count}} stone(s).',
   'game.go.state.scoring_started':
-    'Scoring phase started. Click groups to mark them dead, then finalize the result.',
+    'Scoring phase started. Click groups to mark them dead, then both players confirm the result.',
+  'game.go.state.scoring_confirmed': '{{player}} confirmed the score.',
+  'game.go.state.scoring_disputed':
+    '{{player}} disputed the score. Play resumes.',
   'game.go.state.next_turn_after_pass': '{{player}} to move after the pass.',
   'game.go.error.match_closed': 'This Go match is no longer accepting moves.',
   'game.go.error.suicide': 'Suicide is not legal in this ruleset.',
@@ -45,11 +48,16 @@ const EN_GAME = {
     'Start a local match before placing stones.',
   'local.play.error.scoring_preview_unavailable':
     'Unable to update the scoring preview.',
-  'local.play.error.start_before_finalize_scoring':
-    'Start a local match before finalizing scoring.',
-  'local.play.error.finalize_scoring_unavailable':
-    'Scoring finalization is only available during a Go scoring phase.',
-  'local.play.error.finalize_score_failed': 'Unable to finalize this score.',
+  'local.play.error.start_before_confirm_scoring':
+    'Start a local match before confirming scoring.',
+  'local.play.error.confirm_scoring_unavailable':
+    'Scoring confirmation is only available during a Go scoring phase.',
+  'local.play.error.confirm_score_failed': 'Unable to confirm this score.',
+  'local.play.error.start_before_dispute_scoring':
+    'Start a local match before disputing scoring.',
+  'local.play.error.dispute_scoring_unavailable':
+    'Scoring disputes are only available during a Go scoring phase.',
+  'local.play.error.dispute_score_failed': 'Unable to dispute this score.',
   'local.play.error.start_before_move':
     'Start a local match before making a move.',
   'local.play.error.move_rejected': 'Move rejected.',
@@ -74,6 +82,10 @@ const EN_ROOM_SHARED = {
   'room.error.score_finalization_unavailable':
     'Score finalization is only available during Go scoring.',
   'room.error.finalize_scoring_failed': 'Unable to finalize scoring.',
+  'room.error.confirm_scoring_failed': 'Unable to confirm scoring.',
+  'room.error.score_dispute_unavailable':
+    'Score disputes are only available during Go scoring.',
+  'room.error.dispute_scoring_failed': 'Unable to dispute scoring.',
   'room.error.command_not_available': 'That room command is not available yet.',
   'room.error.match_not_accepting_moves':
     'The match is not accepting new moves.',
@@ -160,7 +172,7 @@ const EN_MODES = {
   'mode.go.help.2':
     'Immediate ko recapture is rejected to prevent repeating the previous position.',
   'mode.go.help.3':
-    'Two consecutive passes open scoring. During scoring, click groups to mark them dead before finalizing.',
+    'Two consecutive passes open scoring. During scoring, click groups to mark them dead before both players confirm.',
   'mode.go.help.4':
     'Chinese area scoring is used. White receives {{komi}} komi.',
   'mode.go.setup_hint': 'Choose a 9x9, 13x13, or 19x19 board for local play.',
@@ -202,7 +214,7 @@ const EN_LOCAL_UI = {
   'play.back_to_setup': 'Back to setup',
   'play.current_turn': 'Current turn',
   'play.scoring_hint':
-    'Scoring review is active. Click groups to mark them dead, then finalize the result.',
+    'Scoring review is active. Click groups to mark them dead, then both players confirm. A dispute resumes play.',
   'play.rules_and_reminders': 'Rules and reminders',
   'play.match_result': 'Match result',
   'play.restart_match': 'Restart match',
@@ -238,7 +250,9 @@ const EN_LOCAL_UI = {
   'ui.match_sidebar.score_preview': 'Score preview',
   'ui.match_sidebar.pass': 'Pass',
   'ui.match_sidebar.resign': 'Resign',
-  'ui.match_sidebar.finalize_score': 'Finalize score',
+  'ui.match_sidebar.confirm_score': '{{player}} confirms',
+  'ui.match_sidebar.dispute_score': '{{player}} disputes',
+  'ui.match_sidebar.confirmed': 'Confirmed',
   'ui.match_sidebar.rules': 'Rules',
   'ui.match_sidebar.restart': 'Restart',
   'ui.match_sidebar.new_match': 'New match',
@@ -346,7 +360,8 @@ const EN_HOSTED_UI = {
   'room.participants.board_size': 'Board size',
   'room.participants.start_hosted_match': 'Start hosted match',
   'room.participants.match_actions': 'Match actions',
-  'room.participants.finalize_score': 'Finalize score',
+  'room.participants.confirm_score': 'Confirm score',
+  'room.participants.dispute_score': 'Dispute score',
   'room.participants.move_log': 'Move log',
   'room.participants.empty_move_log':
     'Moves will appear here once the game begins.',

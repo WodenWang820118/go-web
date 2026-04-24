@@ -79,7 +79,19 @@ export class OnlineRoomPageViewStateService {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.state.phase === 'playing',
   );
-  readonly canFinalizeScoring = computed(
+  readonly canConfirmScoring = computed(() => {
+    const viewerSeat = this.onlineRoom.viewerSeat();
+    const match = this.match();
+
+    return (
+      this.realtimeConnected() &&
+      !!viewerSeat &&
+      match?.settings.mode === 'go' &&
+      match.state.phase === 'scoring' &&
+      !(match.state.scoring?.confirmedBy ?? []).includes(viewerSeat)
+    );
+  });
+  readonly canDisputeScoring = computed(
     () =>
       this.realtimeConnected() &&
       !!this.onlineRoom.viewerSeat() &&

@@ -100,22 +100,50 @@ describe('rooms-match-transitions', () => {
       ).toThrow(BadRequestException);
     });
 
-    it.each([
-      { type: 'confirm-scoring' } as const,
-      { type: 'dispute-scoring' } as const,
-      { type: 'nigiri-guess', guess: 'odd' } as const,
-    ])(
-      'rejects future command $type until its phase is implemented',
-      (command) => {
-        const { room, host } = createRoomWithSeatedPlayers(store);
+    it('rejects scoring confirmation when the match is not in scoring phase', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
 
-        startGoMatch(room, dependencies);
+      startGoMatch(room, dependencies);
 
-        expect(() =>
-          applyHostedGameCommand(room, host, command, dependencies),
-        ).toThrow(BadRequestException);
-      },
-    );
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'confirm-scoring' },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects scoring disputes when the match is not in scoring phase', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'dispute-scoring' },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects pending nigiri commands until that phase is implemented', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'nigiri-guess', guess: 'odd' },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
 
     it('rejects moves played out of turn', () => {
       const { room, guest } = createRoomWithSeatedPlayers(store);
@@ -280,7 +308,7 @@ describe('rooms-match-transitions', () => {
       );
     });
 
-    it('creates a rematch gate only after hosted Go scoring is finalized', () => {
+    it('creates a rematch gate only after both hosted Go players confirm scoring', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
       startGoMatch(room, dependencies);
@@ -289,7 +317,18 @@ describe('rooms-match-transitions', () => {
       applyHostedGameCommand(
         room,
         host,
-        { type: 'finalize-scoring' },
+        { type: 'confirm-scoring' },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('scoring');
+      expect(room.match?.state.scoring?.confirmedBy).toEqual(['black']);
+      expect(room.rematch).toBeNull();
+
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'confirm-scoring' },
         dependencies,
       );
 
@@ -308,6 +347,75 @@ describe('rooms-match-transitions', () => {
           white: 'pending',
         },
       });
+    });
+
+    it('keeps legacy finalize-scoring as a one-player confirmation only', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(
+        room,
+        store.getSeatHolder(room, 'white')!,
+        { type: 'pass' },
+        dependencies,
+      );
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'finalize-scoring' },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('scoring');
+      expect(room.match?.state.scoring?.confirmedBy).toEqual(['black']);
+      expect(room.rematch).toBeNull();
+    });
+
+    it('clears hosted scoring confirmations when dead stones change', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      setCell(room.match!.state.board, { x: 1, y: 1 }, 'white');
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'confirm-scoring' },
+        dependencies,
+      );
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'toggle-dead', point: { x: 1, y: 1 } },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('scoring');
+      expect(room.match?.state.scoring?.confirmedBy).toEqual([]);
+      expect(room.match?.state.scoring?.revision).toBe(1);
+      expect(room.match?.state.scoring?.deadStones).toEqual(['1,1']);
+    });
+
+    it('resumes hosted Go play when either player disputes scoring', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'dispute-scoring' },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('playing');
+      expect(room.match?.state.nextPlayer).toBe('white');
+      expect(room.match?.state.scoring).toBeNull();
+      expect(room.match?.state.consecutivePasses).toBe(0);
+      expect(room.rematch).toBeNull();
     });
   });
 

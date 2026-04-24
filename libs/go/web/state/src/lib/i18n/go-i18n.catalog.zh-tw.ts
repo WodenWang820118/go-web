@@ -28,7 +28,9 @@ const ZH_GAME = {
   'game.go.state.group_marked_dead': '{{player}}棋群已標記為死棋。',
   'game.go.state.captured_stones': '{{player}}提掉了 {{count}} 顆棋子。',
   'game.go.state.scoring_started':
-    '已進入算地階段。點擊棋群標記死子後，再確認最終結果。',
+    '已進入算地階段。點擊棋群標記死子後，雙方都需要確認結果。',
+  'game.go.state.scoring_confirmed': '{{player}}已確認算地結果。',
+  'game.go.state.scoring_disputed': '{{player}}對算地有異議，恢復對局。',
   'game.go.state.next_turn_after_pass': '{{player}}在虛手後輪到落子。',
   'game.go.error.match_closed': '這盤圍棋目前已無法再落子。',
   'game.go.error.suicide': '這個規則集不允許自殺棋。',
@@ -40,11 +42,16 @@ const ZH_GAME = {
   'game.gomoku.error.pass_unavailable': '五子棋不允許虛手。',
   'local.play.error.start_before_place': '請先開始本機對局，再放置棋子。',
   'local.play.error.scoring_preview_unavailable': '無法更新算地預覽。',
-  'local.play.error.start_before_finalize_scoring':
+  'local.play.error.start_before_confirm_scoring':
     '請先開始本機對局，再確認算地。',
-  'local.play.error.finalize_scoring_unavailable':
-    '只有在圍棋的算地階段才能確認結果。',
-  'local.play.error.finalize_score_failed': '無法確認目前算地結果。',
+  'local.play.error.confirm_scoring_unavailable':
+    '只有在圍棋算地階段才能確認算地。',
+  'local.play.error.confirm_score_failed': '無法確認目前算地結果。',
+  'local.play.error.start_before_dispute_scoring':
+    '請先開始本機對局，再提出算地異議。',
+  'local.play.error.dispute_scoring_unavailable':
+    '只有在圍棋算地階段才能提出算地異議。',
+  'local.play.error.dispute_score_failed': '無法提出算地異議。',
   'local.play.error.start_before_move': '請先開始本機對局，再進行操作。',
   'local.play.error.move_rejected': '此步無法落子。',
 } as const;
@@ -63,6 +70,9 @@ const ZH_ROOM_SHARED = {
   'room.error.score_finalization_unavailable':
     '只有在圍棋算地階段才能確認結果。',
   'room.error.finalize_scoring_failed': '無法確認算地結果。',
+  'room.error.confirm_scoring_failed': '無法確認算地結果。',
+  'room.error.score_dispute_unavailable': '只有在圍棋算地階段才能提出異議。',
+  'room.error.dispute_scoring_failed': '無法提出算地異議。',
   'room.error.command_not_available': '此房間指令尚未開放使用。',
   'room.error.match_not_accepting_moves': '目前對局不接受新的操作。',
   'room.error.not_your_turn': '現在不是你的回合。',
@@ -136,7 +146,7 @@ const ZH_MODES = {
   'mode.go.help.1': '沒有氣的棋群會立刻被提掉。',
   'mode.go.help.2': '為避免重複局面，打劫不允許立刻提回。',
   'mode.go.help.3':
-    '雙方連續兩次虛手後進入算地。算地時可點擊棋群標記死子，再確認結果。',
+    '雙方連續兩次虛手後進入算地。算地時可點擊棋群標記死子，再由雙方確認。',
   'mode.go.help.4': '使用中國數子法。白方有 {{komi}} 目貼目。',
   'mode.go.setup_hint': '本機對局可選擇 9x9、13x13 或 19x19 棋盤。',
   'mode.gomoku.title': '五子棋',
@@ -172,7 +182,8 @@ const ZH_LOCAL_UI = {
   'setup.rules_refresher': '規則摘要',
   'play.back_to_setup': '返回設定',
   'play.current_turn': '目前輪到',
-  'play.scoring_hint': '目前為算地確認階段。點擊棋群標記死子後，再確認結果。',
+  'play.scoring_hint':
+    '目前為算地確認階段。點擊棋群標記死子後，雙方都需要確認；若有異議則恢復對局。',
   'play.rules_and_reminders': '規則與提醒',
   'play.match_result': '對局結果',
   'play.restart_match': '重新開始',
@@ -201,7 +212,9 @@ const ZH_LOCAL_UI = {
   'ui.match_sidebar.score_preview': '算地預覽',
   'ui.match_sidebar.pass': '虛手',
   'ui.match_sidebar.resign': '認輸',
-  'ui.match_sidebar.finalize_score': '確認結果',
+  'ui.match_sidebar.confirm_score': '{{player}}確認',
+  'ui.match_sidebar.dispute_score': '{{player}}異議',
+  'ui.match_sidebar.confirmed': '已確認',
   'ui.match_sidebar.rules': '規則',
   'ui.match_sidebar.restart': '重新開始',
   'ui.match_sidebar.new_match': '重新配局',
@@ -302,7 +315,8 @@ const ZH_HOSTED_UI = {
   'room.participants.board_size': '棋盤大小',
   'room.participants.start_hosted_match': '開始線上對局',
   'room.participants.match_actions': '對局操作',
-  'room.participants.finalize_score': '確認結果',
+  'room.participants.confirm_score': '確認算地',
+  'room.participants.dispute_score': '提出異議',
   'room.participants.move_log': '著手記錄',
   'room.participants.empty_move_log': '對局開始後，這裡會顯示著手記錄。',
   'room.participants.viewer_role.player': '{{player}}玩家',

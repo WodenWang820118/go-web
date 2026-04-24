@@ -13,6 +13,7 @@ import {
   isGameMode,
   type GoMessageDescriptor,
   type BoardPoint,
+  type PlayerColor,
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
@@ -130,9 +131,16 @@ export class PlayPageComponent {
     this.reportAction(this.store.passTurn(), 'play.toast.pass_unavailable');
   }
 
-  protected finalizeScoring(): void {
+  protected confirmScoring(player: PlayerColor): void {
     this.reportAction(
-      this.store.finalizeScoring(),
+      this.store.confirmScoring(player),
+      'play.toast.scoring_unavailable',
+    );
+  }
+
+  protected disputeScoring(player: PlayerColor): void {
+    this.reportAction(
+      this.store.disputeScoring(player),
       'play.toast.scoring_unavailable',
     );
   }

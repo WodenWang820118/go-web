@@ -100,7 +100,7 @@ describe('GoRulesEngine', () => {
     expect(state.lastMove?.phaseAfterMove).toBe('playing');
   });
 
-  it('opens scoring after two consecutive passes and finishes when scoring is finalized', () => {
+  it('opens scoring after two consecutive passes and finishes after both players confirm', () => {
     let state = engine.createInitialState(settings);
 
     state = engine.applyMove(state, settings, { type: 'pass' }).state;
@@ -113,7 +113,13 @@ describe('GoRulesEngine', () => {
     expect(state.result).toBeNull();
     expect(state.lastMove?.phaseAfterMove).toBe('scoring');
 
-    state = engine.finalizeScoring(state, settings);
+    state = engine.confirmScoring(state, settings, 'black');
+
+    expect(state.phase).toBe('scoring');
+    expect(state.scoring?.confirmedBy).toEqual(['black']);
+    expect(state.result).toBeNull();
+
+    state = engine.confirmScoring(state, settings, 'white');
 
     expect(state.phase).toBe('finished');
     expect(state.result).toMatchObject({
@@ -146,6 +152,8 @@ describe('GoRulesEngine', () => {
     });
 
     expect(toggled.scoring?.deadStones).toContain('1,1');
+    expect(toggled.scoring?.confirmedBy).toEqual([]);
+    expect(toggled.scoring?.revision).toBe(1);
     expect(
       (toggled.scoring?.score.black ?? 0) >
         (scoringState.scoring?.score.black ?? 0),
@@ -157,15 +165,55 @@ describe('GoRulesEngine', () => {
     });
 
     expect(restored.scoring?.deadStones).not.toContain('1,1');
+    expect(restored.scoring?.revision).toBe(2);
     expect(restored.scoring?.score.black).toBe(
       scoringState.scoring?.score.black,
     );
   });
 
-  it('ignores scoring finalization outside the scoring phase', () => {
+  it('clears scoring confirmations when dead stones change', () => {
+    const board = createBoard(9);
+    setCell(board, { x: 1, y: 1 }, 'white');
+    let state: MatchState = {
+      ...engine.createInitialState(settings),
+      board,
+      phase: 'scoring',
+      scoring: buildScoringState(board, new Set<string>(), settings.komi),
+    };
+
+    state = engine.confirmScoring(state, settings, 'black');
+
+    expect(state.scoring?.confirmedBy).toEqual(['black']);
+
+    state = engine.toggleDeadGroup(state, settings, { x: 1, y: 1 });
+
+    expect(state.scoring?.deadStones).toEqual(['1,1']);
+    expect(state.scoring?.confirmedBy).toEqual([]);
+    expect(state.scoring?.revision).toBe(1);
+  });
+
+  it('resumes play from scoring when either player disputes the preview', () => {
+    let state = engine.createInitialState(settings);
+
+    state = engine.applyMove(state, settings, { type: 'pass' }).state;
+    state = engine.applyMove(state, settings, { type: 'pass' }).state;
+    state = engine.confirmScoring(state, settings, 'black');
+    state = engine.disputeScoring(state, settings, 'white');
+
+    expect(state.phase).toBe('playing');
+    expect(state.nextPlayer).toBe('white');
+    expect(state.consecutivePasses).toBe(0);
+    expect(state.scoring).toBeNull();
+    expect(state.result).toBeNull();
+    expect(state.message).toMatchObject({
+      key: 'game.go.state.scoring_disputed',
+    });
+  });
+
+  it('ignores scoring confirmation outside the scoring phase', () => {
     const state = engine.createInitialState(settings);
 
-    expect(engine.finalizeScoring(state, settings)).toBe(state);
+    expect(engine.confirmScoring(state, settings, 'black')).toBe(state);
   });
 
   it('finishes immediately on resignation', () => {

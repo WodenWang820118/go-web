@@ -289,7 +289,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     ).not.toBeNull();
   });
 
-  it('renders the sidebar action area below chat with back-to-lobby and without finalize score', async () => {
+  it('renders the sidebar action area below chat with back-to-lobby and without scoring agreement', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSeatedSnapshot({
         overrides: {
@@ -315,7 +315,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.pass'));
     expect(actionsSection?.textContent).toContain(i18n.t('common.move.resign'));
     expect(actionsSection?.textContent).not.toContain(
-      i18n.t('room.participants.finalize_score'),
+      i18n.t('room.participants.confirm_score'),
+    );
+    expect(actionsSection?.textContent).not.toContain(
+      i18n.t('room.participants.dispute_score'),
     );
 
     if (!chatSection || !actionsSection) {
@@ -363,8 +366,11 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     const harness = await renderOnlineRoomPage(roomService);
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
-    const disabledFinalizeButton = root.querySelector(
-      '[data-testid="room-finalize-scoring"]',
+    const disabledConfirmButton = root.querySelector(
+      '[data-testid="room-confirm-scoring"]',
+    ) as HTMLButtonElement | null;
+    const disabledDisputeButton = root.querySelector(
+      '[data-testid="room-dispute-scoring"]',
     ) as HTMLButtonElement | null;
 
     expect(root.textContent).toContain(
@@ -372,23 +378,35 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     );
     expect(root.textContent).toContain('12.0');
     expect(root.textContent).toContain('18.5');
-    expect(disabledFinalizeButton).not.toBeNull();
-    expect(disabledFinalizeButton?.disabled).toBe(true);
+    expect(disabledConfirmButton).not.toBeNull();
+    expect(disabledDisputeButton).not.toBeNull();
+    expect(disabledConfirmButton?.disabled).toBe(true);
+    expect(disabledDisputeButton?.disabled).toBe(true);
 
     roomService.connectionState.set('connected');
     harness.detectChanges();
     await harness.fixture.whenStable();
 
-    const enabledFinalizeButton = root.querySelector(
-      '[data-testid="room-finalize-scoring"]',
+    const enabledConfirmButton = root.querySelector(
+      '[data-testid="room-confirm-scoring"]',
+    ) as HTMLButtonElement | null;
+    const enabledDisputeButton = root.querySelector(
+      '[data-testid="room-dispute-scoring"]',
     ) as HTMLButtonElement | null;
 
-    expect(enabledFinalizeButton?.disabled).toBe(false);
+    expect(enabledConfirmButton?.disabled).toBe(false);
+    expect(enabledDisputeButton?.disabled).toBe(false);
 
-    enabledFinalizeButton?.click();
+    enabledConfirmButton?.click();
 
     expect(roomService.sendGameCommand).toHaveBeenCalledWith({
-      type: 'finalize-scoring',
+      type: 'confirm-scoring',
+    });
+
+    enabledDisputeButton?.click();
+
+    expect(roomService.sendGameCommand).toHaveBeenCalledWith({
+      type: 'dispute-scoring',
     });
     expect(roomService.snapshot()?.match?.state.phase).toBe('scoring');
   });

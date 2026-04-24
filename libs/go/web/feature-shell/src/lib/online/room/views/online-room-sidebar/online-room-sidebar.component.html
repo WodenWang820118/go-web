@@ -49,11 +49,13 @@
     [match]="match()"
     [canPass]="canPass()"
     [canResign]="canResign()"
-    [canFinalizeScoring]="canFinalizeScoring()"
+    [canConfirmScoring]="canConfirmScoring()"
+    [canDisputeScoring]="canDisputeScoring()"
     [realtimeConnected]="realtimeConnected()"
     (backToLobbyRequested)="backToLobbyRequested.emit()"
     (passRequested)="passRequested.emit()"
     (resignRequested)="resignRequested.emit()"
-    (finalizeScoringRequested)="finalizeScoringRequested.emit()"
+    (confirmScoringRequested)="confirmScoringRequested.emit()"
+    (disputeScoringRequested)="disputeScoringRequested.emit()"
   />
 </aside>

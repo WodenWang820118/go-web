@@ -61,7 +61,8 @@ describe('OnlineRoomSidebarComponent', () => {
     ]);
     fixture.componentRef.setInput('canPass', true);
     fixture.componentRef.setInput('canResign', true);
-    fixture.componentRef.setInput('canFinalizeScoring', false);
+    fixture.componentRef.setInput('canConfirmScoring', false);
+    fixture.componentRef.setInput('canDisputeScoring', false);
     fixture.componentRef.setInput('showRematch', true);
     fixture.componentRef.setInput('canRespondToRematch', true);
     fixture.componentRef.setInput('rematchStatuses', [
@@ -181,9 +182,13 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(backEmit).toHaveBeenCalled();
   });
 
-  it('bubbles the hosted scoring finalization action', async () => {
-    const finalizeEmit = vi.spyOn(
-      fixture.componentInstance.finalizeScoringRequested,
+  it('bubbles hosted scoring agreement actions', async () => {
+    const confirmEmit = vi.spyOn(
+      fixture.componentInstance.confirmScoringRequested,
+      'emit',
+    );
+    const disputeEmit = vi.spyOn(
+      fixture.componentInstance.disputeScoringRequested,
       'emit',
     );
 
@@ -196,23 +201,30 @@ describe('OnlineRoomSidebarComponent', () => {
     });
     fixture.componentRef.setInput('canPass', false);
     fixture.componentRef.setInput('canResign', false);
-    fixture.componentRef.setInput('canFinalizeScoring', true);
+    fixture.componentRef.setInput('canConfirmScoring', true);
+    fixture.componentRef.setInput('canDisputeScoring', true);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const root = fixture.nativeElement as HTMLElement;
-    const finalizeButton = root.querySelector(
-      '[data-testid="room-finalize-scoring"]',
+    const confirmButton = root.querySelector(
+      '[data-testid="room-confirm-scoring"]',
+    ) as HTMLButtonElement | null;
+    const disputeButton = root.querySelector(
+      '[data-testid="room-dispute-scoring"]',
     ) as HTMLButtonElement | null;
 
-    expect(finalizeButton).not.toBeNull();
+    expect(confirmButton).not.toBeNull();
+    expect(disputeButton).not.toBeNull();
 
-    finalizeButton?.click();
+    confirmButton?.click();
+    disputeButton?.click();
 
-    expect(finalizeEmit).toHaveBeenCalled();
+    expect(confirmEmit).toHaveBeenCalled();
+    expect(disputeEmit).toHaveBeenCalled();
   });
 
-  it('keeps hosted scoring finalization disabled when it is unavailable', async () => {
+  it('keeps hosted scoring agreement actions disabled when unavailable', async () => {
     fixture.componentRef.setInput('match', {
       ...liveMatch,
       state: {
@@ -222,17 +234,23 @@ describe('OnlineRoomSidebarComponent', () => {
     });
     fixture.componentRef.setInput('canPass', false);
     fixture.componentRef.setInput('canResign', false);
-    fixture.componentRef.setInput('canFinalizeScoring', false);
+    fixture.componentRef.setInput('canConfirmScoring', false);
+    fixture.componentRef.setInput('canDisputeScoring', false);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const root = fixture.nativeElement as HTMLElement;
-    const finalizeButton = root.querySelector(
-      '[data-testid="room-finalize-scoring"]',
+    const confirmButton = root.querySelector(
+      '[data-testid="room-confirm-scoring"]',
+    ) as HTMLButtonElement | null;
+    const disputeButton = root.querySelector(
+      '[data-testid="room-dispute-scoring"]',
     ) as HTMLButtonElement | null;
 
-    expect(finalizeButton).not.toBeNull();
-    expect(finalizeButton?.disabled).toBe(true);
+    expect(confirmButton).not.toBeNull();
+    expect(disputeButton).not.toBeNull();
+    expect(confirmButton?.disabled).toBe(true);
+    expect(disputeButton?.disabled).toBe(true);
   });
 
   it('keeps the decorative timer and renders seat actions on one line', () => {

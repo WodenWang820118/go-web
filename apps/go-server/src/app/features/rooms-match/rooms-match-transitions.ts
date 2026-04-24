@@ -60,7 +60,10 @@ export function applyHostedGameCommand(
     return;
   }
 
-  if (command.type === 'finalize-scoring') {
+  if (
+    command.type === 'confirm-scoring' ||
+    command.type === 'finalize-scoring'
+  ) {
     if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
       throw dependencies.roomsErrors.badRequest(
         'room.error.score_finalization_unavailable',
@@ -69,11 +72,11 @@ export function applyHostedGameCommand(
 
     const nextState = dependencies.rulesEngines
       .get('go')
-      .finalizeScoring?.(match.state, match.settings);
+      .confirmScoring?.(match.state, match.settings, participant.seat);
 
     if (!nextState) {
       throw dependencies.roomsErrors.badRequest(
-        'room.error.finalize_scoring_failed',
+        'room.error.confirm_scoring_failed',
       );
     }
 
@@ -81,11 +84,31 @@ export function applyHostedGameCommand(
     return;
   }
 
-  if (
-    command.type === 'confirm-scoring' ||
-    command.type === 'dispute-scoring' ||
-    command.type === 'nigiri-guess'
-  ) {
+  if (command.type === 'dispute-scoring') {
+    if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
+      throw dependencies.roomsErrors.badRequest(
+        'room.error.score_dispute_unavailable',
+      );
+    }
+
+    const nextState = dependencies.rulesEngines
+      .get('go')
+      .disputeScoring?.(match.state, match.settings, participant.seat);
+
+    if (!nextState) {
+      throw dependencies.roomsErrors.badRequest(
+        'room.error.dispute_scoring_failed',
+      );
+    }
+
+    room.match = {
+      ...match,
+      state: nextState,
+    };
+    return;
+  }
+
+  if (command.type === 'nigiri-guess') {
     throw dependencies.roomsErrors.badRequest(
       'room.error.command_not_available',
     );

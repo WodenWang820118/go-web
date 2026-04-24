@@ -4,6 +4,7 @@ import {
   MatchSettings,
   MatchState,
   MoveCommand,
+  PlayerColor,
   RuleResult,
 } from '../types';
 
@@ -23,7 +24,16 @@ export interface RulesEngine {
     settings: MatchSettings,
     point: { x: number; y: number },
   ): MatchState;
-  finalizeScoring?(state: MatchState, settings: MatchSettings): MatchState;
+  confirmScoring?(
+    state: MatchState,
+    settings: MatchSettings,
+    player: PlayerColor,
+  ): MatchState;
+  disputeScoring?(
+    state: MatchState,
+    settings: MatchSettings,
+    player: PlayerColor,
+  ): MatchState;
 }
 
 /**

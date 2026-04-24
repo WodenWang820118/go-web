@@ -99,7 +99,11 @@ export class GoRulesEngine implements RulesEngine {
       }
     }
 
-    const scoring = buildScoringState(state.board, deadStones, settings.komi);
+    const scoring = {
+      ...buildScoringState(state.board, deadStones, settings.komi),
+      confirmedBy: [],
+      revision: (state.scoring.revision ?? 0) + 1,
+    };
 
     return {
       ...state,
@@ -115,14 +119,61 @@ export class GoRulesEngine implements RulesEngine {
     };
   }
 
-  finalizeScoring(state: MatchState, settings: MatchSettings): MatchState {
+  confirmScoring(
+    state: MatchState,
+    settings: MatchSettings,
+    player: PlayerColor,
+  ): MatchState {
     if (state.phase !== 'scoring' || !state.scoring) {
       return state;
     }
 
     void settings;
 
-    return this.finishByScore(state, state.scoring);
+    const confirmed = new Set(state.scoring.confirmedBy ?? []);
+    confirmed.add(player);
+
+    const scoring = {
+      ...state.scoring,
+      confirmedBy: (['black', 'white'] as const).filter((color) =>
+        confirmed.has(color),
+      ),
+    };
+    const nextState = {
+      ...state,
+      scoring,
+      message: createMessage('game.go.state.scoring_confirmed', {
+        player: createMessage(`common.player.${player}`),
+      }),
+    };
+
+    return scoring.confirmedBy.length === 2
+      ? this.finishByScore(nextState, scoring)
+      : nextState;
+  }
+
+  disputeScoring(
+    state: MatchState,
+    settings: MatchSettings,
+    player: PlayerColor,
+  ): MatchState {
+    if (state.phase !== 'scoring' || !state.scoring) {
+      return state;
+    }
+
+    void settings;
+
+    return {
+      ...state,
+      phase: 'playing',
+      nextPlayer: player,
+      consecutivePasses: 0,
+      scoring: null,
+      result: null,
+      message: createMessage('game.go.state.scoring_disputed', {
+        player: createMessage(`common.player.${player}`),
+      }),
+    };
   }
 
   private placeStone(
