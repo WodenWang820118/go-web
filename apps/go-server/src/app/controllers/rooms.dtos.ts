@@ -7,6 +7,7 @@ import {
 import { Transform } from 'class-transformer';
 import {
   IsInt,
+  IsIn,
   IsOptional,
   IsString,
   Max,
@@ -24,6 +25,15 @@ export class CreateRoomDto implements CreateRoomRequest {
   @MinLength(1)
   @MaxLength(24)
   displayName!: string;
+
+  @IsString()
+  @IsIn(['go', 'gomoku'])
+  mode!: GameStartSettings['mode'];
+
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  boardSize!: GameStartSettings['boardSize'];
 }
 
 export class JoinRoomDto implements JoinRoomRequest {

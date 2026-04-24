@@ -41,7 +41,13 @@ export async function waitForApiHealth(): Promise<void> {
 export async function createHostedRoom(
   page: Page,
   displayName: string,
+  options: {
+    mode?: 'go' | 'gomoku';
+    boardSize?: 9 | 13 | 15 | 19;
+  } = {},
 ): Promise<string> {
+  const mode = options.mode ?? 'go';
+  const boardSize = mode === 'gomoku' ? 15 : (options.boardSize ?? 19);
   const displayNameInput = page.getByTestId('lobby-display-name-input');
   const createRoomButton = page.getByTestId('online-lobby-create-button');
   const appOrigin = new URL(page.url()).origin;
@@ -79,6 +85,16 @@ export async function createHostedRoom(
   );
 
   await createRoomButton.click();
+  await expect(page.getByTestId('lobby-create-room-dialog')).toBeVisible();
+  if (mode === 'gomoku') {
+    await page.getByTestId('lobby-create-mode-gomoku').click();
+    await expect(
+      page.getByTestId('lobby-create-board-size-fixed'),
+    ).toContainText('15 x 15');
+  } else if (boardSize !== 19) {
+    await page.getByTestId(`lobby-create-board-size-${boardSize}`).click();
+  }
+  await page.getByTestId('lobby-create-room-dialog-confirm').click();
 
   const createRoomResponse = await createRoomResponsePromise;
   const createRoomRequest = createRoomResponse.request();
@@ -104,6 +120,8 @@ export async function createHostedRoom(
   ).not.toBeNull();
   expect(requestBody).toEqual({
     displayName,
+    mode,
+    boardSize,
   });
 
   expect(
@@ -173,6 +191,8 @@ async function readCreateRoomResponse(response: APIResponse): Promise<{
 
 function readCreateRoomRequestBody(request: Request): {
   displayName?: unknown;
+  mode?: unknown;
+  boardSize?: unknown;
 } | null {
   const rawBody = request.postData();
 
@@ -183,6 +203,8 @@ function readCreateRoomRequestBody(request: Request): {
   try {
     return JSON.parse(rawBody) as {
       displayName?: unknown;
+      mode?: unknown;
+      boardSize?: unknown;
     };
   } catch {
     return null;

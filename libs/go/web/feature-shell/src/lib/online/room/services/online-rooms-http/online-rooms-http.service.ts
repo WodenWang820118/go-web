@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   CloseRoomRequest,
+  CreateRoomRequest,
   CreateRoomResponse,
   GetRoomResponse,
   JoinRoomResponse,
@@ -9,6 +10,7 @@ import {
   ListRoomsResponse,
 } from '@gx/go/contracts';
 import { isMessageDescriptor } from '@gx/go/domain';
+import { BoardSize, GameMode } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { Observable } from 'rxjs';
@@ -31,10 +33,16 @@ export class OnlineRoomsHttpService {
     return this.http.get<GetRoomResponse>(`${this.apiBase}/${roomId}`);
   }
 
-  createRoom(displayName: string): Observable<CreateRoomResponse> {
+  createRoom(
+    displayName: string,
+    mode: GameMode,
+    boardSize: BoardSize,
+  ): Observable<CreateRoomResponse> {
     return this.http.post<CreateRoomResponse>(this.apiBase, {
       displayName,
-    });
+      mode,
+      boardSize,
+    } satisfies CreateRoomRequest);
   }
 
   joinRoom(

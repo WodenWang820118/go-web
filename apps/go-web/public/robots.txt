@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gxgo.synology.me/sitemap.xml

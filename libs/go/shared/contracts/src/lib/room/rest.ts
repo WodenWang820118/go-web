@@ -1,4 +1,4 @@
-import { GoMessageDescriptor } from '@gx/go/domain';
+import { BoardSize, GameMode, GoMessageDescriptor } from '@gx/go/domain';
 import {
   LobbyOnlineParticipantSummary,
   LobbyRoomSummary,
@@ -10,6 +10,8 @@ import {
  */
 export interface CreateRoomRequest {
   displayName: string;
+  mode: GameMode;
+  boardSize: BoardSize;
 }
 
 /**

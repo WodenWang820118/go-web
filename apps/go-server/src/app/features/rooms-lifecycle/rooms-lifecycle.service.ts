@@ -1,5 +1,6 @@
 import {
   CreateRoomResponse,
+  GameStartSettings,
   GetRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
@@ -17,6 +18,12 @@ import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { CloseRoomResult } from '../../contracts/rooms.types';
+import { normalizeHostedStartSettings } from '../rooms-match/rooms-match-settings';
+
+const DEFAULT_CREATE_ROOM_SETTINGS: GameStartSettings = {
+  mode: 'go',
+  boardSize: 19,
+};
 
 /**
  * Handles room creation, joining, presence sockets, and lifecycle cleanup.
@@ -38,7 +45,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     );
   }
 
-  createRoom(displayName: string, requesterKey: string): CreateRoomResponse {
+  createRoom(
+    displayName: string,
+    requesterKey: string,
+    settings: GameStartSettings = DEFAULT_CREATE_ROOM_SETTINGS,
+  ): CreateRoomResponse {
     this.assertAttemptWithinLimit(
       requesterKey,
       CREATE_ATTEMPTS_PER_WINDOW,
@@ -46,9 +57,13 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     );
 
     const sanitizedName = this.sanitizeDisplayName(displayName);
+    const nextMatchSettings = normalizeHostedStartSettings(
+      settings,
+      this.roomsErrors,
+    );
     const now = this.store.timestamp();
     const host = this.store.createParticipant(sanitizedName, true, now);
-    const room = this.store.createRoomRecord(host, now);
+    const room = this.store.createRoomRecord(host, now, nextMatchSettings);
     this.store.rooms.set(room.id, room);
 
     return {

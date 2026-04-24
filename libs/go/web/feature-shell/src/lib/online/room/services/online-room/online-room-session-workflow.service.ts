@@ -6,6 +6,7 @@ import {
   JoinRoomResponse,
   RoomClosedEvent,
 } from '@gx/go/contracts';
+import { BoardSize, GameMode } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
   EMPTY,
@@ -112,12 +113,16 @@ export class OnlineRoomSessionWorkflowService {
       .subscribe();
   }
 
-  createRoom(displayName: string): Observable<CreateRoomResponse> {
+  createRoom(
+    displayName: string,
+    mode: GameMode,
+    boardSize: BoardSize,
+  ): Observable<CreateRoomResponse> {
     return defer(() => {
       this.state.setCreating(true);
       this.state.setLastError(null);
 
-      return this.api.createRoom(displayName).pipe(
+      return this.api.createRoom(displayName, mode, boardSize).pipe(
         tap((response) => {
           this.applyJoinResponse(response.roomId, displayName, response);
         }),

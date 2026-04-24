@@ -175,11 +175,16 @@ describe('OnlineRoomService', () => {
   it('stores the created-room identity and connects realtime after room creation', () => {
     let createdRoomId = '';
 
-    service.createRoom('Host').subscribe((response) => {
+    service.createRoom('Host', 'go', 13).subscribe((response) => {
       createdRoomId = response.roomId;
     });
 
     const request = httpMock.expectOne('/api/rooms');
+    expect(request.request.body).toEqual({
+      displayName: 'Host',
+      mode: 'go',
+      boardSize: 13,
+    });
     request.flush({
       roomId: 'ROOM42',
       participantId: 'host-1',

@@ -5,6 +5,19 @@ import {
   waitForApiHealth,
 } from './online-room-test-helpers';
 
+test('creates a gomoku hosted room from the lobby dialog', async ({ page }) => {
+  await waitForApiHealth();
+
+  await useEnglish(page);
+  const roomId = await createHostedRoom(page, 'Gomoku Host', {
+    mode: 'gomoku',
+  });
+
+  await expect(page).toHaveURL(new RegExp(`/online/room/${roomId}$`));
+  await expect(page.getByTestId('room-layout')).toBeVisible();
+  await expect(page.getByTestId('claim-black')).toBeVisible();
+});
+
 test('online room auto-starts once both seats are claimed and both players can accept a rematch', async ({
   browser,
   page,

@@ -430,6 +430,16 @@ const EN_HOSTED_UI = {
   'lobby.identity.display_name': 'Display name',
   'lobby.identity.create_room': 'Create room',
   'lobby.identity.creating_room': 'Creating room...',
+  'lobby.create_dialog.title': 'Create room',
+  'lobby.create_dialog.description':
+    'Choose the match format before opening the room.',
+  'lobby.create_dialog.mode': 'Mode',
+  'lobby.create_dialog.board_size': 'Board size',
+  'lobby.create_dialog.board_size_value': '{{size}} x {{size}}',
+  'lobby.create_dialog.gomoku_board_size_fixed':
+    'Gomoku rooms use a fixed {{size}} x {{size}} board.',
+  'lobby.create_dialog.cancel': 'Cancel',
+  'lobby.create_dialog.confirm': 'Create room',
   'lobby.panel.room_list': 'Room list',
   'lobby.panel.announcement': 'Announcements',
   'lobby.panel.online_players': 'Online players',

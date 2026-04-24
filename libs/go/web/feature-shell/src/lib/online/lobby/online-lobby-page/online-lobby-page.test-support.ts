@@ -13,6 +13,7 @@ import {
   createLobbyRoomSummary,
   createRoomSnapshot,
 } from '@gx/go/contracts/testing';
+import { provideGoPrimeNGTheme } from '@gx/go/ui';
 import { Observable, of } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -65,6 +66,7 @@ export async function renderLobby(
   stubMatchMedia(viewport === 'desktop');
   TestBed.configureTestingModule({
     providers: [
+      provideGoPrimeNGTheme(),
       provideRouter([
         {
           path: '',

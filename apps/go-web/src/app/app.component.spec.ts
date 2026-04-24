@@ -17,6 +17,11 @@ class DummyRoomPageComponent {}
 
 describe('AppComponent', () => {
   beforeEach(async () => {
+    document.title = '';
+    document.head
+      .querySelectorAll('meta[name], meta[property], link[rel="canonical"]')
+      .forEach((element) => element.remove());
+
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
@@ -48,9 +53,12 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Lobby page');
+    expect(document.title).toBe('gx.go｜線上圍棋與五子棋房間');
+    expect(metaName('robots')).toBe('index,follow');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/');
   });
 
-  it('renders the active room route content', async () => {
+  it('falls back to default metadata for routes without goSeo data', async () => {
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(AppComponent);
 
@@ -59,5 +67,24 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Room page');
+    expect(document.title).toBe('gx.go｜線上圍棋與五子棋房間');
+    expect(metaName('robots')).toBe('index,follow');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/online/room/ROOM42');
   });
 });
+
+function metaName(name: string): string | null {
+  return (
+    document.head
+      .querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
+      ?.getAttribute('content') ?? null
+  );
+}
+
+function canonicalHref(): string | null {
+  return (
+    document.head
+      .querySelector<HTMLLinkElement>('link[rel="canonical"]')
+      ?.getAttribute('href') ?? null
+  );
+}
