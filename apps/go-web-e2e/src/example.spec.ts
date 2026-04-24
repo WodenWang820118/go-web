@@ -37,14 +37,25 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await clickLocalLink(page, '/setup/go');
   await expect(page.getByTestId('setup-form')).toBeVisible();
 
+  await page.getByTestId('setup-nigiri-odd-button').click();
+  await expect(page.getByTestId('setup-nigiri-result')).toContainText(
+    /starts as Black/i,
+  );
+  await expect(
+    page.getByRole('button', { name: /start local match/i }),
+  ).toBeEnabled();
   await page.getByRole('button', { name: /start local match/i }).click();
   await expect(page.getByTestId('game-board')).toBeVisible();
 
   await page.getByRole('button', { name: 'Pass' }).click();
   await page.getByRole('button', { name: 'Pass' }).click();
 
-  const finalizeButton = page.getByRole('button', { name: /finalize score/i });
-  await expect(finalizeButton).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /black confirms/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /white confirms/i }),
+  ).toBeVisible();
 });
 
 test('starts a Gomoku match and creates five in a row', async ({ page }) => {
