@@ -1,10 +1,12 @@
 import { Route } from '@angular/router';
 import { activeMatchGuard, validModeGuard } from '@gx/go/state/guards';
+import { goRouteSeoData } from '@gx/go/state';
 import { onlineRoomLeaveGuard } from './online/room/guards/online-room-leave.guard';
 
 export const goFeatureShellRoutes: Route[] = [
   {
     path: '',
+    data: goRouteSeoData('lobby'),
     async loadComponent() {
       return (
         await import(
@@ -15,6 +17,7 @@ export const goFeatureShellRoutes: Route[] = [
   },
   {
     path: 'setup/:mode',
+    data: goRouteSeoData('setup'),
     async loadComponent() {
       return (await import('./pages/setup-page/setup-page.component'))
         .SetupPageComponent;
@@ -33,6 +36,7 @@ export const goFeatureShellRoutes: Route[] = [
   },
   {
     path: 'online/room/:roomId',
+    data: goRouteSeoData('room'),
     async loadComponent() {
       const m = await import(
         './online/room/pages/online-room-page/online-room-page.component'
@@ -43,6 +47,7 @@ export const goFeatureShellRoutes: Route[] = [
   },
   {
     path: 'play/:mode',
+    data: goRouteSeoData('play'),
     async loadComponent() {
       const m = await import('./pages/play-page/play-page.component');
       return m.PlayPageComponent;

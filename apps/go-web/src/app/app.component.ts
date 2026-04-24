@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AppSeoService } from './seo/app-seo.service';
 
 @Component({
   imports: [RouterOutlet],
@@ -8,4 +9,10 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly seo = inject(AppSeoService);
+
+  constructor() {
+    this.seo.watchRouteMetadata();
+  }
+}
