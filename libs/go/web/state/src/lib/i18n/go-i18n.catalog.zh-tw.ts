@@ -74,6 +74,9 @@ const ZH_ROOM_SHARED = {
   'room.error.score_dispute_unavailable': '只有在圍棋算地階段才能提出異議。',
   'room.error.dispute_scoring_failed': '無法提出算地異議。',
   'room.error.command_not_available': '此房間指令尚未開放使用。',
+  'room.error.nigiri_unavailable': '目前沒有等待猜單雙的 nigiri。',
+  'room.error.invalid_nigiri_guess': '請為 nigiri 選擇單或雙。',
+  'room.error.nigiri_guesser_only': '只有被指定猜測的玩家可以選擇單或雙。',
   'room.error.match_not_accepting_moves': '目前對局不接受新的操作。',
   'room.error.not_your_turn': '現在不是你的回合。',
   'room.error.resign_only_for_self': '玩家只能代表自己認輸。',
@@ -102,6 +105,7 @@ const ZH_ROOM_SHARED = {
   'room.notice.seat_claimed': '{{displayName}}已認領{{seat}}。',
   'room.notice.seat_released': '{{displayName}}已釋放{{seat}}。',
   'room.notice.match_started': '{{displayName}}開始了一場{{mode}}對局。',
+  'room.notice.nigiri_started': '數位 nigiri 已開始。請 {{player}} 猜單或雙。',
   'room.notice.participant_muted':
     '{{actorDisplayName}}已將{{targetDisplayName}}設為禁言。',
   'room.notice.participant_unmuted':
@@ -178,6 +182,12 @@ const ZH_LOCAL_UI = {
   'setup.board_size': '棋盤大小',
   'setup.go_komi_note': '白方貼目 {{komi}}。',
   'setup.gomoku_fixed_board': '五子棋固定使用 {{size}} x {{size}} 棋盤。',
+  'setup.nigiri.title': '數位 nigiri',
+  'setup.nigiri.description':
+    '白方猜單或雙。猜中則白方改執黑先行；猜錯則目前黑方維持執黑。',
+  'setup.nigiri.pending': '開始這局圍棋前，請先完成 nigiri。',
+  'setup.nigiri.result':
+    '猜測：{{guess}}。藏子：{{parity}}。{{player}} 執黑先行。',
   'setup.start_local_match': '開始本機對局',
   'setup.rules_refresher': '規則摘要',
   'play.back_to_setup': '返回設定',
@@ -279,6 +289,10 @@ const ZH_HOSTED_UI = {
   'room.stage.ready.title': '玩家已就位，等待房主開始。',
   'room.stage.ready.description':
     '黑白雙方都已入座，觀戰者也能先聊天，房主隨時可以開始下一局。',
+  'room.stage.nigiri.label': 'Nigiri',
+  'room.stage.nigiri.title': '正在以數位 nigiri 決定棋色。',
+  'room.stage.nigiri.description':
+    '被指定的玩家猜單或雙後，圍棋對局會自動開始。',
   'room.stage.waiting.label': '等待中',
   'room.stage.waiting.title': '仍有空位可加入。',
   'room.stage.waiting.description':
@@ -320,6 +334,15 @@ const ZH_HOSTED_UI = {
   'room.participants.move_log': '著手記錄',
   'room.participants.empty_move_log': '對局開始後，這裡會顯示著手記錄。',
   'room.participants.viewer_role.player': '{{player}}玩家',
+  'room.nigiri.pending.title': '數位 nigiri',
+  'room.nigiri.pending.description': '請 {{player}} 猜單或雙。',
+  'room.nigiri.resolved.title': 'Nigiri 已決定',
+  'room.nigiri.resolved.description': '{{player}} 執黑。',
+  'room.nigiri.commitment': '承諾值',
+  'room.nigiri.guess.odd': '單',
+  'room.nigiri.guess.even': '雙',
+  'room.nigiri.resolved.result': '猜測：{{guess}}。藏子：{{parity}}。',
+  'room.nigiri.resolved.assigned_black': '{{player}} 是黑方。',
   'room.chat.title': '房間聊天',
   'room.chat.empty': '加入房間後即可開始聊天。',
   'room.chat.message': '訊息',

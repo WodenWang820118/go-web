@@ -2,6 +2,7 @@ import { Injectable, effect, inject } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import {
   MAX_DISPLAY_NAME_LENGTH,
+  NigiriGuess,
   createUniqueDisplayName,
 } from '@gx/go/contracts';
 import { BoardPoint, PlayerColor } from '@gx/go/domain';
@@ -125,6 +126,13 @@ export class OnlineRoomPageInteractionsService {
   disputeScoring(): void {
     this.onlineRoom.sendGameCommand({
       type: 'dispute-scoring',
+    });
+  }
+
+  guessNigiri(guess: NigiriGuess): void {
+    this.onlineRoom.sendGameCommand({
+      type: 'nigiri-guess',
+      guess,
     });
   }
 

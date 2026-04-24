@@ -130,10 +130,84 @@ describe('rooms-match-transitions', () => {
       ).toThrow(BadRequestException);
     });
 
-    it('rejects pending nigiri commands until that phase is implemented', () => {
+    it('resolves pending nigiri and swaps seats when the guesser wins black', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+      const guest = store.getSeatHolder(room, 'white')!;
+
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = {
+        parity: 'odd',
+        nonce: 'nonce',
+      };
+
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'nigiri-guess', guess: 'odd' },
+        dependencies,
+      );
+
+      expect(room.nigiri).toMatchObject({
+        status: 'resolved',
+        guesser: 'white',
+        guess: 'odd',
+        parity: 'odd',
+        nonce: 'nonce',
+        assignedBlack: 'white',
+      });
+      expect(host.seat).toBe('white');
+      expect(guest.seat).toBe('black');
+      expect(room.nigiriSecret).toBeNull();
+    });
+
+    it('resolves pending nigiri and keeps seats when the guesser loses', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+      const guest = store.getSeatHolder(room, 'white')!;
+
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = {
+        parity: 'odd',
+        nonce: 'nonce',
+      };
+
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'nigiri-guess', guess: 'even' },
+        dependencies,
+      );
+
+      expect(room.nigiri).toMatchObject({
+        status: 'resolved',
+        guess: 'even',
+        parity: 'odd',
+        assignedBlack: 'black',
+      });
+      expect(host.seat).toBe('black');
+      expect(guest.seat).toBe('white');
+      expect(room.nigiriSecret).toBeNull();
+    });
+
+    it('rejects nigiri guesses from the non-guesser seat', () => {
       const { room, host } = createRoomWithSeatedPlayers(store);
 
-      startGoMatch(room, dependencies);
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = {
+        parity: 'odd',
+        nonce: 'nonce',
+      };
 
       expect(() =>
         applyHostedGameCommand(
@@ -142,7 +216,93 @@ describe('rooms-match-transitions', () => {
           { type: 'nigiri-guess', guess: 'odd' },
           dependencies,
         ),
+      ).toThrow(ForbiddenException);
+    });
+
+    it('rejects nigiri guesses when no pending nigiri is active', () => {
+      const { room } = createRoomWithSeatedPlayers(store);
+      const guest = store.getSeatHolder(room, 'white')!;
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          guest,
+          { type: 'nigiri-guess', guess: 'odd' },
+          dependencies,
+        ),
       ).toThrow(BadRequestException);
+
+      room.nigiri = {
+        status: 'resolved',
+        commitment: 'commitment',
+        guesser: 'white',
+        guess: 'odd',
+        parity: 'odd',
+        nonce: 'nonce',
+        assignedBlack: 'white',
+      };
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          guest,
+          { type: 'nigiri-guess', guess: 'odd' },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects pending nigiri guesses when the server secret is missing', () => {
+      const { room } = createRoomWithSeatedPlayers(store);
+      const guest = store.getSeatHolder(room, 'white')!;
+
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = null;
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          guest,
+          { type: 'nigiri-guess', guess: 'odd' },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects invalid nigiri guess payloads', () => {
+      const { room } = createRoomWithSeatedPlayers(store);
+      const guest = store.getSeatHolder(room, 'white')!;
+
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = {
+        parity: 'odd',
+        nonce: 'nonce',
+      };
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          guest,
+          { type: 'nigiri-guess', guess: 'anything' } as never,
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+      expect(room.nigiri).toMatchObject({
+        status: 'pending',
+        guesser: 'white',
+      });
+      expect(room.nigiriSecret).toEqual({
+        parity: 'odd',
+        nonce: 'nonce',
+      });
     });
 
     it('rejects moves played out of turn', () => {
@@ -259,6 +419,28 @@ describe('rooms-match-transitions', () => {
         },
       });
       expect(room.autoStartBlockedUntilSeatChange).toBe(false);
+    });
+
+    it('clears resolved nigiri when a hosted match finishes', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+      room.nigiri = {
+        status: 'resolved',
+        commitment: 'commitment',
+        guesser: 'white',
+        guess: 'even',
+        parity: 'odd',
+        nonce: 'nonce',
+        assignedBlack: 'black',
+      };
+
+      startGoMatch(room, dependencies);
+      expect(room.nigiri?.status).toBe('resolved');
+
+      applyHostedGameCommand(room, host, { type: 'resign' }, dependencies);
+
+      expect(room.match?.state.phase).toBe('finished');
+      expect(room.nigiri).toBeNull();
+      expect(room.nigiriSecret).toBeNull();
     });
 
     it('opens hosted Go scoring after two passes without creating a rematch gate', () => {
@@ -433,6 +615,73 @@ describe('rooms-match-transitions', () => {
       });
       expect(room.match?.state.phase).toBe('playing');
       expect(room.match?.settings.mode).toBe('gomoku');
+    });
+
+    it('opens pending digital nigiri instead of auto-starting a Go match', () => {
+      const { room } = createRoomWithSeatedPlayers(store);
+
+      expect(maybeStartNextMatch(room, dependencies)).toMatchObject({
+        key: 'room.notice.nigiri_started',
+      });
+      expect(room.match).toBeNull();
+      expect(room.nigiri).toMatchObject({
+        status: 'pending',
+        guesser: 'white',
+      });
+      expect(room.nigiriSecret?.parity).toMatch(/^(odd|even)$/);
+    });
+
+    it('keeps an existing pending digital nigiri unchanged while waiting', () => {
+      const { room } = createRoomWithSeatedPlayers(store);
+      room.nigiri = {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      };
+      room.nigiriSecret = {
+        parity: 'odd',
+        nonce: 'nonce',
+      };
+
+      expect(maybeStartNextMatch(room, dependencies)).toBeNull();
+      expect(room.match).toBeNull();
+      expect(room.nigiri).toEqual({
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      });
+      expect(room.nigiriSecret).toEqual({
+        parity: 'odd',
+        nonce: 'nonce',
+      });
+    });
+
+    it('starts a Go match after digital nigiri resolves', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+      room.nigiri = {
+        status: 'resolved',
+        commitment: 'commitment',
+        guesser: 'white',
+        guess: 'odd',
+        parity: 'odd',
+        nonce: 'nonce',
+        assignedBlack: 'white',
+      };
+      host.seat = 'white';
+      guest.seat = 'black';
+
+      expect(maybeStartNextMatch(room, dependencies)).toMatchObject({
+        key: 'room.notice.match_started_auto',
+      });
+      expect(room.match?.settings.mode).toBe('go');
+      expect(room.match?.settings.players).toEqual({
+        black: 'Guest',
+        white: 'Host',
+      });
+      expect(room.nigiri).toMatchObject({
+        status: 'resolved',
+        assignedBlack: 'white',
+      });
     });
 
     it('does not auto-start while blocked until a seat changes', () => {

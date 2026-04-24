@@ -1,4 +1,4 @@
-import { ParticipantSummary } from '@gx/go/contracts';
+import { NigiriGuess, ParticipantSummary } from '@gx/go/contracts';
 import { BoardPoint, PlayerColor } from '@gx/go/domain';
 
 export type OnlineRoomShareChipFeedbackState = 'idle' | 'success' | 'manual';
@@ -60,4 +60,19 @@ export interface OnlineRoomSidebarRematchStatusViewModel {
   readonly name: string;
   readonly response: 'pending' | 'accepted' | 'declined';
   readonly isViewer: boolean;
+}
+
+export interface OnlineRoomNigiriViewModel {
+  readonly status: 'pending' | 'resolved';
+  readonly title: string;
+  readonly description: string;
+  readonly commitmentLabel: string;
+  readonly commitment: string;
+  readonly canGuess: boolean;
+  readonly oddLabel: string;
+  readonly evenLabel: string;
+  readonly resultLabel: string | null;
+  readonly assignedBlackLabel: string | null;
+  readonly guess?: NigiriGuess;
+  readonly parity?: NigiriGuess;
 }

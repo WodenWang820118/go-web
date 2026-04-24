@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import {
   DEFAULT_HOSTED_BYO_YOMI,
+  GO_AREA_AGREEMENT_RULESET,
+  GO_DIGITAL_NIGIRI_OPENING,
   GOMOKU_FREE_OPENING,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
 } from '@gx/go/domain';
@@ -58,6 +60,104 @@ describe('rooms services composition', () => {
     expect(started.snapshot.match?.state.phase).toBe('playing');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');
     expect(started.snapshot.match?.settings.players.white).toBe('Guest');
+  });
+
+  it('resolves hosted Go nigiri before starting with assigned colors', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    const pending = context.match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white',
+    );
+    const room = context.store.getRoomRecord(host.roomId);
+
+    expect(pending.snapshot.match).toBeNull();
+    expect(pending.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(pending.snapshot.nextMatchSettings).toMatchObject({
+      mode: 'go',
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+    });
+
+    room.nigiriSecret = {
+      parity: 'odd',
+      nonce: 'nonce',
+    };
+    const started = context.match.applyGameCommand(
+      host.roomId,
+      guest.participantToken,
+      { type: 'nigiri-guess', guess: 'odd' },
+    );
+
+    expect(started.snapshot.nigiri).toMatchObject({
+      status: 'resolved',
+      guesser: 'white',
+      guess: 'odd',
+      parity: 'odd',
+      assignedBlack: 'white',
+    });
+    expect(started.snapshot.seatState).toEqual({
+      black: guest.participantId,
+      white: host.participantId,
+    });
+    expect(started.snapshot.match?.settings.players).toEqual({
+      black: 'Guest',
+      white: 'Host',
+    });
+    expect(started.snapshot.match?.state.phase).toBe('playing');
+  });
+
+  it('keeps hosted Go pending nigiri when the host starts again', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    const pending = context.match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white',
+    );
+    const duplicateStart = context.match.startMatch(
+      host.roomId,
+      host.participantToken,
+      {
+        mode: 'go',
+        boardSize: 19,
+      },
+    );
+
+    expect(pending.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(duplicateStart.notice?.message.key).toBe(
+      'room.notice.nigiri_started',
+    );
+    expect(duplicateStart.notice?.message.params).toEqual({
+      player: { key: 'common.player.white' },
+    });
+    expect(duplicateStart.snapshot.match).toBeNull();
+    expect(duplicateStart.snapshot.nigiri).toEqual(pending.snapshot.nigiri);
+    expect(duplicateStart.snapshot.seatState).toEqual(
+      pending.snapshot.seatState,
+    );
   });
 
   it('rejects game commands from spectators', () => {

@@ -87,6 +87,10 @@ const EN_ROOM_SHARED = {
     'Score disputes are only available during Go scoring.',
   'room.error.dispute_scoring_failed': 'Unable to dispute scoring.',
   'room.error.command_not_available': 'That room command is not available yet.',
+  'room.error.nigiri_unavailable': 'Nigiri is not waiting for a guess.',
+  'room.error.invalid_nigiri_guess': 'Choose odd or even for nigiri.',
+  'room.error.nigiri_guesser_only':
+    'Only the selected nigiri guesser can choose odd or even.',
   'room.error.match_not_accepting_moves':
     'The match is not accepting new moves.',
   'room.error.not_your_turn': 'It is not your turn.',
@@ -133,6 +137,8 @@ const EN_ROOM_SHARED = {
   'room.notice.match_started': '{{displayName}} started a {{mode}} match.',
   'room.notice.match_started_auto':
     'The next {{mode}} match started automatically.',
+  'room.notice.nigiri_started':
+    'Digital nigiri started. {{player}} guesses odd or even.',
   'room.notice.next_match_settings_updated':
     'Next match updated to {{mode}} on a {{size}} x {{size}} board.',
   'room.notice.rematch_declined': '{{displayName}} passed on another game.',
@@ -210,6 +216,12 @@ const EN_LOCAL_UI = {
   'setup.board_size': 'Board size',
   'setup.go_komi_note': 'White receives {{komi}} komi.',
   'setup.gomoku_fixed_board': 'Gomoku uses a fixed {{size}} x {{size}} board.',
+  'setup.nigiri.title': 'Digital nigiri',
+  'setup.nigiri.description':
+    'White guesses odd or even. A correct guess gives White the first move as Black; otherwise the current Black player stays Black.',
+  'setup.nigiri.pending': 'Resolve nigiri before starting this Go match.',
+  'setup.nigiri.result':
+    'Guess: {{guess}}. Hidden stones: {{parity}}. {{player}} starts as Black.',
   'setup.start_local_match': 'Start local match',
   'setup.rules_refresher': 'Rules refresher',
   'play.back_to_setup': 'Back to setup',
@@ -325,6 +337,10 @@ const EN_HOSTED_UI = {
     'A seat change is needed before auto-start resumes.',
   'room.stage.blocked.description':
     'The last rematch was declined. Release or change a seat to unlock the next automatic start.',
+  'room.stage.nigiri.label': 'Nigiri',
+  'room.stage.nigiri.title': 'Digital nigiri is choosing colors.',
+  'room.stage.nigiri.description':
+    'The Go match will start after the selected player guesses odd or even.',
   'room.stage.waiting.label': 'Waiting room',
   'room.stage.waiting.title': 'Open seats are still available.',
   'room.stage.waiting.description':
@@ -367,6 +383,15 @@ const EN_HOSTED_UI = {
   'room.participants.empty_move_log':
     'Moves will appear here once the game begins.',
   'room.participants.viewer_role.player': '{{player}} player',
+  'room.nigiri.pending.title': 'Digital nigiri',
+  'room.nigiri.pending.description': '{{player}} guesses odd or even.',
+  'room.nigiri.resolved.title': 'Nigiri resolved',
+  'room.nigiri.resolved.description': '{{player}} takes Black.',
+  'room.nigiri.commitment': 'Commitment',
+  'room.nigiri.guess.odd': 'Odd',
+  'room.nigiri.guess.even': 'Even',
+  'room.nigiri.resolved.result': 'Guess: {{guess}}. Hidden stones: {{parity}}.',
+  'room.nigiri.resolved.assigned_black': '{{player}} is Black.',
   'room.next_match.eyebrow': 'Next up',
   'room.next_match.title': 'Next match settings',
   'room.next_match.description':

@@ -16,6 +16,7 @@ import {
 } from '../../contracts/online-room-form.contracts';
 import {
   OnlineRoomSeatViewModel,
+  OnlineRoomNigiriViewModel,
   OnlineRoomSidebarMessageViewModel,
   OnlineRoomSidebarRematchStatusViewModel,
 } from '../../contracts/online-room-view.contracts';
@@ -55,6 +56,7 @@ export class OnlineRoomSidebarComponent {
   readonly joinCardDescription = input.required<string>();
   readonly seats = input.required<readonly OnlineRoomSeatViewModel[]>();
   readonly participants = input.required<readonly ParticipantSummary[]>();
+  readonly nigiri = input<OnlineRoomNigiriViewModel | null>(null);
   readonly match = input<HostedMatchSnapshot | null>(null);
   readonly messages = input.required<readonly ChatMessage[]>();
   readonly helperText = input.required<string>();
@@ -73,6 +75,7 @@ export class OnlineRoomSidebarComponent {
   readonly backToLobbyRequested = output<void>();
   readonly claimSeatRequested = output<PlayerColor>();
   readonly releaseSeatRequested = output<void>();
+  readonly nigiriGuessRequested = output<'odd' | 'even'>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
   readonly confirmScoringRequested = output<void>();

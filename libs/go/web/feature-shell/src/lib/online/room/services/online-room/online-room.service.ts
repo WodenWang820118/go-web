@@ -42,6 +42,7 @@ export class OnlineRoomService {
   readonly chat = this.state.chat;
   readonly viewer = this.state.viewer;
   readonly nextMatchSettings = this.state.nextMatchSettings;
+  readonly nigiri = this.state.nigiri;
   readonly rematch = this.state.rematch;
   readonly autoStartBlockedUntilSeatChange =
     this.state.autoStartBlockedUntilSeatChange;

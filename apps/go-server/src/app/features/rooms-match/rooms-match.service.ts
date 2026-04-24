@@ -18,6 +18,7 @@ import {
 import { normalizeHostedStartSettings } from './rooms-match-settings';
 import {
   applyHostedGameCommand,
+  maybeBeginDigitalNigiri,
   maybeStartNextMatch,
   startMatchWithCurrentSeats,
   type RoomsMatchTransitionDependencies,
@@ -165,10 +166,32 @@ export class RoomsMatchService {
       throw this.roomsErrors.badRequest('room.error.match_must_finish');
     }
 
+    if (room.nigiri?.status === 'pending') {
+      return this.finalizeMutation(
+        room,
+        this.roomsErrors.roomMessage('room.notice.nigiri_started', {
+          player: this.roomsErrors.roomMessage(
+            `common.player.${room.nigiri.guesser}`,
+          ),
+        }),
+      );
+    }
+
     const normalizedSettings = normalizeHostedStartSettings(
       settings,
       this.roomsErrors,
     );
+    room.nextMatchSettings = normalizedSettings;
+
+    const nigiriNotice = maybeBeginDigitalNigiri(
+      room,
+      this.getTransitionDependencies(),
+    );
+
+    if (nigiriNotice) {
+      return this.finalizeMutation(room, nigiriNotice);
+    }
+
     const matchSettings = startMatchWithCurrentSeats(
       room,
       normalizedSettings,

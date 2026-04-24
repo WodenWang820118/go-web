@@ -81,7 +81,7 @@ until durable room persistence is added.
 ### Go
 
 - Board sizes: 9x9, 13x13, and 19x19. The default setup size is 19x19.
-- Black always plays first in the product today.
+- Black plays first after color assignment.
 - Groups with no liberties are captured immediately.
 - Suicide is illegal.
 - Only basic ko is enforced: immediate recapture of the previous position is blocked, but positional superko is not implemented.
@@ -90,7 +90,7 @@ until durable room persistence is added.
 - Two consecutive passes currently end the game immediately.
 - Scoring currently uses area scoring: stones on the board plus surrounded territory, with komi added for White.
 - The current double-pass flow does not run a dead-group dispute phase or automatic life-and-death detection. In practice, all stones left on the board are counted as alive when the result is finalized.
-- Traditional note: even games are often color-assigned with `nigiri` (one player hides a handful of stones and the other guesses odd or even). The current product does not implement nigiri; players choose seats and Black starts.
+- Go color assignment uses digital `nigiri`: one side guesses odd or even, and the winner is assigned Black before the match starts.
 - Traditional note: Go clocks often use byo-yomi, Canadian overtime, or Fischer-style increment depending on the setting. The hosted-room clock in this build is still decorative and does not enforce time.
 
 ### Gomoku
@@ -148,5 +148,4 @@ The supported Synology deployment guide lives in [deploy/synology/README.md](dep
 These are the clearest next-phase issues based on the current implementation and the surrounding rule references:
 
 - Choose and implement a real Go scoring and dispute flow instead of immediate double-pass finalization with every remaining stone treated as alive
-- Decide whether color/opening assignment should stay manual or add a fair selection flow such as nigiri
 - Replace the decorative hosted-room clock with server-authoritative time controls

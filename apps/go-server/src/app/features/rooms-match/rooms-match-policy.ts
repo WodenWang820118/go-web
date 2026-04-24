@@ -145,10 +145,15 @@ export function isAutoStartReady(
 
 export function resetSeatDependentState(room: RoomRecord): boolean {
   const hadSeatDependentState =
-    room.rematch !== null || room.autoStartBlockedUntilSeatChange;
+    room.rematch !== null ||
+    room.autoStartBlockedUntilSeatChange ||
+    room.nigiri !== null ||
+    room.nigiriSecret !== null;
 
   room.rematch = null;
   room.autoStartBlockedUntilSeatChange = false;
+  room.nigiri = null;
+  room.nigiriSecret = null;
 
   return hadSeatDependentState;
 }

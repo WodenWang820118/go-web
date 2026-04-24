@@ -54,6 +54,50 @@ describe('OnlineRoomPagePresentationService', () => {
     ).toBeNull();
   });
 
+  it('builds the nigiri stage while color assignment is pending', () => {
+    const snapshot = createRoomSnapshot({
+      seatState: {
+        black: 'host-1',
+        white: 'guest-1',
+      },
+      nigiri: {
+        status: 'pending',
+        commitment: 'commitment',
+        guesser: 'white',
+      },
+    });
+
+    expect(service.buildRoomStageViewModel(snapshot, null)).toEqual({
+      label: 'Nigiri',
+      title: 'Choosing colors',
+      description: 'Guess odd or even before the match starts.',
+    });
+  });
+
+  it('falls back to ready stage after nigiri resolves before the match snapshot arrives', () => {
+    const snapshot = createRoomSnapshot({
+      seatState: {
+        black: 'guest-1',
+        white: 'host-1',
+      },
+      nigiri: {
+        status: 'resolved',
+        commitment: 'commitment',
+        guesser: 'white',
+        guess: 'odd',
+        parity: 'odd',
+        nonce: 'nonce',
+        assignedBlack: 'white',
+      },
+    });
+
+    expect(service.buildRoomStageViewModel(snapshot, null)).toEqual({
+      label: 'Ready',
+      title: 'Ready to start',
+      description: 'Both players are seated.',
+    });
+  });
+
   it('builds loading and missing status views', () => {
     expect(service.buildRoomLoadingStatusView('ROOM42')).toEqual({
       eyebrow: '#ROOM42',
@@ -205,6 +249,108 @@ describe('OnlineRoomPagePresentationService', () => {
         isViewer: true,
       },
     ]);
+  });
+
+  it('builds pending and resolved nigiri panels', () => {
+    const participants: ParticipantSummary[] = [
+      createParticipantSummary({
+        participantId: 'host-1',
+        displayName: 'Host',
+        seat: 'black',
+      }),
+      createParticipantSummary({
+        participantId: 'guest-1',
+        displayName: 'Guest',
+        isHost: false,
+        seat: 'white',
+      }),
+    ];
+
+    expect(
+      service.buildRoomNigiriViewModel({
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+        participants,
+        viewerSeat: 'white',
+        realtimeConnected: true,
+      }),
+    ).toMatchObject({
+      status: 'pending',
+      description: 'Guest guesses odd or even.',
+      canGuess: true,
+      commitment: 'commitment',
+    });
+    expect(
+      service.buildRoomNigiriViewModel({
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+        participants,
+        viewerSeat: 'black',
+        realtimeConnected: true,
+      }),
+    ).toMatchObject({
+      canGuess: false,
+    });
+    expect(
+      service.buildRoomNigiriViewModel({
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+        participants,
+        viewerSeat: 'white',
+        realtimeConnected: false,
+      }),
+    ).toMatchObject({
+      canGuess: false,
+    });
+    expect(
+      service.buildRoomNigiriViewModel({
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+        participants,
+        viewerSeat: null,
+        realtimeConnected: true,
+      }),
+    ).toMatchObject({
+      canGuess: false,
+    });
+
+    participants[0].seat = 'white';
+    participants[1].seat = 'black';
+
+    expect(
+      service.buildRoomNigiriViewModel({
+        nigiri: {
+          status: 'resolved',
+          commitment: 'commitment',
+          guesser: 'white',
+          guess: 'odd',
+          parity: 'odd',
+          nonce: 'nonce',
+          assignedBlack: 'white',
+        },
+        participants,
+        viewerSeat: 'black',
+        realtimeConnected: true,
+      }),
+    ).toMatchObject({
+      status: 'resolved',
+      description: 'Guest takes Black.',
+      canGuess: false,
+      resultLabel: 'Guess: Odd. Hidden stones: Odd.',
+      assignedBlackLabel: 'Guest is Black.',
+    });
   });
 
   it('maps connection states to localized labels', () => {
@@ -405,6 +551,18 @@ function createI18n() {
         return 'A player must change seats before the next match starts.';
       }
 
+      if (key === 'room.stage.nigiri.label') {
+        return 'Nigiri';
+      }
+
+      if (key === 'room.stage.nigiri.title') {
+        return 'Choosing colors';
+      }
+
+      if (key === 'room.stage.nigiri.description') {
+        return 'Guess odd or even before the match starts.';
+      }
+
       if (key === 'room.stage.ready.label') {
         return 'Ready';
       }
@@ -475,6 +633,42 @@ function createI18n() {
 
       if (key === 'room.rematch.blocked') {
         return 'Rematch blocked until a seat changes.';
+      }
+
+      if (key === 'room.nigiri.pending.title') {
+        return 'Digital nigiri';
+      }
+
+      if (key === 'room.nigiri.pending.description') {
+        return `${String(params?.player ?? '')} guesses odd or even.`;
+      }
+
+      if (key === 'room.nigiri.resolved.title') {
+        return 'Nigiri resolved';
+      }
+
+      if (key === 'room.nigiri.resolved.description') {
+        return `${String(params?.player ?? '')} takes Black.`;
+      }
+
+      if (key === 'room.nigiri.commitment') {
+        return 'Commitment';
+      }
+
+      if (key === 'room.nigiri.guess.odd') {
+        return 'Odd';
+      }
+
+      if (key === 'room.nigiri.guess.even') {
+        return 'Even';
+      }
+
+      if (key === 'room.nigiri.resolved.result') {
+        return `Guess: ${String(params?.guess ?? '')}. Hidden stones: ${String(params?.parity ?? '')}.`;
+      }
+
+      if (key === 'room.nigiri.resolved.assigned_black') {
+        return `${String(params?.player ?? '')} is Black.`;
       }
 
       if (key === 'ui.match_sidebar.score_preview') {

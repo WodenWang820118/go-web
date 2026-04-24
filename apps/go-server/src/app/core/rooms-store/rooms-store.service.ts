@@ -78,6 +78,7 @@ export class RoomsStore {
       autoStartBlockedUntilSeatChange: false,
       match: null,
       nigiri: null,
+      nigiriSecret: null,
       chat: [],
       emptySince: null,
     };

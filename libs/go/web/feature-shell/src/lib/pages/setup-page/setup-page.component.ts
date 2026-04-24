@@ -4,16 +4,22 @@ import {
   Component,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { NigiriGuess } from '@gx/go/contracts';
 import {
   DEFAULT_GO_KOMI,
+  GO_AREA_AGREEMENT_RULESET,
   GOMOKU_BOARD_SIZE,
+  GO_DIGITAL_NIGIRI_OPENING,
   GO_BOARD_SIZES,
   isGameMode,
   type GoBoardSize,
+  type MatchSettings,
+  type PlayerColor,
 } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -27,6 +33,12 @@ interface SetupFactViewModel {
   label: string;
   value: string;
   hint?: string;
+}
+
+interface LocalNigiriResult {
+  guess: NigiriGuess;
+  parity: NigiriGuess;
+  assignedBlack: 'black' | 'white';
 }
 
 @Component({
@@ -99,6 +111,26 @@ export class SetupPageComponent {
     const size = this.selectedBoardSize();
     return `${size} x ${size}`;
   });
+  protected readonly nigiriResult = signal<LocalNigiriResult | null>(null);
+  protected readonly canResolveNigiri = computed(
+    () => this.mode() === 'go' && this.nigiriResult() === null,
+  );
+  protected readonly canStartMatch = computed(
+    () => this.mode() !== 'go' || this.nigiriResult() !== null,
+  );
+  protected readonly nigiriResultText = computed(() => {
+    const result = this.nigiriResult();
+
+    if (!result) {
+      return this.i18n.t('setup.nigiri.pending');
+    }
+
+    return this.i18n.t('setup.nigiri.result', {
+      guess: this.i18n.t(`room.nigiri.guess.${result.guess}`),
+      parity: this.i18n.t(`room.nigiri.guess.${result.parity}`),
+      player: this.i18n.playerLabel(result.assignedBlack),
+    });
+  });
   protected readonly actionHint = computed(() => {
     const mode = this.mode();
 
@@ -169,7 +201,11 @@ export class SetupPageComponent {
       return;
     }
 
-    const settings = {
+    if (mode === 'go' && !this.nigiriResult()) {
+      return;
+    }
+
+    const settings: MatchSettings = {
       mode,
       boardSize:
         mode === 'go' ? this.form.controls.boardSize.value : GOMOKU_BOARD_SIZE,
@@ -184,6 +220,13 @@ export class SetupPageComponent {
           this.i18n.playerLabel('white'),
         ),
       },
+      ...(mode === 'go'
+        ? {
+            ruleset: GO_AREA_AGREEMENT_RULESET,
+            openingRule: GO_DIGITAL_NIGIRI_OPENING,
+            timeControl: null,
+          }
+        : {}),
     };
 
     this.store.startMatch(settings);
@@ -196,6 +239,29 @@ export class SetupPageComponent {
     });
 
     await this.router.navigate(['/play', mode]);
+  }
+
+  protected resolveNigiri(guess: NigiriGuess): void {
+    if (!this.canResolveNigiri()) {
+      return;
+    }
+
+    const parity: NigiriGuess = Math.random() < 0.5 ? 'odd' : 'even';
+    const assignedBlack: PlayerColor = guess === parity ? 'white' : 'black';
+
+    if (assignedBlack === 'white') {
+      const blackName = this.form.controls.blackName.value;
+      const whiteName = this.form.controls.whiteName.value;
+
+      this.form.controls.blackName.setValue(whiteName);
+      this.form.controls.whiteName.setValue(blackName);
+    }
+
+    this.nigiriResult.set({
+      guess,
+      parity,
+      assignedBlack,
+    });
   }
 }
 
