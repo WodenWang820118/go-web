@@ -1,4 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
+import {
+  DEFAULT_HOSTED_BYO_YOMI,
+  GOMOKU_FREE_OPENING,
+  GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+} from '@gx/go/domain';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsMatchService } from './rooms-match.service';
 import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rules-engine.service';
@@ -54,6 +59,9 @@ describe('RoomsMatchService', () => {
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+      ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+      openingRule: GOMOKU_FREE_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
     expect(started.snapshot.match?.settings.mode).toBe('gomoku');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');

@@ -1,11 +1,18 @@
 import {
   BoardPoint,
+  GameOpeningRule,
   GoMessageDescriptor,
+  GameRuleset,
   MatchSettings,
   MatchState,
   MoveCommand,
   PlayerColor,
+  TimeControlSettings,
 } from '@gx/go/domain';
+
+export const ROOM_SNAPSHOT_SCHEMA_VERSION = 2;
+
+export type RoomSnapshotSchemaVersion = typeof ROOM_SNAPSHOT_SCHEMA_VERSION;
 
 /**
  * Public participant summary exposed to clients.
@@ -56,6 +63,49 @@ export interface HostedMatchSnapshot {
   settings: MatchSettings;
   state: MatchState;
   startedAt: string;
+  clock?: HostedClockSnapshot | null;
+}
+
+export interface HostedClockPlayerSnapshot {
+  mainTimeMs: number;
+  periodTimeMs: number;
+  periodsRemaining: number;
+}
+
+export interface HostedClockSnapshot {
+  config: TimeControlSettings;
+  activeColor: PlayerColor;
+  lastStartedAt: string;
+  revision: number;
+  players: Record<PlayerColor, HostedClockPlayerSnapshot>;
+}
+
+export type NigiriGuess = 'odd' | 'even';
+
+export interface HostedNigiriPendingSnapshot {
+  status: 'pending';
+  commitment: string;
+  guesser: PlayerColor;
+}
+
+export interface HostedNigiriResolvedSnapshot {
+  status: 'resolved';
+  commitment: string;
+  guesser: PlayerColor;
+  guess: NigiriGuess;
+  parity: NigiriGuess;
+  nonce: string;
+  assignedBlack: PlayerColor;
+}
+
+export type HostedNigiriSnapshot =
+  | HostedNigiriPendingSnapshot
+  | HostedNigiriResolvedSnapshot;
+
+export interface HostedRulesMetadata {
+  ruleset: GameRuleset;
+  openingRule: GameOpeningRule;
+  timeControl: TimeControlSettings | null;
 }
 
 export type RematchResponseState = 'pending' | 'accepted' | 'declined';
@@ -108,6 +158,7 @@ export interface LobbyOnlineParticipantSummary {
  * Full snapshot of a hosted room.
  */
 export interface RoomSnapshot {
+  schemaVersion?: RoomSnapshotSchemaVersion;
   roomId: string;
   createdAt: string;
   updatedAt: string;
@@ -118,6 +169,8 @@ export interface RoomSnapshot {
   rematch: HostedRematchState | null;
   autoStartBlockedUntilSeatChange: boolean;
   match: HostedMatchSnapshot | null;
+  nigiri?: HostedNigiriSnapshot | null;
+  rules?: HostedRulesMetadata | null;
   chat: ChatMessage[];
 }
 
@@ -128,6 +181,9 @@ export interface GameStartSettings {
   mode: MatchSettings['mode'];
   boardSize: MatchSettings['boardSize'];
   komi?: number;
+  ruleset?: GameRuleset;
+  openingRule?: GameOpeningRule;
+  timeControl?: TimeControlSettings | null;
 }
 
 export type GameCommand =
@@ -138,4 +194,14 @@ export type GameCommand =
     }
   | {
       type: 'finalize-scoring';
+    }
+  | {
+      type: 'confirm-scoring';
+    }
+  | {
+      type: 'dispute-scoring';
+    }
+  | {
+      type: 'nigiri-guess';
+      guess: NigiriGuess;
     };

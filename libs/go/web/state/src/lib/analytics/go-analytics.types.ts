@@ -1,4 +1,4 @@
-import { BoardSize, GameMode, ResultReason } from '@gx/go/domain';
+import { BoardSize, GameMode, GameResultReason } from '@gx/go/domain';
 
 export const GO_ANALYTICS_CONSENT_STORAGE_KEY = 'gx.analyticsConsent.v1';
 
@@ -57,7 +57,7 @@ export interface GoAnalyticsMatchEndEvent {
   game_mode: GameMode;
   play_context: GoAnalyticsPlayContext;
   board_size: BoardSize;
-  result_reason: ResultReason;
+  result_reason: GameResultReason;
   winner: 'black' | 'white' | 'draw';
   move_count: number;
 }

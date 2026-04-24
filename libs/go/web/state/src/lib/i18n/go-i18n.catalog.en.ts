@@ -74,6 +74,7 @@ const EN_ROOM_SHARED = {
   'room.error.score_finalization_unavailable':
     'Score finalization is only available during Go scoring.',
   'room.error.finalize_scoring_failed': 'Unable to finalize scoring.',
+  'room.error.command_not_available': 'That room command is not available yet.',
   'room.error.match_not_accepting_moves':
     'The match is not accepting new moves.',
   'room.error.not_your_turn': 'It is not your turn.',

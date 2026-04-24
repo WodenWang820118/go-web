@@ -81,6 +81,16 @@ export function applyHostedGameCommand(
     return;
   }
 
+  if (
+    command.type === 'confirm-scoring' ||
+    command.type === 'dispute-scoring' ||
+    command.type === 'nigiri-guess'
+  ) {
+    throw dependencies.roomsErrors.badRequest(
+      'room.error.command_not_available',
+    );
+  }
+
   if (match.state.phase !== 'playing') {
     throw dependencies.roomsErrors.badRequest(
       'room.error.match_not_accepting_moves',
@@ -183,6 +193,7 @@ export function startMatchWithCurrentSeats(
     startedAt: dependencies.store.timestamp(),
   };
   room.rematch = null;
+  room.nigiri = null;
   room.autoStartBlockedUntilSeatChange = false;
 
   return matchSettings;

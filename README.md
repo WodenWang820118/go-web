@@ -72,6 +72,12 @@ pnpm nx graph
 
 ## Rules In This Build
 
+Hosted rooms currently use a single-process in-memory room store. If the server
+process restarts, active rooms are lost and players need to create or join a new
+room. Multi-node hosted-room coordination is not supported yet; future fair
+opening and server-clock work is scoped to that same single-process boundary
+until durable room persistence is added.
+
 ### Go
 
 - Board sizes: 9x9, 13x13, and 19x19. The default setup size is 19x19.

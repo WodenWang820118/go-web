@@ -63,6 +63,7 @@ const ZH_ROOM_SHARED = {
   'room.error.score_finalization_unavailable':
     '只有在圍棋算地階段才能確認結果。',
   'room.error.finalize_scoring_failed': '無法確認算地結果。',
+  'room.error.command_not_available': '此房間指令尚未開放使用。',
   'room.error.match_not_accepting_moves': '目前對局不接受新的操作。',
   'room.error.not_your_turn': '現在不是你的回合。',
   'room.error.resign_only_for_self': '玩家只能代表自己認輸。',

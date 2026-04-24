@@ -100,6 +100,23 @@ describe('rooms-match-transitions', () => {
       ).toThrow(BadRequestException);
     });
 
+    it.each([
+      { type: 'confirm-scoring' } as const,
+      { type: 'dispute-scoring' } as const,
+      { type: 'nigiri-guess', guess: 'odd' } as const,
+    ])(
+      'rejects future command $type until its phase is implemented',
+      (command) => {
+        const { room, host } = createRoomWithSeatedPlayers(store);
+
+        startGoMatch(room, dependencies);
+
+        expect(() =>
+          applyHostedGameCommand(room, host, command, dependencies),
+        ).toThrow(BadRequestException);
+      },
+    );
+
     it('rejects moves played out of turn', () => {
       const { room, guest } = createRoomWithSeatedPlayers(store);
 

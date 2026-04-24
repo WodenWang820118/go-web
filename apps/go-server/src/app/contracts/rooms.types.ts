@@ -2,6 +2,7 @@ import {
   ChatMessage,
   GameStartSettings,
   HostedMatchSnapshot,
+  HostedNigiriSnapshot,
   HostedRematchState,
   RoomClosedEvent,
   RoomSnapshot,
@@ -33,6 +34,7 @@ export interface RoomRecord {
   rematch: HostedRematchState | null;
   autoStartBlockedUntilSeatChange: boolean;
   match: HostedMatchSnapshot | null;
+  nigiri: HostedNigiriSnapshot | null;
   chat: ChatMessage[];
   emptySince: number | null;
 }

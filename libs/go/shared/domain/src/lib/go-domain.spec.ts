@@ -108,6 +108,8 @@ describe('GoRulesEngine', () => {
 
     expect(state.phase).toBe('scoring');
     expect(state.scoring?.score.white).toBe(DEFAULT_GO_KOMI);
+    expect(state.scoring?.confirmedBy).toEqual([]);
+    expect(state.scoring?.revision).toBe(0);
     expect(state.result).toBeNull();
     expect(state.lastMove?.phaseAfterMove).toBe('scoring');
 
