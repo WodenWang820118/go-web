@@ -22,6 +22,7 @@ const EN_GAME = {
   'game.result.draw': 'The match ends in a draw.',
   'game.result.win_by_points': '{{winner}} wins by {{margin}} points.',
   'game.result.win_by_resignation': '{{winner}} wins by resignation.',
+  'game.result.timeout': '{{winner}} wins on time. {{loser}} timed out.',
   'game.state.next_turn': '{{player}} to move.',
   'game.go.state.opening': 'Black to move. Place the opening stone.',
   'game.go.state.group_restored': '{{player}} group restored for scoring.',
@@ -137,6 +138,7 @@ const EN_ROOM_SHARED = {
   'room.notice.match_started': '{{displayName}} started a {{mode}} match.',
   'room.notice.match_started_auto':
     'The next {{mode}} match started automatically.',
+  'room.notice.timeout': '{{player}} lost on time.',
   'room.notice.nigiri_started':
     'Digital nigiri started. {{player}} guesses odd or even.',
   'room.notice.next_match_settings_updated':
@@ -392,6 +394,8 @@ const EN_HOSTED_UI = {
   'room.nigiri.guess.even': 'Even',
   'room.nigiri.resolved.result': 'Guess: {{guess}}. Hidden stones: {{parity}}.',
   'room.nigiri.resolved.assigned_black': '{{player}} is Black.',
+  'room.clock.main': 'Main time',
+  'room.clock.byo_yomi_periods': '{{count}} byo-yomi periods remaining',
   'room.next_match.eyebrow': 'Next up',
   'room.next_match.title': 'Next match settings',
   'room.next_match.description':

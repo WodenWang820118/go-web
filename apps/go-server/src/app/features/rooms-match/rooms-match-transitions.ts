@@ -26,6 +26,13 @@ import {
   getAutoStartReadiness,
   isAutoStartReady,
 } from './rooms-match-policy';
+import {
+  activateHostedClock,
+  advanceHostedClock,
+  completeHostedClockTurn,
+  createHostedClock,
+  createTimeoutState,
+} from './rooms-match-clock';
 
 export interface RoomsMatchTransitionDependencies {
   logger: Logger;
@@ -51,7 +58,30 @@ export function applyHostedGameCommand(
     return;
   }
 
-  const match = requireMatch(room, dependencies.roomsErrors);
+  let match = requireMatch(room, dependencies.roomsErrors);
+
+  if (match.clock && match.state.phase === 'playing') {
+    const advanced = advanceHostedClock(
+      match.clock,
+      dependencies.store.timestamp(),
+    );
+    match = {
+      ...match,
+      clock: advanced.clock,
+    };
+
+    if (advanced.timedOutColor) {
+      updateFinishedMatchState(
+        room,
+        match,
+        createTimeoutState(match.state, advanced.timedOutColor),
+        dependencies.store,
+      );
+      return;
+    }
+
+    room.match = match;
+  }
 
   if (command.type === 'toggle-dead') {
     if (match.settings.mode !== 'go' || match.state.phase !== 'scoring') {
@@ -118,8 +148,18 @@ export function applyHostedGameCommand(
       );
     }
 
+    const resumedClock =
+      match.clock && nextState.phase === 'playing'
+        ? activateHostedClock(
+            match.clock,
+            nextState.nextPlayer,
+            dependencies.store.timestamp(),
+          )
+        : match.clock;
+
     room.match = {
       ...match,
+      clock: resumedClock,
       state: nextState,
     };
     return;
@@ -165,7 +205,24 @@ export function applyHostedGameCommand(
     });
   }
 
-  updateFinishedMatchState(room, match, result.state, dependencies.store);
+  const nextClock = match.clock
+    ? completeHostedClockTurn(
+        match.clock,
+        result.state.nextPlayer,
+        result.state.phase,
+        dependencies.store.timestamp(),
+      )
+    : null;
+
+  updateFinishedMatchState(
+    room,
+    {
+      ...match,
+      clock: nextClock,
+    },
+    result.state,
+    dependencies.store,
+  );
 }
 
 export function maybeStartNextMatch(
@@ -270,12 +327,14 @@ export function startMatchWithCurrentSeats(
       ? room.nigiri
       : null;
 
+  const startedAt = dependencies.store.timestamp();
   room.match = {
     settings: matchSettings,
     state: dependencies.rulesEngines
       .get(matchSettings.mode)
       .createInitialState(matchSettings),
-    startedAt: dependencies.store.timestamp(),
+    startedAt,
+    clock: createHostedClock(matchSettings, startedAt),
   };
   room.rematch = null;
   room.nigiri = resolvedNigiri;

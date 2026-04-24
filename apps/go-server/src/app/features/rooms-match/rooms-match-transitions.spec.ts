@@ -54,6 +54,113 @@ describe('rooms-match-transitions', () => {
       expect(room.match?.state.nextPlayer).toBe('white');
     });
 
+    it('advances the hosted clock after a valid move', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+      vi.spyOn(store, 'timestamp')
+        .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:05.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:05.000Z');
+
+      startTimedGomokuMatch(room, dependencies);
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'place', point: { x: 0, y: 0 } },
+        dependencies,
+      );
+
+      expect(room.match?.clock).toMatchObject({
+        activeColor: 'white',
+        lastStartedAt: '2026-04-20T00:00:05.000Z',
+        players: {
+          black: {
+            mainTimeMs: 5_000,
+            periodTimeMs: 30_000,
+            periodsRemaining: 5,
+          },
+          white: {
+            mainTimeMs: 10_000,
+            periodTimeMs: 30_000,
+            periodsRemaining: 5,
+          },
+        },
+      });
+    });
+
+    it('ignores a delayed move when server-side elapsed time exhausts the clock', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+      vi.spyOn(store, 'timestamp')
+        .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:04.000Z');
+
+      startTimedGomokuMatch(room, dependencies, {
+        mainTimeMs: 3_000,
+        periodTimeMs: 1_000,
+        periods: 1,
+      });
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'place', point: { x: 0, y: 0 } },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('finished');
+      expect(room.match?.state.moveHistory).toHaveLength(0);
+      expect(room.match?.state.result).toMatchObject({
+        winner: 'white',
+        reason: 'timeout',
+        summary: {
+          key: 'game.result.timeout',
+        },
+      });
+      expect(room.rematch).toEqual({
+        participants: {
+          black: host.id,
+          white: guest.id,
+        },
+        responses: {
+          black: 'pending',
+          white: 'pending',
+        },
+      });
+    });
+
+    it('accepts a move that reaches the server just before timeout', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+      vi.spyOn(store, 'timestamp')
+        .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:03.999Z')
+        .mockReturnValueOnce('2026-04-20T00:00:03.999Z');
+
+      startTimedGomokuMatch(room, dependencies, {
+        mainTimeMs: 3_000,
+        periodTimeMs: 1_000,
+        periods: 1,
+      });
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'place', point: { x: 0, y: 0 } },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('playing');
+      expect(room.match?.state.moveHistory).toHaveLength(1);
+      expect(room.match?.state.nextPlayer).toBe('white');
+      expect(room.match?.clock).toMatchObject({
+        activeColor: 'white',
+        lastStartedAt: '2026-04-20T00:00:03.999Z',
+        players: {
+          black: {
+            mainTimeMs: 0,
+            periodTimeMs: 1_000,
+            periodsRemaining: 1,
+          },
+        },
+      });
+    });
+
     it('rejects spectator commands while a hosted match is active', () => {
       const { room } = createRoomWithSeatedPlayers(store);
       const spectator = addParticipant(store, room, 'Spectator');
@@ -820,6 +927,27 @@ function startGomokuMatch(
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+    },
+    dependencies,
+  );
+}
+
+function startTimedGomokuMatch(
+  room: RoomRecord,
+  dependencies: RoomsMatchTransitionDependencies,
+  timeControl = {
+    mainTimeMs: 10_000,
+    periodTimeMs: 30_000,
+    periods: 5,
+  },
+): void {
+  startMatchWithCurrentSeats(
+    room,
+    {
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+      timeControl,
     },
     dependencies,
   );

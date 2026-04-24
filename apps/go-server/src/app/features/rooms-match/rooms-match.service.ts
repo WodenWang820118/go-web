@@ -23,6 +23,13 @@ import {
   startMatchWithCurrentSeats,
   type RoomsMatchTransitionDependencies,
 } from './rooms-match-transitions';
+import { RoomsClockService } from './rooms-clock.service';
+
+const NOOP_CLOCKS: Pick<RoomsClockService, 'refresh'> = {
+  refresh() {
+    // Tests that instantiate the service directly can ignore process timers.
+  },
+};
 
 /**
  * Encapsulates seat management, hosted match defaults, and match state transitions.
@@ -39,6 +46,8 @@ export class RoomsMatchService {
     private readonly rulesEngines: RoomsRulesEngineService,
     @Inject(RoomsErrorsService)
     private readonly roomsErrors: RoomsErrorsService,
+    @Inject(RoomsClockService)
+    private readonly clocks: Pick<RoomsClockService, 'refresh'> = NOOP_CLOCKS,
   ) {}
 
   claimSeat(
@@ -283,6 +292,7 @@ export class RoomsMatchService {
     );
 
     this.store.touchRoom(room);
+    this.clocks.refresh(room);
 
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),

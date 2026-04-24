@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { provideRouter } from '@angular/router';
-import { GoI18nService } from '@gx/go/state';
 import {
   ChatMessage,
   HostedMatchSnapshot,
@@ -329,20 +328,48 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(disputeButton?.disabled).toBe(true);
   });
 
-  it('keeps the decorative timer and renders seat actions on one line', () => {
+  it('renders hosted clock snapshots and keeps seat actions on one line', async () => {
+    fixture.componentRef.setInput('match', {
+      ...liveMatch,
+      clock: {
+        config: {
+          mainTimeMs: 600_000,
+          periodTimeMs: 30_000,
+          periods: 5,
+        },
+        activeColor: 'white',
+        lastStartedAt: '2026-03-20T00:05:00.000Z',
+        revision: 1,
+        players: {
+          black: {
+            mainTimeMs: 590_000,
+            periodTimeMs: 30_000,
+            periodsRemaining: 5,
+          },
+          white: {
+            mainTimeMs: 600_000,
+            periodTimeMs: 30_000,
+            periodsRemaining: 5,
+          },
+        },
+      },
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
     const root = fixture.nativeElement as HTMLElement;
-    const i18n = TestBed.inject(GoI18nService);
     const claimButton = root.querySelector(
       '[data-testid="claim-white"]',
     ) as HTMLButtonElement | null;
     const releaseButton = root.querySelector(
       '[data-testid="release-black"]',
     ) as HTMLButtonElement | null;
-
-    expect(root.textContent).toContain('--:--');
-    expect(root.textContent).not.toContain(
-      i18n.t('room.sidebar.decorative_clock'),
+    const clockLabels = Array.from(root.querySelectorAll('[aria-label]')).map(
+      (element) => element.getAttribute('aria-label'),
     );
+
+    expect(root.textContent).toContain('9:50');
+    expect(clockLabels.some((label) => label?.includes('9:50'))).toBe(true);
     expect(claimButton?.className).toContain('whitespace-nowrap');
     expect(claimButton?.className).toContain('shrink-0');
     expect(releaseButton?.className).toContain('whitespace-nowrap');
