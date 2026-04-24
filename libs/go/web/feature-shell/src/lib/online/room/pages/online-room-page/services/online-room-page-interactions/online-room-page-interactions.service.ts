@@ -86,6 +86,10 @@ export class OnlineRoomPageInteractionsService {
   }
 
   onBoardPoint(point: BoardPoint): void {
+    if (!this.onlineRoom.canInteractBoard()) {
+      return;
+    }
+
     if (this.view.match()?.state.phase === 'scoring') {
       this.onlineRoom.sendGameCommand({
         type: 'toggle-dead',
@@ -109,6 +113,12 @@ export class OnlineRoomPageInteractionsService {
   resign(): void {
     this.onlineRoom.sendGameCommand({
       type: 'resign',
+    });
+  }
+
+  finalizeScoring(): void {
+    this.onlineRoom.sendGameCommand({
+      type: 'finalize-scoring',
     });
   }
 

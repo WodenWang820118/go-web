@@ -79,6 +79,13 @@ export class OnlineRoomPageViewStateService {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.state.phase === 'playing',
   );
+  readonly canFinalizeScoring = computed(
+    () =>
+      this.realtimeConnected() &&
+      !!this.onlineRoom.viewerSeat() &&
+      this.match()?.settings.mode === 'go' &&
+      this.match()?.state.phase === 'scoring',
+  );
   readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
     this.presentation.findRoomRematchViewerSeat(
       this.onlineRoom.participantId(),

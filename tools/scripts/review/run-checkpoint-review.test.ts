@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   buildReviewPrompt,
+  createCheckpointReviewTelemetryContext,
   createReviewExecution,
   executeReviewFlow,
   getReviewExecutionPlan,
@@ -11,6 +12,7 @@ import {
   parseChangedFilesFromContext,
   type ReviewExecution,
 } from './run-checkpoint-review.ts';
+import { createProviderObservationBucketKey } from './provider-observability.ts';
 
 test('parseCliArgs reads the supported checkpoint review flags', () => {
   const parsed = parseCliArgs([
@@ -771,6 +773,33 @@ test('buildReviewPrompt includes the checkpoint, focus, and supplied context', (
   assert.match(prompt, /Checkpoint: implementation/);
   assert.match(prompt, /Primary focus: security/);
   assert.match(prompt, /Changed files: scripts\/review-gate\/shared\.ts/);
+});
+
+test('createCheckpointReviewTelemetryContext keeps checkpoint buckets distinct', () => {
+  const planBucket = createProviderObservationBucketKey({
+    ...createCheckpointReviewTelemetryContext(
+      execution('plan', 'copilot', 'general', 'claude-sonnet-4.6'),
+    ),
+    model: 'claude-sonnet-4.6',
+    operation: 'review',
+    provider: 'copilot',
+  });
+  const implementationBucket = createProviderObservationBucketKey({
+    ...createCheckpointReviewTelemetryContext(
+      execution('implementation', 'copilot', 'general', 'claude-sonnet-4.6'),
+    ),
+    model: 'claude-sonnet-4.6',
+    operation: 'review',
+    provider: 'copilot',
+  });
+
+  assert.notEqual(planBucket, implementationBucket);
+  assert.match(planBucket, /checkpoint-review/);
+  assert.match(planBucket, /\bplan\b/);
+  assert.doesNotMatch(planBucket, /\bimplementation\b/);
+  assert.match(implementationBucket, /checkpoint-review/);
+  assert.match(implementationBucket, /\bimplementation\b/);
+  assert.doesNotMatch(implementationBucket, /\bplan\b/);
 });
 
 test('executeReviewFlow fails fast for a single explicit unavailable provider', async () => {

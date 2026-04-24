@@ -61,6 +61,7 @@ describe('OnlineRoomSidebarComponent', () => {
     ]);
     fixture.componentRef.setInput('canPass', true);
     fixture.componentRef.setInput('canResign', true);
+    fixture.componentRef.setInput('canFinalizeScoring', false);
     fixture.componentRef.setInput('showRematch', true);
     fixture.componentRef.setInput('canRespondToRematch', true);
     fixture.componentRef.setInput('rematchStatuses', [
@@ -178,6 +179,60 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(passEmit).toHaveBeenCalled();
     expect(resignEmit).toHaveBeenCalled();
     expect(backEmit).toHaveBeenCalled();
+  });
+
+  it('bubbles the hosted scoring finalization action', async () => {
+    const finalizeEmit = vi.spyOn(
+      fixture.componentInstance.finalizeScoringRequested,
+      'emit',
+    );
+
+    fixture.componentRef.setInput('match', {
+      ...liveMatch,
+      state: {
+        ...liveMatch.state,
+        phase: 'scoring',
+      },
+    });
+    fixture.componentRef.setInput('canPass', false);
+    fixture.componentRef.setInput('canResign', false);
+    fixture.componentRef.setInput('canFinalizeScoring', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const finalizeButton = root.querySelector(
+      '[data-testid="room-finalize-scoring"]',
+    ) as HTMLButtonElement | null;
+
+    expect(finalizeButton).not.toBeNull();
+
+    finalizeButton?.click();
+
+    expect(finalizeEmit).toHaveBeenCalled();
+  });
+
+  it('keeps hosted scoring finalization disabled when it is unavailable', async () => {
+    fixture.componentRef.setInput('match', {
+      ...liveMatch,
+      state: {
+        ...liveMatch.state,
+        phase: 'scoring',
+      },
+    });
+    fixture.componentRef.setInput('canPass', false);
+    fixture.componentRef.setInput('canResign', false);
+    fixture.componentRef.setInput('canFinalizeScoring', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const finalizeButton = root.querySelector(
+      '[data-testid="room-finalize-scoring"]',
+    ) as HTMLButtonElement | null;
+
+    expect(finalizeButton).not.toBeNull();
+    expect(finalizeButton?.disabled).toBe(true);
   });
 
   it('keeps the decorative timer and renders seat actions on one line', () => {

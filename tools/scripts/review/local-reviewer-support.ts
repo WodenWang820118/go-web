@@ -10,6 +10,10 @@ import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 
 import {
+  createProviderTelemetryContext,
+  type ProviderTelemetryContext,
+} from './provider-observability.ts';
+import {
   isCopilotUnavailableError,
   probeCopilotCliHealth,
   runCopilotReview,
@@ -708,9 +712,11 @@ export function runHybridGptReview(input: {
 }): HybridGptReview {
   const provider = 'copilot-gpt-5-mini' as const;
   const model = DEFAULT_HYBRID_GPT_MODEL;
+  const telemetryContext = createHybridGptTelemetryContext();
   const health = probeCopilotCliHealth({
     model,
     repoRoot: input.repoRoot,
+    telemetryContext,
   });
 
   if (!health.available) {
@@ -736,6 +742,7 @@ export function runHybridGptReview(input: {
         diffText: input.diffText,
       }),
       repoRoot: input.repoRoot,
+      telemetryContext,
     });
     const parsed = parseHybridGptReview(rawOutput);
     return {
@@ -762,6 +769,12 @@ export function runHybridGptReview(input: {
       error: errorText,
     };
   }
+}
+
+export function createHybridGptTelemetryContext(): ProviderTelemetryContext {
+  return createProviderTelemetryContext({
+    callsite: 'hybrid-gpt-review',
+  });
 }
 
 export function createHybridGptBypassReview(reason: string): HybridGptReview {

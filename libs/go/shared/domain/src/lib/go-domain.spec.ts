@@ -85,17 +85,39 @@ describe('GoRulesEngine', () => {
     });
   });
 
-  it('auto-finalizes the result after two consecutive passes', () => {
+  it('keeps the match playing after a single pass', () => {
+    const state = engine.applyMove(
+      engine.createInitialState(settings),
+      settings,
+      {
+        type: 'pass',
+      },
+    ).state;
+
+    expect(state.phase).toBe('playing');
+    expect(state.consecutivePasses).toBe(1);
+    expect(state.result).toBeNull();
+    expect(state.lastMove?.phaseAfterMove).toBe('playing');
+  });
+
+  it('opens scoring after two consecutive passes and finishes when scoring is finalized', () => {
     let state = engine.createInitialState(settings);
 
     state = engine.applyMove(state, settings, { type: 'pass' }).state;
     state = engine.applyMove(state, settings, { type: 'pass' }).state;
 
-    expect(state.phase).toBe('finished');
+    expect(state.phase).toBe('scoring');
     expect(state.scoring?.score.white).toBe(DEFAULT_GO_KOMI);
-    expect(state.result?.winner).toBe('white');
-    expect(state.result?.reason).toBe('score');
-    expect(state.lastMove?.phaseAfterMove).toBe('finished');
+    expect(state.result).toBeNull();
+    expect(state.lastMove?.phaseAfterMove).toBe('scoring');
+
+    state = engine.finalizeScoring(state, settings);
+
+    expect(state.phase).toBe('finished');
+    expect(state.result).toMatchObject({
+      winner: 'white',
+      reason: 'score',
+    });
   });
 
   it('marks dead groups during scoring and updates the preview score', () => {
@@ -126,6 +148,22 @@ describe('GoRulesEngine', () => {
       (toggled.scoring?.score.black ?? 0) >
         (scoringState.scoring?.score.black ?? 0),
     ).toBe(true);
+
+    const restored = engine.toggleDeadGroup(toggled, settings, {
+      x: 1,
+      y: 1,
+    });
+
+    expect(restored.scoring?.deadStones).not.toContain('1,1');
+    expect(restored.scoring?.score.black).toBe(
+      scoringState.scoring?.score.black,
+    );
+  });
+
+  it('ignores scoring finalization outside the scoring phase', () => {
+    const state = engine.createInitialState(settings);
+
+    expect(engine.finalizeScoring(state, settings)).toBe(state);
   });
 
   it('finishes immediately on resignation', () => {
