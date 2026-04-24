@@ -152,11 +152,11 @@ const ZH_MODES = {
   'mode.gomoku.title': '五子棋',
   'mode.gomoku.strapline': '在 15x15 棋盤上快速連成五子',
   'mode.gomoku.description':
-    '自由五子棋玩法，雙方輪流落子，不能下在已有棋子的格點，任一橫直斜方向連成五子以上即獲勝。',
-  'mode.gomoku.objective': '在對手之前，先將五顆以上棋子連成一直線。',
+    '固定 15x15 棋盤的標準精確五連五子棋，採自由開局。雙方輪流落子，黑棋先行。',
+  'mode.gomoku.objective': '在對手之前，先連成剛好五顆的直線。',
   'mode.gomoku.help.0': '棋盤固定為 15x15。',
   'mode.gomoku.help.1': '雙方輪流在空交叉點落子。',
-  'mode.gomoku.help.2': '只要連成五子以上即刻獲勝。',
+  'mode.gomoku.help.2': '剛好五顆連線會立即獲勝；長連不算勝。',
   'mode.gomoku.help.3': '若棋盤下滿仍無人連成五子，則判定和局。',
   'mode.gomoku.setup_hint': '目前版本的五子棋固定使用 15x15 棋盤。',
 } as const;

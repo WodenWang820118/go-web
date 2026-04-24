@@ -7,7 +7,7 @@ import {
   setCell,
 } from '../board/board-state';
 import { otherPlayer } from '../board/player-utils';
-import { findWinningLine } from '../board/winning-line';
+import { findExactWinningLine } from '../board/winning-line';
 import { createMoveRecord } from './shared/move-record';
 import { failure, RulesEngine, success } from '../rules/rules-engine';
 import {
@@ -81,7 +81,7 @@ export class GomokuRulesEngine implements RulesEngine {
       { type: 'place', point },
       nextBoard,
     );
-    const winningLine = findWinningLine(nextBoard, point, player, 5);
+    const winningLine = findExactWinningLine(nextBoard, point, player, 5);
 
     if (winningLine) {
       const summary = createMessage('game.gomoku.result.five_in_row', {

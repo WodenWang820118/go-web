@@ -179,13 +179,14 @@ const EN_MODES = {
   'mode.gomoku.title': 'Gomoku',
   'mode.gomoku.strapline': 'Fast five-in-a-row on a 15x15 board',
   'mode.gomoku.description':
-    'Freestyle Gomoku with alternating turns, occupied-cell rejection, and a win on any horizontal, vertical, or diagonal line of five or more stones.',
+    'Standard exact-five Gomoku on a fixed 15x15 board with a free opening. Players alternate stones and Black moves first.',
   'mode.gomoku.objective':
-    'Connect five or more stones in a straight line before your opponent does.',
+    'Connect exactly five stones in a straight line before your opponent does.',
   'mode.gomoku.help.0': 'The board is fixed to 15x15.',
   'mode.gomoku.help.1':
     'Players alternate placing stones on empty intersections only.',
-  'mode.gomoku.help.2': 'Any five-in-a-row or longer line wins immediately.',
+  'mode.gomoku.help.2':
+    'Exactly five stones in a row wins immediately; overlines do not win.',
   'mode.gomoku.help.3':
     'If the board fills without a winning line, the game ends in a draw.',
   'mode.gomoku.setup_hint':

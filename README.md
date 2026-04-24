@@ -96,12 +96,14 @@ until durable room persistence is added.
 ### Gomoku
 
 - The board is fixed at 15x15.
+- The ruleset is standard exact-five Gomoku with a free opening; Black moves first and there is no opening swap flow.
 - Players alternate placing stones on empty intersections.
 - Pass is not available.
 - Resignation is supported.
-- The current build uses a freestyle-like win condition: any horizontal, vertical, or diagonal line of five or more stones wins immediately.
+- A horizontal, vertical, or diagonal line of exactly five stones wins immediately.
+- Overlines of six or more stones do not win by themselves.
 - If the board fills without a winning line, the game ends in a draw.
-- Tournament note: competitive Gomoku and Renju often make stricter choices about overlines, exact-five wins, forbidden patterns for Black, or opening-balance rules such as Swap2. None of those are enforced in this build yet.
+- Tournament note: Renju forbidden patterns for Black and opening-balance rules such as Swap2 are not enforced in this build.
 
 ## Docker And Deployment
 
@@ -148,4 +150,3 @@ These are the clearest next-phase issues based on the current implementation and
 - Choose and implement a real Go scoring and dispute flow instead of immediate double-pass finalization with every remaining stone treated as alive
 - Decide whether color/opening assignment should stay manual or add a fair selection flow such as nigiri
 - Replace the decorative hosted-room clock with server-authoritative time controls
-- Choose and document an explicit Gomoku ruleset and opening rule instead of leaving the product in a freestyle-like middle ground

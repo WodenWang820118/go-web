@@ -36,6 +36,40 @@ export function findWinningLine(
   return null;
 }
 
+/**
+ * Finds a contiguous winning line with exactly the requested length.
+ */
+export function findExactWinningLine(
+  board: BoardMatrix,
+  point: BoardPoint,
+  color: PlayerColor,
+  winLength = 5,
+): BoardPoint[] | null {
+  const boardSize = board.length as BoardSize;
+  const directions = [
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 1, y: 1 },
+    { x: 1, y: -1 },
+  ];
+
+  for (const direction of directions) {
+    const line = collectDirectionalLine(
+      board,
+      point,
+      color,
+      boardSize,
+      direction,
+    );
+
+    if (line.length === winLength) {
+      return line;
+    }
+  }
+
+  return null;
+}
+
 function collectDirectionalLine(
   board: BoardMatrix,
   origin: BoardPoint,
