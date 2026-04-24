@@ -7,6 +7,7 @@ import {
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
+import { GoAnalyticsService } from '@gx/go/state';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { vi } from 'vitest';
@@ -88,7 +89,8 @@ describe('SetupPageComponent', () => {
 
   it('starts a go match with the selected board size and navigates to play', async () => {
     const store = createGameSessionStoreStub();
-    const harness = await renderSetup('/setup/go', store);
+    const analytics = createAnalyticsStub();
+    const harness = await renderSetup('/setup/go', store, analytics);
     const root = harness.routeNativeElement as HTMLElement;
     const router = TestBed.inject(Router);
     const blackInput = root.querySelector(
@@ -123,6 +125,13 @@ describe('SetupPageComponent', () => {
         white: 'Ren',
       },
     });
+    expect(analytics.track).toHaveBeenCalledWith({
+      board_size: 13,
+      event: 'gx_match_start',
+      game_mode: 'go',
+      play_context: 'local',
+      start_source: 'setup',
+    });
     expect(router.url).toBe('/play/go');
   });
 
@@ -155,6 +164,7 @@ describe('SetupPageComponent', () => {
 async function renderSetup(
   url: '/setup/go' | '/setup/gomoku',
   store = createGameSessionStoreStub(),
+  analytics = createAnalyticsStub(),
 ) {
   TestBed.configureTestingModule({
     providers: [
@@ -172,6 +182,10 @@ async function renderSetup(
         provide: GameSessionStore,
         useValue: store,
       },
+      {
+        provide: GoAnalyticsService,
+        useValue: analytics,
+      },
     ],
   });
 
@@ -183,5 +197,11 @@ async function renderSetup(
 function createGameSessionStoreStub() {
   return {
     startMatch: vi.fn(),
+  };
+}
+
+function createAnalyticsStub() {
+  return {
+    track: vi.fn(),
   };
 }

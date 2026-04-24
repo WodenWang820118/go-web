@@ -17,6 +17,7 @@ import { OnlineRoomPageInteractionsService } from './services/online-room-page-i
 import { OnlineRoomPageLeaveService } from './services/online-room-page-leave/online-room-page-leave.service';
 import { OnlineRoomPageShareService } from './services/online-room-page-share/online-room-page-share.service';
 import { OnlineRoomPageViewStateService } from './services/online-room-page-view-state/online-room-page-view-state.service';
+import { GoHostedMatchAnalyticsService } from './services/go-hosted-match-analytics.service';
 import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
 
 @Component({
@@ -44,11 +45,17 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
     OnlineRoomPageShareService,
     OnlineRoomPageDialogsService,
     OnlineRoomPageLeaveService,
+    GoHostedMatchAnalyticsService,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
   protected readonly presenter = inject(OnlineRoomPagePresenterService);
+  private readonly hostedMatchAnalytics = inject(GoHostedMatchAnalyticsService);
+
+  constructor() {
+    void this.hostedMatchAnalytics;
+  }
 
   protected onRematchVisibleChange(visible: boolean): void {
     if (!visible) {

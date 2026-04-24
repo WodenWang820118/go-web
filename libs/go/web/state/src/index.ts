@@ -7,4 +7,8 @@ export * from './lib/guards/active-match.guard';
 export * from './lib/server-origin/go-server-origin.token';
 export * from './lib/i18n/go-i18n.catalog';
 export * from './lib/i18n/go-i18n.service';
+export * from './lib/analytics/go-analytics-config.token';
+export * from './lib/analytics/go-analytics-consent.service';
+export * from './lib/analytics/go-analytics.service';
+export * from './lib/analytics/go-analytics.types';
 export * from './lib/seo/go-route-seo-data';

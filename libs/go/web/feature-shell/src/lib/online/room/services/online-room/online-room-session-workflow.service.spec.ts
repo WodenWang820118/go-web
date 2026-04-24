@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { RoomSnapshot } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { vi } from 'vitest';
+import { of } from 'rxjs';
 import { OnlineRoomIdentityService } from '../online-room-identity/online-room-identity.service';
 import { OnlineRoomSelectorsService } from '../online-room-selectors/online-room-selectors.service';
 import { OnlineRoomSnapshotService } from '../online-room-snapshot/online-room-snapshot.service';
@@ -15,6 +17,7 @@ import { OnlineRoomSessionWorkflowService } from './online-room-session-workflow
 describe('OnlineRoomSessionWorkflowService', () => {
   let service: OnlineRoomSessionWorkflowService;
   let state: OnlineRoomSessionStateService;
+  let analytics: { track: ReturnType<typeof vi.fn> };
   const storage = {
     clear: vi.fn(),
     get: vi.fn(() => null),
@@ -31,6 +34,9 @@ describe('OnlineRoomSessionWorkflowService', () => {
     storage.set.mockClear();
     socket.connect.mockClear();
     socket.disconnect.mockClear();
+    analytics = {
+      track: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -75,6 +81,10 @@ describe('OnlineRoomSessionWorkflowService', () => {
           useValue: {
             t: vi.fn((key: string) => key),
           },
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: analytics,
         },
       ],
     });
@@ -122,6 +132,73 @@ describe('OnlineRoomSessionWorkflowService', () => {
     expect(socket.disconnect).not.toHaveBeenCalled();
     expect(state.snapshot()?.roomId).toBe('ROOM42');
     expect(state.roomClosed()).toBeNull();
+  });
+
+  it('tracks hosted room creation and match start without room identity data', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.createRoom).mockReturnValue(
+      of({
+        roomId: 'ROOM42',
+        participantId: 'host-1',
+        participantToken: 'token-1',
+        snapshot: createSnapshot('ROOM42'),
+      }),
+    );
+
+    service.createRoom('Host', 'go', 19).subscribe();
+
+    expect(analytics.track).toHaveBeenCalledWith({
+      board_size: 19,
+      event: 'gx_room_create',
+      game_mode: 'go',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      board_size: 19,
+      event: 'gx_match_start',
+      game_mode: 'go',
+      play_context: 'hosted',
+      start_source: 'room_create',
+    });
+  });
+
+  it('tracks hosted joins with the caller-supplied source only', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.joinRoom).mockReturnValue(
+      of({
+        roomId: 'ROOM42',
+        participantId: 'guest-1',
+        participantToken: 'token-2',
+        resumed: false,
+        snapshot: createSnapshot('ROOM42'),
+      }),
+    );
+
+    service.joinRoom('room42', 'Guest', 'lobby').subscribe();
+
+    expect(analytics.track).toHaveBeenCalledWith({
+      event: 'gx_room_join',
+      join_source: 'lobby',
+    });
+  });
+
+  it('defaults hosted join tracking to the direct-room source', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.joinRoom).mockReturnValue(
+      of({
+        roomId: 'ROOM42',
+        participantId: 'guest-1',
+        participantToken: 'token-2',
+        resumed: false,
+        snapshot: createSnapshot('ROOM42'),
+      }),
+    );
+
+    service.joinRoom('room42', 'Guest').subscribe();
+
+    expect(analytics.track).toHaveBeenCalledWith({
+      event: 'gx_room_join',
+      join_source: 'direct_room',
+    });
   });
 });
 

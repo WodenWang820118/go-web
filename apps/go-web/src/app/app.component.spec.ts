@@ -17,6 +17,11 @@ class DummyRoomPageComponent {}
 
 describe('AppComponent', () => {
   beforeEach(async () => {
+    localStorage.clear();
+    window.dataLayer = [];
+    document
+      .querySelectorAll('script[id^="gx-gtm-script-"]')
+      .forEach((element) => element.remove());
     document.title = '';
     document.head
       .querySelectorAll('meta[name], meta[property], link[rel="canonical"]')
@@ -39,9 +44,70 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
+  afterEach(() => {
+    localStorage.clear();
+    window.dataLayer = [];
+    document
+      .querySelectorAll('script[id^="gx-gtm-script-"]')
+      .forEach((element) => element.remove());
+  });
+
   it('creates the root shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('shows the analytics consent banner until a choice is made', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-banner"]',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('persists declined analytics consent without loading GTM', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    (
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-decline"]',
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('denied');
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-banner"]',
+      ),
+    ).toBeNull();
+    expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
+  });
+
+  it('persists accepted analytics consent and loads GTM from the UI grant flow', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    (
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-accept"]',
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('granted');
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-banner"]',
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('script[id^="gx-gtm-script-"]'),
+    ).not.toBeNull();
   });
 
   it('renders the active lobby route content', async () => {

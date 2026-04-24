@@ -15,6 +15,7 @@ import {
   isGameMode,
   type GoBoardSize,
 } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { map } from 'rxjs';
@@ -47,6 +48,7 @@ export class SetupPageComponent {
   protected readonly i18n = inject(GoI18nService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly analytics = inject(GoAnalyticsService);
   private readonly store = inject(GameSessionStore);
 
   protected readonly mode = toSignal(
@@ -167,7 +169,7 @@ export class SetupPageComponent {
       return;
     }
 
-    this.store.startMatch({
+    const settings = {
       mode,
       boardSize:
         mode === 'go' ? this.form.controls.boardSize.value : GOMOKU_BOARD_SIZE,
@@ -182,6 +184,15 @@ export class SetupPageComponent {
           this.i18n.playerLabel('white'),
         ),
       },
+    };
+
+    this.store.startMatch(settings);
+    this.analytics.track({
+      board_size: settings.boardSize,
+      event: 'gx_match_start',
+      game_mode: settings.mode,
+      play_context: 'local',
+      start_source: 'setup',
     });
 
     await this.router.navigate(['/play', mode]);

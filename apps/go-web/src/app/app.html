@@ -1,1 +1,35 @@
 <router-outlet />
+
+@if (analyticsConsent.shouldShowBanner()) {
+<section
+  class="analytics-consent"
+  aria-label="網站分析偏好"
+  data-testid="analytics-consent-banner"
+>
+  <div class="analytics-consent__copy">
+    <p class="analytics-consent__title">協助我們改善 gx.go</p>
+    <p class="analytics-consent__body">
+      我們只在您同意後載入 Google Tag
+      Manager，並只記錄不含姓名、房號、聊天內容與棋盤座標的使用趨勢。
+    </p>
+  </div>
+  <div class="analytics-consent__actions">
+    <button
+      class="analytics-consent__button analytics-consent__button--secondary"
+      type="button"
+      data-testid="analytics-consent-decline"
+      (click)="declineAnalytics()"
+    >
+      拒絕
+    </button>
+    <button
+      class="analytics-consent__button analytics-consent__button--primary"
+      type="button"
+      data-testid="analytics-consent-accept"
+      (click)="acceptAnalytics()"
+    >
+      接受分析
+    </button>
+  </div>
+</section>
+}

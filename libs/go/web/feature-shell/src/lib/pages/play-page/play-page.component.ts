@@ -22,6 +22,7 @@ import {
   StoneBadgeComponent,
 } from '@gx/go/ui';
 import { map } from 'rxjs';
+import { GoLocalMatchAnalyticsService } from './services/go-local-match-analytics.service';
 
 interface ConfirmationCopy {
   header: string;
@@ -53,6 +54,7 @@ interface PlayBanner {
   templateUrl: './play-page.component.html',
   styleUrl: './play-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [GoLocalMatchAnalyticsService],
 })
 export class PlayPageComponent {
   protected readonly i18n = inject(GoI18nService);
@@ -66,6 +68,7 @@ export class PlayPageComponent {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly localMatchAnalytics = inject(GoLocalMatchAnalyticsService);
 
   protected readonly mode = toSignal(
     this.route.paramMap.pipe(
@@ -110,6 +113,8 @@ export class PlayPageComponent {
   }));
 
   constructor() {
+    void this.localMatchAnalytics;
+
     effect(() => {
       if (this.state()?.phase === 'finished') {
         this.resultVisible.set(true);

@@ -247,7 +247,7 @@ export class OnlineLobbyPageComponent {
     }
 
     this.onlineRoom
-      .joinRoom(room.roomId, displayName)
+      .joinRoom(room.roomId, displayName, 'lobby')
       .pipe(
         switchMap(() =>
           from(this.router.navigate(['/online/room', room.roomId])),
