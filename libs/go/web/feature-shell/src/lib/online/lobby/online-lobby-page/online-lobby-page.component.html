@@ -23,7 +23,7 @@
           [actionMessageIsError]="actionBarMessageIsError()"
           [isMdUp]="isMdUp()"
           (activeStatusChange)="setActiveStatus($event)"
-          (createRoomRequested)="createRoom()"
+          (createRoomRequested)="openCreateRoomDialog()"
           (joinRoomRequested)="joinRoom($event)"
         />
 
@@ -57,7 +57,7 @@
           [actionMessageIsError]="actionBarMessageIsError()"
           [isMdUp]="isMdUp()"
           (activeStatusChange)="setActiveStatus($event)"
-          (createRoomRequested)="createRoom()"
+          (createRoomRequested)="openCreateRoomDialog()"
           (joinRoomRequested)="joinRoom($event)"
         />
         <lib-go-online-lobby-announcement-panel [cards]="announcementCards()" />
@@ -70,3 +70,113 @@
     }
   </div>
 </section>
+
+<p-dialog
+  [visible]="createRoomDialogVisible()"
+  (visibleChange)="createRoomDialogVisible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: 'min(92vw, 32rem)' }"
+  [header]="i18n.t('lobby.create_dialog.title')"
+>
+  <form
+    class="space-y-5"
+    data-testid="lobby-create-room-dialog"
+    [formGroup]="createRoomSettings"
+    (ngSubmit)="confirmCreateRoom()"
+  >
+    <p class="text-sm leading-6 text-stone-300">
+      {{ i18n.t('lobby.create_dialog.description') }}
+    </p>
+
+    <fieldset class="space-y-3">
+      <legend class="text-sm font-semibold text-stone-100">
+        {{ i18n.t('lobby.create_dialog.mode') }}
+      </legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label
+          class="flex cursor-pointer items-center gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-stone-100 transition has-[:checked]:border-amber-300 has-[:checked]:bg-amber-300/15"
+        >
+          <input
+            type="radio"
+            class="h-4 w-4 accent-amber-300"
+            formControlName="mode"
+            value="go"
+            data-testid="lobby-create-mode-go"
+          />
+          <span>{{ i18n.t('common.mode.go') }}</span>
+        </label>
+        <label
+          class="flex cursor-pointer items-center gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-stone-100 transition has-[:checked]:border-amber-300 has-[:checked]:bg-amber-300/15"
+        >
+          <input
+            type="radio"
+            class="h-4 w-4 accent-amber-300"
+            formControlName="mode"
+            value="gomoku"
+            data-testid="lobby-create-mode-gomoku"
+          />
+          <span>{{ i18n.t('common.mode.gomoku') }}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-3">
+      <legend class="text-sm font-semibold text-stone-100">
+        {{ i18n.t('lobby.create_dialog.board_size') }}
+      </legend>
+
+      @if (selectedCreateRoomMode() === 'go') {
+        <div class="grid grid-cols-3 gap-2">
+          @for (size of GO_BOARD_SIZES; track size) {
+            <label
+              class="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-semibold text-stone-100 transition has-[:checked]:border-amber-300 has-[:checked]:bg-amber-300/15"
+            >
+              <input
+                type="radio"
+                class="h-4 w-4 accent-amber-300"
+                formControlName="goBoardSize"
+                [value]="size"
+                [attr.data-testid]="'lobby-create-board-size-' + size"
+              />
+              <span>{{
+                i18n.t('lobby.create_dialog.board_size_value', { size })
+              }}</span>
+            </label>
+          }
+        </div>
+      } @else {
+        <div
+          class="rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 text-sm leading-6 text-stone-200"
+          data-testid="lobby-create-board-size-fixed"
+        >
+          {{
+            i18n.t('lobby.create_dialog.gomoku_board_size_fixed', {
+              size: GOMOKU_BOARD_SIZE,
+            })
+          }}
+        </div>
+      }
+    </fieldset>
+
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <button
+        type="button"
+        class="rounded-sm border border-white/10 px-4 py-2.5 text-sm font-semibold text-stone-200 transition hover:bg-white/10"
+        data-testid="lobby-create-room-dialog-cancel"
+        (click)="cancelCreateRoomDialog()"
+      >
+        {{ i18n.t('lobby.create_dialog.cancel') }}
+      </button>
+      <button
+        type="submit"
+        class="rounded-sm bg-amber-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
+        data-testid="lobby-create-room-dialog-confirm"
+      >
+        {{ i18n.t('lobby.create_dialog.confirm') }}
+      </button>
+    </div>
+  </form>
+</p-dialog>

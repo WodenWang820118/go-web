@@ -37,6 +37,8 @@ function validationMessages(errors: ValidationError[]): GoMessageDescriptor[] {
           return createMessage('room.validation.participant_token_string');
         case 'mode:isString':
           return createMessage('room.validation.mode_string');
+        case 'mode:isIn':
+          return createMessage('room.error.unsupported_mode');
         case 'boardSize:isInt':
         case 'boardSize:min':
         case 'boardSize:max':

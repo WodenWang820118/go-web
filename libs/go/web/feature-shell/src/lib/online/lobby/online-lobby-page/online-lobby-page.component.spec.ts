@@ -19,6 +19,9 @@ describe('OnlineLobbyPageComponent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    document.body
+      .querySelectorAll('.p-dialog-mask, .p-dialog')
+      .forEach((element) => element.remove());
   });
 
   it('shows the room panel plus announcement and online-player panels when the lobby is empty', async () => {
@@ -44,7 +47,27 @@ describe('OnlineLobbyPageComponent', () => {
     expect(root.textContent).toContain(i18n.t('lobby.panel.announcement'));
   });
 
-  it('creates a room from the lobby and redirects into the room detail page', async () => {
+  it('opens the create-room settings dialog before creating a room', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).not.toHaveBeenCalled();
+    expect(queryCreateRoomDialog()).not.toBeNull();
+    expect(queryCreateRoomMode('go').checked).toBe(true);
+    expect(queryCreateRoomBoardSize(19).checked).toBe(true);
+  });
+
+  it('creates a default go room from the dialog and redirects into the room detail page', async () => {
     const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub({
       createRoomResponse: {
@@ -63,10 +86,146 @@ describe('OnlineLobbyPageComponent', () => {
 
     await fillLobbyDisplayName(harness);
     button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain');
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
     expect(router.url).toBe('/online/room/ROOM42');
+  });
+
+  it('creates a go room with the selected 13-line board size', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const router = TestBed.inject(Router);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomBoardSize(13).click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 13);
+    expect(router.url).toBe('/online/room/ROOM01');
+  });
+
+  it('creates a go room with the selected 9-line board size', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const router = TestBed.inject(Router);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomBoardSize(9).click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 9);
+    expect(router.url).toBe('/online/room/ROOM01');
+  });
+
+  it('creates a gomoku room with the fixed 15-line board size', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomMode('gomoku').click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+
+    const fixedBoardSize = queryCreateRoomFixedBoardSize();
+    expect(fixedBoardSize).not.toBeNull();
+    expect(fixedBoardSize?.textContent).toContain('15 x 15');
+    expect(queryCreateRoomBoardSizeOrNull(9)).toBeNull();
+    expect(queryCreateRoomBoardSizeOrNull(13)).toBeNull();
+    expect(queryCreateRoomBoardSizeOrNull(19)).toBeNull();
+
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'gomoku',
+      15,
+    );
+  });
+
+  it('resets go board size to 19 after switching away and back to go', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomBoardSize(13).click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomMode('gomoku').click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomMode('go').click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
+  });
+
+  it('does not create or navigate when the create-room dialog is canceled', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const router = TestBed.inject(Router);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogCancel().click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).not.toHaveBeenCalled();
+    expect(queryCreateRoomDialog()).toBeNull();
+    expect(router.url).toBe('/');
   });
 
   it('keeps the create controls inside the room panel instead of a separate top header', async () => {
@@ -262,6 +421,7 @@ describe('OnlineLobbyPageComponent', () => {
     const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub({
       createRoomResult: throwError(() => new Error('create failed')),
+      lastError: 'Create failed',
     });
 
     const harness = await renderLobby(lobbyService, roomService);
@@ -272,8 +432,17 @@ describe('OnlineLobbyPageComponent', () => {
 
     await fillLobbyDisplayName(harness);
     button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
+    expect(
+      harness.routeNativeElement?.querySelector(
+        '[data-testid="lobby-message-rail"]',
+      )?.textContent,
+    ).toContain('Create failed');
     expect(router.url).toBe('/');
   });
 
@@ -342,3 +511,47 @@ describe('OnlineLobbyPageComponent', () => {
     expect(router.url).toBe('/setup/go');
   });
 });
+
+function queryCreateRoomDialog(): HTMLElement | null {
+  return document.body.querySelector(
+    '[data-testid="lobby-create-room-dialog"]',
+  ) as HTMLElement | null;
+}
+
+function queryCreateRoomDialogConfirm(): HTMLButtonElement {
+  return document.body.querySelector(
+    '[data-testid="lobby-create-room-dialog-confirm"]',
+  ) as HTMLButtonElement;
+}
+
+function queryCreateRoomDialogCancel(): HTMLButtonElement {
+  return document.body.querySelector(
+    '[data-testid="lobby-create-room-dialog-cancel"]',
+  ) as HTMLButtonElement;
+}
+
+function queryCreateRoomMode(mode: 'go' | 'gomoku'): HTMLInputElement {
+  return document.body.querySelector(
+    `[data-testid="lobby-create-mode-${mode}"]`,
+  ) as HTMLInputElement;
+}
+
+function queryCreateRoomBoardSize(size: 9 | 13 | 19): HTMLInputElement {
+  return document.body.querySelector(
+    `[data-testid="lobby-create-board-size-${size}"]`,
+  ) as HTMLInputElement;
+}
+
+function queryCreateRoomBoardSizeOrNull(
+  size: 9 | 13 | 19,
+): HTMLInputElement | null {
+  return document.body.querySelector(
+    `[data-testid="lobby-create-board-size-${size}"]`,
+  ) as HTMLInputElement | null;
+}
+
+function queryCreateRoomFixedBoardSize(): HTMLElement | null {
+  return document.body.querySelector(
+    '[data-testid="lobby-create-board-size-fixed"]',
+  );
+}

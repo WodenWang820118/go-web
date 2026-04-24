@@ -1,10 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  DEFAULT_GO_KOMI,
-  GoMessageDescriptor,
-  PlayerColor,
-} from '@gx/go/domain';
-import { SystemNotice } from '@gx/go/contracts';
+import { GoMessageDescriptor, PlayerColor } from '@gx/go/domain';
+import { GameStartSettings, SystemNotice } from '@gx/go/contracts';
 import {
   ROOM_ID_ALPHABET,
   ROOM_ID_LENGTH,
@@ -51,7 +47,11 @@ export class RoomsStore {
     };
   }
 
-  createRoomRecord(host: ParticipantRecord, createdAt: string): RoomRecord {
+  createRoomRecord(
+    host: ParticipantRecord,
+    createdAt: string,
+    nextMatchSettings: GameStartSettings,
+  ): RoomRecord {
     return {
       id: this.generateRoomId(),
       createdAt,
@@ -59,11 +59,7 @@ export class RoomsStore {
       hostParticipantId: host.id,
       participants: new Map([[host.id, host]]),
       tokenIndex: new Map([[host.token, host.id]]),
-      nextMatchSettings: {
-        mode: 'go',
-        boardSize: 19,
-        komi: DEFAULT_GO_KOMI,
-      },
+      nextMatchSettings,
       rematch: null,
       autoStartBlockedUntilSeatChange: false,
       match: null,

@@ -1,5 +1,6 @@
 import type {
   CreateRoomResponse,
+  GameStartSettings,
   GetRoomResponse,
   JoinRoomResponse,
   ListRoomsResponse,
@@ -22,7 +23,10 @@ export type RoomParticipantSession = CreateRoomResponse | JoinRoomResponse;
 export interface RoomsContractHarness {
   context: NestTestAppContext;
   closeRoom(roomId: string, participantToken: string): Promise<void>;
-  createRoom(displayName: string): Promise<CreateRoomResponse>;
+  createRoom(
+    displayName: string,
+    settings?: GameStartSettings,
+  ): Promise<CreateRoomResponse>;
   dispose(): Promise<void>;
   getRoom(roomId: string): Promise<GetRoomResponse>;
   http(): ReturnType<typeof request>;
@@ -48,10 +52,10 @@ export async function createRoomsContractHarness(): Promise<RoomsContractHarness
   return {
     context,
     http,
-    async createRoom(displayName) {
+    async createRoom(displayName, settings = { mode: 'go', boardSize: 19 }) {
       const response = await http()
         .post('/api/rooms')
-        .send({ displayName })
+        .send({ displayName, ...settings })
         .expect(201);
 
       return response.body as CreateRoomResponse;

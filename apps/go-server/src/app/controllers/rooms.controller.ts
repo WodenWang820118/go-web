@@ -40,6 +40,10 @@ export class RoomsController {
     return this.roomsLifecycleService.createRoom(
       body.displayName,
       this.requesterKey(request, 'create'),
+      {
+        mode: body.mode,
+        boardSize: body.boardSize,
+      },
     );
   }
 

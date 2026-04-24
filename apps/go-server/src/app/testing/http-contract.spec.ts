@@ -80,7 +80,11 @@ describe('rooms HTTP contract', () => {
     const throttledResponse = await harness
       .http()
       .post('/api/rooms')
-      .send({ displayName: `Host ${CREATE_ATTEMPTS_PER_WINDOW + 1}` })
+      .send({
+        displayName: `Host ${CREATE_ATTEMPTS_PER_WINDOW + 1}`,
+        mode: 'go',
+        boardSize: 19,
+      })
       .expect(429);
 
     expect(throttledResponse.body).toMatchObject({
@@ -96,7 +100,11 @@ describe('rooms HTTP contract', () => {
         harness
           .http()
           .post('/api/rooms')
-          .send({ displayName: `Host ${index + 1}` }),
+          .send({
+            displayName: `Host ${index + 1}`,
+            mode: 'go',
+            boardSize: 19,
+          }),
       ),
     );
 
@@ -150,6 +158,63 @@ describe('rooms HTTP contract', () => {
         activity: 'watching',
       }),
     ]);
+  });
+
+  it('creates rooms with the requested hosted match settings', async () => {
+    const goRoom = await harness.createRoom('Go Host', {
+      mode: 'go',
+      boardSize: 9,
+    });
+    const gomokuRoom = await harness.createRoom('Gomoku Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+
+    expect(goRoom.snapshot.nextMatchSettings).toEqual({
+      mode: 'go',
+      boardSize: 9,
+      komi: 6.5,
+    });
+    expect(gomokuRoom.snapshot.nextMatchSettings).toEqual({
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+    });
+  });
+
+  it('rejects missing or invalid create-room match settings', async () => {
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({ displayName: 'Missing Mode', boardSize: 19 })
+      .expect(400);
+
+    const badModeResponse = await harness
+      .http()
+      .post('/api/rooms')
+      .send({ displayName: 'Bad Mode', mode: 'chess', boardSize: 19 })
+      .expect(400);
+    expect(JSON.stringify(badModeResponse.body)).toContain(
+      'room.error.unsupported_mode',
+    );
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({ displayName: 'Missing Board Size', mode: 'go' })
+      .expect(400);
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({ displayName: 'Bad Go Size', mode: 'go', boardSize: 15 })
+      .expect(400);
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({ displayName: 'Bad Gomoku Size', mode: 'gomoku', boardSize: 19 })
+      .expect(400);
   });
 
   it('closes a room through the REST contract and removes it from the lobby immediately', async () => {

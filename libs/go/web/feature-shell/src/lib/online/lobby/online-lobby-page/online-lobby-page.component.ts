@@ -8,10 +8,18 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
+import {
+  BoardSize,
+  GOMOKU_BOARD_SIZE,
+  GO_BOARD_SIZES,
+  GameMode,
+  GoBoardSize,
+} from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
+import { DialogModule } from 'primeng/dialog';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
 import {
   LobbyAnnouncementCardViewModel,
@@ -33,6 +41,8 @@ import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-pa
   standalone: true,
   imports: [
     HostedShellHeaderComponent,
+    DialogModule,
+    ReactiveFormsModule,
     OnlineLobbyRoomPanelComponent,
     OnlineLobbyAnnouncementPanelComponent,
     OnlineLobbyOnlinePlayersPanelComponent,
@@ -50,8 +60,11 @@ export class OnlineLobbyPageComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
+  protected readonly GO_BOARD_SIZES = GO_BOARD_SIZES;
+  protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
   protected readonly activeStatus = this.activeStatusSignal.asReadonly();
   private readonly mdUpSignal = signal(this.resolveMdUp());
+  protected readonly createRoomDialogVisible = signal(false);
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || '',
@@ -62,6 +75,23 @@ export class OnlineLobbyPageComponent {
   private readonly displayNameValue = toSignal(this.displayName.valueChanges, {
     initialValue: this.displayName.value,
   });
+  protected readonly createRoomSettings = new FormGroup({
+    mode: new FormControl<GameMode>('go', {
+      nonNullable: true,
+    }),
+    goBoardSize: new FormControl<GoBoardSize>(19, {
+      nonNullable: true,
+    }),
+  });
+  private readonly createRoomModeValue = toSignal(
+    this.createRoomSettings.controls.mode.valueChanges,
+    {
+      initialValue: this.createRoomSettings.controls.mode.value,
+    },
+  );
+  protected readonly selectedCreateRoomMode = computed(() =>
+    this.createRoomModeValue(),
+  );
 
   protected readonly sections = computed(() =>
     this.presentation.buildLobbySections(this.onlineLobby.rooms()),
@@ -157,21 +187,48 @@ export class OnlineLobbyPageComponent {
         this.activeStatusSignal.set(nextStatus);
       }
     });
+
+    this.createRoomSettings.controls.mode.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((mode) => {
+        if (mode === 'go') {
+          this.createRoomSettings.controls.goBoardSize.setValue(19);
+        }
+      });
   }
 
   protected setActiveStatus(status: LobbyRoomStatus): void {
     this.activeStatusSignal.set(status);
   }
 
-  protected createRoom(): void {
+  protected openCreateRoomDialog(): void {
     const displayName = this.trimmedDisplayName();
 
     if (!displayName) {
       return;
     }
 
+    this.createRoomDialogVisible.set(true);
+  }
+
+  protected cancelCreateRoomDialog(): void {
+    this.createRoomDialogVisible.set(false);
+  }
+
+  protected confirmCreateRoom(): void {
+    const displayName = this.trimmedDisplayName();
+
+    if (!displayName) {
+      this.createRoomDialogVisible.set(false);
+      return;
+    }
+
+    const mode = this.createRoomSettings.controls.mode.value;
+    const boardSize = this.resolveCreateRoomBoardSize(mode);
+
+    this.createRoomDialogVisible.set(false);
     this.onlineRoom
-      .createRoom(displayName)
+      .createRoom(displayName, mode, boardSize)
       .pipe(
         switchMap((response) =>
           from(this.router.navigate(['/online/room', response.roomId])),
@@ -226,5 +283,11 @@ export class OnlineLobbyPageComponent {
       typeof window.matchMedia !== 'function'
       ? true
       : window.matchMedia('(min-width: 768px)').matches;
+  }
+
+  private resolveCreateRoomBoardSize(mode: GameMode): BoardSize {
+    return mode === 'gomoku'
+      ? GOMOKU_BOARD_SIZE
+      : this.createRoomSettings.controls.goBoardSize.value;
   }
 }
