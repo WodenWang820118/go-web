@@ -41,6 +41,19 @@ import { GoI18nService } from '@gx/go/state/i18n';
           </button>
         }
 
+        @if (showFinalizeScoring()) {
+          <button
+            pButton
+            type="button"
+            class="go-hosted-button-secondary justify-center"
+            data-testid="room-finalize-scoring"
+            [disabled]="!canFinalizeScoring() || !realtimeConnected()"
+            (click)="finalizeScoringRequested.emit()"
+          >
+            {{ i18n.t('room.participants.finalize_score') }}
+          </button>
+        }
+
         <button
           pButton
           type="button"
@@ -61,14 +74,21 @@ export class OnlineRoomSidebarActionsComponent {
   readonly match = input<HostedMatchSnapshot | null>(null);
   readonly canPass = input.required<boolean>();
   readonly canResign = input.required<boolean>();
+  readonly canFinalizeScoring = input.required<boolean>();
   readonly realtimeConnected = input.required<boolean>();
 
   readonly backToLobbyRequested = output<void>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
+  readonly finalizeScoringRequested = output<void>();
 
   protected readonly showMatchActions = computed(() => {
     const match = this.match();
-    return !!match && match.state.phase !== 'finished';
+    return !!match && match.state.phase === 'playing';
+  });
+
+  protected readonly showFinalizeScoring = computed(() => {
+    const match = this.match();
+    return match?.settings.mode === 'go' && match.state.phase === 'scoring';
   });
 }

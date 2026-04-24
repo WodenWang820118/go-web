@@ -156,6 +156,9 @@ describe('OnlineRoomPagePresentationService', () => {
   it('treats only unfinished matches as live', () => {
     expect(service.isLiveHostedMatch(createHostedMatch())).toBe(true);
     expect(
+      service.isLiveHostedMatch(createHostedMatch({ phase: 'scoring' })),
+    ).toBe(true);
+    expect(
       service.isLiveHostedMatch(createHostedMatch({ phase: 'finished' })),
     ).toBe(false);
   });
@@ -296,6 +299,39 @@ describe('OnlineRoomPagePresentationService', () => {
     });
   });
 
+  it('builds a scoring status line with the current score preview', () => {
+    expect(
+      service.buildMatchStatusLine(
+        createHostedMatch({
+          phase: 'scoring',
+          scoring: {
+            deadStones: [],
+            territory: [],
+            score: {
+              black: 12,
+              white: 18.5,
+              blackStones: 12,
+              whiteStones: 12,
+              blackTerritory: 0,
+              whiteTerritory: 0,
+              komi: 6.5,
+            },
+          },
+        }),
+      ),
+    ).toBe('Score preview: Black Player 12.0, White Player 18.5');
+  });
+
+  it('falls back to the match message when scoring has no preview snapshot yet', () => {
+    expect(
+      service.buildMatchStatusLine(
+        createHostedMatch({
+          phase: 'scoring',
+        }),
+      ),
+    ).toBe('translated:game.state.next_turn');
+  });
+
   it('hides the board status line for resigned matches', () => {
     expect(
       service.buildMatchStatusLine(
@@ -316,6 +352,7 @@ function createHostedMatch(
   options: {
     phase?: HostedMatchSnapshot['state']['phase'];
     result?: HostedMatchSnapshot['state']['result'];
+    scoring?: HostedMatchSnapshot['state']['scoring'];
   } = {},
 ): HostedMatchSnapshot {
   return {
@@ -347,7 +384,7 @@ function createHostedMatch(
       message: createMessage('game.state.next_turn', {
         player: createMessage('common.player.black'),
       }),
-      scoring: null,
+      scoring: options.scoring ?? null,
     },
     startedAt: '2026-03-20T00:05:00.000Z',
   };
@@ -438,6 +475,10 @@ function createI18n() {
 
       if (key === 'room.rematch.blocked') {
         return 'Rematch blocked until a seat changes.';
+      }
+
+      if (key === 'ui.match_sidebar.score_preview') {
+        return 'Score preview';
       }
 
       return key;

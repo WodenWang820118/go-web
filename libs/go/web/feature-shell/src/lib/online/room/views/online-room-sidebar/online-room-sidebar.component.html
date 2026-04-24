@@ -49,9 +49,11 @@
     [match]="match()"
     [canPass]="canPass()"
     [canResign]="canResign()"
+    [canFinalizeScoring]="canFinalizeScoring()"
     [realtimeConnected]="realtimeConnected()"
     (backToLobbyRequested)="backToLobbyRequested.emit()"
     (passRequested)="passRequested.emit()"
     (resignRequested)="resignRequested.emit()"
+    (finalizeScoringRequested)="finalizeScoringRequested.emit()"
   />
 </aside>

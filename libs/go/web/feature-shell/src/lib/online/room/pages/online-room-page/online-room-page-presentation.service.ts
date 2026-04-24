@@ -244,6 +244,14 @@ export class OnlineRoomPagePresentationService {
       return null;
     }
 
+    if (match.state.phase === 'scoring') {
+      const score = match.state.scoring?.score;
+
+      if (score) {
+        return `${this.i18n.t('ui.match_sidebar.score_preview')}: ${this.i18n.playerLabel('black')} ${score.black.toFixed(1)}, ${this.i18n.playerLabel('white')} ${score.white.toFixed(1)}`;
+      }
+    }
+
     return this.i18n.translateMessage(
       match.state.result?.summary ?? match.state.message,
     );

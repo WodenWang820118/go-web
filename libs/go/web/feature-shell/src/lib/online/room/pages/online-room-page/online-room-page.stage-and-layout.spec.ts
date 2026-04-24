@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { GoI18nService } from '@gx/go/state';
 import { createMessage } from '@gx/go/domain';
+import { GameBoardComponent } from '@gx/go/ui';
 import {
   createHostedMatch,
   createRoomServiceStub,
@@ -326,6 +328,149 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
       ),
     ).toBe(true);
+  });
+
+  it('restores hosted Go scoring controls and score preview from the room snapshot', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch({
+            phase: 'scoring',
+            consecutivePasses: 2,
+            message: createMessage('game.go.state.scoring_started'),
+            scoring: {
+              deadStones: [],
+              territory: [],
+              score: {
+                black: 12,
+                white: 18.5,
+                blackStones: 12,
+                whiteStones: 12,
+                blackTerritory: 0,
+                whiteTerritory: 0,
+                komi: 6.5,
+              },
+            },
+          }),
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      canInteractBoard: true,
+      connectionState: 'disconnected',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+    const disabledFinalizeButton = root.querySelector(
+      '[data-testid="room-finalize-scoring"]',
+    ) as HTMLButtonElement | null;
+
+    expect(root.textContent).toContain(
+      i18n.t('ui.match_sidebar.score_preview'),
+    );
+    expect(root.textContent).toContain('12.0');
+    expect(root.textContent).toContain('18.5');
+    expect(disabledFinalizeButton).not.toBeNull();
+    expect(disabledFinalizeButton?.disabled).toBe(true);
+
+    roomService.connectionState.set('connected');
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    const enabledFinalizeButton = root.querySelector(
+      '[data-testid="room-finalize-scoring"]',
+    ) as HTMLButtonElement | null;
+
+    expect(enabledFinalizeButton?.disabled).toBe(false);
+
+    enabledFinalizeButton?.click();
+
+    expect(roomService.sendGameCommand).toHaveBeenCalledWith({
+      type: 'finalize-scoring',
+    });
+    expect(roomService.snapshot()?.match?.state.phase).toBe('scoring');
+  });
+
+  it('routes hosted board selections to moves while playing and dead-stone toggles while scoring', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch(),
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      canInteractBoard: true,
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const board = harness.fixture.debugElement.query(
+      By.directive(GameBoardComponent),
+    ).componentInstance as GameBoardComponent;
+
+    board.pointSelected.emit({ x: 3, y: 4 });
+
+    expect(roomService.sendGameCommand).toHaveBeenCalledWith({
+      type: 'place',
+      point: { x: 3, y: 4 },
+    });
+
+    roomService.sendGameCommand.mockClear();
+    roomService.snapshot.set(
+      createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch({
+            phase: 'scoring',
+            scoring: {
+              deadStones: [],
+              territory: [],
+              score: {
+                black: 12,
+                white: 18.5,
+                blackStones: 12,
+                whiteStones: 12,
+                blackTerritory: 0,
+                whiteTerritory: 0,
+                komi: 6.5,
+              },
+            },
+          }),
+        },
+      }),
+    );
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    board.pointSelected.emit({ x: 1, y: 1 });
+
+    expect(roomService.sendGameCommand).toHaveBeenCalledWith({
+      type: 'toggle-dead',
+      point: { x: 1, y: 1 },
+    });
+  });
+
+  it('does not send hosted board commands when the board is not interactive', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSeatedSnapshot({
+        overrides: {
+          match: createHostedMatch(),
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      canInteractBoard: false,
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const board = harness.fixture.debugElement.query(
+      By.directive(GameBoardComponent),
+    ).componentInstance as GameBoardComponent;
+
+    board.pointSelected.emit({ x: 3, y: 4 });
+
+    expect(roomService.sendGameCommand).not.toHaveBeenCalled();
   });
 
   it('renders the missing-room state inside the new shell without the old header', async () => {

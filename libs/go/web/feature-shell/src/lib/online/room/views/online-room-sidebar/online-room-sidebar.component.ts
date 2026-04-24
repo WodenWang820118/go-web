@@ -62,6 +62,7 @@ export class OnlineRoomSidebarComponent {
     input.required<readonly OnlineRoomSidebarMessageViewModel[]>();
   readonly canPass = input.required<boolean>();
   readonly canResign = input.required<boolean>();
+  readonly canFinalizeScoring = input.required<boolean>();
   readonly showRematch = input.required<boolean>();
   readonly canRespondToRematch = input.required<boolean>();
   readonly rematchStatuses =
@@ -73,6 +74,7 @@ export class OnlineRoomSidebarComponent {
   readonly releaseSeatRequested = output<void>();
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
+  readonly finalizeScoringRequested = output<void>();
   readonly acceptRematchRequested = output<void>();
   readonly declineRematchRequested = output<void>();
   readonly sendRequested = output<void>();

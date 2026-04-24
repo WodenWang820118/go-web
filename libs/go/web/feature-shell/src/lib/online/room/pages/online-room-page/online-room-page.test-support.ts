@@ -51,6 +51,7 @@ export interface RoomServiceStub {
   bootstrapRoom: StubMock;
   joinRoom: StubMock;
   respondToRematch: StubMock;
+  sendGameCommand: StubMock;
   closeRoom: StubMock;
   clearRoomClosedEvent: StubMock;
 }
@@ -182,6 +183,7 @@ export function createRoomServiceStub(options: {
   lastNotice?: string | null;
   lastSystemNotice?: SystemNotice | null;
   shareUrl?: string | null;
+  canInteractBoard?: boolean;
   roomClosed?: {
     roomId: string;
     message: ReturnType<typeof createMessage>;
@@ -221,7 +223,7 @@ export function createRoomServiceStub(options: {
   const isHost = computed(() => viewer()?.isHost ?? false);
   const isMuted = computed(() => viewer()?.muted ?? false);
   const isActivePlayer = computed(() => false);
-  const canInteractBoard = computed(() => false);
+  const canInteractBoard = computed(() => options.canInteractBoard ?? false);
   const canChangeSeats = computed(() => true);
   const shareUrl = computed(() =>
     options.shareUrl === undefined

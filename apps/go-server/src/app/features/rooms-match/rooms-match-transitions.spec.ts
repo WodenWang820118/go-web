@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { setCell } from '@gx/go/domain';
 import { vi } from 'vitest';
 import type {
   ParticipantRecord,
@@ -79,6 +80,21 @@ describe('rooms-match-transitions', () => {
           room,
           host,
           { type: 'toggle-dead', point: { x: 0, y: 0 } },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
+    it('rejects score finalization when the match is not in scoring phase', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'finalize-scoring' },
           dependencies,
         ),
       ).toThrow(BadRequestException);
@@ -198,6 +214,83 @@ describe('rooms-match-transitions', () => {
         },
       });
       expect(room.autoStartBlockedUntilSeatChange).toBe(false);
+    });
+
+    it('opens hosted Go scoring after two passes without creating a rematch gate', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+
+      expect(room.match?.state.phase).toBe('scoring');
+      expect(room.match?.state.result).toBeNull();
+      expect(room.match?.state.scoring?.score.white).toBe(6.5);
+      expect(room.rematch).toBeNull();
+    });
+
+    it('updates hosted Go scoring when a dead group is toggled', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+
+      const board = room.match!.state.board;
+      setCell(board, { x: 0, y: 0 }, 'black');
+      setCell(board, { x: 1, y: 0 }, 'black');
+      setCell(board, { x: 2, y: 0 }, 'black');
+      setCell(board, { x: 0, y: 1 }, 'black');
+      setCell(board, { x: 1, y: 1 }, 'white');
+      setCell(board, { x: 2, y: 1 }, 'black');
+      setCell(board, { x: 0, y: 2 }, 'black');
+      setCell(board, { x: 2, y: 2 }, 'black');
+
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+
+      const scoreBeforeToggle = room.match?.state.scoring?.score.black ?? 0;
+
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'toggle-dead', point: { x: 1, y: 1 } },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('scoring');
+      expect(room.match?.state.scoring?.deadStones).toEqual(['1,1']);
+      expect(room.match?.state.scoring?.score.black ?? 0).toBeGreaterThan(
+        scoreBeforeToggle,
+      );
+    });
+
+    it('creates a rematch gate only after hosted Go scoring is finalized', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'finalize-scoring' },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('finished');
+      expect(room.match?.state.result).toMatchObject({
+        winner: 'white',
+        reason: 'score',
+      });
+      expect(room.rematch).toEqual({
+        participants: {
+          black: host.id,
+          white: guest.id,
+        },
+        responses: {
+          black: 'pending',
+          white: 'pending',
+        },
+      });
     });
   });
 
@@ -353,6 +446,21 @@ function startGomokuMatch(
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+    },
+    dependencies,
+  );
+}
+
+function startGoMatch(
+  room: RoomRecord,
+  dependencies: RoomsMatchTransitionDependencies,
+): void {
+  startMatchWithCurrentSeats(
+    room,
+    {
+      mode: 'go',
+      boardSize: 9,
+      komi: 6.5,
     },
     dependencies,
   );
