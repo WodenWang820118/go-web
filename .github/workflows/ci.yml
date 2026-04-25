@@ -43,6 +43,7 @@ jobs:
           PLAYWRIGHT_FULL_BROWSER_MATRIX: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '1' || '0' }}
           NX_PLAYWRIGHT_FULL_BROWSER_MATRIX: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '1' || '0' }}
       - run: pnpm docker:build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci
         if: always()
