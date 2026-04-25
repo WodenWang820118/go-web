@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnDestroy,
+  effect,
   inject,
   input,
   output,
@@ -45,9 +46,15 @@ import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-
 export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
   protected readonly i18n = inject(GoI18nService);
   private readonly now = signal(Date.now());
-  private readonly clockTimer = setInterval(() => {
-    this.now.set(Date.now());
-  }, 1000);
+  private clockTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly clockTickerEffect = effect(() => {
+    if (this.hasTickingClock()) {
+      this.startClockTimer();
+      return;
+    }
+
+    this.stopClockTimer();
+  });
 
   readonly seats = input.required<readonly OnlineRoomSeatViewModel[]>();
   readonly match = input<HostedMatchSnapshot | null>(null);
@@ -58,7 +65,7 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
   readonly releaseSeatRequested = output<void>();
 
   ngOnDestroy(): void {
-    clearInterval(this.clockTimer);
+    this.stopClockTimer();
   }
 
   protected isActiveSeat(color: PlayerColor): boolean {
@@ -127,6 +134,31 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
       clock.config,
       Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
     );
+  }
+
+  private hasTickingClock(): boolean {
+    const match = this.match();
+
+    return !!match?.clock && match.state.phase === 'playing';
+  }
+
+  private startClockTimer(): void {
+    if (this.clockTimer) {
+      return;
+    }
+
+    this.clockTimer = setInterval(() => {
+      this.now.set(Date.now());
+    }, 1000);
+  }
+
+  private stopClockTimer(): void {
+    if (!this.clockTimer) {
+      return;
+    }
+
+    clearInterval(this.clockTimer);
+    this.clockTimer = null;
   }
 
   private formatClockMs(milliseconds: number): string {
