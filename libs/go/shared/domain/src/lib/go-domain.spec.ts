@@ -53,6 +53,137 @@ describe('GoRulesEngine', () => {
     expect(state.lastMove?.capturedPoints).toEqual([{ x: 1, y: 1 }]);
   });
 
+  it('captures multi-stone groups when the last liberty is filled', () => {
+    const board = createBoard(9);
+
+    for (const point of [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 2, y: 0 },
+      { x: 3, y: 1 },
+      { x: 2, y: 2 },
+    ]) {
+      setCell(board, point, 'black');
+    }
+
+    setCell(board, { x: 1, y: 1 }, 'white');
+    setCell(board, { x: 2, y: 1 }, 'white');
+
+    const state: MatchState = {
+      ...engine.createInitialState(settings),
+      board,
+      nextPlayer: 'black',
+      previousBoardHashes: [boardHash(board)],
+    };
+    const result = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 1, y: 2 },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.captures.black).toBe(2);
+    expect(result.state.board[1][1]).toBeNull();
+    expect(result.state.board[1][2]).toBeNull();
+    expect(result.state.lastMove?.capturedPoints).toHaveLength(2);
+    expect(result.state.lastMove?.capturedPoints).toEqual(
+      expect.arrayContaining([
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+      ]),
+    );
+  });
+
+  it('rejects occupied intersections', () => {
+    let state = engine.createInitialState(settings);
+
+    state = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 4, y: 4 },
+    }).state;
+
+    const result = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 4, y: 4 },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatchObject({
+      key: 'game.error.intersection_occupied',
+    });
+  });
+
+  it('rejects suicide moves that do not capture opposing stones', () => {
+    const board = createBoard(9);
+
+    for (const point of [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 2, y: 1 },
+      { x: 1, y: 2 },
+    ]) {
+      setCell(board, point, 'black');
+    }
+
+    const state: MatchState = {
+      ...engine.createInitialState(settings),
+      board,
+      nextPlayer: 'white',
+      previousBoardHashes: [boardHash(board)],
+    };
+    const result = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 1, y: 1 },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatchObject({
+      key: 'game.go.error.suicide',
+    });
+  });
+
+  it('allows moves with no immediate liberty when they capture adjacent stones', () => {
+    const board = createBoard(9);
+
+    for (const point of [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 2, y: 1 },
+      { x: 1, y: 2 },
+    ]) {
+      setCell(board, point, 'black');
+    }
+
+    for (const point of [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 0, y: 2 },
+      { x: 2, y: 2 },
+      { x: 3, y: 1 },
+      { x: 1, y: 3 },
+    ]) {
+      setCell(board, point, 'white');
+    }
+
+    const state: MatchState = {
+      ...engine.createInitialState(settings),
+      board,
+      nextPlayer: 'white',
+      previousBoardHashes: [boardHash(board)],
+    };
+    const result = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 1, y: 1 },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.captures.white).toBe(4);
+    expect(result.state.board[0][1]).toBeNull();
+    expect(result.state.board[1][0]).toBeNull();
+    expect(result.state.board[1][2]).toBeNull();
+    expect(result.state.board[2][1]).toBeNull();
+    expect(result.state.board[1][1]).toBe('white');
+  });
+
   it('rejects immediate ko recapture', () => {
     const beforeKo = createBoard(9);
     setCell(beforeKo, { x: 1, y: 0 }, 'black');
@@ -83,6 +214,35 @@ describe('GoRulesEngine', () => {
     expect(result.error).toMatchObject({
       key: 'game.go.error.ko_repeat',
     });
+  });
+
+  it('does not enforce positional superko beyond immediate ko', () => {
+    const previousBoard = createBoard(9);
+    setCell(previousBoard, { x: 0, y: 0 }, 'black');
+
+    const unrelatedBoard = createBoard(9);
+    setCell(unrelatedBoard, { x: 8, y: 8 }, 'white');
+
+    const currentBoard = createBoard(9);
+    const state: MatchState = {
+      ...engine.createInitialState(settings),
+      board: currentBoard,
+      nextPlayer: 'black',
+      previousBoardHashes: [
+        boardHash(previousBoard),
+        boardHash(unrelatedBoard),
+        boardHash(currentBoard),
+      ],
+    };
+    const result = engine.applyMove(state, settings, {
+      type: 'place',
+      point: { x: 0, y: 0 },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.previousBoardHashes.at(-1)).toBe(
+      boardHash(previousBoard),
+    );
   });
 
   it('keeps the match playing after a single pass', () => {
