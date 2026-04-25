@@ -280,6 +280,11 @@ const EN_LOCAL_UI = {
   'ui.game_status.scoring_review': 'Scoring review',
   'ui.game_status.turn': '{{player}} to move',
   'ui.game_board.aria_label': '{{mode}} board, {{size}} by {{size}}',
+  'ui.game_board.point.empty': '{{point}}, empty intersection',
+  'ui.game_board.point.stone': '{{point}}, {{player}} stone',
+  'ui.game_board.point.dead': 'marked dead',
+  'ui.game_board.point.last_move': 'last move',
+  'ui.game_board.point.winning': 'winning line',
   'ui.stone_badge.aria': '{{player}} stone',
   'hosted.header.description':
     'Jump between the hosted lobby and room views without leaving the Go frontend.',
