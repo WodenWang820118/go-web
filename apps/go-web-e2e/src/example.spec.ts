@@ -84,6 +84,56 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
   await expect(resultDialog.getByText(/five in a row/i)).toBeVisible();
 });
 
+test('supports keyboard play through the board grid semantics', async ({
+  page,
+}) => {
+  await useEnglish(page);
+
+  await clickLocalLink(page, '/setup/gomoku');
+  await page.getByRole('button', { name: /start local match/i }).click();
+
+  const board = page.getByTestId('game-board');
+  await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute('role', 'grid');
+  await expect(board).toHaveAttribute('tabindex', '0');
+  await expect(board).toHaveAttribute('aria-rowcount', '15');
+  await expect(board).toHaveAttribute('aria-colcount', '15');
+  await expect(board).toHaveAttribute(
+    'aria-activedescendant',
+    'game-board-point-7-7',
+  );
+
+  await board.focus();
+  await board.press('ArrowRight');
+  await expect(board).toHaveAttribute(
+    'aria-activedescendant',
+    'game-board-point-8-7',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'role',
+    'gridcell',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-disabled',
+    'false',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-label',
+    /empty intersection/,
+  );
+
+  await board.press('Enter');
+
+  const selectedPoint = page.locator('#game-board-point-8-7');
+  await expect(selectedPoint).toHaveAttribute('aria-label', /J8/);
+  await expect(selectedPoint).toHaveAttribute('aria-label', /Black stone/);
+  await expect(selectedPoint).toHaveAttribute('aria-disabled', 'true');
+});
+
 test('keeps the desktop lobby pinned to the viewport while the room table scrolls internally', async ({
   page,
 }) => {
