@@ -1,6 +1,8 @@
 import { HostedClockSnapshot } from '@gx/go/contracts';
 import {
+  consumeByoYomiTime,
   createMessage,
+  getByoYomiRemainingMs,
   MatchSettings,
   MatchState,
   otherPlayer,
@@ -52,7 +54,7 @@ export function advanceHostedClock(
   }
 
   const activeColor = clock.activeColor;
-  const activePlayer = consumePlayerTime(
+  const activePlayer = consumeByoYomiTime(
     clock.players[activeColor],
     clock.config,
     elapsedMs,
@@ -70,7 +72,7 @@ export function advanceHostedClock(
   return {
     clock: nextClock,
     timedOutColor:
-      getPlayerRemainingMs(activePlayer, clock.config) <= 0
+      getByoYomiRemainingMs(activePlayer, clock.config) <= 0
         ? activeColor
         : null,
   };
@@ -118,7 +120,7 @@ export function activateHostedClock(
 }
 
 export function getActiveClockRemainingMs(clock: HostedClockSnapshot): number {
-  return getPlayerRemainingMs(clock.players[clock.activeColor], clock.config);
+  return getByoYomiRemainingMs(clock.players[clock.activeColor], clock.config);
 }
 
 export function createTimeoutState(
@@ -150,61 +152,4 @@ function createClockPlayer(config: TimeControlSettings) {
     periodTimeMs: config.periodTimeMs,
     periodsRemaining: config.periods,
   };
-}
-
-function consumePlayerTime(
-  player: ReturnType<typeof createClockPlayer>,
-  config: TimeControlSettings,
-  elapsedMs: number,
-): ReturnType<typeof createClockPlayer> {
-  let remainingElapsedMs = elapsedMs;
-  let mainTimeMs = player.mainTimeMs;
-
-  if (mainTimeMs > 0) {
-    const mainConsumed = Math.min(mainTimeMs, remainingElapsedMs);
-    mainTimeMs -= mainConsumed;
-    remainingElapsedMs -= mainConsumed;
-  }
-
-  if (remainingElapsedMs <= 0) {
-    return {
-      ...player,
-      mainTimeMs,
-    };
-  }
-
-  const totalByoYomiMs =
-    (player.periodsRemaining - 1) * config.periodTimeMs + player.periodTimeMs;
-  const remainingByoYomiMs = totalByoYomiMs - remainingElapsedMs;
-
-  if (remainingByoYomiMs <= 0) {
-    return {
-      mainTimeMs: 0,
-      periodTimeMs: 0,
-      periodsRemaining: 0,
-    };
-  }
-
-  const periodsRemaining = Math.ceil(remainingByoYomiMs / config.periodTimeMs);
-  const periodTimeMs =
-    remainingByoYomiMs - (periodsRemaining - 1) * config.periodTimeMs;
-
-  return {
-    mainTimeMs: 0,
-    periodTimeMs,
-    periodsRemaining,
-  };
-}
-
-function getPlayerRemainingMs(
-  player: ReturnType<typeof createClockPlayer>,
-  config: TimeControlSettings,
-): number {
-  if (player.mainTimeMs > 0) {
-    return player.mainTimeMs;
-  }
-
-  return (
-    (player.periodsRemaining - 1) * config.periodTimeMs + player.periodTimeMs
-  );
 }

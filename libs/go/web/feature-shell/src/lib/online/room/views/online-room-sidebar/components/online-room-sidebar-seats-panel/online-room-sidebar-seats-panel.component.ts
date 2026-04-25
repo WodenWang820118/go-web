@@ -11,7 +11,7 @@ import {
   HostedClockPlayerSnapshot,
   HostedMatchSnapshot,
 } from '@gx/go/contracts';
-import { PlayerColor, TimeControlSettings } from '@gx/go/domain';
+import { consumeByoYomiTime, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-card/online-room-sidebar-seat-card.component';
@@ -122,56 +122,11 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
       return player;
     }
 
-    return this.consumePlayerTime(
+    return consumeByoYomiTime(
       player,
       clock.config,
       Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
     );
-  }
-
-  private consumePlayerTime(
-    player: HostedClockPlayerSnapshot,
-    config: TimeControlSettings,
-    elapsedMs: number,
-  ): HostedClockPlayerSnapshot {
-    let remainingElapsedMs = elapsedMs;
-    let mainTimeMs = player.mainTimeMs;
-
-    if (mainTimeMs > 0) {
-      const mainConsumed = Math.min(mainTimeMs, remainingElapsedMs);
-      mainTimeMs -= mainConsumed;
-      remainingElapsedMs -= mainConsumed;
-    }
-
-    if (remainingElapsedMs <= 0) {
-      return {
-        ...player,
-        mainTimeMs,
-      };
-    }
-
-    const totalByoYomiMs =
-      (player.periodsRemaining - 1) * config.periodTimeMs + player.periodTimeMs;
-    const remainingByoYomiMs = totalByoYomiMs - remainingElapsedMs;
-
-    if (remainingByoYomiMs <= 0) {
-      return {
-        mainTimeMs: 0,
-        periodTimeMs: 0,
-        periodsRemaining: 0,
-      };
-    }
-
-    const periodsRemaining = Math.ceil(
-      remainingByoYomiMs / config.periodTimeMs,
-    );
-
-    return {
-      mainTimeMs: 0,
-      periodTimeMs:
-        remainingByoYomiMs - (periodsRemaining - 1) * config.periodTimeMs,
-      periodsRemaining,
-    };
   }
 
   private formatClockMs(milliseconds: number): string {
