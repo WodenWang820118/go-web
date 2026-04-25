@@ -190,6 +190,61 @@ describe('rooms services composition', () => {
     ).toThrow(ForbiddenException);
   });
 
+  it('preserves hosted match state when a guest reconnects with the same token', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    context.match.claimSeat(host.roomId, guest.participantToken, 'white');
+    context.match.applyGameCommand(host.roomId, host.participantToken, {
+      type: 'place',
+      point: { x: 7, y: 7 },
+    });
+    context.match.applyGameCommand(host.roomId, guest.participantToken, {
+      type: 'place',
+      point: { x: 7, y: 8 },
+    });
+    context.match.applyGameCommand(host.roomId, host.participantToken, {
+      type: 'place',
+      point: { x: 8, y: 7 },
+    });
+    context.lifecycle.connectParticipantSocket(
+      host.roomId,
+      guest.participantToken,
+      'guest-socket-1',
+    );
+    context.lifecycle.disconnectSocket('guest-socket-1');
+
+    const resumed = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      guest.participantToken,
+      'join:test',
+    );
+    const snapshot = context.lifecycle.connectParticipantSocket(
+      host.roomId,
+      resumed.participantToken,
+      'guest-socket-2',
+    );
+
+    expect(resumed.resumed).toBe(true);
+    expect(resumed.participantId).toBe(guest.participantId);
+    expect(snapshot.match?.state.moveHistory).toHaveLength(3);
+    expect(snapshot.match?.state.nextPlayer).toBe('white');
+    expect(snapshot.match?.state.board[7][7]).toBe('black');
+    expect(snapshot.match?.state.board[8][7]).toBe('white');
+    expect(snapshot.match?.state.board[7][8]).toBe('black');
+  });
+
   it('lets the host mute and kick spectators', () => {
     const host = context.lifecycle.createRoom('Host', 'create:test');
     const spectator = context.lifecycle.joinRoom(

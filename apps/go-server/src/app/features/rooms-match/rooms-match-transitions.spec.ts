@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { setCell } from '@gx/go/domain';
+import { boardHash, cloneBoard, createBoard, setCell } from '@gx/go/domain';
 import { vi } from 'vitest';
 import type {
   ParticipantRecord,
@@ -425,6 +425,117 @@ describe('rooms-match-transitions', () => {
           dependencies,
         ),
       ).toThrow(ForbiddenException);
+    });
+
+    it('rejects stale duplicate moves from the same seated player without changing state', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGomokuMatch(room, dependencies);
+      applyHostedGameCommand(
+        room,
+        host,
+        { type: 'place', point: { x: 7, y: 7 } },
+        dependencies,
+      );
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'place', point: { x: 8, y: 8 } },
+          dependencies,
+        ),
+      ).toThrow(ForbiddenException);
+      expect(room.match?.state.moveHistory).toHaveLength(1);
+      expect(room.match?.state.nextPlayer).toBe('white');
+      expect(room.match?.state.board[7][7]).toBe('black');
+      expect(room.match?.state.board[8][8]).toBeNull();
+    });
+
+    it('server-rejects Gomoku pass commands even if a client submits them', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGomokuMatch(room, dependencies);
+
+      expect(() =>
+        applyHostedGameCommand(room, host, { type: 'pass' }, dependencies),
+      ).toThrow(BadRequestException);
+      expect(room.match?.state.moveHistory).toHaveLength(0);
+      expect(room.match?.state.phase).toBe('playing');
+    });
+
+    it('server-rejects illegal Go suicide moves even if a client submits them', () => {
+      const { room, host } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+      const match = room.match;
+
+      if (!match) {
+        throw new Error('Expected a started Go match');
+      }
+
+      setCell(match.state.board, { x: 1, y: 0 }, 'white');
+      setCell(match.state.board, { x: 0, y: 1 }, 'white');
+      setCell(match.state.board, { x: 2, y: 1 }, 'white');
+      setCell(match.state.board, { x: 1, y: 2 }, 'white');
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          host,
+          { type: 'place', point: { x: 1, y: 1 } },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+      expect(room.match?.state.moveHistory).toHaveLength(0);
+      expect(room.match?.state.board[1][1]).toBeNull();
+    });
+
+    it('server-rejects immediate hosted Go ko recaptures', () => {
+      const { room, guest } = createRoomWithSeatedPlayers(store);
+
+      startGoMatch(room, dependencies);
+
+      const beforeKo = createBoard(9);
+      setCell(beforeKo, { x: 1, y: 0 }, 'black');
+      setCell(beforeKo, { x: 2, y: 0 }, 'white');
+      setCell(beforeKo, { x: 0, y: 1 }, 'black');
+      setCell(beforeKo, { x: 1, y: 1 }, 'white');
+      setCell(beforeKo, { x: 3, y: 1 }, 'white');
+      setCell(beforeKo, { x: 1, y: 2 }, 'black');
+      setCell(beforeKo, { x: 2, y: 2 }, 'white');
+
+      const afterKo = cloneBoard(beforeKo);
+      setCell(afterKo, { x: 1, y: 1 }, null);
+      setCell(afterKo, { x: 2, y: 1 }, 'black');
+
+      const match = room.match;
+
+      if (!match) {
+        throw new Error('Expected a started Go match');
+      }
+
+      room.match = {
+        ...match,
+        state: {
+          ...match.state,
+          board: afterKo,
+          nextPlayer: 'white',
+          previousBoardHashes: [boardHash(beforeKo), boardHash(afterKo)],
+        },
+      };
+
+      expect(() =>
+        applyHostedGameCommand(
+          room,
+          guest,
+          { type: 'place', point: { x: 1, y: 1 } },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+      expect(room.match?.state.moveHistory).toHaveLength(0);
+      expect(room.match?.state.board[1][1]).toBeNull();
+      expect(room.match?.state.board[1][2]).toBe('black');
     });
 
     it('rejects resign commands submitted for the opposing seat', () => {
