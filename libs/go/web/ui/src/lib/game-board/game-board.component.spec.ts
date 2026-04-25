@@ -84,6 +84,11 @@ describe('GameBoardComponent', () => {
         .querySelector('#game-board-point-0-0')
         ?.getAttribute('aria-colindex'),
     ).toBe('1');
+    expect(
+      fixture.nativeElement
+        .querySelector('lib-go-board-coordinates')
+        ?.getAttribute('aria-hidden'),
+    ).toBe('true');
 
     wrapper.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
     fixture.detectChanges();
