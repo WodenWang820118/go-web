@@ -38,7 +38,7 @@ describe('rooms-match-clock', () => {
   });
 
   it('consumes main time before byo-yomi periods', () => {
-    const clock = createHostedClock(testSettings(), startedAt)!;
+    const clock = createTestHostedClock();
 
     const advanced = advanceHostedClock(clock, '2026-04-20T00:00:11.000Z');
 
@@ -136,6 +136,16 @@ describe('rooms-match-clock', () => {
         periods: 5,
       },
     };
+  }
+
+  function createTestHostedClock(): HostedClockSnapshot {
+    const clock = createHostedClock(testSettings(), startedAt);
+
+    if (!clock) {
+      throw new Error('Expected test settings to create a hosted clock.');
+    }
+
+    return clock;
   }
 
   function clockInByoYomi(player: {

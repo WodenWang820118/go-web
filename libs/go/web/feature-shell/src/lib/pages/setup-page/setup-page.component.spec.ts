@@ -148,7 +148,6 @@ describe('SetupPageComponent', () => {
   it('does not start a go match before nigiri is resolved', async () => {
     const store = createGameSessionStoreStub();
     const harness = await renderSetup('/setup/go', store);
-    const i18n = TestBed.inject(GoI18nService);
     const root = harness.routeNativeElement as HTMLElement;
     const submitButton = root.querySelector(
       '[data-testid="setup-start-match-button"]',

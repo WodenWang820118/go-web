@@ -238,8 +238,7 @@ describe('rooms-match-transitions', () => {
     });
 
     it('resolves pending nigiri and swaps seats when the guesser wins black', () => {
-      const { room, host } = createRoomWithSeatedPlayers(store);
-      const guest = store.getSeatHolder(room, 'white')!;
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
       room.nigiri = {
         status: 'pending',
@@ -272,8 +271,7 @@ describe('rooms-match-transitions', () => {
     });
 
     it('resolves pending nigiri and keeps seats when the guesser loses', () => {
-      const { room, host } = createRoomWithSeatedPlayers(store);
-      const guest = store.getSeatHolder(room, 'white')!;
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
       room.nigiri = {
         status: 'pending',
@@ -327,8 +325,7 @@ describe('rooms-match-transitions', () => {
     });
 
     it('rejects nigiri guesses when no pending nigiri is active', () => {
-      const { room } = createRoomWithSeatedPlayers(store);
-      const guest = store.getSeatHolder(room, 'white')!;
+      const { room, guest } = createRoomWithSeatedPlayers(store);
 
       expect(() =>
         applyHostedGameCommand(
@@ -360,8 +357,7 @@ describe('rooms-match-transitions', () => {
     });
 
     it('rejects pending nigiri guesses when the server secret is missing', () => {
-      const { room } = createRoomWithSeatedPlayers(store);
-      const guest = store.getSeatHolder(room, 'white')!;
+      const { room, guest } = createRoomWithSeatedPlayers(store);
 
       room.nigiri = {
         status: 'pending',
@@ -381,8 +377,7 @@ describe('rooms-match-transitions', () => {
     });
 
     it('rejects invalid nigiri guess payloads', () => {
-      const { room } = createRoomWithSeatedPlayers(store);
-      const guest = store.getSeatHolder(room, 'white')!;
+      const { room, guest } = createRoomWithSeatedPlayers(store);
 
       room.nigiri = {
         status: 'pending',
@@ -595,7 +590,7 @@ describe('rooms-match-transitions', () => {
               applyMove: () => ({
                 ok: false,
                 error: 'custom error message',
-                state: room.match!.state,
+                state: getHostedMatch(room).state,
               }),
             }) as ReturnType<RoomsRulesEngineService['get']>,
         } as RoomsRulesEngineService,
@@ -679,7 +674,7 @@ describe('rooms-match-transitions', () => {
 
       startGoMatch(room, dependencies);
 
-      const board = room.match!.state.board;
+      const board = getHostedMatch(room).state.board;
       setCell(board, { x: 0, y: 0 }, 'black');
       setCell(board, { x: 1, y: 0 }, 'black');
       setCell(board, { x: 2, y: 0 }, 'black');
@@ -750,16 +745,11 @@ describe('rooms-match-transitions', () => {
     });
 
     it('keeps legacy finalize-scoring as a one-player confirmation only', () => {
-      const { room, host } = createRoomWithSeatedPlayers(store);
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
       startGoMatch(room, dependencies);
       applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
-      applyHostedGameCommand(
-        room,
-        store.getSeatHolder(room, 'white')!,
-        { type: 'pass' },
-        dependencies,
-      );
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
       applyHostedGameCommand(
         room,
         host,
@@ -776,7 +766,7 @@ describe('rooms-match-transitions', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
       startGoMatch(room, dependencies);
-      setCell(room.match!.state.board, { x: 1, y: 1 }, 'white');
+      setCell(getHostedMatch(room).state.board, { x: 1, y: 1 }, 'white');
       applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
       applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
       applyHostedGameCommand(
@@ -1009,6 +999,14 @@ function createRoomWithSeatedPlayers(store: RoomsStore): {
   guest.seat = 'white';
 
   return { room, host, guest };
+}
+
+function getHostedMatch(room: RoomRecord): NonNullable<RoomRecord['match']> {
+  if (!room.match) {
+    throw new Error('Expected room to have an active match.');
+  }
+
+  return room.match;
 }
 
 function addParticipant(

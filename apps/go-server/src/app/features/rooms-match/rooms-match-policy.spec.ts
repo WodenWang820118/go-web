@@ -176,7 +176,11 @@ function assignSeats(store: RoomsStore, room: RoomRecord) {
   const host = store.getParticipantById(room, room.hostParticipantId);
   const guest = [...room.participants.values()].find(
     (participant) => participant.id !== room.hostParticipantId,
-  )!;
+  );
+
+  if (!guest) {
+    throw new Error('Expected room to have a guest participant.');
+  }
 
   host.seat = 'black';
   guest.seat = 'white';

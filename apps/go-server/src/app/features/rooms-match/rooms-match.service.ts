@@ -294,12 +294,11 @@ export class RoomsMatchService {
     this.store.touchRoom(room);
     this.clocks.refresh(room);
 
+    const notice = automaticNotice ?? noticeMessage;
+
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
-      notice:
-        (automaticNotice ?? noticeMessage)
-          ? this.store.createNotice(automaticNotice ?? noticeMessage!)
-          : undefined,
+      notice: notice ? this.store.createNotice(notice) : undefined,
     };
   }
 
