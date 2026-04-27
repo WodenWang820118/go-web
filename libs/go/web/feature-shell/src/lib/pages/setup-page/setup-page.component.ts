@@ -21,7 +21,7 @@ import {
   type MatchSettings,
   type PlayerColor,
 } from '@gx/go/domain';
-import { GoAnalyticsService } from '@gx/go/state';
+import { buildGoAnalyticsLevelName, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { map } from 'rxjs';
@@ -232,8 +232,13 @@ export class SetupPageComponent {
     this.store.startMatch(settings);
     this.analytics.track({
       board_size: settings.boardSize,
-      event: 'gx_match_start',
+      event: 'level_start',
       game_mode: settings.mode,
+      level_name: buildGoAnalyticsLevelName(
+        'local',
+        settings.mode,
+        settings.boardSize,
+      ),
       play_context: 'local',
       start_source: 'setup',
     });
@@ -261,6 +266,12 @@ export class SetupPageComponent {
       guess,
       parity,
       assignedBlack,
+    });
+    this.analytics.track({
+      action_type: 'nigiri_guess',
+      event: 'gx_match_action',
+      game_mode: 'go',
+      play_context: 'local',
     });
   }
 }

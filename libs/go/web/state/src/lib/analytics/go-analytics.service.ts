@@ -6,9 +6,24 @@ import { GO_ANALYTICS_CONFIG } from './go-analytics-config.token';
 import { GoAnalyticsConsentService } from './go-analytics-consent.service';
 import {
   GoAnalyticsEvent,
+  GoAnalyticsEventSchema,
   GoAnalyticsPageViewEvent,
+  GoAnalyticsPlayContext,
+  GoAnalyticsSerializedEvent,
   GoDataLayerEntry,
 } from './go-analytics.types';
+
+const FORBIDDEN_ANALYTICS_KEYS = new Set([
+  'displayName',
+  'error',
+  'message',
+  'participantId',
+  'participantToken',
+  'roomId',
+  'shareUrl',
+  'token',
+  'url',
+]);
 
 @Injectable({ providedIn: 'root' })
 export class GoAnalyticsService {
@@ -44,8 +59,13 @@ export class GoAnalyticsService {
       return;
     }
 
+    const serializedEvent = serializeGoAnalyticsEvent(
+      event,
+      this.config.eventSchema ?? 'ga4',
+    );
+
     this.ensureTagManagerLoaded();
-    this.dataLayer().push(event);
+    this.dataLayer().push(sanitizeGoAnalyticsEvent(serializedEvent));
   }
 
   trackOnce(key: string, event: GoAnalyticsEvent): void {
@@ -154,7 +174,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (segments.length === 0) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       page_path_normalized: '/',
       route_group: 'lobby',
       play_context: 'hosted',
@@ -163,7 +183,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'setup' && isTrackedGameMode(second)) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       game_mode: second,
       page_path_normalized: `/setup/${second}`,
       route_group: 'setup',
@@ -172,7 +192,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'play' && isTrackedGameMode(second)) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       game_mode: second,
       page_path_normalized: `/play/${second}`,
       play_context: 'local',
@@ -182,7 +202,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'online' && second === 'room' && third) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       page_path_normalized: '/online/room/:roomId',
       play_context: 'hosted',
       route_group: 'online_room',
@@ -190,10 +210,71 @@ export function buildGoAnalyticsPageViewEvent(
   }
 
   return {
-    event: 'gx_page_view',
+    event: 'page_view',
     page_path_normalized: path,
     route_group: 'unknown',
   };
+}
+
+export function buildGoAnalyticsLevelName(
+  playContext: GoAnalyticsPlayContext,
+  gameMode: 'go' | 'gomoku',
+  boardSize: number,
+): string {
+  return `${playContext}_${gameMode}_${boardSize}`;
+}
+
+export function serializeGoAnalyticsEvent(
+  event: GoAnalyticsEvent,
+  eventSchema: GoAnalyticsEventSchema = 'ga4',
+): GoAnalyticsSerializedEvent {
+  if (eventSchema !== 'legacy') {
+    return event;
+  }
+
+  if (event.event === 'page_view') {
+    return {
+      ...event,
+      event: 'gx_page_view',
+    };
+  }
+
+  if (event.event === 'level_start') {
+    const { level_name: _levelName, ...legacyEvent } = event;
+    return {
+      ...legacyEvent,
+      event: 'gx_match_start',
+    };
+  }
+
+  if (event.event === 'level_end') {
+    const { level_name: _levelName, success: _success, ...legacyEvent } = event;
+    return {
+      ...legacyEvent,
+      event: 'gx_match_end',
+    };
+  }
+
+  if (event.event === 'join_group') {
+    return {
+      event: 'gx_room_join',
+      join_source: event.join_source,
+    };
+  }
+
+  return event;
+}
+
+function sanitizeGoAnalyticsEvent(
+  event: GoAnalyticsSerializedEvent,
+): GoAnalyticsSerializedEvent {
+  const sanitizedEvent = { ...event } as Record<string, unknown>;
+
+  for (const key of FORBIDDEN_ANALYTICS_KEYS) {
+    delete sanitizedEvent[key];
+  }
+
+  return sanitizedEvent as unknown as GoAnalyticsSerializedEvent;
 }
 
 function normalizePath(url: string): string {

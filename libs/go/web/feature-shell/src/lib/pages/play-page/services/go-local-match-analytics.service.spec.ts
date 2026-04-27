@@ -87,11 +87,13 @@ describe('GoLocalMatchAnalyticsService', () => {
       },
       {
         board_size: 19,
-        event: 'gx_match_end',
+        event: 'level_end',
         game_mode: 'go',
+        level_name: 'local_go_19',
         move_count: 2,
         play_context: 'local',
         result_reason: 'score',
+        success: true,
         winner: 'black',
       },
     ]);

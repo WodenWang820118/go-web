@@ -25,6 +25,7 @@
           (activeStatusChange)="setActiveStatus($event)"
           (createRoomRequested)="openCreateRoomDialog()"
           (joinRoomRequested)="joinRoom($event)"
+          (roomOpenRequested)="trackRoomOpen($event)"
         />
 
         <div
@@ -59,6 +60,7 @@
           (activeStatusChange)="setActiveStatus($event)"
           (createRoomRequested)="openCreateRoomDialog()"
           (joinRoomRequested)="joinRoom($event)"
+          (roomOpenRequested)="trackRoomOpen($event)"
         />
         <lib-go-online-lobby-announcement-panel [cards]="announcementCards()" />
         <lib-go-online-lobby-online-players-panel

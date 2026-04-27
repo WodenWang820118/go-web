@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  output,
+} from '@angular/core';
 import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
 
 @Component({
@@ -19,7 +24,7 @@ import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
           [class.text-slate-950]="i18n.isActiveLocale(locale)"
           [class.text-stone-200]="!i18n.isActiveLocale(locale)"
           [class.hover:bg-white/10]="!i18n.isActiveLocale(locale)"
-          (click)="i18n.setLocale(locale)"
+          (click)="selectLocale(locale)"
         >
           {{ i18n.localeOptionLabel(locale) }}
         </button>
@@ -31,4 +36,21 @@ import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
 export class GoLocaleSwitcherComponent {
   protected readonly i18n = inject(GoI18nService);
   protected readonly locales: GoLocale[] = ['zh-TW', 'en'];
+  readonly localeChangeRequested = output<{
+    locale: GoLocale;
+    targetLocale: GoLocale;
+  }>();
+
+  protected selectLocale(targetLocale: GoLocale): void {
+    const locale = this.i18n.locale();
+
+    if (locale !== targetLocale) {
+      this.localeChangeRequested.emit({
+        locale,
+        targetLocale,
+      });
+    }
+
+    this.i18n.setLocale(targetLocale);
+  }
 }

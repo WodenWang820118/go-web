@@ -15,6 +15,7 @@ import {
   type BoardPoint,
   type PlayerColor,
 } from '@gx/go/domain';
+import { GoAnalyticsMatchActionType, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import {
@@ -69,6 +70,7 @@ export class PlayPageComponent {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly analytics = inject(GoAnalyticsService);
   private readonly localMatchAnalytics = inject(GoLocalMatchAnalyticsService);
 
   protected readonly mode = toSignal(
@@ -128,35 +130,47 @@ export class PlayPageComponent {
   }
 
   protected passTurn(): void {
-    this.reportAction(this.store.passTurn(), 'play.toast.pass_unavailable');
+    const error = this.store.passTurn();
+    if (!error) {
+      this.trackLocalMatchAction('pass');
+    }
+
+    this.reportAction(error, 'play.toast.pass_unavailable');
   }
 
   protected confirmScoring(player: PlayerColor): void {
-    this.reportAction(
-      this.store.confirmScoring(player),
-      'play.toast.scoring_unavailable',
-    );
+    const error = this.store.confirmScoring(player);
+    if (!error) {
+      this.trackLocalMatchAction('confirm_scoring');
+    }
+
+    this.reportAction(error, 'play.toast.scoring_unavailable');
   }
 
   protected disputeScoring(player: PlayerColor): void {
-    this.reportAction(
-      this.store.disputeScoring(player),
-      'play.toast.scoring_unavailable',
-    );
+    const error = this.store.disputeScoring(player);
+    if (!error) {
+      this.trackLocalMatchAction('dispute_scoring');
+    }
+
+    this.reportAction(error, 'play.toast.scoring_unavailable');
   }
 
   protected resignMatch(): void {
     this.openConfirmation('resign', () => {
-      this.reportAction(
-        this.store.resign(),
-        'play.toast.resignation_unavailable',
-      );
+      const error = this.store.resign();
+      if (!error) {
+        this.trackLocalMatchAction('resign');
+      }
+
+      this.reportAction(error, 'play.toast.resignation_unavailable');
     });
   }
 
   protected restartMatch(): void {
     this.openConfirmation('restart', () => {
       if (this.store.restartMatch()) {
+        this.trackLocalMatchAction('restart');
         this.resultVisible.set(false);
         this.setBanner(
           'success',
@@ -171,6 +185,7 @@ export class PlayPageComponent {
     const mode = this.mode();
 
     this.openConfirmation('newSetup', async () => {
+      this.trackLocalMatchAction('new_setup');
       this.store.clearMatch();
       this.resultVisible.set(false);
       await this.router.navigate(['/setup', mode ?? 'go']);
@@ -244,6 +259,15 @@ export class PlayPageComponent {
       tone,
       summary,
       detail,
+    });
+  }
+
+  private trackLocalMatchAction(actionType: GoAnalyticsMatchActionType): void {
+    this.analytics.track({
+      action_type: actionType,
+      event: 'gx_match_action',
+      game_mode: this.settings()?.mode ?? this.mode() ?? undefined,
+      play_context: 'local',
     });
   }
 }

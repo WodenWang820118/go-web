@@ -6,9 +6,12 @@ import { Injector } from '@angular/core';
 import { GO_ANALYTICS_CONFIG } from './go-analytics-config.token';
 import { GoAnalyticsConsentService } from './go-analytics-consent.service';
 import {
+  buildGoAnalyticsLevelName,
   buildGoAnalyticsPageViewEvent,
   GoAnalyticsService,
+  serializeGoAnalyticsEvent,
 } from './go-analytics.service';
+import { GoAnalyticsEvent } from './go-analytics.types';
 
 describe('GoAnalyticsService', () => {
   let consent: GoAnalyticsConsentService;
@@ -53,7 +56,8 @@ describe('GoAnalyticsService', () => {
 
   it('does not push events or load GTM before analytics consent is granted', () => {
     service.track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
 
@@ -65,50 +69,52 @@ describe('GoAnalyticsService', () => {
     consent.accept();
 
     service.track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
     service.track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'lobby',
     });
 
     expect(
       document.querySelectorAll('script[id^="gx-gtm-script-"]'),
     ).toHaveLength(1);
-    expect(window.dataLayer).toEqual(
-      expect.arrayContaining([
-        [
-          'consent',
-          'default',
-          {
-            ad_personalization: 'denied',
-            ad_storage: 'denied',
-            ad_user_data: 'denied',
-            analytics_storage: 'denied',
-          },
-        ],
-        [
-          'consent',
-          'update',
-          {
-            ad_personalization: 'denied',
-            ad_storage: 'denied',
-            ad_user_data: 'denied',
-            analytics_storage: 'granted',
-          },
-        ],
-        expect.objectContaining({ event: 'gtm.js' }),
+    expect(window.dataLayer?.slice(0, 5)).toEqual([
+      [
+        'consent',
+        'default',
         {
-          event: 'gx_room_join',
-          join_source: 'direct_room',
+          ad_personalization: 'denied',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          analytics_storage: 'denied',
         },
+      ],
+      [
+        'consent',
+        'update',
         {
-          event: 'gx_room_join',
-          join_source: 'lobby',
+          ad_personalization: 'denied',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          analytics_storage: 'granted',
         },
-      ]),
-    );
+      ],
+      expect.objectContaining({ event: 'gtm.js' }),
+      {
+        event: 'join_group',
+        group_id: 'online_room',
+        join_source: 'direct_room',
+      },
+      {
+        event: 'join_group',
+        group_id: 'online_room',
+        join_source: 'lobby',
+      },
+    ]);
   });
 
   it('honors pre-seeded granted consent at service creation time', () => {
@@ -137,12 +143,14 @@ describe('GoAnalyticsService', () => {
     });
 
     injector.get(GoAnalyticsService).track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
 
     expect(window.dataLayer).toContainEqual({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
   });
@@ -151,7 +159,8 @@ describe('GoAnalyticsService', () => {
     consent.decline();
 
     service.track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
 
@@ -167,10 +176,10 @@ describe('GoAnalyticsService', () => {
     service.trackPageView('/play/go');
 
     expect(
-      window.dataLayer?.filter((entry) => entry.event === 'gx_page_view'),
+      window.dataLayer?.filter((entry) => entry.event === 'page_view'),
     ).toEqual([
       {
-        event: 'gx_page_view',
+        event: 'page_view',
         game_mode: 'go',
         page_path_normalized: '/play/go',
         play_context: 'local',
@@ -211,13 +220,31 @@ describe('GoAnalyticsService', () => {
     expect(
       buildGoAnalyticsPageViewEvent('/online/room/ROOM42?invite=abc'),
     ).toEqual({
-      event: 'gx_page_view',
+      event: 'page_view',
       page_path_normalized: '/online/room/:roomId',
       play_context: 'hosted',
       route_group: 'online_room',
     });
+    expect(buildGoAnalyticsPageViewEvent('/')).toEqual({
+      event: 'page_view',
+      page_path_normalized: '/',
+      play_context: 'hosted',
+      route_group: 'lobby',
+    });
+    expect(buildGoAnalyticsPageViewEvent('/setup/go')).toEqual({
+      event: 'page_view',
+      game_mode: 'go',
+      page_path_normalized: '/setup/go',
+      route_group: 'setup',
+    });
+    expect(buildGoAnalyticsPageViewEvent('/setup/gomoku')).toEqual({
+      event: 'page_view',
+      game_mode: 'gomoku',
+      page_path_normalized: '/setup/gomoku',
+      route_group: 'setup',
+    });
     expect(buildGoAnalyticsPageViewEvent('/play/gomoku')).toEqual({
-      event: 'gx_page_view',
+      event: 'page_view',
       game_mode: 'gomoku',
       page_path_normalized: '/play/gomoku',
       play_context: 'local',
@@ -249,14 +276,118 @@ describe('GoAnalyticsService', () => {
 
     consent.accept();
     service.track({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
     });
 
     expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
     expect(window.dataLayer).toContainEqual({
-      event: 'gx_room_join',
+      event: 'join_group',
+      group_id: 'online_room',
       join_source: 'direct_room',
+    });
+  });
+
+  it('serializes rollback schema events without dual emitting', () => {
+    expect(
+      serializeGoAnalyticsEvent(
+        {
+          board_size: 19,
+          event: 'level_start',
+          game_mode: 'go',
+          level_name: 'local_go_19',
+          play_context: 'local',
+          start_source: 'setup',
+        },
+        'legacy',
+      ),
+    ).toEqual({
+      board_size: 19,
+      event: 'gx_match_start',
+      game_mode: 'go',
+      play_context: 'local',
+      start_source: 'setup',
+    });
+
+    expect(
+      serializeGoAnalyticsEvent(
+        {
+          event: 'join_group',
+          group_id: 'online_room',
+          join_source: 'lobby',
+        },
+        'legacy',
+      ),
+    ).toEqual({
+      event: 'gx_room_join',
+      join_source: 'lobby',
+    });
+
+    expect(
+      serializeGoAnalyticsEvent(
+        {
+          board_size: 19,
+          event: 'level_end',
+          game_mode: 'go',
+          level_name: 'local_go_19',
+          move_count: 12,
+          play_context: 'local',
+          result_reason: 'score',
+          success: true,
+          winner: 'black',
+        },
+        'legacy',
+      ),
+    ).toEqual({
+      board_size: 19,
+      event: 'gx_match_end',
+      game_mode: 'go',
+      move_count: 12,
+      play_context: 'local',
+      result_reason: 'score',
+      winner: 'black',
+    });
+
+    expect(
+      serializeGoAnalyticsEvent(
+        {
+          event: 'page_view',
+          page_path_normalized: '/setup/go',
+          route_group: 'setup',
+          game_mode: 'go',
+        },
+        'legacy',
+      ),
+    ).toEqual({
+      event: 'gx_page_view',
+      page_path_normalized: '/setup/go',
+      route_group: 'setup',
+      game_mode: 'go',
+    });
+  });
+
+  it('builds consistent level names and strips forbidden custom keys', () => {
+    consent.accept();
+
+    expect(buildGoAnalyticsLevelName('hosted', 'gomoku', 15)).toBe(
+      'hosted_gomoku_15',
+    );
+
+    service.track({
+      event: 'share',
+      method: 'copy_link',
+      content_type: 'online_room',
+      item_id: 'hosted_room_invite',
+      roomId: 'ROOM42',
+      shareUrl: 'http://localhost/online/room/ROOM42',
+    } as GoAnalyticsEvent);
+
+    expect(window.dataLayer).toContainEqual({
+      event: 'share',
+      method: 'copy_link',
+      content_type: 'online_room',
+      item_id: 'hosted_room_invite',
     });
   });
 });

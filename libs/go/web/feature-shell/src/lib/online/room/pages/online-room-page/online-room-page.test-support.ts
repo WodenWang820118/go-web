@@ -15,6 +15,7 @@ import {
   createSeatedParticipants,
 } from '@gx/go/contracts/testing';
 import { createBoard, createMessage } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { provideGoPrimeNGTheme } from '@gx/go/ui';
 import { Base } from 'primeng/base';
 import { Dialog } from 'primeng/dialog';
@@ -44,6 +45,11 @@ type RoomClosedState = {
 type StubSignal<T> = ReturnType<typeof signal<T>>;
 type StubMock = ReturnType<typeof vi.fn>;
 
+export interface RoomAnalyticsStub {
+  track: StubMock;
+  trackOnce: StubMock;
+}
+
 export interface RoomServiceStub {
   snapshot: StubSignal<RoomSnapshot | null>;
   connectionState: StubSignal<RoomConnectionState>;
@@ -59,6 +65,7 @@ export interface RoomServiceStub {
 export async function renderOnlineRoomPage(
   roomService: RoomServiceStub,
   options?: {
+    analytics?: RoomAnalyticsStub;
     roomsApi?: Partial<OnlineRoomsHttpService>;
   },
 ) {
@@ -90,6 +97,10 @@ export async function renderOnlineRoomPage(
           ...options?.roomsApi,
         },
       },
+      {
+        provide: GoAnalyticsService,
+        useValue: options?.analytics ?? createRoomAnalyticsStub(),
+      },
     ],
   });
 
@@ -97,6 +108,13 @@ export async function renderOnlineRoomPage(
   await harness.navigateByUrl('/online/room/ROOM42', OnlineRoomPageComponent);
 
   return harness;
+}
+
+export function createRoomAnalyticsStub(): RoomAnalyticsStub {
+  return {
+    track: vi.fn(),
+    trackOnce: vi.fn(),
+  };
 }
 
 export function queryDialog(testId: string): HTMLElement | null {

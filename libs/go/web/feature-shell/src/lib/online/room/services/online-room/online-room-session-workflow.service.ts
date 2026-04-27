@@ -7,7 +7,12 @@ import {
   RoomClosedEvent,
 } from '@gx/go/contracts';
 import { BoardSize, GameMode } from '@gx/go/domain';
-import { GoAnalyticsJoinSource, GoAnalyticsService } from '@gx/go/state';
+import {
+  buildGoAnalyticsLevelName,
+  GoAnalyticsErrorType,
+  GoAnalyticsJoinSource,
+  GoAnalyticsService,
+} from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
   EMPTY,
@@ -123,6 +128,11 @@ export class OnlineRoomSessionWorkflowService {
     return defer(() => {
       this.state.setCreating(true);
       this.state.setLastError(null);
+      this.analytics.track({
+        board_size: boardSize,
+        event: 'gx_room_create_intent',
+        game_mode: mode,
+      });
 
       return this.api.createRoom(displayName, mode, boardSize).pipe(
         tap((response) => {
@@ -134,13 +144,20 @@ export class OnlineRoomSessionWorkflowService {
           });
           this.analytics.track({
             board_size: boardSize,
-            event: 'gx_match_start',
+            event: 'level_start',
             game_mode: mode,
+            level_name: buildGoAnalyticsLevelName('hosted', mode, boardSize),
             play_context: 'hosted',
             start_source: 'room_create',
           });
         }),
         catchError((error) => {
+          this.analytics.track({
+            board_size: boardSize,
+            error_type: describeAnalyticsError(error),
+            event: 'gx_room_create_error',
+            game_mode: mode,
+          });
           this.state.setLastError(
             this.api.describeHttpError(
               error,
@@ -172,6 +189,10 @@ export class OnlineRoomSessionWorkflowService {
         this.state.snapshot(),
         stored,
       );
+      this.analytics.track({
+        event: 'gx_room_join_intent',
+        join_source: joinSource,
+      });
 
       return this.api
         .joinRoom(
@@ -187,12 +208,18 @@ export class OnlineRoomSessionWorkflowService {
               response,
             );
             this.analytics.track({
-              event: 'gx_room_join',
+              event: 'join_group',
+              group_id: 'online_room',
               join_source: joinSource,
             });
           }),
           map(() => void 0),
           catchError((error) => {
+            this.analytics.track({
+              error_type: describeAnalyticsError(error),
+              event: 'gx_room_join_error',
+              join_source: joinSource,
+            });
             this.state.setLastError(
               this.api.describeHttpError(
                 error,
@@ -318,4 +345,18 @@ export class OnlineRoomSessionWorkflowService {
 
     return session;
   }
+}
+
+function describeAnalyticsError(error: unknown): GoAnalyticsErrorType {
+  if (error instanceof HttpErrorResponse) {
+    if (error.status === 404) {
+      return 'not_found';
+    }
+
+    if (error.status === 0) {
+      return 'network';
+    }
+  }
+
+  return 'unexpected';
 }

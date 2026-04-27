@@ -13,6 +13,7 @@ import {
   createLobbyRoomSummary,
   createRoomSnapshot,
 } from '@gx/go/contracts/testing';
+import { GoAnalyticsService } from '@gx/go/state';
 import { provideGoPrimeNGTheme } from '@gx/go/ui';
 import { Observable, of } from 'rxjs';
 import { vi } from 'vitest';
@@ -55,6 +56,10 @@ export interface RoomServiceStub {
   joinRoom: StubMock;
 }
 
+export interface AnalyticsStub {
+  track: StubMock;
+}
+
 /**
  * Renders the lobby route with reusable service stubs and viewport-aware media queries.
  */
@@ -62,6 +67,7 @@ export async function renderLobby(
   lobbyService: LobbyServiceStub,
   roomService: RoomServiceStub,
   viewport: 'desktop' | 'mobile' = 'desktop',
+  analytics: AnalyticsStub = createAnalyticsStub(),
 ) {
   stubMatchMedia(viewport === 'desktop');
   TestBed.configureTestingModule({
@@ -89,6 +95,10 @@ export async function renderLobby(
         provide: OnlineRoomService,
         useValue: roomService,
       },
+      {
+        provide: GoAnalyticsService,
+        useValue: analytics,
+      },
     ],
   });
 
@@ -97,6 +107,12 @@ export async function renderLobby(
   await harness.fixture.whenStable();
 
   return harness;
+}
+
+export function createAnalyticsStub(): AnalyticsStub {
+  return {
+    track: vi.fn(),
+  };
 }
 
 /**

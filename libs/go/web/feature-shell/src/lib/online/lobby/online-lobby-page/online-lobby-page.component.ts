@@ -18,6 +18,7 @@ import {
   GameMode,
   GoBoardSize,
 } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { DialogModule } from 'primeng/dialog';
 import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
@@ -56,6 +57,7 @@ export class OnlineLobbyPageComponent {
   protected readonly onlineRoom = inject(OnlineRoomService);
   protected readonly flashNotice = inject(OnlineLobbyFlashNoticeService);
   protected readonly presentation = inject(OnlineLobbyPresentationService);
+  private readonly analytics = inject(GoAnalyticsService);
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -198,6 +200,14 @@ export class OnlineLobbyPageComponent {
   }
 
   protected setActiveStatus(status: LobbyRoomStatus): void {
+    if (this.activeStatusSignal() === status) {
+      return;
+    }
+
+    this.analytics.track({
+      event: 'gx_lobby_filter_change',
+      room_status: status,
+    });
     this.activeStatusSignal.set(status);
   }
 
@@ -246,6 +256,12 @@ export class OnlineLobbyPageComponent {
       return;
     }
 
+    this.analytics.track({
+      event: 'select_content',
+      content_type: 'online_room',
+      content_id: 'room_join',
+      room_status: room.status,
+    });
     this.onlineRoom
       .joinRoom(room.roomId, displayName, 'lobby')
       .pipe(
@@ -256,6 +272,15 @@ export class OnlineLobbyPageComponent {
         take(1),
       )
       .subscribe();
+  }
+
+  protected trackRoomOpen(room: LobbyRoomSummary): void {
+    this.analytics.track({
+      event: 'select_content',
+      content_type: 'online_room',
+      content_id: 'room_open',
+      room_status: room.status,
+    });
   }
 
   private bindViewportMode(): void {

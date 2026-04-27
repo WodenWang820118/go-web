@@ -78,6 +78,7 @@
                       class="inline-flex max-w-full items-center font-semibold text-stone-50 transition hover:text-amber-200"
                       [attr.data-testid]="'online-lobby-open-' + row.roomId"
                       [routerLink]="['/online/room', row.roomId]"
+                      (click)="onOpenRoomRequested(row.room)"
                     >
                       <span class="truncate">{{ row.roomLabel }}</span>
                     </a>
@@ -156,6 +157,7 @@
                   class="inline-flex max-w-full items-center font-semibold text-stone-50 transition hover:text-amber-200"
                   [attr.data-testid]="'online-lobby-mobile-open-' + row.roomId"
                   [routerLink]="['/online/room', row.roomId]"
+                  (click)="onOpenRoomRequested(row.room)"
                 >
                   <span class="truncate">{{ row.roomLabel }}</span>
                 </a>
@@ -226,6 +228,7 @@
               <a
                 class="inline-flex items-center justify-center rounded-sm border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
                 [routerLink]="['/online/room', row.roomId]"
+                (click)="onOpenRoomRequested(row.room)"
               >
                 {{ i18n.t('lobby.room.open_room') }}
               </a>

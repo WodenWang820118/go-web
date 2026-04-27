@@ -80,6 +80,14 @@ describe('GoHostedMatchAnalyticsService', () => {
     TestBed.flushEffects();
     TestBed.flushEffects();
 
+    match.set(
+      createMatch({
+        startedAt: '2026-04-24T00:10:00.000Z',
+      }),
+    );
+    TestBed.flushEffects();
+    TestBed.flushEffects();
+
     expect(trackedEvents).toEqual([
       {
         board_size: 15,
@@ -89,12 +97,22 @@ describe('GoHostedMatchAnalyticsService', () => {
       },
       {
         board_size: 15,
-        event: 'gx_match_end',
+        event: 'level_end',
         game_mode: 'gomoku',
+        level_name: 'hosted_gomoku_15',
         move_count: 2,
         play_context: 'hosted',
         result_reason: 'resign',
+        success: true,
         winner: 'black',
+      },
+      {
+        board_size: 15,
+        event: 'level_start',
+        game_mode: 'gomoku',
+        level_name: 'hosted_gomoku_15',
+        play_context: 'hosted',
+        start_source: 'rematch',
       },
     ]);
   });

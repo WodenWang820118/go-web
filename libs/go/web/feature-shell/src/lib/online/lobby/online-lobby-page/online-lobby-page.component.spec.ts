@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 import { OnlineLobbyFlashNoticeService } from '../services/online-lobby-flash-notice/online-lobby-flash-notice.service';
 import {
   createLobbyRoom,
+  createAnalyticsStub,
   createLobbyServiceStub,
   createLobbySnapshot,
   createOnlineParticipant,
@@ -288,6 +289,72 @@ describe('OnlineLobbyPageComponent', () => {
     expect(router.url).toBe('/online/room/READY7');
   });
 
+  it('tracks safe lobby filter, room open, and join content events', async () => {
+    const analytics = createAnalyticsStub();
+    const lobbyService = createLobbyServiceStub(
+      [
+        createLobbyRoom({ roomId: 'LIVE42', status: 'live' }),
+        createLobbyRoom({
+          roomId: 'READY7',
+          hostDisplayName: 'Ready Host',
+          status: 'ready',
+        }),
+      ],
+      [],
+    );
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(
+      lobbyService,
+      roomService,
+      'desktop',
+      analytics,
+    );
+    const root = harness.routeNativeElement as HTMLElement;
+    const readyTab = root.querySelector(
+      '[data-testid="lobby-tab-ready"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    readyTab.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+
+    const openLink = root.querySelector(
+      '[data-testid="online-lobby-open-READY7"]',
+    ) as HTMLAnchorElement;
+    const joinButton = root.querySelector(
+      '[data-testid="online-lobby-row-action-READY7"]',
+    ) as HTMLButtonElement;
+
+    openLink.addEventListener('click', (event) => event.preventDefault(), {
+      capture: true,
+      once: true,
+    });
+    openLink.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+    joinButton.click();
+    await harness.fixture.whenStable();
+
+    expect(analytics.track).toHaveBeenCalledWith({
+      event: 'gx_lobby_filter_change',
+      room_status: 'ready',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_id: 'room_open',
+      content_type: 'online_room',
+      event: 'select_content',
+      room_status: 'ready',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_id: 'room_join',
+      content_type: 'online_room',
+      event: 'select_content',
+      room_status: 'ready',
+    });
+  });
+
   it('renders online players grouped by activity with room and role badges', async () => {
     const lobbyService = createLobbyServiceStub(
       [createLobbyRoom({ roomId: 'LIVE42', status: 'live' })],
@@ -483,10 +550,16 @@ describe('OnlineLobbyPageComponent', () => {
   });
 
   it('keeps the locale switcher beside local actions without the lobby label', async () => {
+    const analytics = createAnalyticsStub();
     const lobbyService = createLobbyServiceStub([], []);
     const roomService = createRoomServiceStub();
 
-    const harness = await renderLobby(lobbyService, roomService);
+    const harness = await renderLobby(
+      lobbyService,
+      roomService,
+      'desktop',
+      analytics,
+    );
     const router = TestBed.inject(Router);
     const i18n = TestBed.inject(GoI18nService);
     const root = harness.routeNativeElement as HTMLElement;
@@ -496,6 +569,9 @@ describe('OnlineLobbyPageComponent', () => {
     const localeSwitcherHost = actions.lastElementChild as HTMLElement;
     const goLink = root.querySelector(
       'a[href="/setup/go"]',
+    ) as HTMLAnchorElement;
+    const gomokuLink = root.querySelector(
+      'a[href="/setup/gomoku"]',
     ) as HTMLAnchorElement;
 
     expect(
@@ -513,10 +589,63 @@ describe('OnlineLobbyPageComponent', () => {
       localeSwitcherHost.querySelector('[data-testid="locale-switcher"]'),
     ).not.toBeNull();
 
+    gomokuLink.addEventListener('click', (event) => event.preventDefault(), {
+      capture: true,
+      once: true,
+    });
+    gomokuLink.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
     goLink.click();
     await harness.fixture.whenStable();
 
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_id: 'gomoku',
+      content_type: 'local_mode',
+      event: 'select_content',
+      game_mode: 'gomoku',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_id: 'go',
+      content_type: 'local_mode',
+      event: 'select_content',
+      game_mode: 'go',
+    });
     expect(router.url).toBe('/setup/go');
+  });
+
+  it('tracks locale changes without locale switch duplicates', async () => {
+    const analytics = createAnalyticsStub();
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(
+      lobbyService,
+      roomService,
+      'desktop',
+      analytics,
+    );
+    TestBed.inject(GoI18nService).setLocale('zh-TW');
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    const root = harness.routeNativeElement as HTMLElement;
+    const currentLocaleButton = root.querySelector(
+      '[data-testid="locale-option-zh-TW"]',
+    ) as HTMLButtonElement;
+    const englishLocaleButton = root.querySelector(
+      '[data-testid="locale-option-en"]',
+    ) as HTMLButtonElement;
+
+    currentLocaleButton.click();
+    englishLocaleButton.click();
+    await harness.fixture.whenStable();
+
+    expect(analytics.track).toHaveBeenCalledTimes(1);
+    expect(analytics.track).toHaveBeenCalledWith({
+      event: 'gx_locale_change',
+      locale: 'zh-TW',
+      target_locale: 'en',
+    });
   });
 });
 
