@@ -3,6 +3,13 @@ import {
   ForbiddenException,
   HttpException,
 } from '@nestjs/common';
+import {
+  DEFAULT_HOSTED_BYO_YOMI,
+  GO_AREA_AGREEMENT_RULESET,
+  GO_DIGITAL_NIGIRI_OPENING,
+  GOMOKU_FREE_OPENING,
+  GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+} from '@gx/go/domain';
 import { vi } from 'vitest';
 
 import {
@@ -46,10 +53,111 @@ describe('rooms services composition', () => {
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+      ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+      openingRule: GOMOKU_FREE_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
     expect(started.snapshot.match?.state.phase).toBe('playing');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');
     expect(started.snapshot.match?.settings.players.white).toBe('Guest');
+  });
+
+  it('resolves hosted Go nigiri before starting with assigned colors', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    const pending = context.match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white',
+    );
+    const room = context.store.getRoomRecord(host.roomId);
+
+    expect(pending.snapshot.match).toBeNull();
+    expect(pending.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(pending.snapshot.nextMatchSettings).toMatchObject({
+      mode: 'go',
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+    });
+
+    room.nigiriSecret = {
+      parity: 'odd',
+      nonce: 'nonce',
+    };
+    const started = context.match.applyGameCommand(
+      host.roomId,
+      guest.participantToken,
+      { type: 'nigiri-guess', guess: 'odd' },
+    );
+
+    expect(started.snapshot.nigiri).toMatchObject({
+      status: 'resolved',
+      guesser: 'white',
+      guess: 'odd',
+      parity: 'odd',
+      assignedBlack: 'white',
+    });
+    expect(started.snapshot.seatState).toEqual({
+      black: guest.participantId,
+      white: host.participantId,
+    });
+    expect(started.snapshot.match?.settings.players).toEqual({
+      black: 'Guest',
+      white: 'Host',
+    });
+    expect(started.snapshot.match?.state.phase).toBe('playing');
+  });
+
+  it('keeps hosted Go pending nigiri when the host starts again', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    const pending = context.match.claimSeat(
+      host.roomId,
+      guest.participantToken,
+      'white',
+    );
+    const duplicateStart = context.match.startMatch(
+      host.roomId,
+      host.participantToken,
+      {
+        mode: 'go',
+        boardSize: 19,
+      },
+    );
+
+    expect(pending.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(duplicateStart.notice?.message.key).toBe(
+      'room.notice.nigiri_started',
+    );
+    expect(duplicateStart.notice?.message.params).toEqual({
+      player: { key: 'common.player.white' },
+    });
+    expect(duplicateStart.snapshot.match).toBeNull();
+    expect(duplicateStart.snapshot.nigiri).toEqual(pending.snapshot.nigiri);
+    expect(duplicateStart.snapshot.seatState).toEqual(
+      pending.snapshot.seatState,
+    );
   });
 
   it('rejects game commands from spectators', () => {
@@ -80,6 +188,61 @@ describe('rooms services composition', () => {
         point: { x: 7, y: 7 },
       }),
     ).toThrow(ForbiddenException);
+  });
+
+  it('preserves hosted match state when a guest reconnects with the same token', () => {
+    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const guest = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    context.match.updateNextMatchSettings(host.roomId, host.participantToken, {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    context.match.claimSeat(host.roomId, host.participantToken, 'black');
+    context.match.claimSeat(host.roomId, guest.participantToken, 'white');
+    context.match.applyGameCommand(host.roomId, host.participantToken, {
+      type: 'place',
+      point: { x: 7, y: 7 },
+    });
+    context.match.applyGameCommand(host.roomId, guest.participantToken, {
+      type: 'place',
+      point: { x: 7, y: 8 },
+    });
+    context.match.applyGameCommand(host.roomId, host.participantToken, {
+      type: 'place',
+      point: { x: 8, y: 7 },
+    });
+    context.lifecycle.connectParticipantSocket(
+      host.roomId,
+      guest.participantToken,
+      'guest-socket-1',
+    );
+    context.lifecycle.disconnectSocket('guest-socket-1');
+
+    const resumed = context.lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      guest.participantToken,
+      'join:test',
+    );
+    const snapshot = context.lifecycle.connectParticipantSocket(
+      host.roomId,
+      resumed.participantToken,
+      'guest-socket-2',
+    );
+
+    expect(resumed.resumed).toBe(true);
+    expect(resumed.participantId).toBe(guest.participantId);
+    expect(snapshot.match?.state.moveHistory).toHaveLength(3);
+    expect(snapshot.match?.state.nextPlayer).toBe('white');
+    expect(snapshot.match?.state.board[7][7]).toBe('black');
+    expect(snapshot.match?.state.board[8][7]).toBe('white');
+    expect(snapshot.match?.state.board[7][8]).toBe('black');
   });
 
   it('lets the host mute and kick spectators', () => {

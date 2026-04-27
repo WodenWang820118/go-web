@@ -280,7 +280,11 @@ describe('OnlineLobbyPageComponent', () => {
     joinButton.click();
     await harness.fixture.whenStable();
 
-    expect(roomService.joinRoom).toHaveBeenCalledWith('READY7', 'Captain');
+    expect(roomService.joinRoom).toHaveBeenCalledWith(
+      'READY7',
+      'Captain',
+      'lobby',
+    );
     expect(router.url).toBe('/online/room/READY7');
   });
 
@@ -413,7 +417,11 @@ describe('OnlineLobbyPageComponent', () => {
     primaryAction.click();
     await harness.fixture.whenStable();
 
-    expect(roomService.joinRoom).toHaveBeenCalledWith('WAIT42', 'Captain');
+    expect(roomService.joinRoom).toHaveBeenCalledWith(
+      'WAIT42',
+      'Captain',
+      'lobby',
+    );
     expect(router.url).toBe('/online/room/WAIT42');
   });
 

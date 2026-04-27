@@ -9,6 +9,7 @@ import { RoomsController } from './controllers/rooms.controller';
 import { RoomsGateway } from './controllers/rooms.gateway';
 import { RoomsChatService } from './features/rooms-chat/rooms-chat.service';
 import { RoomsLifecycleService } from './features/rooms-lifecycle/rooms-lifecycle.service';
+import { RoomsClockService } from './features/rooms-match/rooms-clock.service';
 import { RoomsMatchService } from './features/rooms-match/rooms-match.service';
 import { RoomsModerationService } from './features/rooms-moderation/rooms-moderation.service';
 
@@ -21,6 +22,7 @@ import { RoomsModerationService } from './features/rooms-moderation/rooms-modera
     RoomsRealtimeBroadcasterService,
     RoomsRulesEngineService,
     RoomsLifecycleService,
+    RoomsClockService,
     RoomsMatchService,
     RoomsChatService,
     RoomsModerationService,

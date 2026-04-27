@@ -22,6 +22,7 @@ const EN_GAME = {
   'game.result.draw': 'The match ends in a draw.',
   'game.result.win_by_points': '{{winner}} wins by {{margin}} points.',
   'game.result.win_by_resignation': '{{winner}} wins by resignation.',
+  'game.result.timeout': '{{winner}} wins on time. {{loser}} timed out.',
   'game.state.next_turn': '{{player}} to move.',
   'game.go.state.opening': 'Black to move. Place the opening stone.',
   'game.go.state.group_restored': '{{player}} group restored for scoring.',
@@ -29,7 +30,10 @@ const EN_GAME = {
     '{{player}} group marked dead for scoring.',
   'game.go.state.captured_stones': '{{player}} captured {{count}} stone(s).',
   'game.go.state.scoring_started':
-    'Scoring phase started. Click groups to mark them dead, then finalize the result.',
+    'Scoring phase started. Click groups to mark them dead, then both players confirm the result.',
+  'game.go.state.scoring_confirmed': '{{player}} confirmed the score.',
+  'game.go.state.scoring_disputed':
+    '{{player}} disputed the score. Play resumes.',
   'game.go.state.next_turn_after_pass': '{{player}} to move after the pass.',
   'game.go.error.match_closed': 'This Go match is no longer accepting moves.',
   'game.go.error.suicide': 'Suicide is not legal in this ruleset.',
@@ -45,11 +49,16 @@ const EN_GAME = {
     'Start a local match before placing stones.',
   'local.play.error.scoring_preview_unavailable':
     'Unable to update the scoring preview.',
-  'local.play.error.start_before_finalize_scoring':
-    'Start a local match before finalizing scoring.',
-  'local.play.error.finalize_scoring_unavailable':
-    'Scoring finalization is only available during a Go scoring phase.',
-  'local.play.error.finalize_score_failed': 'Unable to finalize this score.',
+  'local.play.error.start_before_confirm_scoring':
+    'Start a local match before confirming scoring.',
+  'local.play.error.confirm_scoring_unavailable':
+    'Scoring confirmation is only available during a Go scoring phase.',
+  'local.play.error.confirm_score_failed': 'Unable to confirm this score.',
+  'local.play.error.start_before_dispute_scoring':
+    'Start a local match before disputing scoring.',
+  'local.play.error.dispute_scoring_unavailable':
+    'Scoring disputes are only available during a Go scoring phase.',
+  'local.play.error.dispute_score_failed': 'Unable to dispute this score.',
   'local.play.error.start_before_move':
     'Start a local match before making a move.',
   'local.play.error.move_rejected': 'Move rejected.',
@@ -74,6 +83,15 @@ const EN_ROOM_SHARED = {
   'room.error.score_finalization_unavailable':
     'Score finalization is only available during Go scoring.',
   'room.error.finalize_scoring_failed': 'Unable to finalize scoring.',
+  'room.error.confirm_scoring_failed': 'Unable to confirm scoring.',
+  'room.error.score_dispute_unavailable':
+    'Score disputes are only available during Go scoring.',
+  'room.error.dispute_scoring_failed': 'Unable to dispute scoring.',
+  'room.error.command_not_available': 'That room command is not available yet.',
+  'room.error.nigiri_unavailable': 'Nigiri is not waiting for a guess.',
+  'room.error.invalid_nigiri_guess': 'Choose odd or even for nigiri.',
+  'room.error.nigiri_guesser_only':
+    'Only the selected nigiri guesser can choose odd or even.',
   'room.error.match_not_accepting_moves':
     'The match is not accepting new moves.',
   'room.error.not_your_turn': 'It is not your turn.',
@@ -120,6 +138,9 @@ const EN_ROOM_SHARED = {
   'room.notice.match_started': '{{displayName}} started a {{mode}} match.',
   'room.notice.match_started_auto':
     'The next {{mode}} match started automatically.',
+  'room.notice.timeout': '{{player}} lost on time.',
+  'room.notice.nigiri_started':
+    'Digital nigiri started. {{player}} guesses odd or even.',
   'room.notice.next_match_settings_updated':
     'Next match updated to {{mode}} on a {{size}} x {{size}} board.',
   'room.notice.rematch_declined': '{{displayName}} passed on another game.',
@@ -159,20 +180,21 @@ const EN_MODES = {
   'mode.go.help.2':
     'Immediate ko recapture is rejected to prevent repeating the previous position.',
   'mode.go.help.3':
-    'Two consecutive passes open scoring. During scoring, click groups to mark them dead before finalizing.',
+    'Two consecutive passes open scoring. During scoring, click groups to mark them dead before both players confirm.',
   'mode.go.help.4':
     'Chinese area scoring is used. White receives {{komi}} komi.',
   'mode.go.setup_hint': 'Choose a 9x9, 13x13, or 19x19 board for local play.',
   'mode.gomoku.title': 'Gomoku',
   'mode.gomoku.strapline': 'Fast five-in-a-row on a 15x15 board',
   'mode.gomoku.description':
-    'Freestyle Gomoku with alternating turns, occupied-cell rejection, and a win on any horizontal, vertical, or diagonal line of five or more stones.',
+    'Standard exact-five Gomoku on a fixed 15x15 board with a free opening. Players alternate stones and Black moves first.',
   'mode.gomoku.objective':
-    'Connect five or more stones in a straight line before your opponent does.',
+    'Connect exactly five stones in a straight line before your opponent does.',
   'mode.gomoku.help.0': 'The board is fixed to 15x15.',
   'mode.gomoku.help.1':
     'Players alternate placing stones on empty intersections only.',
-  'mode.gomoku.help.2': 'Any five-in-a-row or longer line wins immediately.',
+  'mode.gomoku.help.2':
+    'Exactly five stones in a row wins immediately; overlines do not win.',
   'mode.gomoku.help.3':
     'If the board fills without a winning line, the game ends in a draw.',
   'mode.gomoku.setup_hint':
@@ -196,12 +218,18 @@ const EN_LOCAL_UI = {
   'setup.board_size': 'Board size',
   'setup.go_komi_note': 'White receives {{komi}} komi.',
   'setup.gomoku_fixed_board': 'Gomoku uses a fixed {{size}} x {{size}} board.',
+  'setup.nigiri.title': 'Digital nigiri',
+  'setup.nigiri.description':
+    'White guesses odd or even. A correct guess gives White the first move as Black; otherwise the current Black player stays Black.',
+  'setup.nigiri.pending': 'Resolve nigiri before starting this Go match.',
+  'setup.nigiri.result':
+    'Guess: {{guess}}. Hidden stones: {{parity}}. {{player}} starts as Black.',
   'setup.start_local_match': 'Start local match',
   'setup.rules_refresher': 'Rules refresher',
   'play.back_to_setup': 'Back to setup',
   'play.current_turn': 'Current turn',
   'play.scoring_hint':
-    'Scoring review is active. Click groups to mark them dead, then finalize the result.',
+    'Scoring review is active. Click groups to mark them dead, then both players confirm. A dispute resumes play.',
   'play.rules_and_reminders': 'Rules and reminders',
   'play.match_result': 'Match result',
   'play.restart_match': 'Restart match',
@@ -237,7 +265,9 @@ const EN_LOCAL_UI = {
   'ui.match_sidebar.score_preview': 'Score preview',
   'ui.match_sidebar.pass': 'Pass',
   'ui.match_sidebar.resign': 'Resign',
-  'ui.match_sidebar.finalize_score': 'Finalize score',
+  'ui.match_sidebar.confirm_score': '{{player}} confirms',
+  'ui.match_sidebar.dispute_score': '{{player}} disputes',
+  'ui.match_sidebar.confirmed': 'Confirmed',
   'ui.match_sidebar.rules': 'Rules',
   'ui.match_sidebar.restart': 'Restart',
   'ui.match_sidebar.new_match': 'New match',
@@ -250,6 +280,11 @@ const EN_LOCAL_UI = {
   'ui.game_status.scoring_review': 'Scoring review',
   'ui.game_status.turn': '{{player}} to move',
   'ui.game_board.aria_label': '{{mode}} board, {{size}} by {{size}}',
+  'ui.game_board.point.empty': '{{point}}, empty intersection',
+  'ui.game_board.point.stone': '{{point}}, {{player}} stone',
+  'ui.game_board.point.dead': 'marked dead',
+  'ui.game_board.point.last_move': 'last move',
+  'ui.game_board.point.winning': 'winning line',
   'ui.stone_badge.aria': '{{player}} stone',
   'hosted.header.description':
     'Jump between the hosted lobby and room views without leaving the Go frontend.',
@@ -309,6 +344,10 @@ const EN_HOSTED_UI = {
     'A seat change is needed before auto-start resumes.',
   'room.stage.blocked.description':
     'The last rematch was declined. Release or change a seat to unlock the next automatic start.',
+  'room.stage.nigiri.label': 'Nigiri',
+  'room.stage.nigiri.title': 'Digital nigiri is choosing colors.',
+  'room.stage.nigiri.description':
+    'The Go match will start after the selected player guesses odd or even.',
   'room.stage.waiting.label': 'Waiting room',
   'room.stage.waiting.title': 'Open seats are still available.',
   'room.stage.waiting.description':
@@ -345,11 +384,23 @@ const EN_HOSTED_UI = {
   'room.participants.board_size': 'Board size',
   'room.participants.start_hosted_match': 'Start hosted match',
   'room.participants.match_actions': 'Match actions',
-  'room.participants.finalize_score': 'Finalize score',
+  'room.participants.confirm_score': 'Confirm score',
+  'room.participants.dispute_score': 'Dispute score',
   'room.participants.move_log': 'Move log',
   'room.participants.empty_move_log':
     'Moves will appear here once the game begins.',
   'room.participants.viewer_role.player': '{{player}} player',
+  'room.nigiri.pending.title': 'Digital nigiri',
+  'room.nigiri.pending.description': '{{player}} guesses odd or even.',
+  'room.nigiri.resolved.title': 'Nigiri resolved',
+  'room.nigiri.resolved.description': '{{player}} takes Black.',
+  'room.nigiri.commitment': 'Commitment',
+  'room.nigiri.guess.odd': 'Odd',
+  'room.nigiri.guess.even': 'Even',
+  'room.nigiri.resolved.result': 'Guess: {{guess}}. Hidden stones: {{parity}}.',
+  'room.nigiri.resolved.assigned_black': '{{player}} is Black.',
+  'room.clock.main': 'Main time',
+  'room.clock.byo_yomi_periods': '{{count}} byo-yomi periods remaining',
   'room.next_match.eyebrow': 'Next up',
   'room.next_match.title': 'Next match settings',
   'room.next_match.description':

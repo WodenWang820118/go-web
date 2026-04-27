@@ -1,6 +1,10 @@
 import { resolve } from 'node:path';
 
 import {
+  buildReviewPromptWithReviewerProfile,
+  type ReviewCheckpoint,
+} from '../shared/reviewer-profile.ts';
+import {
   cacheProviderHealth,
   getCachedProviderHealth,
   type ReviewProviderHealthResult,
@@ -8,6 +12,7 @@ import {
 import {
   createProviderTelemetryContext,
   recordProviderObservation,
+  type ProviderObservationInput,
   type ProviderTelemetryContext,
 } from '../provider-observability.ts';
 import {
@@ -16,9 +21,23 @@ import {
   COPILOT_REASONING_EFFORT_HELP_TIMEOUT_MS,
   COPILOT_REVIEW_TIMEOUT_MS,
 } from '../provider-policies.ts';
-import { runLocalCliCommand } from './local-cli.ts';
+import {
+  runLocalCliCommand,
+  type LocalCliCommandInput,
+  type LocalCliCommandResult,
+} from './local-cli.ts';
+
+type CopilotObservationRecorder = (
+  input: ProviderObservationInput,
+  repoRoot?: string,
+) => unknown;
+type CopilotCommandRunner = (
+  input: LocalCliCommandInput,
+) => LocalCliCommandResult;
 
 interface CopilotReviewInput {
+  checkpoint?: ReviewCheckpoint;
+  focus?: string;
   model?: string;
   prompt: string;
   repoRoot?: string;
@@ -27,12 +46,12 @@ interface CopilotReviewInput {
 
 interface CopilotProviderDependencies {
   now?: () => number;
-  recordObservation?: typeof recordProviderObservation;
+  recordObservation?: CopilotObservationRecorder;
   reasoningEffortSupportCache?: Map<
     string,
     '--effort' | '--reasoning-effort' | null
   >;
-  runCommand?: typeof runLocalCliCommand;
+  runCommand?: CopilotCommandRunner;
 }
 
 const COPILOT_HEALTH_PROMPT = 'Reply with exactly OK.';
@@ -210,10 +229,17 @@ export function runCopilotReview(
   const reasoningEffortSupportCache =
     dependencies.reasoningEffortSupportCache ??
     DEFAULT_REASONING_EFFORT_SUPPORT_CACHE;
+  const reviewPrompt = buildReviewPromptWithReviewerProfile({
+    checkpoint: input.checkpoint,
+    focus: input.focus,
+    prompt: input.prompt,
+    provider: 'copilot',
+    repoRoot,
+  });
   const reviewArgs = buildCopilotReviewCommandArgs(
     {
       model: input.model,
-      prompt: input.prompt,
+      prompt: reviewPrompt,
       repoRoot,
       telemetryContext,
     },
@@ -253,7 +279,7 @@ export function runCopilotReview(
         ),
         model: input.model,
         operation: 'review',
-        promptChars: input.prompt.length,
+        promptChars: reviewPrompt.length,
         provider: 'copilot',
         success: false,
         timedOut: isCopilotTimedOut(result, output),
@@ -268,7 +294,7 @@ export function runCopilotReview(
       args: buildCopilotCommandArgs({
         experimental: true,
         model: input.model,
-        prompt: input.prompt,
+        prompt: reviewPrompt,
       }),
       cwd: repoRoot,
       timeoutMs: COPILOT_REVIEW_TIMEOUT_MS,
@@ -288,7 +314,7 @@ export function runCopilotReview(
               : classifyCopilotErrorCategory(output, result.error?.message),
         model: input.model,
         operation: 'review',
-        promptChars: input.prompt.length,
+        promptChars: reviewPrompt.length,
         provider: 'copilot',
         success:
           !result.error && result.status === 0 && output.trim().length > 0,
@@ -324,7 +350,7 @@ export function runCopilotReview(
           : classifyCopilotErrorCategory(output, result.error?.message),
       model: input.model,
       operation: 'review',
-      promptChars: input.prompt.length,
+      promptChars: reviewPrompt.length,
       provider: 'copilot',
       success: reviewSucceeded,
       timedOut: isCopilotTimedOut(result, output),
@@ -422,14 +448,14 @@ export function buildCopilotCommandArgs(input: {
 function supportsCopilotReasoningEffort(input: {
   model?: string;
   now: () => number;
-  recordObservation: typeof recordProviderObservation;
+  recordObservation: CopilotObservationRecorder;
   reasoningEffortSupportCache: Map<
     string,
     '--effort' | '--reasoning-effort' | null
   >;
   repoRoot: string;
   telemetryContext: ProviderTelemetryContext;
-  runCommand: typeof runLocalCliCommand;
+  runCommand: CopilotCommandRunner;
 }): '--effort' | '--reasoning-effort' | null {
   const cacheKey = resolve(input.repoRoot);
   const cached = input.reasoningEffortSupportCache.get(cacheKey);
@@ -577,7 +603,7 @@ function classifyCopilotErrorCategory(
 }
 
 function isCopilotTimedOut(
-  result: ReturnType<typeof runLocalCliCommand>,
+  result: LocalCliCommandResult,
   output = '',
 ): boolean {
   return (

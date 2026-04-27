@@ -6,6 +6,7 @@ import {
 } from '@angular/common/http/testing';
 import { RoomSnapshot } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { vi } from 'vitest';
@@ -65,9 +66,17 @@ describe('OnlineRoomService', () => {
   let service: OnlineRoomService;
   let httpMock: HttpTestingController;
   let storage: OnlineRoomStorageService;
+  let analytics: {
+    track: ReturnType<typeof vi.fn>;
+    trackOnce: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     socket = new MockSocket();
+    analytics = {
+      track: vi.fn(),
+      trackOnce: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -76,6 +85,10 @@ describe('OnlineRoomService', () => {
         {
           provide: GO_SERVER_ORIGIN,
           useValue: '',
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: analytics,
         },
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -125,6 +138,40 @@ describe('OnlineRoomService', () => {
         participantToken: 'token-1',
       },
     });
+  });
+
+  it('tracks hosted room interactions without message or identity payloads', () => {
+    service.claimSeat('black');
+    service.releaseSeat();
+    service.sendChat('hello secret table');
+    service.respondToRematch(false);
+
+    expect(analytics.track.mock.calls.map((call) => call[0])).toEqual([
+      {
+        event: 'gx_room_interaction',
+        game_mode: undefined,
+        interaction_type: 'seat_claim',
+        play_context: 'hosted',
+      },
+      {
+        event: 'gx_room_interaction',
+        game_mode: undefined,
+        interaction_type: 'seat_release',
+        play_context: 'hosted',
+      },
+      {
+        event: 'gx_room_interaction',
+        game_mode: undefined,
+        interaction_type: 'chat_send',
+        play_context: 'hosted',
+      },
+      {
+        event: 'gx_room_interaction',
+        game_mode: undefined,
+        interaction_type: 'rematch_decline',
+        play_context: 'hosted',
+      },
+    ]);
   });
 
   it('applies presence updates pushed from the websocket', () => {

@@ -18,10 +18,18 @@ import {
 import { normalizeHostedStartSettings } from './rooms-match-settings';
 import {
   applyHostedGameCommand,
+  maybeBeginDigitalNigiri,
   maybeStartNextMatch,
   startMatchWithCurrentSeats,
   type RoomsMatchTransitionDependencies,
 } from './rooms-match-transitions';
+import { RoomsClockService } from './rooms-clock.service';
+
+const NOOP_CLOCKS: Pick<RoomsClockService, 'refresh'> = {
+  refresh() {
+    // Tests that instantiate the service directly can ignore process timers.
+  },
+};
 
 /**
  * Encapsulates seat management, hosted match defaults, and match state transitions.
@@ -38,6 +46,8 @@ export class RoomsMatchService {
     private readonly rulesEngines: RoomsRulesEngineService,
     @Inject(RoomsErrorsService)
     private readonly roomsErrors: RoomsErrorsService,
+    @Inject(RoomsClockService)
+    private readonly clocks: Pick<RoomsClockService, 'refresh'> = NOOP_CLOCKS,
   ) {}
 
   claimSeat(
@@ -165,10 +175,32 @@ export class RoomsMatchService {
       throw this.roomsErrors.badRequest('room.error.match_must_finish');
     }
 
+    if (room.nigiri?.status === 'pending') {
+      return this.finalizeMutation(
+        room,
+        this.roomsErrors.roomMessage('room.notice.nigiri_started', {
+          player: this.roomsErrors.roomMessage(
+            `common.player.${room.nigiri.guesser}`,
+          ),
+        }),
+      );
+    }
+
     const normalizedSettings = normalizeHostedStartSettings(
       settings,
       this.roomsErrors,
     );
+    room.nextMatchSettings = normalizedSettings;
+
+    const nigiriNotice = maybeBeginDigitalNigiri(
+      room,
+      this.getTransitionDependencies(),
+    );
+
+    if (nigiriNotice) {
+      return this.finalizeMutation(room, nigiriNotice);
+    }
+
     const matchSettings = startMatchWithCurrentSeats(
       room,
       normalizedSettings,
@@ -260,13 +292,13 @@ export class RoomsMatchService {
     );
 
     this.store.touchRoom(room);
+    this.clocks.refresh(room);
+
+    const notice = automaticNotice ?? noticeMessage;
 
     return {
       snapshot: this.snapshotMapper.toSnapshot(room),
-      notice:
-        (automaticNotice ?? noticeMessage)
-          ? this.store.createNotice(automaticNotice ?? noticeMessage!)
-          : undefined,
+      notice: notice ? this.store.createNotice(notice) : undefined,
     };
   }
 

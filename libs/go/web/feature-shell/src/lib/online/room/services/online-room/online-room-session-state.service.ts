@@ -69,6 +69,7 @@ export class OnlineRoomSessionStateService {
   readonly nextMatchSettings = computed(
     () => this.snapshotSignal()?.nextMatchSettings ?? null,
   );
+  readonly nigiri = computed(() => this.snapshotSignal()?.nigiri ?? null);
   readonly rematch = computed(() => this.snapshotSignal()?.rematch ?? null);
   readonly autoStartBlockedUntilSeatChange = computed(
     () => this.snapshotSignal()?.autoStartBlockedUntilSeatChange ?? false,

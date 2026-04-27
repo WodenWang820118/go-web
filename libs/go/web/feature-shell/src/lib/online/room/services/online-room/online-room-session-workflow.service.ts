@@ -7,6 +7,7 @@ import {
   RoomClosedEvent,
 } from '@gx/go/contracts';
 import { BoardSize, GameMode } from '@gx/go/domain';
+import { GoAnalyticsJoinSource, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
   EMPTY,
@@ -36,6 +37,7 @@ type JoinResponse = CreateRoomResponse | JoinRoomResponse;
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomSessionWorkflowService {
   private readonly api = inject(OnlineRoomsHttpService);
+  private readonly analytics = inject(GoAnalyticsService);
   private readonly i18n = inject(GoI18nService);
   private readonly identity = inject(OnlineRoomIdentityService);
   private readonly storage = inject(OnlineRoomStorageService);
@@ -125,6 +127,18 @@ export class OnlineRoomSessionWorkflowService {
       return this.api.createRoom(displayName, mode, boardSize).pipe(
         tap((response) => {
           this.applyJoinResponse(response.roomId, displayName, response);
+          this.analytics.track({
+            board_size: boardSize,
+            event: 'gx_room_create',
+            game_mode: mode,
+          });
+          this.analytics.track({
+            board_size: boardSize,
+            event: 'gx_match_start',
+            game_mode: mode,
+            play_context: 'hosted',
+            start_source: 'room_create',
+          });
         }),
         catchError((error) => {
           this.state.setLastError(
@@ -142,7 +156,11 @@ export class OnlineRoomSessionWorkflowService {
     });
   }
 
-  joinRoom(roomId: string, displayName: string): Observable<void> {
+  joinRoom(
+    roomId: string,
+    displayName: string,
+    joinSource: GoAnalyticsJoinSource = 'direct_room',
+  ): Observable<void> {
     return defer(() => {
       this.state.setJoining(true);
       this.state.setLastError(null);
@@ -168,6 +186,10 @@ export class OnlineRoomSessionWorkflowService {
               resolvedDisplayName,
               response,
             );
+            this.analytics.track({
+              event: 'gx_room_join',
+              join_source: joinSource,
+            });
           }),
           map(() => void 0),
           catchError((error) => {

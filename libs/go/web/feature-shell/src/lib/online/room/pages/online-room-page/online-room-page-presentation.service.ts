@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import {
   HostedMatchSnapshot,
+  HostedNigiriSnapshot,
   HostedRematchState,
   ParticipantSummary,
   RoomSnapshot,
@@ -10,6 +11,7 @@ import { BoardPoint, PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
   OnlineRoomBoardSectionViewModel,
+  OnlineRoomNigiriViewModel,
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
   OnlineRoomSidebarMessageViewModel,
@@ -40,6 +42,13 @@ interface RoomBoardSectionState {
   match: HostedMatchSnapshot | null;
 }
 
+interface RoomNigiriViewState {
+  nigiri: HostedNigiriSnapshot | null;
+  participants: readonly ParticipantSummary[];
+  viewerSeat: PlayerColor | null;
+  realtimeConnected: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomPagePresentationService {
   private readonly i18n = inject(GoI18nService);
@@ -61,6 +70,14 @@ export class OnlineRoomPagePresentationService {
         label: this.i18n.t('room.stage.blocked.label'),
         title: this.i18n.t('room.stage.blocked.title'),
         description: this.i18n.t('room.stage.blocked.description'),
+      };
+    }
+
+    if (snapshot.nigiri?.status === 'pending') {
+      return {
+        label: this.i18n.t('room.stage.nigiri.label'),
+        title: this.i18n.t('room.stage.nigiri.title'),
+        description: this.i18n.t('room.stage.nigiri.description'),
       };
     }
 
@@ -122,6 +139,67 @@ export class OnlineRoomPagePresentationService {
         !snapshot.seatState[color],
       isViewerSeat: options.viewerSeat === color,
     }));
+  }
+
+  buildRoomNigiriViewModel(
+    state: RoomNigiriViewState,
+  ): OnlineRoomNigiriViewModel | null {
+    const nigiri = state.nigiri;
+
+    if (!nigiri) {
+      return null;
+    }
+
+    const guesser = this.findParticipantBySeat(
+      state.participants,
+      nigiri.guesser,
+    );
+    const guesserName =
+      guesser?.displayName ?? this.i18n.playerLabel(nigiri.guesser);
+
+    if (nigiri.status === 'pending') {
+      return {
+        status: 'pending',
+        title: this.i18n.t('room.nigiri.pending.title'),
+        description: this.i18n.t('room.nigiri.pending.description', {
+          player: guesserName,
+        }),
+        commitmentLabel: this.i18n.t('room.nigiri.commitment'),
+        commitment: nigiri.commitment,
+        canGuess:
+          state.realtimeConnected && state.viewerSeat === nigiri.guesser,
+        oddLabel: this.i18n.t('room.nigiri.guess.odd'),
+        evenLabel: this.i18n.t('room.nigiri.guess.even'),
+        resultLabel: null,
+        assignedBlackLabel: null,
+      };
+    }
+
+    const assignedBlackName =
+      this.findParticipantBySeat(state.participants, 'black')?.displayName ??
+      this.i18n.playerLabel('black');
+
+    return {
+      status: 'resolved',
+      title: this.i18n.t('room.nigiri.resolved.title'),
+      description: this.i18n.t('room.nigiri.resolved.description', {
+        player: assignedBlackName,
+      }),
+      commitmentLabel: this.i18n.t('room.nigiri.commitment'),
+      commitment: nigiri.commitment,
+      canGuess: false,
+      oddLabel: this.i18n.t('room.nigiri.guess.odd'),
+      evenLabel: this.i18n.t('room.nigiri.guess.even'),
+      resultLabel: this.i18n.t('room.nigiri.resolved.result', {
+        guess: this.i18n.t(`room.nigiri.guess.${nigiri.guess}`),
+        parity: this.i18n.t(`room.nigiri.guess.${nigiri.parity}`),
+      }),
+      assignedBlackLabel: this.i18n.t('room.nigiri.resolved.assigned_black', {
+        player: assignedBlackName,
+      }),
+      guess: nigiri.guess,
+      parity: nigiri.parity,
+    };
   }
 
   isLiveHostedMatch(match: HostedMatchSnapshot | null): boolean {
@@ -265,5 +343,14 @@ export class OnlineRoomPagePresentationService {
       interactive: state.canInteractBoard && state.realtimeConnected,
       statusLine: this.buildMatchStatusLine(state.match),
     };
+  }
+
+  private findParticipantBySeat(
+    participants: readonly ParticipantSummary[],
+    seat: PlayerColor,
+  ): ParticipantSummary | null {
+    return (
+      participants.find((participant) => participant.seat === seat) ?? null
+    );
   }
 }

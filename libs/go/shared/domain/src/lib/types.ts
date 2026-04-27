@@ -12,6 +12,23 @@ export type MatchPhase = 'playing' | 'scoring' | 'finished';
 
 export type ResultReason = 'score' | 'five-in-row' | 'resign' | 'draw';
 
+export type TimeoutResultReason = 'timeout';
+
+export type GameResultReason = ResultReason | TimeoutResultReason;
+
+export type GameRuleset = 'go-area-agreement' | 'gomoku-standard-exact-five';
+
+export type GameOpeningRule = 'digital-nigiri' | 'free-opening';
+
+export interface ByoYomiTimeControl {
+  type: 'byo-yomi';
+  mainTimeMs: number;
+  periodTimeMs: number;
+  periods: number;
+}
+
+export type TimeControlSettings = ByoYomiTimeControl;
+
 export interface GoMessageDescriptor {
   key: string;
   params?: GoMessageParams;
@@ -35,6 +52,9 @@ export interface MatchSettings {
   boardSize: BoardSize;
   players: Record<PlayerColor, string>;
   komi: number;
+  ruleset?: GameRuleset;
+  openingRule?: GameOpeningRule;
+  timeControl?: TimeControlSettings | null;
 }
 
 export type MoveCommand =
@@ -69,11 +89,13 @@ export interface ScoringState {
   deadStones: string[];
   territory: TerritoryRegion[];
   score: ScoreBreakdown;
+  confirmedBy?: PlayerColor[];
+  revision?: number;
 }
 
 export interface ResultSummary {
   winner: PlayerColor | 'draw';
-  reason: ResultReason;
+  reason: GameResultReason;
   summary: GoMessageDescriptor;
   margin?: number;
   resignedBy?: PlayerColor;
@@ -121,6 +143,22 @@ export const GO_BOARD_SIZES: readonly GoBoardSize[] = [9, 13, 19];
 export const GOMOKU_BOARD_SIZE: GomokuBoardSize = 15;
 
 export const DEFAULT_GO_KOMI = 6.5;
+
+export const GO_AREA_AGREEMENT_RULESET: GameRuleset = 'go-area-agreement';
+
+export const GOMOKU_STANDARD_EXACT_FIVE_RULESET: GameRuleset =
+  'gomoku-standard-exact-five';
+
+export const GO_DIGITAL_NIGIRI_OPENING: GameOpeningRule = 'digital-nigiri';
+
+export const GOMOKU_FREE_OPENING: GameOpeningRule = 'free-opening';
+
+export const DEFAULT_HOSTED_BYO_YOMI: ByoYomiTimeControl = {
+  type: 'byo-yomi',
+  mainTimeMs: 10 * 60 * 1000,
+  periodTimeMs: 30 * 1000,
+  periods: 5,
+};
 
 export function createMessage(
   key: string,

@@ -18,11 +18,21 @@ import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { CloseRoomResult } from '../../contracts/rooms.types';
+import { RoomsClockService } from '../rooms-match/rooms-clock.service';
 import { normalizeHostedStartSettings } from '../rooms-match/rooms-match-settings';
 
 const DEFAULT_CREATE_ROOM_SETTINGS: GameStartSettings = {
   mode: 'go',
   boardSize: 19,
+};
+
+const NOOP_CLOCKS: Pick<RoomsClockService, 'clear' | 'sweepStaleRooms'> = {
+  clear() {
+    // Tests that instantiate the service directly can ignore process timers.
+  },
+  sweepStaleRooms() {
+    // Tests that instantiate the service directly can ignore process timers.
+  },
 };
 
 /**
@@ -38,11 +48,16 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsErrorsService)
     private readonly roomsErrors: RoomsErrorsService,
+    @Inject(RoomsClockService)
+    private readonly clocks: Pick<
+      RoomsClockService,
+      'clear' | 'sweepStaleRooms'
+    > = NOOP_CLOCKS,
   ) {
-    this.cleanupTimer = setInterval(
-      () => this.store.pruneExpiredRooms(),
-      60 * 1000,
-    );
+    this.cleanupTimer = setInterval(() => {
+      this.store.pruneExpiredRooms();
+      this.clocks.sweepStaleRooms();
+    }, 60 * 1000);
   }
 
   createRoom(
@@ -162,6 +177,7 @@ export class RoomsLifecycleService implements OnModuleDestroy {
       this.store.socketIndex.delete(socketId);
     }
 
+    this.clocks.clear(room.id);
     this.store.rooms.delete(room.id);
 
     return {

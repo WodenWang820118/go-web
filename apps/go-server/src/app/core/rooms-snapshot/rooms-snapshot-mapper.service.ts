@@ -3,6 +3,7 @@ import {
   LobbyOnlineParticipantSummary,
   LobbyRoomStatus,
   LobbyRoomSummary,
+  ROOM_SNAPSHOT_SCHEMA_VERSION,
   RoomSnapshot,
 } from '@gx/go/contracts';
 import { Inject, Injectable } from '@nestjs/common';
@@ -36,6 +37,7 @@ export class RoomsSnapshotMapper {
       });
 
     return {
+      schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
       roomId: room.id,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
@@ -49,6 +51,8 @@ export class RoomsSnapshotMapper {
       rematch: room.rematch ? structuredClone(room.rematch) : null,
       autoStartBlockedUntilSeatChange: room.autoStartBlockedUntilSeatChange,
       match: room.match ? structuredClone(room.match) : null,
+      nigiri: room.nigiri ? structuredClone(room.nigiri) : null,
+      rules: this.getRulesMetadata(room),
       chat: structuredClone(room.chat),
     };
   }
@@ -147,6 +151,20 @@ export class RoomsSnapshotMapper {
     }
 
     return 'waiting';
+  }
+
+  private getRulesMetadata(room: RoomRecord): RoomSnapshot['rules'] {
+    const settings = room.match?.settings ?? room.nextMatchSettings;
+
+    if (!settings.ruleset || !settings.openingRule) {
+      return null;
+    }
+
+    return {
+      ruleset: settings.ruleset,
+      openingRule: settings.openingRule,
+      timeControl: settings.timeControl ?? null,
+    };
   }
 
   private compareLobbyStatus(

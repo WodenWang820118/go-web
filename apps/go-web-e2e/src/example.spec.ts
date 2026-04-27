@@ -37,14 +37,25 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await clickLocalLink(page, '/setup/go');
   await expect(page.getByTestId('setup-form')).toBeVisible();
 
+  await page.getByTestId('setup-nigiri-odd-button').click();
+  await expect(page.getByTestId('setup-nigiri-result')).toContainText(
+    /starts as Black/i,
+  );
+  await expect(
+    page.getByRole('button', { name: /start local match/i }),
+  ).toBeEnabled();
   await page.getByRole('button', { name: /start local match/i }).click();
   await expect(page.getByTestId('game-board')).toBeVisible();
 
   await page.getByRole('button', { name: 'Pass' }).click();
   await page.getByRole('button', { name: 'Pass' }).click();
 
-  const finalizeButton = page.getByRole('button', { name: /finalize score/i });
-  await expect(finalizeButton).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /black confirms/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /white confirms/i }),
+  ).toBeVisible();
 });
 
 test('starts a Gomoku match and creates five in a row', async ({ page }) => {
@@ -71,6 +82,56 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
   const resultDialog = page.getByTestId('match-result-dialog');
   await expect(resultDialog).toBeVisible();
   await expect(resultDialog.getByText(/five in a row/i)).toBeVisible();
+});
+
+test('supports keyboard play through the board grid semantics', async ({
+  page,
+}) => {
+  await useEnglish(page);
+
+  await clickLocalLink(page, '/setup/gomoku');
+  await page.getByRole('button', { name: /start local match/i }).click();
+
+  const board = page.getByTestId('game-board');
+  await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute('role', 'grid');
+  await expect(board).toHaveAttribute('tabindex', '0');
+  await expect(board).toHaveAttribute('aria-rowcount', '15');
+  await expect(board).toHaveAttribute('aria-colcount', '15');
+  await expect(board).toHaveAttribute(
+    'aria-activedescendant',
+    'game-board-point-7-7',
+  );
+
+  await board.focus();
+  await board.press('ArrowRight');
+  await expect(board).toHaveAttribute(
+    'aria-activedescendant',
+    'game-board-point-8-7',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'role',
+    'gridcell',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-disabled',
+    'false',
+  );
+  await expect(page.locator('#game-board-point-8-7')).toHaveAttribute(
+    'aria-label',
+    /empty intersection/,
+  );
+
+  await board.press('Enter');
+
+  const selectedPoint = page.locator('#game-board-point-8-7');
+  await expect(selectedPoint).toHaveAttribute('aria-label', /J8/);
+  await expect(selectedPoint).toHaveAttribute('aria-label', /Black stone/);
+  await expect(selectedPoint).toHaveAttribute('aria-disabled', 'true');
 });
 
 test('keeps the desktop lobby pinned to the viewport while the room table scrolls internally', async ({

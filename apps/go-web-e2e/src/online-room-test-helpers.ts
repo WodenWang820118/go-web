@@ -3,16 +3,19 @@ import { APIResponse, expect, Page, Request } from '@playwright/test';
 const goServerOrigin = (
   process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000'
 ).replace(/\/+$/, '');
+const analyticsConsentStorageKey = 'gx.analyticsConsent.v1';
 const goServerOriginStorageKey = 'gx.go.serverOrigin';
 
 export async function useEnglish(page: Page): Promise<void> {
   await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value);
+    ({ consentKey, originKey, originValue }) => {
+      window.localStorage.setItem(consentKey, 'denied');
+      window.localStorage.setItem(originKey, originValue);
     },
     {
-      key: goServerOriginStorageKey,
-      value: goServerOrigin,
+      consentKey: analyticsConsentStorageKey,
+      originKey: goServerOriginStorageKey,
+      originValue: goServerOrigin,
     },
   );
   await page.goto('/');

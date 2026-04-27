@@ -130,25 +130,56 @@ export class GameSessionStore {
     });
   }
 
-  finalizeScoring(): GoMessageDescriptor | null {
+  confirmScoring(player: PlayerColor): GoMessageDescriptor | null {
     const snapshot = this.snapshotSignal();
 
     if (!snapshot) {
-      return createMessage('local.play.error.start_before_finalize_scoring');
+      return createMessage('local.play.error.start_before_confirm_scoring');
     }
 
     if (snapshot.settings.mode !== 'go' || snapshot.state.phase !== 'scoring') {
-      return createMessage('local.play.error.finalize_scoring_unavailable');
+      return createMessage('local.play.error.confirm_scoring_unavailable');
     }
 
     const engine = this.rulesEngines.get('go');
-    const nextState = engine.finalizeScoring?.(
+    const nextState = engine.confirmScoring?.(
       snapshot.state,
       snapshot.settings,
+      player,
     );
 
     if (!nextState) {
-      return createMessage('local.play.error.finalize_score_failed');
+      return createMessage('local.play.error.confirm_score_failed');
+    }
+
+    this.commit({
+      ...snapshot,
+      state: nextState,
+    });
+
+    return null;
+  }
+
+  disputeScoring(player: PlayerColor): GoMessageDescriptor | null {
+    const snapshot = this.snapshotSignal();
+
+    if (!snapshot) {
+      return createMessage('local.play.error.start_before_dispute_scoring');
+    }
+
+    if (snapshot.settings.mode !== 'go' || snapshot.state.phase !== 'scoring') {
+      return createMessage('local.play.error.dispute_scoring_unavailable');
+    }
+
+    const engine = this.rulesEngines.get('go');
+    const nextState = engine.disputeScoring?.(
+      snapshot.state,
+      snapshot.settings,
+      player,
+    );
+
+    if (!nextState) {
+      return createMessage('local.play.error.dispute_score_failed');
     }
 
     this.commit({

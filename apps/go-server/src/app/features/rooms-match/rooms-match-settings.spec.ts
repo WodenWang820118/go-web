@@ -1,5 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { DEFAULT_GO_KOMI } from '@gx/go/domain';
+import {
+  DEFAULT_GO_KOMI,
+  DEFAULT_HOSTED_BYO_YOMI,
+  GOMOKU_FREE_OPENING,
+  GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+  GO_AREA_AGREEMENT_RULESET,
+  GO_DIGITAL_NIGIRI_OPENING,
+} from '@gx/go/domain';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import {
   buildHostedMatchSettings,
@@ -22,6 +29,9 @@ describe('rooms-match-settings', () => {
       mode: 'go',
       boardSize: 19,
       komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
 
@@ -39,6 +49,9 @@ describe('rooms-match-settings', () => {
       mode: 'go',
       boardSize: 19,
       komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
 
@@ -56,6 +69,9 @@ describe('rooms-match-settings', () => {
       mode: 'go',
       boardSize: 19,
       komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
 
@@ -75,6 +91,9 @@ describe('rooms-match-settings', () => {
         mode: 'go',
         boardSize,
         komi: 7.5,
+        ruleset: GO_AREA_AGREEMENT_RULESET,
+        openingRule: GO_DIGITAL_NIGIRI_OPENING,
+        timeControl: DEFAULT_HOSTED_BYO_YOMI,
       });
     },
   );
@@ -93,7 +112,30 @@ describe('rooms-match-settings', () => {
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+      ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+      openingRule: GOMOKU_FREE_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
+  });
+
+  it('preserves provided hosted time controls', () => {
+    const timeControl = {
+      type: 'byo-yomi' as const,
+      mainTimeMs: 300000,
+      periodTimeMs: 10000,
+      periods: 3,
+    };
+
+    expect(
+      normalizeHostedStartSettings(
+        {
+          mode: 'go',
+          boardSize: 19,
+          timeControl,
+        },
+        roomsErrors,
+      ).timeControl,
+    ).toBe(timeControl);
   });
 
   it('rejects unsupported board sizes before a match starts', () => {
@@ -102,6 +144,18 @@ describe('rooms-match-settings', () => {
         {
           mode: 'go',
           boardSize: 15,
+        },
+        roomsErrors,
+      ),
+    ).toThrow(BadRequestException);
+  });
+
+  it('rejects unsupported gomoku board sizes before a match starts', () => {
+    expect(() =>
+      normalizeHostedStartSettings(
+        {
+          mode: 'gomoku',
+          boardSize: 19,
         },
         roomsErrors,
       ),
@@ -136,6 +190,34 @@ describe('rooms-match-settings', () => {
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+      ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+      openingRule: GOMOKU_FREE_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      players: {
+        black: 'Host',
+        white: 'Guest',
+      },
+    });
+  });
+
+  it('builds go match settings with rules and opening defaults', () => {
+    expect(
+      buildHostedMatchSettings(
+        {
+          mode: 'go',
+          boardSize: 19,
+          komi: DEFAULT_GO_KOMI,
+        },
+        'Host',
+        'Guest',
+      ),
+    ).toEqual({
+      mode: 'go',
+      boardSize: 19,
+      komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
       players: {
         black: 'Host',
         white: 'Guest',

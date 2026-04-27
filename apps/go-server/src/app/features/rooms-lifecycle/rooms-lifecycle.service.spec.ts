@@ -3,6 +3,8 @@ import { RoomsLifecycleService } from './rooms-lifecycle.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
+import { ROOM_SNAPSHOT_SCHEMA_VERSION } from '@gx/go/contracts';
+import { DEFAULT_HOSTED_BYO_YOMI } from '@gx/go/domain';
 import {
   CREATE_ATTEMPTS_PER_WINDOW,
   ROOM_IDLE_TTL_MS,
@@ -23,6 +25,20 @@ describe('RoomsLifecycleService', () => {
 
   afterEach(() => {
     lifecycle.onModuleDestroy();
+  });
+
+  it('creates room snapshots with schema and rules defaults', () => {
+    const response = lifecycle.createRoom('Host', 'create:test');
+
+    expect(response.snapshot).toMatchObject({
+      schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
+      nigiri: null,
+      rules: {
+        ruleset: 'go-area-agreement',
+        openingRule: 'digital-nigiri',
+        timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      },
+    });
   });
 
   describe('createRoom throttling', () => {

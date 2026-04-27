@@ -3,8 +3,12 @@
     class="board-wrapper"
     data-testid="game-board"
     tabindex="0"
-    role="application"
+    role="grid"
     [attr.aria-label]="ariaLabel()"
+    [attr.aria-rowcount]="boardSize()"
+    [attr.aria-colcount]="boardSize()"
+    [attr.aria-activedescendant]="activePointId()"
+    [attr.aria-readonly]="!interactive()"
     (keydown)="onKeyDown($event)"
     (mouseleave)="clearHover()"
   >
@@ -64,93 +68,105 @@
         />
       }
 
-      @for (point of points(); track pointKey(point)) {
-        <g
-          [attr.data-testid]="dataTestId(point)"
-          [attr.data-point]="pointKey(point)"
-        >
-          <circle
-            [attr.cx]="x(point)"
-            [attr.cy]="y(point)"
-            r="22"
-            fill="transparent"
-          />
-
-          @if (hasStone(point)) {
-            <circle
-              [attr.cx]="x(point)"
-              [attr.cy]="y(point)"
-              [attr.r]="stoneRadius()"
-              [attr.fill]="
-                stoneColor(point) === 'black'
-                  ? 'url(#stone-black)'
-                  : 'url(#stone-white)'
-              "
-              [attr.stroke]="
-                stoneColor(point) === 'black' ? '#09090b' : '#e7e5e4'
-              "
-              stroke-width="2"
-              pointer-events="none"
-            />
-          }
-
-          @if (isDeadStone(point)) {
+      @for (row of pointRows(); track $index; let rowIndex = $index) {
+        <g role="row" [attr.aria-rowindex]="rowIndex + 1">
+          @for (point of row; track pointKey(point)) {
             <g
-              stroke="#f97316"
-              stroke-width="3"
-              stroke-linecap="round"
-              pointer-events="none"
+              [attr.id]="pointId(point)"
+              role="gridcell"
+              tabindex="-1"
+              [attr.data-testid]="dataTestId(point)"
+              [attr.data-point]="pointKey(point)"
+              [attr.aria-label]="pointAriaLabel(point)"
+              [attr.aria-rowindex]="point.y + 1"
+              [attr.aria-colindex]="point.x + 1"
+              [attr.aria-selected]="isKeyboardPoint(point)"
+              [attr.aria-disabled]="!interactive() || isPointDisabled(point)"
             >
-              <line
-                [attr.x1]="x(point) - 12"
-                [attr.y1]="y(point) - 12"
-                [attr.x2]="x(point) + 12"
-                [attr.y2]="y(point) + 12"
+              <circle
+                [attr.cx]="x(point)"
+                [attr.cy]="y(point)"
+                r="22"
+                fill="transparent"
               />
-              <line
-                [attr.x1]="x(point) + 12"
-                [attr.y1]="y(point) - 12"
-                [attr.x2]="x(point) - 12"
-                [attr.y2]="y(point) + 12"
-              />
+
+              @if (hasStone(point)) {
+                <circle
+                  [attr.cx]="x(point)"
+                  [attr.cy]="y(point)"
+                  [attr.r]="stoneRadius()"
+                  [attr.fill]="
+                    stoneColor(point) === 'black'
+                      ? 'url(#stone-black)'
+                      : 'url(#stone-white)'
+                  "
+                  [attr.stroke]="
+                    stoneColor(point) === 'black' ? '#09090b' : '#e7e5e4'
+                  "
+                  stroke-width="2"
+                  pointer-events="none"
+                />
+              }
+
+              @if (isDeadStone(point)) {
+                <g
+                  stroke="#f97316"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  pointer-events="none"
+                >
+                  <line
+                    [attr.x1]="x(point) - 12"
+                    [attr.y1]="y(point) - 12"
+                    [attr.x2]="x(point) + 12"
+                    [attr.y2]="y(point) + 12"
+                  />
+                  <line
+                    [attr.x1]="x(point) + 12"
+                    [attr.y1]="y(point) - 12"
+                    [attr.x2]="x(point) - 12"
+                    [attr.y2]="y(point) + 12"
+                  />
+                </g>
+              }
+
+              @if (lastMove() && pointEquals(lastMove(), point)) {
+                <circle
+                  [attr.cx]="x(point)"
+                  [attr.cy]="y(point)"
+                  r="5"
+                  [attr.fill]="
+                    stoneColor(point) === 'black' ? '#fef3c7' : '#1f2937'
+                  "
+                  pointer-events="none"
+                />
+              }
+
+              @if (isWinningPoint(point)) {
+                <circle
+                  [attr.cx]="x(point)"
+                  [attr.cy]="y(point)"
+                  r="28"
+                  fill="none"
+                  stroke="#38bdf8"
+                  stroke-width="4"
+                  stroke-dasharray="6 6"
+                  pointer-events="none"
+                />
+              }
+
+              @if (isKeyboardPoint(point)) {
+                <circle
+                  [attr.cx]="x(point)"
+                  [attr.cy]="y(point)"
+                  r="18"
+                  fill="none"
+                  stroke="#f97316"
+                  stroke-width="2"
+                  pointer-events="none"
+                />
+              }
             </g>
-          }
-
-          @if (lastMove() && pointEquals(lastMove(), point)) {
-            <circle
-              [attr.cx]="x(point)"
-              [attr.cy]="y(point)"
-              r="5"
-              [attr.fill]="
-                stoneColor(point) === 'black' ? '#fef3c7' : '#1f2937'
-              "
-              pointer-events="none"
-            />
-          }
-
-          @if (isWinningPoint(point)) {
-            <circle
-              [attr.cx]="x(point)"
-              [attr.cy]="y(point)"
-              r="28"
-              fill="none"
-              stroke="#38bdf8"
-              stroke-width="4"
-              stroke-dasharray="6 6"
-              pointer-events="none"
-            />
-          }
-
-          @if (isKeyboardPoint(point)) {
-            <circle
-              [attr.cx]="x(point)"
-              [attr.cy]="y(point)"
-              r="18"
-              fill="none"
-              stroke="#f97316"
-              stroke-width="2"
-              pointer-events="none"
-            />
           }
         </g>
       }
@@ -172,6 +188,6 @@
       }
     </svg>
 
-    <lib-go-board-coordinates [boardSize]="boardSize()" />
+    <lib-go-board-coordinates aria-hidden="true" [boardSize]="boardSize()" />
   </div>
 </div>

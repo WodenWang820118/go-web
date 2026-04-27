@@ -3,6 +3,7 @@ import { computed, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { createMessage } from '@gx/go/domain';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { vi } from 'vitest';
@@ -27,6 +28,12 @@ describe('PlayPageComponent', () => {
         {
           provide: GameSessionStore,
           useValue: store,
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: {
+            trackOnce: vi.fn(),
+          },
         },
       ],
     });
@@ -73,6 +80,7 @@ function createGameSessionStoreStub() {
         margin: '2.5',
       }),
       winner: 'black' as const,
+      reason: 'score' as const,
       score: {
         black: 30.5,
         white: 28,
@@ -89,12 +97,17 @@ function createGameSessionStoreStub() {
   });
 
   return {
+    snapshot: computed(() => ({
+      settings: settings(),
+      state: state(),
+    })),
     settings,
     state,
     currentPlayerName: computed(() => settings().players.black),
     playPoint: vi.fn().mockReturnValue(null),
     passTurn: vi.fn().mockReturnValue(null),
-    finalizeScoring: vi.fn().mockReturnValue(null),
+    confirmScoring: vi.fn().mockReturnValue(null),
+    disputeScoring: vi.fn().mockReturnValue(null),
     resign: vi.fn().mockReturnValue(null),
     restartMatch: vi.fn().mockReturnValue(true),
     clearMatch: vi.fn(),

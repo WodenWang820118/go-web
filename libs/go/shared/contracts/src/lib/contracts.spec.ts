@@ -1,4 +1,10 @@
-import { RoomSnapshot, cloneRoomSnapshot } from './contracts';
+import {
+  ROOM_SNAPSHOT_SCHEMA_VERSION,
+  RoomSnapshot,
+  cloneRoomSnapshot,
+} from './contracts';
+import { DEFAULT_HOSTED_BYO_YOMI } from '@gx/go/domain';
+import { createRoomSnapshot } from './testing/room-fixtures';
 import {
   MAX_DISPLAY_NAME_LENGTH,
   createUniqueDisplayName,
@@ -7,6 +13,7 @@ import {
 describe('go-contracts', () => {
   it('clones room snapshots defensively', () => {
     const snapshot: RoomSnapshot = {
+      schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
       roomId: 'room-1',
       createdAt: '2026-03-20T00:00:00.000Z',
       updatedAt: '2026-03-20T00:00:00.000Z',
@@ -42,6 +49,12 @@ describe('go-contracts', () => {
         },
       },
       autoStartBlockedUntilSeatChange: false,
+      nigiri: null,
+      rules: {
+        ruleset: 'go-area-agreement',
+        openingRule: 'digital-nigiri',
+        timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      },
       match: {
         settings: {
           mode: 'go',
@@ -91,21 +104,34 @@ describe('go-contracts', () => {
     const firstBoardRow = clonedMatch?.state.board[0];
     const clonedRematch = cloned.rematch;
     const firstChatEntry = cloned.chat[0];
+    const clonedRules = cloned.rules;
 
-    if (!clonedMatch || !firstBoardRow || !clonedRematch || !firstChatEntry) {
+    if (
+      !clonedMatch ||
+      !firstBoardRow ||
+      !clonedRematch ||
+      !firstChatEntry ||
+      !clonedRules
+    ) {
       throw new Error(
-        'Expected snapshot clone to include nested match, rematch, and chat data',
+        'Expected snapshot clone to include nested match, rematch, rules, and chat data',
       );
     }
 
     cloned.participants[0].displayName = 'Changed';
     firstBoardRow[0] = 'black';
     clonedRematch.responses.black = 'declined';
+    clonedRules.openingRule = 'free-opening';
+    if (clonedRules.timeControl?.type === 'byo-yomi') {
+      clonedRules.timeControl.periods = 1;
+    }
     firstChatEntry.message = 'Updated';
 
     expect(snapshot.participants[0].displayName).toBe('Host');
     expect(snapshot.match?.state.board[0]?.[0]).toBeNull();
     expect(snapshot.rematch?.responses.black).toBe('accepted');
+    expect(snapshot.rules?.openingRule).toBe('digital-nigiri');
+    expect(snapshot.rules?.timeControl).toEqual(DEFAULT_HOSTED_BYO_YOMI);
     expect(snapshot.chat[0]?.message).toBe('Hello');
   });
 
@@ -113,6 +139,14 @@ describe('go-contracts', () => {
     expect(createUniqueDisplayName('Host', ['Host', 'Host (2)', 'Guest'])).toBe(
       'Host (3)',
     );
+  });
+
+  it('creates room snapshot fixtures with the current schema version defaults', () => {
+    expect(createRoomSnapshot()).toMatchObject({
+      schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
+      nigiri: null,
+      rules: null,
+    });
   });
 
   it('trims the base name so suffixed duplicates still fit the max length', () => {

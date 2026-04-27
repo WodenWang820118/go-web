@@ -6,6 +6,7 @@ import { GoI18nService } from '@gx/go/state/i18n';
 import { map } from 'rxjs';
 import {
   OnlineRoomBoardSectionViewModel,
+  OnlineRoomNigiriViewModel,
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
   OnlineRoomSidebarMessageViewModel,
@@ -35,6 +36,7 @@ export class OnlineRoomPageViewStateService {
   readonly match = this.onlineRoom.match;
   readonly participants = this.onlineRoom.participants;
   readonly rematch = this.onlineRoom.rematch;
+  readonly nigiri = this.onlineRoom.nigiri;
   readonly nextMatchSettings = this.onlineRoom.nextMatchSettings;
   readonly connectionState = this.onlineRoom.connectionState;
   readonly bootstrapState = this.onlineRoom.bootstrapState;
@@ -79,7 +81,19 @@ export class OnlineRoomPageViewStateService {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.state.phase === 'playing',
   );
-  readonly canFinalizeScoring = computed(
+  readonly canConfirmScoring = computed(() => {
+    const viewerSeat = this.onlineRoom.viewerSeat();
+    const match = this.match();
+
+    return (
+      this.realtimeConnected() &&
+      !!viewerSeat &&
+      match?.settings.mode === 'go' &&
+      match.state.phase === 'scoring' &&
+      !(match.state.scoring?.confirmedBy ?? []).includes(viewerSeat)
+    );
+  });
+  readonly canDisputeScoring = computed(
     () =>
       this.realtimeConnected() &&
       !!this.onlineRoom.viewerSeat() &&
@@ -110,6 +124,14 @@ export class OnlineRoomPageViewStateService {
       this.onlineRoom.participantId(),
     );
   });
+  readonly nigiriPanel = computed<OnlineRoomNigiriViewModel | null>(() =>
+    this.presentation.buildRoomNigiriViewModel({
+      nigiri: this.nigiri(),
+      participants: this.participants(),
+      viewerSeat: this.onlineRoom.viewerSeat(),
+      realtimeConnected: this.realtimeConnected(),
+    }),
+  );
   readonly joinCardTitle = computed(() =>
     this.isLiveMatch()
       ? this.i18n.t('room.join.title.spectator')

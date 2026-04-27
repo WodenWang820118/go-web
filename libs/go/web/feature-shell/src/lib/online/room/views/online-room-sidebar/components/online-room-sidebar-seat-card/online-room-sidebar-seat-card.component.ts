@@ -67,11 +67,14 @@ import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.
       <div class="mt-4 flex items-center justify-between gap-3">
         <div
           class="inline-flex min-h-[2.5rem] items-center rounded-[0.375rem] bg-black/35 px-3 py-2 text-amber-100"
-          aria-hidden="true"
+          [attr.aria-label]="clockAccessibleLabel()"
         >
-          <span class="font-mono text-base font-extrabold tracking-[0.08em]"
-            >--:--</span
-          >
+          <span class="font-mono text-base font-extrabold tracking-[0.08em]">{{
+            clockLabel() ?? '--:--'
+          }}</span>
+          @if (clockDetailLabel()) {
+            <span class="sr-only">{{ clockDetailLabel() }}</span>
+          }
         </div>
 
         @if (seat().isViewerSeat && canChangeSeats()) {
@@ -110,6 +113,8 @@ export class OnlineRoomSidebarSeatCardComponent {
   readonly canChangeSeats = input.required<boolean>();
   readonly realtimeConnected = input.required<boolean>();
   readonly captureCountLabel = input<string | null>(null);
+  readonly clockLabel = input<string | null>(null);
+  readonly clockDetailLabel = input<string | null>(null);
 
   readonly claimSeatRequested = output<PlayerColor>();
   readonly releaseSeatRequested = output<void>();
@@ -138,5 +143,15 @@ export class OnlineRoomSidebarSeatCardComponent {
     return occupant.online
       ? this.i18n.t('common.status.online')
       : this.i18n.t('common.status.offline');
+  }
+
+  protected clockAccessibleLabel(): string | null {
+    const detail = this.clockDetailLabel();
+
+    if (!detail) {
+      return null;
+    }
+
+    return `${detail} ${this.clockLabel() ?? '--:--'}`;
   }
 }

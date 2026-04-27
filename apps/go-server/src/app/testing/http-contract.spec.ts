@@ -2,6 +2,14 @@ import {
   createRoomsContractHarness,
   type RoomsContractHarness,
 } from './rooms-contract-harness';
+import {
+  DEFAULT_GO_KOMI,
+  DEFAULT_HOSTED_BYO_YOMI,
+  GOMOKU_FREE_OPENING,
+  GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+  GO_AREA_AGREEMENT_RULESET,
+  GO_DIGITAL_NIGIRI_OPENING,
+} from '@gx/go/domain';
 import { CREATE_ATTEMPTS_PER_WINDOW } from '../core/rooms-config/rooms.constants';
 
 describe('rooms HTTP contract', () => {
@@ -173,12 +181,18 @@ describe('rooms HTTP contract', () => {
     expect(goRoom.snapshot.nextMatchSettings).toEqual({
       mode: 'go',
       boardSize: 9,
-      komi: 6.5,
+      komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
     expect(gomokuRoom.snapshot.nextMatchSettings).toEqual({
       mode: 'gomoku',
       boardSize: 15,
       komi: 0,
+      ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
+      openingRule: GOMOKU_FREE_OPENING,
+      timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
 

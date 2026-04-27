@@ -2,11 +2,14 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   DEFAULT_GO_KOMI,
+  GO_AREA_AGREEMENT_RULESET,
   GOMOKU_BOARD_SIZE,
+  GO_DIGITAL_NIGIRI_OPENING,
   GO_BOARD_SIZES,
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
+import { GoAnalyticsService } from '@gx/go/state';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { vi } from 'vitest';
@@ -87,8 +90,10 @@ describe('SetupPageComponent', () => {
   });
 
   it('starts a go match with the selected board size and navigates to play', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
     const store = createGameSessionStoreStub();
-    const harness = await renderSetup('/setup/go', store);
+    const analytics = createAnalyticsStub();
+    const harness = await renderSetup('/setup/go', store, analytics);
     const root = harness.routeNativeElement as HTMLElement;
     const router = TestBed.inject(Router);
     const blackInput = root.querySelector(
@@ -103,12 +108,16 @@ describe('SetupPageComponent', () => {
     const submitButton = root.querySelector(
       '[data-testid="setup-start-match-button"]',
     ) as HTMLButtonElement;
+    const nigiriOddButton = root.querySelector(
+      '[data-testid="setup-nigiri-odd-button"]',
+    ) as HTMLButtonElement;
 
     blackInput.value = 'Aki';
     blackInput.dispatchEvent(new Event('input'));
     whiteInput.value = 'Ren';
     whiteInput.dispatchEvent(new Event('input'));
     boardSizeInput.click();
+    nigiriOddButton.click();
     await harness.fixture.whenStable();
 
     submitButton.click();
@@ -118,12 +127,117 @@ describe('SetupPageComponent', () => {
       mode: 'go',
       boardSize: 13,
       komi: DEFAULT_GO_KOMI,
+      ruleset: GO_AREA_AGREEMENT_RULESET,
+      openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      timeControl: null,
       players: {
-        black: 'Aki',
-        white: 'Ren',
+        black: 'Ren',
+        white: 'Aki',
       },
     });
+    expect(analytics.track).toHaveBeenCalledWith({
+      board_size: 13,
+      event: 'gx_match_start',
+      game_mode: 'go',
+      play_context: 'local',
+      start_source: 'setup',
+    });
     expect(router.url).toBe('/play/go');
+  });
+
+  it('does not start a go match before nigiri is resolved', async () => {
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const root = harness.routeNativeElement as HTMLElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    expect(submitButton.disabled).toBe(true);
+
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(store.startMatch).not.toHaveBeenCalled();
+  });
+
+  it('keeps original go player order when the nigiri guess fails', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const root = harness.routeNativeElement as HTMLElement;
+    const blackInput = root.querySelector(
+      '[data-testid="setup-black-name-input"]',
+    ) as HTMLInputElement;
+    const whiteInput = root.querySelector(
+      '[data-testid="setup-white-name-input"]',
+    ) as HTMLInputElement;
+    const nigiriEvenButton = root.querySelector(
+      '[data-testid="setup-nigiri-even-button"]',
+    ) as HTMLButtonElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    blackInput.value = 'Aki';
+    blackInput.dispatchEvent(new Event('input'));
+    whiteInput.value = 'Ren';
+    whiteInput.dispatchEvent(new Event('input'));
+    nigiriEvenButton.click();
+    await harness.fixture.whenStable();
+
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(store.startMatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        players: {
+          black: 'Aki',
+          white: 'Ren',
+        },
+      }),
+    );
+  });
+
+  it('does not reroll local go nigiri after a result is set', async () => {
+    const random = vi
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.1)
+      .mockReturnValueOnce(0.9);
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const i18n = TestBed.inject(GoI18nService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const oddButton = root.querySelector(
+      '[data-testid="setup-nigiri-odd-button"]',
+    ) as HTMLButtonElement;
+    const evenButton = root.querySelector(
+      '[data-testid="setup-nigiri-even-button"]',
+    ) as HTMLButtonElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    oddButton.click();
+    await harness.fixture.whenStable();
+
+    expect(oddButton.disabled).toBe(true);
+    expect(evenButton.disabled).toBe(true);
+
+    evenButton.click();
+    await harness.fixture.whenStable();
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(random).toHaveBeenCalledTimes(1);
+    expect(store.startMatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        players: {
+          black: i18n.playerLabel('white'),
+          white: i18n.playerLabel('black'),
+        },
+      }),
+    );
   });
 
   it('starts a gomoku match with the fixed board size and navigates to play', async () => {
@@ -155,6 +269,7 @@ describe('SetupPageComponent', () => {
 async function renderSetup(
   url: '/setup/go' | '/setup/gomoku',
   store = createGameSessionStoreStub(),
+  analytics = createAnalyticsStub(),
 ) {
   TestBed.configureTestingModule({
     providers: [
@@ -172,6 +287,10 @@ async function renderSetup(
         provide: GameSessionStore,
         useValue: store,
       },
+      {
+        provide: GoAnalyticsService,
+        useValue: analytics,
+      },
     ],
   });
 
@@ -183,5 +302,11 @@ async function renderSetup(
 function createGameSessionStoreStub() {
   return {
     startMatch: vi.fn(),
+  };
+}
+
+function createAnalyticsStub() {
+  return {
+    track: vi.fn(),
   };
 }

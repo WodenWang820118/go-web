@@ -1,3 +1,78 @@
 :host {
   display: block;
 }
+
+.analytics-consent {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  left: clamp(1rem, 3vw, 2rem);
+  z-index: 50;
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+  margin-inline: auto;
+  padding: 1rem;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(248, 250, 252, 0.16);
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.32);
+}
+
+.analytics-consent__copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.analytics-consent__title,
+.analytics-consent__body {
+  margin: 0;
+}
+
+.analytics-consent__title {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.analytics-consent__body {
+  color: rgba(248, 250, 252, 0.78);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.analytics-consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.analytics-consent__button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.analytics-consent__button--primary {
+  color: #1c1917;
+  background: #fbbf24;
+}
+
+.analytics-consent__button--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+@media (min-width: 48rem) {
+  .analytics-consent {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}

@@ -7,7 +7,12 @@ import {
   input,
   output,
 } from '@angular/core';
-import { MatchSettings, MatchState, MoveRecord } from '@gx/go/domain';
+import {
+  MatchSettings,
+  MatchState,
+  MoveRecord,
+  type PlayerColor,
+} from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameStatusChipComponent } from '../game-status-chip/game-status-chip.component';
 import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
@@ -82,11 +87,25 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
             </p>
             <div class="mt-3 grid grid-cols-2 gap-3 text-sm text-stone-100">
               <div>
-                <p class="font-semibold">{{ i18n.playerLabel('black') }}</p>
+                <p class="font-semibold">
+                  {{ i18n.playerLabel('black') }}
+                  @if (isScoringConfirmed('black')) {
+                    <span class="ml-1 text-xs text-emerald-200">
+                      {{ i18n.t('ui.match_sidebar.confirmed') }}
+                    </span>
+                  }
+                </p>
                 <p>{{ state()!.scoring!.score.black.toFixed(1) }}</p>
               </div>
               <div>
-                <p class="font-semibold">{{ i18n.playerLabel('white') }}</p>
+                <p class="font-semibold">
+                  {{ i18n.playerLabel('white') }}
+                  @if (isScoringConfirmed('white')) {
+                    <span class="ml-1 text-xs text-emerald-200">
+                      {{ i18n.t('ui.match_sidebar.confirmed') }}
+                    </span>
+                  }
+                </p>
                 <p>{{ state()!.scoring!.score.white.toFixed(1) }}</p>
               </div>
             </div>
@@ -110,14 +129,37 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
           >
             {{ i18n.t('ui.match_sidebar.resign') }}
           </button>
-          <button
-            type="button"
-            class="rounded-full bg-emerald-500/18 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/28 disabled:cursor-not-allowed disabled:opacity-40"
-            [disabled]="!canFinalizeScoring()"
-            (click)="finalizeScoringRequested.emit()"
-          >
-            {{ i18n.t('ui.match_sidebar.finalize_score') }}
-          </button>
+          @if (canShowScoringAgreement()) {
+            @for (player of players(); track player.color) {
+              <button
+                type="button"
+                class="rounded-full bg-emerald-500/18 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/28 disabled:cursor-not-allowed disabled:opacity-40"
+                [disabled]="!canConfirmScoring(player.color)"
+                (click)="confirmScoringRequested.emit(player.color)"
+              >
+                {{
+                  i18n.t('ui.match_sidebar.confirm_score', {
+                    player: i18n.playerLabel(player.color),
+                  })
+                }}
+              </button>
+            }
+
+            @for (player of players(); track player.color) {
+              <button
+                type="button"
+                class="rounded-full bg-amber-500/18 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-500/28 disabled:cursor-not-allowed disabled:opacity-40"
+                [disabled]="!canDisputeScoring(player.color)"
+                (click)="disputeScoringRequested.emit(player.color)"
+              >
+                {{
+                  i18n.t('ui.match_sidebar.dispute_score', {
+                    player: i18n.playerLabel(player.color),
+                  })
+                }}
+              </button>
+            }
+          }
           <button
             type="button"
             class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/20 hover:bg-white/10"
@@ -193,7 +235,8 @@ export class MatchSidebarComponent {
 
   readonly passRequested = output<void>();
   readonly resignRequested = output<void>();
-  readonly finalizeScoringRequested = output<void>();
+  readonly confirmScoringRequested = output<PlayerColor>();
+  readonly disputeScoringRequested = output<PlayerColor>();
   readonly helpRequested = output<void>();
   readonly restartRequested = output<void>();
   readonly newMatchRequested = output<void>();
@@ -230,4 +273,19 @@ export class MatchSidebarComponent {
   readonly canFinalizeScoring = computed(
     () => this.settings()?.mode === 'go' && this.state()?.phase === 'scoring',
   );
+
+  readonly canShowScoringAgreement = this.canFinalizeScoring;
+
+  protected isScoringConfirmed(color: PlayerColor): boolean {
+    return this.state()?.scoring?.confirmedBy?.includes(color) ?? false;
+  }
+
+  protected canConfirmScoring(color: PlayerColor): boolean {
+    return this.canFinalizeScoring() && !this.isScoringConfirmed(color);
+  }
+
+  protected canDisputeScoring(color: PlayerColor): boolean {
+    void color;
+    return this.canFinalizeScoring();
+  }
 }

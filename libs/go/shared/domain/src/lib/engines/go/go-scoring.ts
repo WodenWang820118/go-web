@@ -118,5 +118,7 @@ export function buildScoringState(
     deadStones: [...deadStoneKeys],
     territory,
     score,
+    confirmedBy: [],
+    revision: 0,
   };
 }

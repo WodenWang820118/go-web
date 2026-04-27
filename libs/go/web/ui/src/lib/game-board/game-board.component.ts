@@ -12,8 +12,8 @@ import {
 import {
   BoardPoint,
   BoardSize,
+  formatPoint,
   GameMode,
-  getAllPoints,
   getCell,
   isPointInBounds,
   MatchPhase,
@@ -52,7 +52,11 @@ export class GameBoardComponent {
   private readonly hoverPoint = signal<BoardPoint | null>(null);
   private readonly keyboardPoint = signal<BoardPoint>({ x: -1, y: -1 });
 
-  readonly points = computed(() => getAllPoints(this.boardSize()));
+  readonly pointRows = computed(() =>
+    Array.from({ length: this.boardSize() }, (_, y) =>
+      Array.from({ length: this.boardSize() }, (_, x) => ({ x, y })),
+    ),
+  );
   readonly boardPixels = computed(
     () => this.padding * 2 + this.cellSize * (this.boardSize() - 1),
   );
@@ -86,6 +90,7 @@ export class GameBoardComponent {
       size: this.boardSize(),
     }),
   );
+  readonly activePointId = computed(() => this.pointId(this.keyboardPoint()));
   protected readonly pointEquals = pointEquals;
   protected readonly pointKey = pointKey;
 
@@ -133,6 +138,13 @@ export class GameBoardComponent {
     return this.deadStoneKeys().has(pointKey(point));
   }
 
+  isPointDisabled(point: BoardPoint): boolean {
+    return (
+      (this.phase() === 'playing' && this.hasStone(point)) ||
+      (this.phase() === 'scoring' && !this.hasStone(point))
+    );
+  }
+
   onHover(point: BoardPoint): void {
     if (!this.interactive()) {
       return;
@@ -164,7 +176,7 @@ export class GameBoardComponent {
   }
 
   selectPoint(point: BoardPoint): void {
-    if (!this.interactive()) {
+    if (!this.interactive() || this.isPointDisabled(point)) {
       return;
     }
 
@@ -210,6 +222,39 @@ export class GameBoardComponent {
 
   dataTestId(point: BoardPoint): string {
     return `intersection-${point.x}-${point.y}`;
+  }
+
+  pointId(point: BoardPoint): string {
+    return `game-board-point-${point.x}-${point.y}`;
+  }
+
+  pointAriaLabel(point: BoardPoint): string {
+    const color = this.stoneColor(point);
+    const label = formatPoint(point, this.boardSize());
+    const parts = [
+      color
+        ? this.i18n.t('ui.game_board.point.stone', {
+            point: label,
+            player: this.i18n.playerLabel(color),
+          })
+        : this.i18n.t('ui.game_board.point.empty', {
+            point: label,
+          }),
+    ];
+
+    if (this.isDeadStone(point)) {
+      parts.push(this.i18n.t('ui.game_board.point.dead'));
+    }
+
+    if (this.lastMove() && pointEquals(this.lastMove(), point)) {
+      parts.push(this.i18n.t('ui.game_board.point.last_move'));
+    }
+
+    if (this.isWinningPoint(point)) {
+      parts.push(this.i18n.t('ui.game_board.point.winning'));
+    }
+
+    return parts.join(', ');
   }
 
   private resolvePointFromPointer(event: MouseEvent): BoardPoint | null {

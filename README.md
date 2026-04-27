@@ -8,6 +8,9 @@
 - Start local Gomoku on a fixed 15x15 board
 - Create hosted rooms with two player seats plus spectators
 - Watch live games, chat in-room, and use rematch prompts after a result
+- Resolve hosted Go colors with digital `nigiri`
+- Finish hosted Go games through dead-stone review and both-player scoring agreement
+- Play hosted rooms with server-authoritative byo-yomi clocks
 - Use the same shared rules engine for frontend and backend match state
 
 ## Workspace Overview
@@ -72,30 +75,39 @@ pnpm nx graph
 
 ## Rules In This Build
 
+Hosted rooms currently use a single-process in-memory room store. If the server
+process restarts, active rooms are lost and players need to create or join a new
+room. Multi-node hosted-room coordination is not supported yet; color assignment,
+match clocks, and scoring agreement all remain scoped to that same
+single-process boundary until durable room persistence is added.
+
 ### Go
 
 - Board sizes: 9x9, 13x13, and 19x19. The default setup size is 19x19.
-- Black always plays first in the product today.
+- Black plays first after color assignment.
 - Groups with no liberties are captured immediately.
 - Suicide is illegal.
 - Only basic ko is enforced: immediate recapture of the previous position is blocked, but positional superko is not implemented.
 - White receives 6.5 komi.
 - Pass and resign are both supported.
-- Two consecutive passes currently end the game immediately.
-- Scoring currently uses area scoring: stones on the board plus surrounded territory, with komi added for White.
-- The current double-pass flow does not run a dead-group dispute phase or automatic life-and-death detection. In practice, all stones left on the board are counted as alive when the result is finalized.
-- Traditional note: even games are often color-assigned with `nigiri` (one player hides a handful of stones and the other guesses odd or even). The current product does not implement nigiri; players choose seats and Black starts.
-- Traditional note: Go clocks often use byo-yomi, Canadian overtime, or Fischer-style increment depending on the setting. The hosted-room clock in this build is still decorative and does not enforce time.
+- Two consecutive passes open a dead-stone review instead of ending the game immediately.
+- Scoring uses area scoring: live stones on the board plus surrounded territory, with komi added for White.
+- During scoring review, players can mark dead groups. Changing dead stones clears confirmations, both players must confirm to finish, and either player can dispute to resume play from the post-pass board.
+- Go color assignment uses digital `nigiri`: one side guesses odd or even, and the winner is assigned Black before the match starts.
+- Hosted rooms use server-authoritative byo-yomi clocks by default: 10 minutes main time plus 5 periods of 30 seconds per player. Local play remains untimed in this build.
+- Traditional note: Go clocks vary by event and can use byo-yomi, Canadian overtime, or Fischer-style increment; this build intentionally uses a single hosted byo-yomi preset for now.
 
 ### Gomoku
 
 - The board is fixed at 15x15.
+- The ruleset is standard exact-five Gomoku with a free opening; Black moves first and there is no opening swap flow.
 - Players alternate placing stones on empty intersections.
 - Pass is not available.
 - Resignation is supported.
-- The current build uses a freestyle-like win condition: any horizontal, vertical, or diagonal line of five or more stones wins immediately.
+- A horizontal, vertical, or diagonal line of exactly five stones wins immediately.
+- Overlines of six or more stones do not win by themselves.
 - If the board fills without a winning line, the game ends in a draw.
-- Tournament note: competitive Gomoku and Renju often make stricter choices about overlines, exact-five wins, forbidden patterns for Black, or opening-balance rules such as Swap2. None of those are enforced in this build yet.
+- Tournament note: Renju forbidden patterns for Black and opening-balance rules such as Swap2 are not enforced in this build.
 
 ## Docker And Deployment
 
@@ -139,7 +151,7 @@ The supported Synology deployment guide lives in [deploy/synology/README.md](dep
 
 These are the clearest next-phase issues based on the current implementation and the surrounding rule references:
 
-- Choose and implement a real Go scoring and dispute flow instead of immediate double-pass finalization with every remaining stone treated as alive
-- Decide whether color/opening assignment should stay manual or add a fair selection flow such as nigiri
-- Replace the decorative hosted-room clock with server-authoritative time controls
-- Choose and document an explicit Gomoku ruleset and opening rule instead of leaving the product in a freestyle-like middle ground
+- Add durable hosted-room persistence and decide how timers should survive server restart or multi-node deployment
+- Add configurable hosted time-control presets beyond the current default
+- Consider stronger Go rule options such as positional superko, Japanese scoring, or automatic life-and-death assistance
+- Decide whether Gomoku needs an opening-balance flow such as Swap2 or Renju-style forbidden-move rules

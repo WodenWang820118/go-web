@@ -211,6 +211,7 @@ export function createRoomServiceStub(options: {
     () => snapshot()?.nextMatchSettings ?? null,
   );
   const rematch = computed(() => snapshot()?.rematch ?? null);
+  const nigiri = computed(() => snapshot()?.nigiri ?? null);
   const autoStartBlockedUntilSeatChange = computed(
     () => snapshot()?.autoStartBlockedUntilSeatChange ?? false,
   );
@@ -248,6 +249,7 @@ export function createRoomServiceStub(options: {
     match,
     nextMatchSettings,
     rematch,
+    nigiri,
     autoStartBlockedUntilSeatChange,
     viewer,
     viewerSeat,

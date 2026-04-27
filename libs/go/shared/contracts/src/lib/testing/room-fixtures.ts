@@ -5,6 +5,7 @@ import type {
   RoomSnapshot,
   SeatState,
 } from '../room/snapshots';
+import { ROOM_SNAPSHOT_SCHEMA_VERSION } from '../room/snapshots';
 
 const DEFAULT_ROOM_ID = 'ROOM01';
 const DEFAULT_TIMESTAMP = '2026-03-20T00:00:00.000Z';
@@ -79,6 +80,7 @@ export function createRoomSnapshot(
     'host-1';
 
   return {
+    schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
     roomId: DEFAULT_ROOM_ID,
     createdAt: DEFAULT_TIMESTAMP,
     updatedAt: DEFAULT_TIMESTAMP,
@@ -93,6 +95,8 @@ export function createRoomSnapshot(
     rematch: null,
     autoStartBlockedUntilSeatChange: false,
     match: null,
+    nigiri: null,
+    rules: null,
     chat: [],
     ...overrides,
   };

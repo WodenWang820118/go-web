@@ -6,6 +6,7 @@ import {
   RoomClosedEvent,
 } from '@gx/go/contracts';
 import { BoardSize, GameMode, PlayerColor } from '@gx/go/domain';
+import { GoAnalyticsJoinSource, GoAnalyticsService } from '@gx/go/state';
 import { Observable } from 'rxjs';
 import { OnlineRoomRealtimeEvent } from '../../contracts/online-room-service.contracts';
 import { OnlineRoomRealtimeSyncService } from './online-room-realtime-sync.service';
@@ -18,6 +19,7 @@ import { OnlineRoomSessionWorkflowService } from './online-room-session-workflow
 @Injectable({ providedIn: 'root' })
 export class OnlineRoomService {
   private readonly realtime = inject(OnlineRoomRealtimeSyncService);
+  private readonly analytics = inject(GoAnalyticsService);
   private readonly state = inject(OnlineRoomSessionStateService);
   private readonly workflow = inject(OnlineRoomSessionWorkflowService);
 
@@ -40,6 +42,7 @@ export class OnlineRoomService {
   readonly chat = this.state.chat;
   readonly viewer = this.state.viewer;
   readonly nextMatchSettings = this.state.nextMatchSettings;
+  readonly nigiri = this.state.nigiri;
   readonly rematch = this.state.rematch;
   readonly autoStartBlockedUntilSeatChange =
     this.state.autoStartBlockedUntilSeatChange;
@@ -66,8 +69,12 @@ export class OnlineRoomService {
     return this.workflow.createRoom(displayName, mode, boardSize);
   }
 
-  joinRoom(roomId: string, displayName: string): Observable<void> {
-    return this.workflow.joinRoom(roomId, displayName);
+  joinRoom(
+    roomId: string,
+    displayName: string,
+    joinSource: GoAnalyticsJoinSource = 'direct_room',
+  ): Observable<void> {
+    return this.workflow.joinRoom(roomId, displayName, joinSource);
   }
 
   closeRoom(): Observable<void> {
@@ -82,10 +89,12 @@ export class OnlineRoomService {
     this.emit('seat.claim', {
       color,
     });
+    this.trackHostedInteraction('seat_claim');
   }
 
   releaseSeat(): void {
     this.emit('seat.release');
+    this.trackHostedInteraction('seat_release');
   }
 
   updateNextMatchSettings(settings: GameStartSettings): void {
@@ -104,6 +113,7 @@ export class OnlineRoomService {
     this.emit('chat.send', {
       message,
     });
+    this.trackHostedInteraction('chat_send');
   }
 
   muteParticipant(targetParticipantId: string): void {
@@ -128,6 +138,9 @@ export class OnlineRoomService {
     this.emit('game.rematch.respond', {
       accepted,
     });
+    this.trackHostedInteraction(
+      accepted ? 'rematch_accept' : 'rematch_decline',
+    );
   }
 
   clearTransientMessages(): void {
@@ -151,5 +164,21 @@ export class OnlineRoomService {
     payload: Record<string, unknown> = {},
   ): void {
     this.realtime.emit(event, payload);
+  }
+
+  private trackHostedInteraction(
+    interactionType:
+      | 'seat_claim'
+      | 'seat_release'
+      | 'rematch_accept'
+      | 'rematch_decline'
+      | 'chat_send',
+  ): void {
+    this.analytics.track({
+      event: 'gx_room_interaction',
+      game_mode: this.match()?.settings.mode,
+      interaction_type: interactionType,
+      play_context: 'hosted',
+    });
   }
 }
