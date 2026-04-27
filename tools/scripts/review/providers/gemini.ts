@@ -6,6 +6,7 @@ import {
 import {
   createProviderTelemetryContext,
   recordProviderObservation,
+  type ProviderObservationInput,
   type ProviderTelemetryContext,
 } from '../provider-observability.ts';
 import { GEMINI_HEALTH_TIMEOUT_MS } from '../provider-policies.ts';
@@ -18,9 +19,27 @@ import {
   recordRequestStart,
   sleep,
 } from '../rate-limit.ts';
-import { runLocalCliCommand } from './local-cli.ts';
+import {
+  runLocalCliCommand,
+  type LocalCliCommandInput,
+  type LocalCliCommandResult,
+} from './local-cli.ts';
+import {
+  buildReviewPromptWithReviewerProfile,
+  type ReviewCheckpoint,
+} from '../shared/reviewer-profile.ts';
+
+type GeminiObservationRecorder = (
+  input: ProviderObservationInput,
+  repoRoot?: string,
+) => unknown;
+type GeminiCommandRunner = (
+  input: LocalCliCommandInput,
+) => LocalCliCommandResult;
 
 interface GeminiReviewInput {
+  checkpoint?: ReviewCheckpoint;
+  focus?: string;
   model: string;
   prompt: string;
   repoRoot?: string;
@@ -34,9 +53,9 @@ interface GeminiProviderDependencies {
   getRetryDelay?: typeof getRetryDelayMs;
   loadRateLimitState?: typeof loadRateLimitState;
   now?: () => number;
-  recordObservation?: typeof recordProviderObservation;
+  recordObservation?: GeminiObservationRecorder;
   recordRequestStart?: typeof recordRequestStart;
-  runCommand?: typeof runLocalCliCommand;
+  runCommand?: GeminiCommandRunner;
   sleep?: typeof sleep;
 }
 
@@ -151,10 +170,21 @@ export async function runGeminiReview(
   input: GeminiReviewInput,
   dependencies: GeminiProviderDependencies = {},
 ): Promise<string> {
+  const repoRoot = input.repoRoot ?? process.cwd();
+  const reviewPrompt = buildReviewPromptWithReviewerProfile({
+    checkpoint: input.checkpoint,
+    focus: input.focus,
+    prompt: input.prompt,
+    provider: 'gemini',
+    repoRoot,
+  });
+
   return runGeminiTextCommand(
     {
       ...input,
       operation: 'review-attempt',
+      prompt: reviewPrompt,
+      repoRoot,
     },
     dependencies,
   );
@@ -388,10 +418,7 @@ async function runGeminiTextCommand(
   }
 }
 
-function isGeminiTimedOut(
-  result: ReturnType<typeof runLocalCliCommand>,
-  output = '',
-): boolean {
+function isGeminiTimedOut(result: LocalCliCommandResult, output = ''): boolean {
   return (
     result.error?.name === 'TimeoutError' ||
     result.signal === 'SIGTERM' ||

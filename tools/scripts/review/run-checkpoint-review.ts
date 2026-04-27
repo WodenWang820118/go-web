@@ -23,6 +23,7 @@ import {
   probeGeminiCliHealth,
   runGeminiReview,
 } from './providers/gemini.ts';
+import { readCommonReviewContract } from './shared/common-review-contract.ts';
 
 export type ReviewCheckpoint = 'plan' | 'implementation' | 'test' | 'pre-merge';
 export type ReviewProvider = 'auto' | 'copilot' | 'gemini' | 'codex';
@@ -65,8 +66,10 @@ const HIGH_RISK_FOCUS_PATTERNS = [
   /\bauth\b/i,
   /\bsecret\b/i,
   /\bshell\b/i,
+  /\bprocess\b/i,
   /\bnetwork\b/i,
   /\bfilesystem\b/i,
+  /\buntrusted\b/i,
   /\bcontract\b/i,
   /\bapi\b/i,
   /\bschema\b/i,
@@ -101,9 +104,11 @@ const HIGH_RISK_CONTEXT_PATTERNS = [
   /\bmkdir\b/i,
   /\brename\b/i,
   /\bchild_process\b/i,
+  /\bprocess\b/i,
   /\bspawn(?:sync)?\b/i,
   /\bexec(?:sync)?\b/i,
   /\bpowershell\b/i,
+  /\buntrusted\b/i,
   /\bfetch\(/i,
   /\baxios\b/i,
   /\bhttp\./i,
@@ -523,8 +528,12 @@ export function buildReviewPrompt(
   execution: ReviewExecution,
   context: string,
 ): string {
+  const commonReviewContract = readCommonReviewContract(process.cwd());
   const reviewRules = [
     'You are the second-opinion reviewer for this repository.',
+    commonReviewContract
+      ? `Shared review contract:\n${commonReviewContract}`
+      : null,
     `Checkpoint: ${execution.checkpoint}`,
     `Primary focus: ${execution.focus}`,
     execution.model ? `Requested model: ${execution.model}` : null,
@@ -595,6 +604,8 @@ async function runReviewExecution(
 
   if (execution.provider === 'copilot') {
     return runCopilotReview({
+      checkpoint: execution.checkpoint,
+      focus: execution.focus,
       model: execution.model,
       prompt,
       repoRoot: process.cwd(),
@@ -604,6 +615,8 @@ async function runReviewExecution(
 
   if (execution.provider === 'gemini') {
     return runGeminiReview({
+      checkpoint: execution.checkpoint,
+      focus: execution.focus,
       model: execution.model ?? getDefaultGeminiModel(execution.checkpoint),
       prompt,
       repoRoot: process.cwd(),

@@ -1,3 +1,6 @@
+# Codex bridge config. Canonical workflow, review routing, and gate rules live
+# in AGENTS.md and the referenced .agents/workflows files.
+
 mcp_servers.nx-mcp.command = 'npx'
 mcp_servers.nx-mcp.args = [
 	'nx',
