@@ -145,7 +145,7 @@ export function resetOnlineRoomPageTestEnvironment(): void {
   clearPrimeNGStyles();
   vi.restoreAllMocks();
   document.body
-    .querySelectorAll('.p-dialog-mask, .p-dialog')
+    .querySelectorAll('.p-dialog-mask, .p-dialog, .p-toast')
     .forEach((element) => element.remove());
 
   if (originalClipboardDescriptor) {
@@ -299,7 +299,11 @@ export function createRoomServiceStub(options: {
         roomClosed.set(event);
       },
     ),
-    clearTransientMessages: vi.fn(),
+    clearTransientMessages: vi.fn(() => {
+      lastError.set(null);
+      lastNotice.set(null);
+      lastSystemNotice.set(null);
+    }),
     roomClosed,
     clearRoomClosedEvent: vi.fn(() => roomClosed.set(null)),
     closingRoom: signal(false),

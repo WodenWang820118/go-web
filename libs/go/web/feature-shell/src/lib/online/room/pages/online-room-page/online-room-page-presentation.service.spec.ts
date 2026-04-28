@@ -355,7 +355,7 @@ describe('OnlineRoomPagePresentationService', () => {
   });
 
   it('builds sidebar messages in priority order and adds rematch warnings', () => {
-    const messages = service.buildRoomSidebarMessages({
+    const messages = service.buildRoomFeedbackMessages({
       lastError: 'Join failed',
       lastNotice: 'Seat updated',
       lastSystemNotice: {
@@ -372,29 +372,33 @@ describe('OnlineRoomPagePresentationService', () => {
     expect(messages).toEqual([
       {
         tone: 'error',
+        lifetime: 'transient',
+        closable: true,
         message: 'Join failed',
-        testId: 'room-sidebar-message-error',
       },
       {
         tone: 'notice',
+        lifetime: 'transient',
+        closable: true,
         message: 'Seat updated',
-        testId: 'room-sidebar-message-notice',
       },
       {
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: 'Realtime unavailable',
-        testId: 'room-sidebar-message-warning',
       },
       {
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: 'Rematch blocked until a seat changes.',
-        testId: 'room-sidebar-message-rematch-blocked',
       },
     ]);
   });
 
   it('suppresses the duplicate auto-start system notice in the sidebar', () => {
-    const messages = service.buildRoomSidebarMessages({
+    const messages = service.buildRoomFeedbackMessages({
       lastError: null,
       lastNotice: 'Match started automatically',
       lastSystemNotice: {

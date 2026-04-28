@@ -51,13 +51,6 @@ describe('OnlineRoomSidebarComponent', () => {
     fixture.componentRef.setInput('match', liveMatch);
     fixture.componentRef.setInput('messages', chatMessages);
     fixture.componentRef.setInput('helperText', 'Send a message to the room.');
-    fixture.componentRef.setInput('roomMessages', [
-      {
-        tone: 'warning',
-        message: 'Realtime is reconnecting.',
-        testId: 'room-sidebar-message-warning',
-      },
-    ]);
     fixture.componentRef.setInput('canPass', true);
     fixture.componentRef.setInput('canResign', true);
     fixture.componentRef.setInput('canConfirmScoring', false);
@@ -87,8 +80,8 @@ describe('OnlineRoomSidebarComponent', () => {
 
     expect(root.querySelector('[data-testid="room-sidebar"]')).not.toBeNull();
     expect(
-      root.querySelector('[data-testid="room-sidebar-message-warning"]'),
-    ).not.toBeNull();
+      root.querySelector('[data-testid="room-sidebar-messages"]'),
+    ).toBeNull();
     expect(
       root.querySelector('[data-testid="room-sidebar-players"]'),
     ).not.toBeNull();

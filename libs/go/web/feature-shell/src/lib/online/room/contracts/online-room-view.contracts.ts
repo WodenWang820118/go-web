@@ -49,10 +49,13 @@ export interface OnlineRoomSeatViewModel {
   readonly isViewerSeat: boolean;
 }
 
-export interface OnlineRoomSidebarMessageViewModel {
+export type OnlineRoomFeedbackLifetime = 'stateful' | 'transient';
+
+export interface OnlineRoomFeedbackMessageViewModel {
   readonly tone: 'error' | 'notice' | 'warning';
+  readonly lifetime: OnlineRoomFeedbackLifetime;
+  readonly closable: true;
   readonly message: string;
-  readonly testId: string;
 }
 
 export interface OnlineRoomSidebarRematchStatusViewModel {

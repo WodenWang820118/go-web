@@ -9,7 +9,7 @@ import {
   OnlineRoomNigiriViewModel,
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
-  OnlineRoomSidebarMessageViewModel,
+  OnlineRoomFeedbackMessageViewModel,
   OnlineRoomSidebarRematchStatusViewModel,
   OnlineRoomStageViewModel,
 } from '../../../../contracts/online-room-view.contracts';
@@ -165,8 +165,10 @@ export class OnlineRoomPageViewStateService {
       ? this.i18n.t('room.client.realtime_unavailable')
       : null,
   );
-  readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
-    return this.presentation.buildRoomSidebarMessages({
+  readonly roomFeedbackMessages = computed<
+    OnlineRoomFeedbackMessageViewModel[]
+  >(() => {
+    return this.presentation.buildRoomFeedbackMessages({
       lastError: this.onlineRoom.lastError(),
       lastNotice: this.onlineRoom.lastNotice(),
       lastSystemNotice: this.onlineRoom.lastSystemNotice(),

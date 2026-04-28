@@ -2,10 +2,6 @@
   class="go-hosted-panel-dark go-hosted-scroll flex h-full min-h-full flex-col gap-3 p-3"
   data-testid="room-sidebar"
 >
-  @if (roomMessages().length > 0) {
-    <lib-go-online-room-sidebar-messages [messages]="roomMessages()" />
-  }
-
   @if (!participantId()) {
     <lib-go-online-room-sidebar-identity-panel
       [joinForm]="joinForm()"

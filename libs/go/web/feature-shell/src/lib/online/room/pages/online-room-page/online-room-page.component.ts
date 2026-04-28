@@ -2,12 +2,15 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
 import { OnlineRoomPageStatusComponent } from '../../views/online-room-page-status/online-room-page-status.component';
 import { OnlineRoomSidebarComponent } from '../../views/online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomStageSectionComponent } from '../../views/online-room-stage-section/online-room-stage-section.component';
 import { OnlineRoomPagePresenterService } from './online-room-page.presenter.service';
 import { OnlineRoomPageDialogsService } from './services/online-room-page-dialogs/online-room-page-dialogs.service';
+import { OnlineRoomPageFeedbackService } from './services/online-room-page-feedback/online-room-page-feedback.service';
 import { OnlineRoomPageInteractionsService } from './services/online-room-page-interactions/online-room-page-interactions.service';
 import { OnlineRoomPageLeaveService } from './services/online-room-page-leave/online-room-page-leave.service';
 import { OnlineRoomPageShareService } from './services/online-room-page-share/online-room-page-share.service';
@@ -26,6 +29,7 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
     OnlineRoomSidebarComponent,
     OnlineRoomStageSectionComponent,
     TagModule,
+    ToastModule,
   ],
   templateUrl: './online-room-page.component.html',
   host: {
@@ -37,16 +41,20 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
     OnlineRoomPageInteractionsService,
     OnlineRoomPageShareService,
     OnlineRoomPageDialogsService,
+    OnlineRoomPageFeedbackService,
     OnlineRoomPageLeaveService,
     GoHostedMatchAnalyticsService,
+    MessageService,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
   protected readonly presenter = inject(OnlineRoomPagePresenterService);
+  private readonly feedback = inject(OnlineRoomPageFeedbackService);
   private readonly hostedMatchAnalytics = inject(GoHostedMatchAnalyticsService);
 
   constructor() {
+    void this.feedback;
     void this.hostedMatchAnalytics;
   }
 

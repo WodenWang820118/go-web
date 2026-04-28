@@ -13,7 +13,7 @@ import {
   OnlineRoomNigiriViewModel,
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
-  OnlineRoomSidebarMessageViewModel,
+  OnlineRoomFeedbackMessageViewModel,
   OnlineRoomSidebarRematchStatusViewModel,
   OnlineRoomStageViewModel,
 } from '../../contracts/online-room-view.contracts';
@@ -23,7 +23,7 @@ import {
   RoomSeatViewOptions,
 } from './services/online-room-page-participants-presentation.service';
 
-interface RoomSidebarMessageState {
+interface RoomFeedbackMessageState {
   lastError: string | null;
   lastNotice: string | null;
   lastSystemNotice: SystemNotice | null;
@@ -170,16 +170,17 @@ export class OnlineRoomPagePresentationService {
     }
   }
 
-  buildRoomSidebarMessages(
-    state: RoomSidebarMessageState,
-  ): OnlineRoomSidebarMessageViewModel[] {
-    const messages: OnlineRoomSidebarMessageViewModel[] = [];
+  buildRoomFeedbackMessages(
+    state: RoomFeedbackMessageState,
+  ): OnlineRoomFeedbackMessageViewModel[] {
+    const messages: OnlineRoomFeedbackMessageViewModel[] = [];
 
     if (state.lastError) {
       messages.push({
         tone: 'error',
+        lifetime: 'transient',
+        closable: true,
         message: state.lastError,
-        testId: 'room-sidebar-message-error',
       });
     }
 
@@ -189,16 +190,18 @@ export class OnlineRoomPagePresentationService {
     ) {
       messages.push({
         tone: 'notice',
+        lifetime: 'transient',
+        closable: true,
         message: state.lastNotice,
-        testId: 'room-sidebar-message-notice',
       });
     }
 
     if (state.connectionWarning) {
       messages.push({
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: state.connectionWarning,
-        testId: 'room-sidebar-message-warning',
       });
     }
 
@@ -209,8 +212,9 @@ export class OnlineRoomPagePresentationService {
     ) {
       messages.push({
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: this.i18n.t('room.rematch.blocked'),
-        testId: 'room-sidebar-message-rematch-blocked',
       });
     }
 

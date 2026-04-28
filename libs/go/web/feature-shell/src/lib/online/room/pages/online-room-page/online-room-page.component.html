@@ -1,6 +1,13 @@
 <section
   class="room-shell min-h-dvh bg-[radial-gradient(circle_at_top_left,_rgba(33,58,74,0.55),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(103,74,28,0.25),_transparent_28%),linear-gradient(180deg,_#0f1821,_#070b11_70%)] text-stone-100"
 >
+  <p-toast
+    key="room-feedback"
+    position="top-center"
+    [preventDuplicates]="true"
+    [preventOpenDuplicates]="true"
+  />
+
   <p-dialog
     [visible]="!!presenter.leave.leaveConfirmation()"
     [modal]="true"
@@ -225,7 +232,6 @@
         [match]="presenter.view.match()"
         [messages]="presenter.view.onlineRoom.chat()"
         [helperText]="presenter.view.chatHelperText()"
-        [roomMessages]="presenter.view.roomMessages()"
         [canPass]="presenter.view.canPass()"
         [canResign]="presenter.view.canResign()"
         [canConfirmScoring]="presenter.view.canConfirmScoring()"
