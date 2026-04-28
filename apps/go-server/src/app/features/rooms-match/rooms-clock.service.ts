@@ -4,12 +4,8 @@ import { RoomsRealtimeBroadcasterService } from '../../core/rooms-realtime/rooms
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { RoomRecord } from '../../contracts/rooms.types';
-import {
-  advanceHostedClock,
-  createTimeoutState,
-  getActiveClockRemainingMs,
-} from './rooms-match-clock';
-import { updateFinishedMatchState } from './rooms-match-transitions';
+import { RoomsMatchClockCalculatorService } from './rooms-match-clock';
+import { RoomsMatchTransitionsService } from './rooms-match-transitions';
 
 @Injectable()
 export class RoomsClockService implements OnModuleDestroy {
@@ -22,6 +18,10 @@ export class RoomsClockService implements OnModuleDestroy {
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsRealtimeBroadcasterService)
     private readonly realtime: RoomsRealtimeBroadcasterService,
+    @Inject(RoomsMatchClockCalculatorService)
+    private readonly clockCalculator: RoomsMatchClockCalculatorService,
+    @Inject(RoomsMatchTransitionsService)
+    private readonly transitions: RoomsMatchTransitionsService,
   ) {}
 
   refresh(room: RoomRecord): void {
@@ -32,7 +32,9 @@ export class RoomsClockService implements OnModuleDestroy {
       return;
     }
 
-    const remainingMs = getActiveClockRemainingMs(match.clock);
+    const remainingMs = this.clockCalculator.getActiveClockRemainingMs(
+      match.clock,
+    );
     const timer = setTimeout(
       () => this.resolveScheduledTimeout(room.id),
       Math.max(0, remainingMs) + 25,
@@ -75,7 +77,7 @@ export class RoomsClockService implements OnModuleDestroy {
     }
 
     const now = this.store.timestamp();
-    const advanced = advanceHostedClock(match.clock, now);
+    const advanced = this.clockCalculator.advanceHostedClock(match.clock, now);
 
     if (!advanced.timedOutColor) {
       room.match = {
@@ -87,15 +89,17 @@ export class RoomsClockService implements OnModuleDestroy {
     }
 
     const timedOutColor = advanced.timedOutColor;
-    const timeoutState = createTimeoutState(match.state, timedOutColor);
-    updateFinishedMatchState(
+    const timeoutState = this.clockCalculator.createTimeoutState(
+      match.state,
+      timedOutColor,
+    );
+    this.transitions.updateFinishedMatchState(
       room,
       {
         ...match,
         clock: advanced.clock,
       },
       timeoutState,
-      this.store,
     );
     this.store.touchRoom(room);
     this.logger.log(

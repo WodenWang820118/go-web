@@ -12,30 +12,57 @@ import type {
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rules-engine.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
-import { createHostedRematchState } from './rooms-match-policy';
-import {
-  applyHostedGameCommand,
-  maybeStartNextMatch,
-  startMatchWithCurrentSeats,
-  type RoomsMatchTransitionDependencies,
-} from './rooms-match-transitions';
+import { RoomsMatchClockCalculatorService } from './rooms-match-clock';
+import { RoomsMatchNigiriService } from './rooms-match-nigiri.service';
+import { RoomsMatchPolicyService } from './rooms-match-policy';
+import { RoomsMatchSettingsService } from './rooms-match-settings';
+import { RoomsMatchTransitionsService } from './rooms-match-transitions';
+
+type RoomsMatchTransitionDependencies = RoomsMatchTransitionsService;
+type HostedGameCommand = Parameters<
+  RoomsMatchTransitionsService['applyHostedGameCommand']
+>[2];
+type HostedStartSettings = Parameters<
+  RoomsMatchTransitionsService['startMatchWithCurrentSeats']
+>[1];
 
 describe('rooms-match-transitions', () => {
   let store: RoomsStore;
   let roomsErrors: RoomsErrorsService;
   let rulesEngines: RoomsRulesEngineService;
+  let settings: RoomsMatchSettingsService;
+  let policy: RoomsMatchPolicyService;
+  let clockCalculator: RoomsMatchClockCalculatorService;
+  let nigiri: RoomsMatchNigiriService;
   let dependencies: RoomsMatchTransitionDependencies;
+
+  function createTransitions(
+    rulesEngineService = rulesEngines,
+  ): RoomsMatchTransitionsService {
+    return new RoomsMatchTransitionsService(
+      store,
+      rulesEngineService,
+      roomsErrors,
+      settings,
+      policy,
+      clockCalculator,
+      nigiri,
+    );
+  }
 
   beforeEach(() => {
     roomsErrors = new RoomsErrorsService();
     store = new RoomsStore(roomsErrors);
     rulesEngines = new RoomsRulesEngineService();
-    dependencies = {
-      logger: new Logger('rooms-match-transitions.spec'),
-      store,
-      rulesEngines,
-      roomsErrors,
-    };
+    settings = new RoomsMatchSettingsService(roomsErrors);
+    policy = new RoomsMatchPolicyService(store);
+    clockCalculator = new RoomsMatchClockCalculatorService();
+    nigiri = new RoomsMatchNigiriService(store, roomsErrors);
+    dependencies = createTransitions();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('applyHostedGameCommand', () => {
@@ -582,19 +609,17 @@ describe('rooms-match-transitions', () => {
       expect.assertions(2);
 
       const { room, host } = createRoomWithSeatedPlayers(store);
-      const rejectingDependencies: RoomsMatchTransitionDependencies = {
-        ...dependencies,
-        rulesEngines: {
-          get: () =>
-            ({
-              applyMove: () => ({
-                ok: false,
-                error: 'custom error message',
-                state: getHostedMatch(room).state,
-              }),
-            }) as ReturnType<RoomsRulesEngineService['get']>,
-        } as RoomsRulesEngineService,
-      };
+      const rejectingRulesEngines = {
+        get: () =>
+          ({
+            applyMove: () => ({
+              ok: false,
+              error: 'custom error message',
+              state: getHostedMatch(room).state,
+            }),
+          }) as ReturnType<RoomsRulesEngineService['get']>,
+      } as RoomsRulesEngineService;
+      const rejectingDependencies = createTransitions(rejectingRulesEngines);
 
       startGomokuMatch(room, dependencies);
 
@@ -807,6 +832,38 @@ describe('rooms-match-transitions', () => {
       expect(room.match?.state.consecutivePasses).toBe(0);
       expect(room.rematch).toBeNull();
     });
+
+    it('reactivates the hosted clock when timed Go scoring is disputed', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+      vi.spyOn(store, 'timestamp')
+        .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:05.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:05.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:08.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:08.000Z')
+        .mockReturnValueOnce('2026-04-20T00:00:10.000Z');
+
+      startTimedGoMatch(room, dependencies);
+      applyHostedGameCommand(room, host, { type: 'pass' }, dependencies);
+      applyHostedGameCommand(room, guest, { type: 'pass' }, dependencies);
+
+      const scoringClock = room.match?.clock;
+
+      applyHostedGameCommand(
+        room,
+        guest,
+        { type: 'dispute-scoring' },
+        dependencies,
+      );
+
+      expect(room.match?.state.phase).toBe('playing');
+      expect(room.match?.state.nextPlayer).toBe('white');
+      expect(room.match?.clock).toMatchObject({
+        activeColor: 'white',
+        lastStartedAt: '2026-04-20T00:00:10.000Z',
+        revision: (scoringClock?.revision ?? 0) + 1,
+      });
+    });
   });
 
   describe('maybeStartNextMatch', () => {
@@ -912,7 +969,7 @@ describe('rooms-match-transitions', () => {
 
     it('does not auto-start while rematch responses are still pending', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
-      room.rematch = createHostedRematchState(host.id, guest.id);
+      room.rematch = policy.createHostedRematchState(host.id, guest.id);
 
       expect(maybeStartNextMatch(room, dependencies)).toBeNull();
       expect(room.match).toBeNull();
@@ -920,21 +977,16 @@ describe('rooms-match-transitions', () => {
 
     it('logs rich debug context when auto-start is skipped', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
-      const logger = {
-        log: vi.fn(),
-        debug: vi.fn(),
-      } as unknown as Logger;
-      const loggingDependencies: RoomsMatchTransitionDependencies = {
-        ...dependencies,
-        logger,
-      };
-      room.rematch = createHostedRematchState(host.id, guest.id);
+      const debugSpy = vi
+        .spyOn(Logger.prototype, 'debug')
+        .mockImplementation(() => undefined);
+      room.rematch = policy.createHostedRematchState(host.id, guest.id);
 
-      expect(maybeStartNextMatch(room, loggingDependencies)).toBeNull();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(maybeStartNextMatch(room, dependencies)).toBeNull();
+      expect(debugSpy).toHaveBeenCalledWith(
         expect.stringContaining('waiting_for_rematch_responses'),
       );
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(debugSpy).toHaveBeenCalledWith(
         expect.stringContaining('rematchResponses'),
       );
     });
@@ -958,9 +1010,27 @@ describe('rooms-match-transitions', () => {
   });
 
   describe('startMatchWithCurrentSeats', () => {
+    it('rejects starting a match before both seats are occupied', () => {
+      const { room, host, guest } = createRoomWithSeatedPlayers(store);
+      host.seat = null;
+      guest.seat = null;
+
+      expect(() =>
+        startMatchWithCurrentSeats(
+          room,
+          {
+            mode: 'gomoku',
+            boardSize: 15,
+            komi: 0,
+          },
+          dependencies,
+        ),
+      ).toThrow(BadRequestException);
+    });
+
     it('creates a fresh match and clears rematch-related room state', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
-      room.rematch = createHostedRematchState(host.id, guest.id);
+      room.rematch = policy.createHostedRematchState(host.id, guest.id);
       room.autoStartBlockedUntilSeatChange = true;
 
       startMatchWithCurrentSeats(
@@ -1007,6 +1077,30 @@ function getHostedMatch(room: RoomRecord): NonNullable<RoomRecord['match']> {
   }
 
   return room.match;
+}
+
+function applyHostedGameCommand(
+  room: RoomRecord,
+  participant: ParticipantRecord,
+  command: HostedGameCommand,
+  dependencies: RoomsMatchTransitionDependencies,
+): void {
+  dependencies.applyHostedGameCommand(room, participant, command);
+}
+
+function maybeStartNextMatch(
+  room: RoomRecord,
+  dependencies: RoomsMatchTransitionDependencies,
+): ReturnType<RoomsMatchTransitionsService['maybeStartNextMatch']> {
+  return dependencies.maybeStartNextMatch(room);
+}
+
+function startMatchWithCurrentSeats(
+  room: RoomRecord,
+  settings: HostedStartSettings,
+  dependencies: RoomsMatchTransitionDependencies,
+): ReturnType<RoomsMatchTransitionsService['startMatchWithCurrentSeats']> {
+  return dependencies.startMatchWithCurrentSeats(room, settings);
 }
 
 function addParticipant(
@@ -1072,6 +1166,26 @@ function startGoMatch(
       mode: 'go',
       boardSize: 9,
       komi: 6.5,
+    },
+    dependencies,
+  );
+}
+
+function startTimedGoMatch(
+  room: RoomRecord,
+  dependencies: RoomsMatchTransitionDependencies,
+): void {
+  startMatchWithCurrentSeats(
+    room,
+    {
+      mode: 'go',
+      boardSize: 9,
+      komi: 6.5,
+      timeControl: {
+        mainTimeMs: 60_000,
+        periodTimeMs: 30_000,
+        periods: 5,
+      },
     },
     dependencies,
   );

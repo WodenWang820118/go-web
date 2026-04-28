@@ -1,39 +1,50 @@
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import type { RoomRecord } from '../../contracts/rooms.types';
-import {
-  canEditNextMatchSettings,
-  createHostedRematchState,
-  findRematchSeat,
-  getAutoStartReadiness,
-  resetSeatDependentState,
-} from './rooms-match-policy';
+import { RoomsMatchPolicyService } from './rooms-match-policy';
 
 describe('rooms-match-policy', () => {
   let store: RoomsStore;
+  let policy: RoomsMatchPolicyService;
 
   beforeEach(() => {
     store = new RoomsStore(new RoomsErrorsService());
+    policy = new RoomsMatchPolicyService(store);
   });
 
   it('blocks next-match settings edits once both seats are filled', () => {
     const room = createRoomWithTwoParticipants(store);
     assignSeats(store, room);
 
-    expect(canEditNextMatchSettings(room, store)).toBe(false);
+    expect(policy.canEditNextMatchSettings(room)).toBe(false);
+  });
+
+  it('blocks next-match settings edits while a rematch gate is open', () => {
+    const room = createRoomWithTwoParticipants(store);
+    const { host, guest } = assignSeats(store, room);
+    room.rematch = policy.createHostedRematchState(host.id, guest.id);
+
+    expect(policy.canEditNextMatchSettings(room)).toBe(false);
+  });
+
+  it('blocks next-match settings edits while a match is live', () => {
+    const room = createRoomWithTwoParticipants(store);
+    room.match = createHostedMatch('playing');
+
+    expect(policy.canEditNextMatchSettings(room)).toBe(false);
   });
 
   it('allows next-match settings edits before both seats are filled', () => {
     const room = createRoomWithTwoParticipants(store);
 
-    expect(canEditNextMatchSettings(room, store)).toBe(true);
+    expect(policy.canEditNextMatchSettings(room)).toBe(true);
   });
 
   it('reports a seat-change requirement when auto-start is blocked', () => {
     const room = createRoomWithTwoParticipants(store);
     room.autoStartBlockedUntilSeatChange = true;
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: false,
       reason: 'auto_start_blocked_until_seat_change',
     });
@@ -43,7 +54,7 @@ describe('rooms-match-policy', () => {
     const room = createRoomWithTwoParticipants(store);
     room.match = createHostedMatch('playing');
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: false,
       reason: 'match_still_live',
     });
@@ -52,7 +63,7 @@ describe('rooms-match-policy', () => {
   it('reports missing seats as an auto-start blocker', () => {
     const room = createRoomWithTwoParticipants(store);
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: false,
       reason: 'both_seats_not_filled',
       extra: {
@@ -66,9 +77,9 @@ describe('rooms-match-policy', () => {
     const room = createRoomWithTwoParticipants(store);
     const { host, guest } = assignSeats(store, room);
 
-    room.rematch = createHostedRematchState(host.id, guest.id);
+    room.rematch = policy.createHostedRematchState(host.id, guest.id);
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: false,
       reason: 'waiting_for_rematch_responses',
       extra: {
@@ -94,7 +105,7 @@ describe('rooms-match-policy', () => {
       },
     };
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: true,
       black: host,
       white: guest,
@@ -115,7 +126,7 @@ describe('rooms-match-policy', () => {
       },
     };
 
-    expect(getAutoStartReadiness(room, store)).toEqual({
+    expect(policy.getAutoStartReadiness(room)).toEqual({
       ready: false,
       reason: 'rematch_participants_mismatch',
       extra: {
@@ -134,27 +145,51 @@ describe('rooms-match-policy', () => {
   it('finds the rematch seat for each participant', () => {
     const room = createRoomWithTwoParticipants(store);
     const { host, guest } = assignSeats(store, room);
-    const rematch = createHostedRematchState(host.id, guest.id);
+    const rematch = policy.createHostedRematchState(host.id, guest.id);
 
-    expect(findRematchSeat(rematch, host.id)).toBe('black');
-    expect(findRematchSeat(rematch, guest.id)).toBe('white');
+    expect(policy.findRematchSeat(rematch, host.id)).toBe('black');
+    expect(policy.findRematchSeat(rematch, guest.id)).toBe('white');
+    expect(policy.findRematchSeat(rematch, 'unknown-participant')).toBeNull();
   });
 
-  it('clears rematch and auto-start blocks after a seat change', () => {
+  it('clears rematch, auto-start, and nigiri state after a seat change', () => {
     const room = createRoomWithTwoParticipants(store);
     const { host, guest } = assignSeats(store, room);
-    room.rematch = createHostedRematchState(host.id, guest.id);
+    room.rematch = policy.createHostedRematchState(host.id, guest.id);
     room.autoStartBlockedUntilSeatChange = true;
+    room.nigiri = {
+      status: 'pending',
+      commitment: 'commitment',
+      guesser: 'white',
+    };
+    room.nigiriSecret = {
+      parity: 'odd',
+      nonce: 'nonce',
+    };
 
-    expect(resetSeatDependentState(room)).toBe(true);
+    expect(policy.resetSeatDependentState(room)).toBe(true);
     expect(room.rematch).toBeNull();
     expect(room.autoStartBlockedUntilSeatChange).toBe(false);
+    expect(room.nigiri).toBeNull();
+    expect(room.nigiriSecret).toBeNull();
+  });
+
+  it('reports nigiri-only state as seat-dependent state to clear', () => {
+    const room = createRoomWithTwoParticipants(store);
+    room.nigiri = {
+      status: 'pending',
+      commitment: 'commitment',
+      guesser: 'white',
+    };
+
+    expect(policy.resetSeatDependentState(room)).toBe(true);
+    expect(room.nigiri).toBeNull();
   });
 
   it('reports when there was no seat-dependent state to clear', () => {
     const room = createRoomWithTwoParticipants(store);
 
-    expect(resetSeatDependentState(room)).toBe(false);
+    expect(policy.resetSeatDependentState(room)).toBe(false);
     expect(room.rematch).toBeNull();
     expect(room.autoStartBlockedUntilSeatChange).toBe(false);
   });

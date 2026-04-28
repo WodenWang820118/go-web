@@ -18,6 +18,7 @@ import type { Request } from 'express';
 import { CloseRoomDto, CreateRoomDto, JoinRoomDto } from './rooms.dtos';
 import { RoomsLifecycleService } from '../features/rooms-lifecycle/rooms-lifecycle.service';
 import { RoomsRealtimeBroadcasterService } from '../core/rooms-realtime/rooms-realtime-broadcaster.service';
+import { RoomsRequestKeyService } from '../core/rooms-request/rooms-request-key.service';
 
 /**
  * Exposes the hosted room REST API used by the Angular frontend.
@@ -29,6 +30,8 @@ export class RoomsController {
     private readonly roomsLifecycleService: RoomsLifecycleService,
     @Inject(RoomsRealtimeBroadcasterService)
     private readonly realtime: RoomsRealtimeBroadcasterService,
+    @Inject(RoomsRequestKeyService)
+    private readonly requestKeys: RoomsRequestKeyService,
   ) {}
 
   // #region Routes
@@ -39,7 +42,7 @@ export class RoomsController {
   ): CreateRoomResponse {
     return this.roomsLifecycleService.createRoom(
       body.displayName,
-      this.requesterKey(request, 'create'),
+      this.requestKeys.fromRequest(request, 'create'),
       {
         mode: body.mode,
         boardSize: body.boardSize,
@@ -57,7 +60,7 @@ export class RoomsController {
       roomId,
       body.displayName,
       body.participantToken,
-      this.requesterKey(request, `join:${roomId}`),
+      this.requestKeys.fromRequest(request, `join:${roomId}`),
     );
   }
 
@@ -81,12 +84,6 @@ export class RoomsController {
   @Get(':roomId')
   getRoom(@Param('roomId') roomId: string): GetRoomResponse {
     return this.roomsLifecycleService.getRoom(roomId);
-  }
-  // #endregion
-
-  // #region Helpers
-  private requesterKey(request: Request, action: string): string {
-    return `${action}:${request.ip ?? request.socket.remoteAddress ?? 'unknown'}`;
   }
   // #endregion
 }
