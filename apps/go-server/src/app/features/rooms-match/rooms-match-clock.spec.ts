@@ -1,17 +1,13 @@
 import { HostedClockSnapshot } from '@gx/go/contracts';
 import { GomokuRulesEngine, MatchSettings } from '@gx/go/domain';
-import {
-  advanceHostedClock,
-  completeHostedClockTurn,
-  createHostedClock,
-  createTimeoutState,
-} from './rooms-match-clock';
+import { RoomsMatchClockCalculatorService } from './rooms-match-clock';
 
 describe('rooms-match-clock', () => {
   const startedAt = '2026-04-20T00:00:00.000Z';
+  const calculator = new RoomsMatchClockCalculatorService();
 
   it('creates a hosted byo-yomi clock from match settings', () => {
-    const clock = createHostedClock(testSettings(), startedAt);
+    const clock = calculator.createHostedClock(testSettings(), startedAt);
 
     expect(clock).toEqual({
       config: {
@@ -37,10 +33,25 @@ describe('rooms-match-clock', () => {
     });
   });
 
+  it('does not create a clock when match settings omit time control', () => {
+    expect(
+      calculator.createHostedClock(
+        {
+          ...testSettings(),
+          timeControl: undefined,
+        },
+        startedAt,
+      ),
+    ).toBeNull();
+  });
+
   it('consumes main time before byo-yomi periods', () => {
     const clock = createTestHostedClock();
 
-    const advanced = advanceHostedClock(clock, '2026-04-20T00:00:11.000Z');
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:00:11.000Z',
+    );
 
     expect(advanced.timedOutColor).toBeNull();
     expect(advanced.clock.players.black).toEqual({
@@ -57,7 +68,10 @@ describe('rooms-match-clock', () => {
       periodTimeMs: 30_000,
     });
 
-    const advanced = advanceHostedClock(clock, '2026-04-20T00:00:31.000Z');
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:00:31.000Z',
+    );
 
     expect(advanced.timedOutColor).toBeNull();
     expect(advanced.clock.players.black).toEqual({
@@ -73,7 +87,10 @@ describe('rooms-match-clock', () => {
       periodTimeMs: 30_000,
     });
 
-    const advanced = advanceHostedClock(clock, '2026-04-20T00:02:30.000Z');
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:02:30.000Z',
+    );
 
     expect(advanced.timedOutColor).toBe('black');
     expect(advanced.clock.players.black).toEqual({
@@ -89,7 +106,7 @@ describe('rooms-match-clock', () => {
       periodTimeMs: 5_000,
     });
 
-    const nextClock = completeHostedClockTurn(
+    const nextClock = calculator.completeHostedClockTurn(
       clock,
       'white',
       'playing',
@@ -105,10 +122,41 @@ describe('rooms-match-clock', () => {
     expect(nextClock.lastStartedAt).toBe('2026-04-20T00:00:25.000Z');
   });
 
+  it('keeps the active player when a turn completes outside playing phase', () => {
+    const clock = createTestHostedClock();
+
+    const nextClock = calculator.completeHostedClockTurn(
+      clock,
+      'white',
+      'scoring',
+      '2026-04-20T00:00:05.000Z',
+    );
+
+    expect(nextClock.activeColor).toBe('black');
+    expect(nextClock.lastStartedAt).toBe('2026-04-20T00:00:05.000Z');
+    expect(nextClock.revision).toBe(clock.revision + 1);
+  });
+
+  it('activates a hosted clock for resumed play', () => {
+    const clock = createTestHostedClock();
+
+    const activated = calculator.activateHostedClock(
+      clock,
+      'white',
+      '2026-04-20T00:00:10.000Z',
+    );
+
+    expect(activated).toMatchObject({
+      activeColor: 'white',
+      lastStartedAt: '2026-04-20T00:00:10.000Z',
+      revision: clock.revision + 1,
+    });
+  });
+
   it('creates a finished timeout state for the opposing winner', () => {
     const state = new GomokuRulesEngine().createInitialState(testSettings());
 
-    expect(createTimeoutState(state, 'black')).toMatchObject({
+    expect(calculator.createTimeoutState(state, 'black')).toMatchObject({
       phase: 'finished',
       result: {
         winner: 'white',
@@ -116,6 +164,19 @@ describe('rooms-match-clock', () => {
         summary: {
           key: 'game.result.timeout',
         },
+      },
+      scoring: null,
+    });
+  });
+
+  it('creates a finished timeout state when white times out', () => {
+    const state = new GomokuRulesEngine().createInitialState(testSettings());
+
+    expect(calculator.createTimeoutState(state, 'white')).toMatchObject({
+      phase: 'finished',
+      result: {
+        winner: 'black',
+        reason: 'timeout',
       },
       scoring: null,
     });
@@ -139,7 +200,7 @@ describe('rooms-match-clock', () => {
   }
 
   function createTestHostedClock(): HostedClockSnapshot {
-    const clock = createHostedClock(testSettings(), startedAt);
+    const clock = calculator.createHostedClock(testSettings(), startedAt);
 
     if (!clock) {
       throw new Error('Expected test settings to create a hosted clock.');

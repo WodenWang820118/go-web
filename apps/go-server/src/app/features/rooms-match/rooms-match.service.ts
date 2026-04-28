@@ -10,19 +10,11 @@ import { RoomsRulesEngineService } from '../../core/rooms-rules-engine/rooms-rul
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { MutationResult, RoomRecord } from '../../contracts/rooms.types';
-import {
-  canEditNextMatchSettings,
-  findRematchSeat,
-  resetSeatDependentState,
-} from './rooms-match-policy';
-import { normalizeHostedStartSettings } from './rooms-match-settings';
-import {
-  applyHostedGameCommand,
-  maybeBeginDigitalNigiri,
-  maybeStartNextMatch,
-  startMatchWithCurrentSeats,
-  type RoomsMatchTransitionDependencies,
-} from './rooms-match-transitions';
+import { RoomsMatchClockCalculatorService } from './rooms-match-clock';
+import { RoomsMatchNigiriService } from './rooms-match-nigiri.service';
+import { RoomsMatchPolicyService } from './rooms-match-policy';
+import { RoomsMatchSettingsService } from './rooms-match-settings';
+import { RoomsMatchTransitionsService } from './rooms-match-transitions';
 import { RoomsClockService } from './rooms-clock.service';
 
 const NOOP_CLOCKS: Pick<RoomsClockService, 'refresh'> = {
@@ -46,6 +38,24 @@ export class RoomsMatchService {
     private readonly rulesEngines: RoomsRulesEngineService,
     @Inject(RoomsErrorsService)
     private readonly roomsErrors: RoomsErrorsService,
+    @Inject(RoomsMatchSettingsService)
+    private readonly matchSettings: RoomsMatchSettingsService = new RoomsMatchSettingsService(
+      roomsErrors,
+    ),
+    @Inject(RoomsMatchPolicyService)
+    private readonly policy: RoomsMatchPolicyService = new RoomsMatchPolicyService(
+      store,
+    ),
+    @Inject(RoomsMatchTransitionsService)
+    private readonly transitions: RoomsMatchTransitionsService = new RoomsMatchTransitionsService(
+      store,
+      rulesEngines,
+      roomsErrors,
+      matchSettings,
+      policy,
+      new RoomsMatchClockCalculatorService(),
+      new RoomsMatchNigiriService(store, roomsErrors),
+    ),
     @Inject(RoomsClockService)
     private readonly clocks: Pick<RoomsClockService, 'refresh'> = NOOP_CLOCKS,
   ) {}
@@ -134,10 +144,8 @@ export class RoomsMatchService {
       );
     }
 
-    const normalizedSettings = normalizeHostedStartSettings(
-      settings,
-      this.roomsErrors,
-    );
+    const normalizedSettings =
+      this.matchSettings.normalizeHostedStartSettings(settings);
     room.nextMatchSettings = normalizedSettings;
 
     return this.finalizeMutation(
@@ -186,25 +194,19 @@ export class RoomsMatchService {
       );
     }
 
-    const normalizedSettings = normalizeHostedStartSettings(
-      settings,
-      this.roomsErrors,
-    );
+    const normalizedSettings =
+      this.matchSettings.normalizeHostedStartSettings(settings);
     room.nextMatchSettings = normalizedSettings;
 
-    const nigiriNotice = maybeBeginDigitalNigiri(
-      room,
-      this.getTransitionDependencies(),
-    );
+    const nigiriNotice = this.transitions.maybeBeginDigitalNigiri(room);
 
     if (nigiriNotice) {
       return this.finalizeMutation(room, nigiriNotice);
     }
 
-    const matchSettings = startMatchWithCurrentSeats(
+    const matchSettings = this.transitions.startMatchWithCurrentSeats(
       room,
       normalizedSettings,
-      this.getTransitionDependencies(),
     );
 
     return this.finalizeMutation(
@@ -234,7 +236,7 @@ export class RoomsMatchService {
       );
     }
 
-    const color = findRematchSeat(rematch, participant.id);
+    const color = this.policy.findRematchSeat(rematch, participant.id);
     if (!color) {
       throw this.roomsErrors.forbidden('room.error.rematch_players_only');
     }
@@ -272,12 +274,7 @@ export class RoomsMatchService {
       room,
       participantToken,
     );
-    applyHostedGameCommand(
-      room,
-      participant,
-      command,
-      this.getTransitionDependencies(),
-    );
+    this.transitions.applyHostedGameCommand(room, participant, command);
 
     return this.finalizeMutation(room);
   }
@@ -286,10 +283,7 @@ export class RoomsMatchService {
     room: RoomRecord,
     noticeMessage: GoMessageDescriptor | null = null,
   ): MutationResult {
-    const automaticNotice = maybeStartNextMatch(
-      room,
-      this.getTransitionDependencies(),
-    );
+    const automaticNotice = this.transitions.maybeStartNextMatch(room);
 
     this.store.touchRoom(room);
     this.clocks.refresh(room);
@@ -303,7 +297,7 @@ export class RoomsMatchService {
   }
 
   private handleSeatChange(room: RoomRecord): void {
-    if (resetSeatDependentState(room)) {
+    if (this.policy.resetSeatDependentState(room)) {
       this.logger.log(
         `[seat.change] reset rematch/auto-start block in room ${room.id}`,
       );
@@ -311,21 +305,12 @@ export class RoomsMatchService {
   }
 
   private canEditNextMatchSettings(room: RoomRecord): boolean {
-    return canEditNextMatchSettings(room, this.store);
+    return this.policy.canEditNextMatchSettings(room);
   }
 
   private assertSeatChangeAllowed(room: RoomRecord): void {
     if (room.match && room.match.state.phase !== 'finished') {
       throw this.roomsErrors.badRequest('room.error.seat_change_while_live');
     }
-  }
-
-  private getTransitionDependencies(): RoomsMatchTransitionDependencies {
-    return {
-      logger: this.logger,
-      store: this.store,
-      rulesEngines: this.rulesEngines,
-      roomsErrors: this.roomsErrors,
-    };
   }
 }

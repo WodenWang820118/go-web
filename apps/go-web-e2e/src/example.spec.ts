@@ -6,28 +6,28 @@ import {
   mockLobby,
 } from './test-support/lobby-fixtures';
 
-test('uses zh-TW by default and persists an English override across reloads', async ({
+test('uses the browser locale by default and persists a locale override across reloads', async ({
   page,
 }) => {
   await page.goto('/');
 
-  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
-  await expect(
-    page.getByRole('link', { name: '開始本機圍棋', exact: true }),
-  ).toBeVisible();
-
-  await page.getByTestId('locale-option-en').click();
-
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(
     page.getByRole('link', { name: 'Start local Go', exact: true }),
+  ).toBeVisible();
+
+  await page.getByTestId('locale-select').selectOption('zh-CN');
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+  await expect(
+    page.getByRole('link', { name: '开始本机围棋', exact: true }),
   ).toBeVisible();
 
   await page.reload();
 
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await expect(
-    page.getByRole('link', { name: 'Start local Go', exact: true }),
+    page.getByRole('link', { name: '开始本机围棋', exact: true }),
   ).toBeVisible();
 });
 

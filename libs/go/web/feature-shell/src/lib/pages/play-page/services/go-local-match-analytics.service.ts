@@ -1,5 +1,5 @@
 import { effect, inject, Injectable } from '@angular/core';
-import { GoAnalyticsService } from '@gx/go/state';
+import { buildGoAnalyticsLevelName, GoAnalyticsService } from '@gx/go/state';
 import { GameSessionStore } from '@gx/go/state/session';
 
 @Injectable()
@@ -41,11 +41,17 @@ export class GoLocalMatchAnalyticsService {
           ].join(':'),
           {
             board_size: snapshot.settings.boardSize,
-            event: 'gx_match_end',
+            event: 'level_end',
             game_mode: snapshot.settings.mode,
+            level_name: buildGoAnalyticsLevelName(
+              'local',
+              snapshot.settings.mode,
+              snapshot.settings.boardSize,
+            ),
             move_count: snapshot.state.moveHistory.length,
             play_context: 'local',
             result_reason: result.reason,
+            success: true,
             winner: result.winner,
           },
         );

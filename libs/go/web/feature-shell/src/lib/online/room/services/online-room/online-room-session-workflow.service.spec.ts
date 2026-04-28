@@ -1,10 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { RoomSnapshot } from '@gx/go/contracts';
 import { createMessage } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { vi } from 'vitest';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { OnlineRoomIdentityService } from '../online-room-identity/online-room-identity.service';
 import { OnlineRoomSelectorsService } from '../online-room-selectors/online-room-selectors.service';
 import { OnlineRoomSnapshotService } from '../online-room-snapshot/online-room-snapshot.service';
@@ -147,18 +148,26 @@ describe('OnlineRoomSessionWorkflowService', () => {
 
     service.createRoom('Host', 'go', 19).subscribe();
 
-    expect(analytics.track).toHaveBeenCalledWith({
-      board_size: 19,
-      event: 'gx_room_create',
-      game_mode: 'go',
-    });
-    expect(analytics.track).toHaveBeenCalledWith({
-      board_size: 19,
-      event: 'gx_match_start',
-      game_mode: 'go',
-      play_context: 'hosted',
-      start_source: 'room_create',
-    });
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        board_size: 19,
+        event: 'gx_room_create_intent',
+        game_mode: 'go',
+      },
+      {
+        board_size: 19,
+        event: 'gx_room_create',
+        game_mode: 'go',
+      },
+      {
+        board_size: 19,
+        event: 'level_start',
+        game_mode: 'go',
+        level_name: 'hosted_go_19',
+        play_context: 'hosted',
+        start_source: 'room_create',
+      },
+    ]);
   });
 
   it('tracks hosted joins with the caller-supplied source only', () => {
@@ -175,10 +184,17 @@ describe('OnlineRoomSessionWorkflowService', () => {
 
     service.joinRoom('room42', 'Guest', 'lobby').subscribe();
 
-    expect(analytics.track).toHaveBeenCalledWith({
-      event: 'gx_room_join',
-      join_source: 'lobby',
-    });
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        event: 'gx_room_join_intent',
+        join_source: 'lobby',
+      },
+      {
+        event: 'join_group',
+        group_id: 'online_room',
+        join_source: 'lobby',
+      },
+    ]);
   });
 
   it('defaults hosted join tracking to the direct-room source', () => {
@@ -195,9 +211,93 @@ describe('OnlineRoomSessionWorkflowService', () => {
 
     service.joinRoom('room42', 'Guest').subscribe();
 
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        event: 'gx_room_join_intent',
+        join_source: 'direct_room',
+      },
+      {
+        event: 'join_group',
+        group_id: 'online_room',
+        join_source: 'direct_room',
+      },
+    ]);
+  });
+
+  it('tracks hosted room creation errors with a safe error type', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.createRoom).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 })),
+    );
+
+    service.createRoom('Host', 'go', 19).subscribe({
+      error: () => undefined,
+    });
+
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        board_size: 19,
+        event: 'gx_room_create_intent',
+        game_mode: 'go',
+      },
+      {
+        board_size: 19,
+        error_type: 'network',
+        event: 'gx_room_create_error',
+        game_mode: 'go',
+      },
+    ]);
+  });
+
+  it('tracks hosted join errors with a safe error type', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.joinRoom).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+
+    service.joinRoom('room42', 'Guest', 'lobby').subscribe({
+      error: () => undefined,
+    });
+
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        event: 'gx_room_join_intent',
+        join_source: 'lobby',
+      },
+      {
+        error_type: 'not_found',
+        event: 'gx_room_join_error',
+        join_source: 'lobby',
+      },
+    ]);
+  });
+
+  it('tracks unexpected room create and join errors with a safe error type', () => {
+    const api = TestBed.inject(OnlineRoomsHttpService);
+    vi.mocked(api.createRoom).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
+    vi.mocked(api.joinRoom).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
+
+    service.createRoom('Host', 'go', 19).subscribe({
+      error: () => undefined,
+    });
+    service.joinRoom('room42', 'Guest', 'lobby').subscribe({
+      error: () => undefined,
+    });
+
     expect(analytics.track).toHaveBeenCalledWith({
-      event: 'gx_room_join',
-      join_source: 'direct_room',
+      board_size: 19,
+      error_type: 'unexpected',
+      event: 'gx_room_create_error',
+      game_mode: 'go',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      error_type: 'unexpected',
+      event: 'gx_room_join_error',
+      join_source: 'lobby',
     });
   });
 });

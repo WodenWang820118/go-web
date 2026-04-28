@@ -25,6 +25,14 @@ export const goFeatureShellRoutes: Route[] = [
     canActivate: [validModeGuard],
   },
   {
+    path: 'privacy',
+    data: goRouteSeoData('privacy'),
+    async loadComponent() {
+      return (await import('./pages/privacy-page/privacy-page.component'))
+        .PrivacyPageComponent;
+    },
+  },
+  {
     path: 'online',
     redirectTo: '',
     pathMatch: 'full',

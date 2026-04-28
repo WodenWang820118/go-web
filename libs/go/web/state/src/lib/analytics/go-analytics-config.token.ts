@@ -8,6 +8,7 @@ export const GO_ANALYTICS_CONFIG = new InjectionToken<GoAnalyticsConfig>(
     factory: () => ({
       containerId: 'GTM-TQXTJ3LC',
       enabled: true,
+      eventSchema: 'ga4',
     }),
   },
 );

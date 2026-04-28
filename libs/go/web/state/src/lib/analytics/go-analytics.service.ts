@@ -6,9 +6,38 @@ import { GO_ANALYTICS_CONFIG } from './go-analytics-config.token';
 import { GoAnalyticsConsentService } from './go-analytics-consent.service';
 import {
   GoAnalyticsEvent,
+  GoAnalyticsEventSchema,
   GoAnalyticsPageViewEvent,
+  GoAnalyticsPlayContext,
+  GoAnalyticsSerializedEvent,
   GoDataLayerEntry,
 } from './go-analytics.types';
+
+const FORBIDDEN_ANALYTICS_KEYS = new Set([
+  'displayName',
+  'error',
+  'message',
+  'participantId',
+  'participantToken',
+  'roomId',
+  'shareUrl',
+  'token',
+  'url',
+]);
+
+const DENIED_CONSENT_STATE = {
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  analytics_storage: 'denied',
+} as const;
+
+const ANALYTICS_GRANTED_CONSENT_STATE = {
+  ...DENIED_CONSENT_STATE,
+  analytics_storage: 'granted',
+} as const;
+
+const ANALYTICS_COOKIE_PREFIXES = ['_ga', '_gid', '_gat'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class GoAnalyticsService {
@@ -20,6 +49,13 @@ export class GoAnalyticsService {
   private currentRouter: Router | null = null;
   private lastTrackedPagePath: string | null = null;
   private routerSubscription: Subscription | null = null;
+
+  readonly consentChoice = this.consent.choice;
+  readonly canTrack = this.consent.canTrack;
+
+  constructor() {
+    this.initializeConsentDefaults();
+  }
 
   watchRouter(router: Router): void {
     this.currentRouter = router;
@@ -44,8 +80,13 @@ export class GoAnalyticsService {
       return;
     }
 
+    const serializedEvent = serializeGoAnalyticsEvent(
+      event,
+      this.config.eventSchema ?? 'ga4',
+    );
+
     this.ensureTagManagerLoaded();
-    this.dataLayer().push(event);
+    this.dataLayer().push(sanitizeGoAnalyticsEvent(serializedEvent));
   }
 
   trackOnce(key: string, event: GoAnalyticsEvent): void {
@@ -79,10 +120,52 @@ export class GoAnalyticsService {
     }
   }
 
-  private ensureTagManagerLoaded(): void {
+  grantAnalyticsConsent(): void {
+    this.consent.accept();
+    this.initializeConsentDefaults();
+    this.pushConsentUpdate('granted');
+    this.ensureTagManagerLoaded({
+      consentUpdateAlreadyPushed: true,
+    });
+    this.trackCurrentPage();
+  }
+
+  denyAnalyticsConsent(): void {
+    this.consent.decline();
+    this.initializeConsentDefaults();
+    this.pushConsentUpdate('denied');
+    this.lastTrackedPagePath = null;
+    this.clearAnalyticsCookies();
+  }
+
+  private initializeConsentDefaults(): void {
+    const dataLayer = this.dataLayer();
+
+    if (dataLayer.some(isConsentDefaultCommand)) {
+      return;
+    }
+
+    dataLayer.push(['consent', 'default', DENIED_CONSENT_STATE]);
+  }
+
+  private pushConsentUpdate(analyticsStorage: 'denied' | 'granted'): void {
+    this.dataLayer().push([
+      'consent',
+      'update',
+      analyticsStorage === 'granted'
+        ? ANALYTICS_GRANTED_CONSENT_STATE
+        : DENIED_CONSENT_STATE,
+    ]);
+  }
+
+  private ensureTagManagerLoaded(options?: {
+    consentUpdateAlreadyPushed?: boolean;
+  }): void {
     if (!this.config.enabled || this.config.containerId.trim().length === 0) {
       return;
     }
+
+    this.initializeConsentDefaults();
 
     const containerId = encodeURIComponent(this.config.containerId.trim());
     const scriptId = `gx-gtm-script-${containerId}`;
@@ -94,26 +177,10 @@ export class GoAnalyticsService {
     const firstScript = this.document.getElementsByTagName('script')[0];
     const script = this.document.createElement('script');
 
-    this.dataLayer().push([
-      'consent',
-      'default',
-      {
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-        analytics_storage: 'denied',
-      },
-    ]);
-    this.dataLayer().push([
-      'consent',
-      'update',
-      {
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-        analytics_storage: 'granted',
-      },
-    ]);
+    if (!options?.consentUpdateAlreadyPushed) {
+      this.pushConsentUpdate('granted');
+    }
+
     this.dataLayer().push({
       'gtm.start': Date.now(),
       event: 'gtm.js',
@@ -128,6 +195,41 @@ export class GoAnalyticsService {
     }
 
     this.document.head.appendChild(script);
+  }
+
+  private clearAnalyticsCookies(): void {
+    let cookieNames: string[];
+
+    try {
+      cookieNames = this.document.cookie
+        .split(';')
+        .map((cookie) => cookie.split('=')[0]?.trim() ?? '')
+        .filter(isAnalyticsCookieName);
+    } catch {
+      return;
+    }
+
+    for (const name of cookieNames) {
+      this.expireCookie(name);
+    }
+  }
+
+  private expireCookie(name: string): void {
+    const expires = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    const maxAge = 'Max-Age=0';
+    const base = `${name}=; ${expires}; ${maxAge}; path=/`;
+
+    try {
+      this.document.cookie = base;
+
+      for (const domain of cookieDomainCandidates(
+        this.document.location?.hostname ?? '',
+      )) {
+        this.document.cookie = `${base}; domain=${domain}`;
+      }
+    } catch {
+      // Cookie writes can be unavailable; consent state still updates.
+    }
   }
 
   private dataLayer(): GoDataLayerEntry[] {
@@ -154,7 +256,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (segments.length === 0) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       page_path_normalized: '/',
       route_group: 'lobby',
       play_context: 'hosted',
@@ -163,7 +265,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'setup' && isTrackedGameMode(second)) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       game_mode: second,
       page_path_normalized: `/setup/${second}`,
       route_group: 'setup',
@@ -172,7 +274,7 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'play' && isTrackedGameMode(second)) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       game_mode: second,
       page_path_normalized: `/play/${second}`,
       play_context: 'local',
@@ -182,18 +284,87 @@ export function buildGoAnalyticsPageViewEvent(
 
   if (first === 'online' && second === 'room' && third) {
     return {
-      event: 'gx_page_view',
+      event: 'page_view',
       page_path_normalized: '/online/room/:roomId',
       play_context: 'hosted',
       route_group: 'online_room',
     };
   }
 
+  if (first === 'privacy') {
+    return {
+      event: 'page_view',
+      page_path_normalized: '/privacy',
+      route_group: 'privacy',
+    };
+  }
+
   return {
-    event: 'gx_page_view',
+    event: 'page_view',
     page_path_normalized: path,
     route_group: 'unknown',
   };
+}
+
+export function buildGoAnalyticsLevelName(
+  playContext: GoAnalyticsPlayContext,
+  gameMode: 'go' | 'gomoku',
+  boardSize: number,
+): string {
+  return `${playContext}_${gameMode}_${boardSize}`;
+}
+
+export function serializeGoAnalyticsEvent(
+  event: GoAnalyticsEvent,
+  eventSchema: GoAnalyticsEventSchema = 'ga4',
+): GoAnalyticsSerializedEvent {
+  if (eventSchema !== 'legacy') {
+    return event;
+  }
+
+  if (event.event === 'page_view') {
+    return {
+      ...event,
+      event: 'gx_page_view',
+    };
+  }
+
+  if (event.event === 'level_start') {
+    const { level_name: _levelName, ...legacyEvent } = event;
+    return {
+      ...legacyEvent,
+      event: 'gx_match_start',
+    };
+  }
+
+  if (event.event === 'level_end') {
+    const { level_name: _levelName, success: _success, ...legacyEvent } = event;
+    return {
+      ...legacyEvent,
+      event: 'gx_match_end',
+    };
+  }
+
+  if (event.event === 'join_group') {
+    return {
+      event: 'gx_room_join',
+      join_source: event.join_source,
+    };
+  }
+
+  return event;
+}
+
+function sanitizeGoAnalyticsEvent(
+  event: GoAnalyticsSerializedEvent,
+): GoAnalyticsSerializedEvent {
+  const sanitizedEvent = { ...event } as Record<string, unknown>;
+
+  for (const key of FORBIDDEN_ANALYTICS_KEYS) {
+    delete sanitizedEvent[key];
+  }
+
+  return sanitizedEvent as unknown as GoAnalyticsSerializedEvent;
 }
 
 function normalizePath(url: string): string {
@@ -212,4 +383,34 @@ function isTrackedGameMode(
   value: string | undefined,
 ): value is 'go' | 'gomoku' {
   return value === 'go' || value === 'gomoku';
+}
+
+function isConsentDefaultCommand(entry: GoDataLayerEntry): boolean {
+  return (
+    Array.isArray(entry) && entry[0] === 'consent' && entry[1] === 'default'
+  );
+}
+
+function isAnalyticsCookieName(name: string): boolean {
+  return ANALYTICS_COOKIE_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+function cookieDomainCandidates(hostname: string): string[] {
+  if (
+    !hostname ||
+    hostname === 'localhost' ||
+    /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+  ) {
+    return [];
+  }
+
+  const segments = hostname.split('.').filter(Boolean);
+
+  if (segments.length < 2) {
+    return [];
+  }
+
+  return Array.from(
+    new Set([hostname, `.${hostname}`, `.${segments.slice(-2).join('.')}`]),
+  );
 }

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { goRouteSeoData } from '@gx/go/state';
+import { GoI18nService, goRouteSeoData } from '@gx/go/state';
 import { AppSeoService } from './app-seo.service';
 
 @Component({
@@ -14,9 +14,10 @@ describe('AppSeoService', () => {
   let router: Router;
 
   beforeEach(async () => {
+    localStorage.setItem('gx.go.locale', 'zh-TW');
     document.title = '';
     document.head
-      .querySelectorAll('meta[name], meta[property], link[rel="canonical"]')
+      .querySelectorAll('meta[name], meta[property], link[rel]')
       .forEach((element) => element.remove());
 
     await TestBed.configureTestingModule({
@@ -47,6 +48,11 @@ describe('AppSeoService', () => {
             component: SeoTestPageComponent,
             data: goRouteSeoData('play'),
           },
+          {
+            path: 'privacy',
+            component: SeoTestPageComponent,
+            data: goRouteSeoData('privacy'),
+          },
         ]),
       ],
     }).compileComponents();
@@ -62,6 +68,17 @@ describe('AppSeoService', () => {
     expect(metaName('description')).toContain('繁中線上圍棋與五子棋房間');
     expect(metaName('robots')).toBe('index,follow');
     expect(canonicalHref()).toBe('https://gxgo.synology.me/');
+    expect(alternateHref('zh-Hant-TW')).toBe('https://gxgo.synology.me/');
+    expect(alternateHref('zh-Hans-CN')).toBe(
+      'https://gxgo.synology.me/?locale=zh-CN',
+    );
+    expect(alternateHref('ja-JP')).toBe(
+      'https://gxgo.synology.me/?locale=ja-JP',
+    );
+    expect(alternateHref('en')).toBe('https://gxgo.synology.me/?locale=en');
+    expect(alternateHref('x-default')).toBe('https://gxgo.synology.me/');
+    expect(alternateLinkCount()).toBe(5);
+    expect(ogLocaleAlternateCount()).toBe(3);
     expect(metaProperty('og:url')).toBe('https://gxgo.synology.me/');
     expect(metaProperty('og:title')).toBe('gx.go｜線上圍棋與五子棋房間');
     expect(metaProperty('og:description')).toContain(
@@ -101,6 +118,9 @@ describe('AppSeoService', () => {
     );
     expect(metaName('robots')).toBe('index,follow');
     expect(canonicalHref()).toBe('https://gxgo.synology.me/setup/go');
+    expect(alternateHref('ja-JP')).toBe(
+      'https://gxgo.synology.me/setup/go?locale=ja-JP',
+    );
     expect(metaProperty('og:url')).toBe('https://gxgo.synology.me/setup/go');
     expect(metaProperty('og:title')).toBe('線上圍棋開局設定｜gx.go');
     expect(metaName('twitter:card')).toBe('summary_large_image');
@@ -217,6 +237,98 @@ describe('AppSeoService', () => {
     );
   });
 
+  it('publishes indexable privacy metadata', async () => {
+    await router.navigateByUrl('/privacy');
+
+    expect(document.title).toBe('隱私與 Cookie 偏好｜gx.go');
+    expect(metaName('description')).toContain('分析同意');
+    expect(metaName('robots')).toBe('index,follow');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/privacy');
+    expect(metaProperty('og:url')).toBe('https://gxgo.synology.me/privacy');
+    expect(metaProperty('og:title')).toBe('隱私與 Cookie 偏好｜gx.go');
+    expect(metaProperty('og:description')).toContain('分析同意');
+    expect(metaName('twitter:title')).toBe('隱私與 Cookie 偏好｜gx.go');
+    expect(metaName('twitter:description')).toContain('分析同意');
+  });
+
+  it('publishes localized Japanese metadata for the active route', async () => {
+    await router.navigateByUrl('/setup/go');
+
+    TestBed.inject(GoI18nService).setLocale('ja-JP');
+    TestBed.flushEffects();
+
+    expect(document.title).toBe('オンライン囲碁の対局設定｜gx.go');
+    expect(metaName('description')).toContain('9x9、13x13、19x19');
+    expect(metaProperty('og:locale')).toBe('ja_JP');
+    expect(canonicalHref()).toBe(
+      'https://gxgo.synology.me/setup/go?locale=ja-JP',
+    );
+    expect(metaProperty('og:url')).toBe(
+      'https://gxgo.synology.me/setup/go?locale=ja-JP',
+    );
+    expect(alternateHref('ja-JP')).toBe(
+      'https://gxgo.synology.me/setup/go?locale=ja-JP',
+    );
+    expect(alternateHref('x-default')).toBe(
+      'https://gxgo.synology.me/setup/go',
+    );
+    expect(ogLocaleAlternates()).toEqual(['zh_TW', 'zh_CN', 'en_US']);
+    expect(alternateLinkCount()).toBe(5);
+    expect(ogLocaleAlternateCount()).toBe(3);
+  });
+
+  it('publishes localized Simplified Chinese metadata for the lobby', async () => {
+    await router.navigateByUrl('/');
+
+    TestBed.inject(GoI18nService).setLocale('zh-CN');
+    TestBed.flushEffects();
+
+    expect(document.title).toBe('gx.go｜在线围棋与五子棋房间');
+    expect(metaName('description')).toContain('简中在线围棋与五子棋房间');
+    expect(metaProperty('og:locale')).toBe('zh_CN');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/?locale=zh-CN');
+    expect(metaProperty('og:url')).toBe(
+      'https://gxgo.synology.me/?locale=zh-CN',
+    );
+    expect(alternateHref('x-default')).toBe('https://gxgo.synology.me/');
+    expect(ogLocaleAlternates()).toEqual(['zh_TW', 'ja_JP', 'en_US']);
+  });
+
+  it('publishes localized English metadata for a specific route', async () => {
+    await router.navigateByUrl('/privacy');
+
+    TestBed.inject(GoI18nService).setLocale('en');
+    TestBed.flushEffects();
+
+    expect(document.title).toBe('Privacy and Cookie Preferences | gx.go');
+    expect(metaName('description')).toContain('analytics consent');
+    expect(metaProperty('og:locale')).toBe('en_US');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/privacy?locale=en');
+    expect(alternateHref('x-default')).toBe('https://gxgo.synology.me/privacy');
+  });
+
+  it('keeps locale alternate tags idempotent across route and locale changes', async () => {
+    const i18n = TestBed.inject(GoI18nService);
+
+    await router.navigateByUrl('/setup/go');
+    i18n.setLocale('ja-JP');
+    TestBed.flushEffects();
+
+    await router.navigateByUrl('/setup/gomoku');
+    i18n.setLocale('zh-CN');
+    TestBed.flushEffects();
+
+    expect(canonicalHref()).toBe(
+      'https://gxgo.synology.me/setup/gomoku?locale=zh-CN',
+    );
+    expect(alternateLinkCount()).toBe(5);
+    expect(ogLocaleAlternateCount()).toBe(3);
+    expect(ogLocaleAlternates()).toEqual(['zh_TW', 'ja_JP', 'en_US']);
+    expect(alternateHref('zh-Hans-CN')).toBe(
+      'https://gxgo.synology.me/setup/gomoku?locale=zh-CN',
+    );
+  });
+
   it('updates existing meta tags across transient and indexable navigation', async () => {
     await router.navigateByUrl('/online/room/ROOM42');
 
@@ -279,10 +391,37 @@ function canonicalHref(): string | null {
   );
 }
 
+function alternateHref(hreflang: string): string | null {
+  return (
+    document.head
+      .querySelector<HTMLLinkElement>(
+        `link[rel="alternate"][hreflang="${hreflang}"]`,
+      )
+      ?.getAttribute('href') ?? null
+  );
+}
+
 function canonicalLinkCount(): number {
   return document.head.querySelectorAll('link[rel="canonical"]').length;
 }
 
+function alternateLinkCount(): number {
+  return document.head.querySelectorAll('link[rel="alternate"][hreflang]')
+    .length;
+}
+
 function metaPropertyCount(property: string): number {
   return document.head.querySelectorAll(`meta[property="${property}"]`).length;
+}
+
+function ogLocaleAlternateCount(): number {
+  return metaPropertyCount('og:locale:alternate');
+}
+
+function ogLocaleAlternates(): string[] {
+  return [
+    ...document.head.querySelectorAll<HTMLMetaElement>(
+      'meta[property="og:locale:alternate"]',
+    ),
+  ].map((element) => element.getAttribute('content') ?? '');
 }

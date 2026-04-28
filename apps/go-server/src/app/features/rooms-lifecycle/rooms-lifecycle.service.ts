@@ -5,21 +5,20 @@ import {
   JoinRoomResponse,
   ListRoomsResponse,
   RoomSnapshot,
-  createUniqueDisplayName,
 } from '@gx/go/contracts';
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import {
   CREATE_ATTEMPTS_PER_WINDOW,
   JOIN_ATTEMPTS_PER_WINDOW,
-  MAX_DISPLAY_NAME_LENGTH,
-  THROTTLE_WINDOW_MS,
 } from '../../core/rooms-config/rooms.constants';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { CloseRoomResult } from '../../contracts/rooms.types';
 import { RoomsClockService } from '../rooms-match/rooms-clock.service';
-import { normalizeHostedStartSettings } from '../rooms-match/rooms-match-settings';
+import { RoomsMatchSettingsService } from '../rooms-match/rooms-match-settings';
+import { RoomsDisplayNameService } from './rooms-display-name.service';
+import { RoomsRequestThrottleService } from './rooms-request-throttle.service';
 
 const DEFAULT_CREATE_ROOM_SETTINGS: GameStartSettings = {
   mode: 'go',
@@ -48,6 +47,19 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     private readonly snapshotMapper: RoomsSnapshotMapper,
     @Inject(RoomsErrorsService)
     private readonly roomsErrors: RoomsErrorsService,
+    @Inject(RoomsMatchSettingsService)
+    private readonly matchSettings: RoomsMatchSettingsService = new RoomsMatchSettingsService(
+      roomsErrors,
+    ),
+    @Inject(RoomsDisplayNameService)
+    private readonly displayNames: RoomsDisplayNameService = new RoomsDisplayNameService(
+      roomsErrors,
+    ),
+    @Inject(RoomsRequestThrottleService)
+    private readonly requestThrottle: RoomsRequestThrottleService = new RoomsRequestThrottleService(
+      store,
+      roomsErrors,
+    ),
     @Inject(RoomsClockService)
     private readonly clocks: Pick<
       RoomsClockService,
@@ -65,17 +77,15 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     requesterKey: string,
     settings: GameStartSettings = DEFAULT_CREATE_ROOM_SETTINGS,
   ): CreateRoomResponse {
-    this.assertAttemptWithinLimit(
+    this.requestThrottle.assertWithinLimit(
       requesterKey,
       CREATE_ATTEMPTS_PER_WINDOW,
       'room.error.too_many_create_attempts',
     );
 
-    const sanitizedName = this.sanitizeDisplayName(displayName);
-    const nextMatchSettings = normalizeHostedStartSettings(
-      settings,
-      this.roomsErrors,
-    );
+    const sanitizedName = this.displayNames.sanitize(displayName);
+    const nextMatchSettings =
+      this.matchSettings.normalizeHostedStartSettings(settings);
     const now = this.store.timestamp();
     const host = this.store.createParticipant(sanitizedName, true, now);
     const room = this.store.createRoomRecord(host, now, nextMatchSettings);
@@ -95,27 +105,23 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     participantToken: string | undefined,
     requesterKey: string,
   ): JoinRoomResponse {
-    this.assertAttemptWithinLimit(
+    this.requestThrottle.assertWithinLimit(
       requesterKey,
       JOIN_ATTEMPTS_PER_WINDOW,
       'room.error.too_many_join_attempts',
     );
 
     const room = this.store.getRoomRecord(roomId);
-    const sanitizedName = this.sanitizeDisplayName(displayName);
     let participant =
       participantToken && participantToken.trim().length > 0
         ? this.store.tryGetParticipantByToken(room, participantToken)
         : null;
     const resumed = participant !== null;
 
-    const uniqueDisplayName = createUniqueDisplayName(
-      sanitizedName,
-      [...room.participants.values()]
-        .filter(
-          (currentParticipant) => currentParticipant.id !== participant?.id,
-        )
-        .map((currentParticipant) => currentParticipant.displayName),
+    const uniqueDisplayName = this.displayNames.uniqueForParticipants(
+      displayName,
+      room.participants.values(),
+      participant?.id ?? null,
     );
 
     if (participant) {
@@ -248,40 +254,5 @@ export class RoomsLifecycleService implements OnModuleDestroy {
 
   onModuleDestroy(): void {
     clearInterval(this.cleanupTimer);
-  }
-
-  private assertAttemptWithinLimit(
-    key: string,
-    limit: number,
-    messageKey: string,
-  ): void {
-    const now = Date.now();
-    const timestamps = (this.store.attemptWindows.get(key) ?? []).filter(
-      (timestamp) => now - timestamp < THROTTLE_WINDOW_MS,
-    );
-
-    if (timestamps.length >= limit) {
-      this.store.attemptWindows.set(key, timestamps);
-      throw this.roomsErrors.throttled(messageKey);
-    }
-
-    timestamps.push(now);
-    this.store.attemptWindows.set(key, timestamps);
-  }
-
-  private sanitizeDisplayName(value: string): string {
-    const normalized = value.trim().replace(/\s+/g, ' ');
-
-    if (normalized.length === 0) {
-      throw this.roomsErrors.badRequest('room.error.display_name_required');
-    }
-
-    if (normalized.length > MAX_DISPLAY_NAME_LENGTH) {
-      throw this.roomsErrors.badRequest('room.error.display_name_too_long', {
-        max: MAX_DISPLAY_NAME_LENGTH,
-      });
-    }
-
-    return normalized;
   }
 }

@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ViewEncapsulation,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
@@ -33,11 +28,9 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
     TagModule,
   ],
   templateUrl: './online-room-page.component.html',
-  styleUrl: './online-room-page.component.css',
   host: {
     class: 'block min-h-dvh',
   },
-  encapsulation: ViewEncapsulation.None,
   providers: [
     OnlineRoomPagePresenterService,
     OnlineRoomPageViewStateService,

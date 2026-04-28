@@ -12,6 +12,7 @@ import { PlayPageComponent } from './play-page.component';
 describe('PlayPageComponent', () => {
   it('shows the refreshed play-again actions when a local match is finished', async () => {
     const store = createGameSessionStoreStub();
+    const analytics = createAnalyticsStub();
 
     TestBed.configureTestingModule({
       providers: [
@@ -31,9 +32,7 @@ describe('PlayPageComponent', () => {
         },
         {
           provide: GoAnalyticsService,
-          useValue: {
-            trackOnce: vi.fn(),
-          },
+          useValue: analytics,
         },
       ],
     });
@@ -47,6 +46,97 @@ describe('PlayPageComponent', () => {
     expect(root.textContent).toContain(i18n.t('play.play_again_prompt'));
     expect(root.textContent).toContain(i18n.t('play.play_again_action'));
     expect(root.textContent).toContain(i18n.t('play.change_setup_action'));
+  });
+
+  it('tracks local match action events with safe low-cardinality payloads', async () => {
+    const store = createGameSessionStoreStub();
+    const analytics = createAnalyticsStub();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'play/:mode',
+            component: PlayPageComponent,
+          },
+          {
+            path: 'setup/:mode',
+            component: PlayPageComponent,
+          },
+        ]),
+        {
+          provide: GameSessionStore,
+          useValue: store,
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: analytics,
+        },
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/play/go', PlayPageComponent);
+    const component = harness.routeDebugElement
+      ?.componentInstance as PlayPageComponent & {
+      confirmAction: () => void;
+      confirmScoring: (player: 'black') => void;
+      disputeScoring: (player: 'black') => void;
+      openNewMatchConfirm: () => void;
+      passTurn: () => void;
+      resignMatch: () => void;
+      restartMatch: () => void;
+    };
+
+    component.passTurn();
+    component.confirmScoring('black');
+    component.disputeScoring('black');
+    component.resignMatch();
+    component.confirmAction();
+    component.restartMatch();
+    component.confirmAction();
+    component.openNewMatchConfirm();
+    component.confirmAction();
+    await harness.fixture.whenStable();
+
+    expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
+      {
+        action_type: 'pass',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+      {
+        action_type: 'confirm_scoring',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+      {
+        action_type: 'dispute_scoring',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+      {
+        action_type: 'resign',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+      {
+        action_type: 'restart',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+      {
+        action_type: 'new_setup',
+        event: 'gx_match_action',
+        game_mode: 'go',
+        play_context: 'local',
+      },
+    ]);
   });
 });
 
@@ -111,5 +201,12 @@ function createGameSessionStoreStub() {
     resign: vi.fn().mockReturnValue(null),
     restartMatch: vi.fn().mockReturnValue(true),
     clearMatch: vi.fn(),
+  };
+}
+
+function createAnalyticsStub() {
+  return {
+    track: vi.fn(),
+    trackOnce: vi.fn(),
   };
 }

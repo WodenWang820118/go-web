@@ -144,6 +144,7 @@ describe('OnlineRoomService', () => {
     service.claimSeat('black');
     service.releaseSeat();
     service.sendChat('hello secret table');
+    service.respondToRematch(true);
     service.respondToRematch(false);
 
     expect(analytics.track.mock.calls.map((call) => call[0])).toEqual([
@@ -163,6 +164,12 @@ describe('OnlineRoomService', () => {
         event: 'gx_room_interaction',
         game_mode: undefined,
         interaction_type: 'chat_send',
+        play_context: 'hosted',
+      },
+      {
+        event: 'gx_room_interaction',
+        game_mode: undefined,
+        interaction_type: 'rematch_accept',
         play_context: 'hosted',
       },
       {

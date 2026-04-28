@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { GoI18nService } from '@gx/go/state';
 import {
   createRoomServiceStub,
+  createRoomAnalyticsStub,
   createSnapshot,
   renderOnlineRoomPage,
   resetOnlineRoomPageTestEnvironment,
@@ -67,13 +68,14 @@ describe('OnlineRoomPageComponent > chat and share', () => {
   });
 
   it('renders a board-adjacent share chip that copies the room link with success feedback', async () => {
+    const analytics = createRoomAnalyticsStub();
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
       participantToken: 'token-1',
     });
 
-    const harness = await renderOnlineRoomPage(roomService);
+    const harness = await renderOnlineRoomPage(roomService, { analytics });
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const shareChipButton = root.querySelector(
@@ -118,16 +120,23 @@ describe('OnlineRoomPageComponent > chat and share', () => {
     expect(
       root.querySelector('[data-testid="room-share-chip-manual"]'),
     ).toBeNull();
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_type: 'online_room',
+      event: 'share',
+      item_id: 'hosted_room_invite',
+      method: 'copy_link',
+    });
   });
 
   it('expands a manual-copy fallback when automatic copy is unavailable', async () => {
+    const analytics = createRoomAnalyticsStub();
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
       participantToken: 'token-1',
     });
 
-    const harness = await renderOnlineRoomPage(roomService);
+    const harness = await renderOnlineRoomPage(roomService, { analytics });
     const root = harness.routeNativeElement as HTMLElement;
     const i18n = TestBed.inject(GoI18nService);
     const shareChipButton = root.querySelector(
@@ -176,16 +185,24 @@ describe('OnlineRoomPageComponent > chat and share', () => {
     ).toBeNull();
     expect(shareChipButton?.disabled).toBe(false);
     expect(document.activeElement).toBe(shareChipButton);
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_type: 'online_room',
+      event: 'gx_room_share_copy',
+      item_id: 'hosted_room_invite',
+      method: 'copy_link',
+      share_result: 'manual_fallback',
+    });
   });
 
   it('expands the manual-copy fallback when clipboard writes are rejected', async () => {
+    const analytics = createRoomAnalyticsStub();
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot(),
       participantId: 'host-1',
       participantToken: 'token-1',
     });
 
-    const harness = await renderOnlineRoomPage(roomService);
+    const harness = await renderOnlineRoomPage(roomService, { analytics });
     const root = harness.routeNativeElement as HTMLElement;
     const shareChipButton = root.querySelector(
       '[data-testid="room-share-chip-button"]',
@@ -211,6 +228,13 @@ describe('OnlineRoomPageComponent > chat and share', () => {
     expect(
       root.querySelector('[data-testid="room-share-chip-manual"]'),
     ).not.toBeNull();
+    expect(analytics.track).toHaveBeenCalledWith({
+      content_type: 'online_room',
+      event: 'gx_room_share_copy',
+      item_id: 'hosted_room_invite',
+      method: 'copy_link',
+      share_result: 'manual_fallback',
+    });
   });
 
   it('dismisses the manual-copy fallback when Escape is pressed', async () => {

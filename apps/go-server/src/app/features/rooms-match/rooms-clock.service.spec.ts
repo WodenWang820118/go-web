@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { vi } from 'vitest';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsRealtimeBroadcasterService } from '../../core/rooms-realtime/rooms-realtime-broadcaster.service';
@@ -7,10 +6,11 @@ import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-ma
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { ParticipantRecord, RoomRecord } from '../../contracts/rooms.types';
 import { RoomsClockService } from './rooms-clock.service';
-import {
-  startMatchWithCurrentSeats,
-  type RoomsMatchTransitionDependencies,
-} from './rooms-match-transitions';
+import { RoomsMatchClockCalculatorService } from './rooms-match-clock';
+import { RoomsMatchNigiriService } from './rooms-match-nigiri.service';
+import { RoomsMatchPolicyService } from './rooms-match-policy';
+import { RoomsMatchSettingsService } from './rooms-match-settings';
+import { RoomsMatchTransitionsService } from './rooms-match-transitions';
 
 describe('RoomsClockService', () => {
   let service: RoomsClockService;
@@ -19,7 +19,7 @@ describe('RoomsClockService', () => {
     RoomsRealtimeBroadcasterService,
     'broadcastMutationResult'
   >;
-  let dependencies: RoomsMatchTransitionDependencies;
+  let transitions: RoomsMatchTransitionsService;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -30,17 +30,26 @@ describe('RoomsClockService', () => {
     realtime = {
       broadcastMutationResult: vi.fn(),
     };
+    const settings = new RoomsMatchSettingsService(roomsErrors);
+    const policy = new RoomsMatchPolicyService(store);
+    const clockCalculator = new RoomsMatchClockCalculatorService();
+    const nigiri = new RoomsMatchNigiriService(store, roomsErrors);
+    transitions = new RoomsMatchTransitionsService(
+      store,
+      new RoomsRulesEngineService(),
+      roomsErrors,
+      settings,
+      policy,
+      clockCalculator,
+      nigiri,
+    );
     service = new RoomsClockService(
       store,
       new RoomsSnapshotMapper(store),
       realtime as RoomsRealtimeBroadcasterService,
+      clockCalculator,
+      transitions,
     );
-    dependencies = {
-      logger: new Logger('rooms-clock.service.spec'),
-      store,
-      rulesEngines: new RoomsRulesEngineService(),
-      roomsErrors,
-    };
   });
 
   afterEach(() => {
@@ -51,20 +60,16 @@ describe('RoomsClockService', () => {
   it('finishes and broadcasts a hosted match when the active clock expires', async () => {
     const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
-    startMatchWithCurrentSeats(
-      room,
-      {
-        mode: 'gomoku',
-        boardSize: 15,
-        komi: 0,
-        timeControl: {
-          mainTimeMs: 0,
-          periodTimeMs: 100,
-          periods: 1,
-        },
+    transitions.startMatchWithCurrentSeats(room, {
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+      timeControl: {
+        mainTimeMs: 0,
+        periodTimeMs: 100,
+        periods: 1,
       },
-      dependencies,
-    );
+    });
 
     service.refresh(room);
     await vi.advanceTimersByTimeAsync(150);
@@ -109,20 +114,16 @@ describe('RoomsClockService', () => {
   it('clears scheduled timers on module shutdown', async () => {
     const { room } = createRoomWithSeatedPlayers(store);
 
-    startMatchWithCurrentSeats(
-      room,
-      {
-        mode: 'gomoku',
-        boardSize: 15,
-        komi: 0,
-        timeControl: {
-          mainTimeMs: 0,
-          periodTimeMs: 100,
-          periods: 1,
-        },
+    transitions.startMatchWithCurrentSeats(room, {
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+      timeControl: {
+        mainTimeMs: 0,
+        periodTimeMs: 100,
+        periods: 1,
       },
-      dependencies,
-    );
+    });
 
     service.refresh(room);
     service.onModuleDestroy();
@@ -136,20 +137,16 @@ describe('RoomsClockService', () => {
     const { room } = createRoomWithSeatedPlayers(store);
     const clearSpy = vi.spyOn(service, 'clear');
 
-    startMatchWithCurrentSeats(
-      room,
-      {
-        mode: 'gomoku',
-        boardSize: 15,
-        komi: 0,
-        timeControl: {
-          mainTimeMs: 0,
-          periodTimeMs: 100,
-          periods: 1,
-        },
+    transitions.startMatchWithCurrentSeats(room, {
+      mode: 'gomoku',
+      boardSize: 15,
+      komi: 0,
+      timeControl: {
+        mainTimeMs: 0,
+        periodTimeMs: 100,
+        periods: 1,
       },
-      dependencies,
-    );
+    });
 
     service.refresh(room);
     store.rooms.delete(room.id);

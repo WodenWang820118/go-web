@@ -8,23 +8,18 @@ import {
   GO_DIGITAL_NIGIRI_OPENING,
 } from '@gx/go/domain';
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
-import {
-  buildHostedMatchSettings,
-  normalizeHostedStartSettings,
-} from './rooms-match-settings';
+import { RoomsMatchSettingsService } from './rooms-match-settings';
 
 describe('rooms-match-settings', () => {
   const roomsErrors = new RoomsErrorsService();
+  const service = new RoomsMatchSettingsService(roomsErrors);
 
   it('defaults go komi when a valid go start omits it', () => {
     expect(
-      normalizeHostedStartSettings(
-        {
-          mode: 'go',
-          boardSize: 19,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+      }),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -37,14 +32,11 @@ describe('rooms-match-settings', () => {
 
   it('falls back to the default komi when a go start passes a non-finite komi', () => {
     expect(
-      normalizeHostedStartSettings(
-        {
-          mode: 'go',
-          boardSize: 19,
-          komi: Number.NaN,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        komi: Number.NaN,
+      }),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -57,14 +49,11 @@ describe('rooms-match-settings', () => {
 
   it('falls back to the default komi when a go start passes a null komi', () => {
     expect(
-      normalizeHostedStartSettings(
-        {
-          mode: 'go',
-          boardSize: 19,
-          komi: null as unknown as number,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        komi: null as unknown as number,
+      }),
     ).toEqual({
       mode: 'go',
       boardSize: 19,
@@ -79,14 +68,11 @@ describe('rooms-match-settings', () => {
     'accepts valid go board size %i and preserves the provided komi',
     (boardSize) => {
       expect(
-        normalizeHostedStartSettings(
-          {
-            mode: 'go',
-            boardSize,
-            komi: 7.5,
-          },
-          roomsErrors,
-        ),
+        service.normalizeHostedStartSettings({
+          mode: 'go',
+          boardSize,
+          komi: 7.5,
+        }),
       ).toEqual({
         mode: 'go',
         boardSize,
@@ -100,14 +86,11 @@ describe('rooms-match-settings', () => {
 
   it('normalizes gomoku starts to the fixed board size and zero komi', () => {
     expect(
-      normalizeHostedStartSettings(
-        {
-          mode: 'gomoku',
-          boardSize: 15,
-          komi: 6.5,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'gomoku',
+        boardSize: 15,
+        komi: 6.5,
+      }),
     ).toEqual({
       mode: 'gomoku',
       boardSize: 15,
@@ -127,57 +110,45 @@ describe('rooms-match-settings', () => {
     };
 
     expect(
-      normalizeHostedStartSettings(
-        {
-          mode: 'go',
-          boardSize: 19,
-          timeControl,
-        },
-        roomsErrors,
-      ).timeControl,
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        timeControl,
+      }).timeControl,
     ).toBe(timeControl);
   });
 
   it('rejects unsupported board sizes before a match starts', () => {
     expect(() =>
-      normalizeHostedStartSettings(
-        {
-          mode: 'go',
-          boardSize: 15,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 15,
+      }),
     ).toThrow(BadRequestException);
   });
 
   it('rejects unsupported gomoku board sizes before a match starts', () => {
     expect(() =>
-      normalizeHostedStartSettings(
-        {
-          mode: 'gomoku',
-          boardSize: 19,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'gomoku',
+        boardSize: 19,
+      }),
     ).toThrow(BadRequestException);
   });
 
   it('rejects unsupported game modes', () => {
     expect(() =>
-      normalizeHostedStartSettings(
-        {
-          mode: 'chess' as never,
-          boardSize: 8,
-          komi: 0,
-        },
-        roomsErrors,
-      ),
+      service.normalizeHostedStartSettings({
+        mode: 'chess' as never,
+        boardSize: 8,
+        komi: 0,
+      }),
     ).toThrow(BadRequestException);
   });
 
   it('builds match settings with the seated player names', () => {
     expect(
-      buildHostedMatchSettings(
+      service.buildHostedMatchSettings(
         {
           mode: 'gomoku',
           boardSize: 15,
@@ -202,7 +173,7 @@ describe('rooms-match-settings', () => {
 
   it('builds go match settings with rules and opening defaults', () => {
     expect(
-      buildHostedMatchSettings(
+      service.buildHostedMatchSettings(
         {
           mode: 'go',
           boardSize: 19,

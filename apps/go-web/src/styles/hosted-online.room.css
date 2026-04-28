@@ -1,0 +1,90 @@
+@layer components {
+  lib-go-online-room-page .room-shell,
+  .room-event-dialog {
+    --go-hosted-radius-shell: 0.5rem;
+    --go-hosted-radius-card: 0.375rem;
+    --go-hosted-radius-soft: 0.25rem;
+    --go-hosted-radius-pill: 0.375rem;
+  }
+
+  lib-go-online-room-page
+    .room-shell
+    :is(
+      .go-hosted-button-primary,
+      .go-hosted-button-primary.p-button,
+      .go-hosted-button-secondary,
+      .go-hosted-button-secondary.p-button,
+      .go-hosted-pill,
+      .go-hosted-pill.p-tag,
+      .go-hosted-pill-soft,
+      .go-hosted-pill-soft.p-tag,
+      .go-hosted-pill-subtle,
+      .go-hosted-pill-subtle.p-tag,
+      .go-hosted-metric-card,
+      .go-hosted-message.p-message,
+      .go-hosted-input,
+      .go-hosted-input.p-inputtext,
+      .go-hosted-input-light,
+      .go-hosted-input-light.p-inputtext,
+      .go-hosted-textarea,
+      .go-hosted-textarea.p-textarea,
+      .go-hosted-surface-warm
+    ),
+  .room-event-dialog
+    :is(
+      .go-hosted-button-primary,
+      .go-hosted-button-primary.p-button,
+      .go-hosted-button-secondary,
+      .go-hosted-button-secondary.p-button,
+      .go-hosted-pill,
+      .go-hosted-pill.p-tag,
+      .go-hosted-pill-soft,
+      .go-hosted-pill-soft.p-tag,
+      .go-hosted-pill-subtle,
+      .go-hosted-pill-subtle.p-tag,
+      .go-hosted-metric-card,
+      .go-hosted-message.p-message,
+      .go-hosted-input,
+      .go-hosted-input.p-inputtext,
+      .go-hosted-input-light,
+      .go-hosted-input-light.p-inputtext,
+      .go-hosted-textarea,
+      .go-hosted-textarea.p-textarea,
+      .go-hosted-surface-warm
+    ) {
+    border-radius: var(--go-hosted-radius-card);
+  }
+
+  .room-event-dialog.p-dialog {
+    border-radius: var(--go-hosted-radius-card);
+    overflow: hidden;
+  }
+
+  lib-go-online-room-page .room-layout {
+    --room-sidebar-width: 30rem;
+    align-items: stretch;
+  }
+
+  lib-go-online-room-page lib-go-online-room-sidebar {
+    min-height: 0;
+  }
+
+  lib-go-online-room-page lib-go-online-room-stage-section {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 1080px) {
+    lib-go-online-room-page .room-layout {
+      grid-template-columns: minmax(0, 1fr) var(--room-sidebar-width);
+      height: 100dvh;
+      overflow: hidden;
+    }
+  }
+
+  @media (max-width: 1079px) {
+    lib-go-online-room-page .room-layout {
+      min-height: auto;
+    }
+  }
+}

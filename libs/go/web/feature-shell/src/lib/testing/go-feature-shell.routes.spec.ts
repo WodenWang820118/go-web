@@ -3,6 +3,7 @@ import { computed, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { RoomSnapshot, SystemNotice } from '@gx/go/contracts';
+import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
 import { provideGoPrimeNGTheme } from '@gx/go/ui';
@@ -13,9 +14,16 @@ import { OnlineRoomService } from '../online/room/services/online-room/online-ro
 import { OnlineRoomsHttpService } from '../online/room/services/online-rooms-http/online-rooms-http.service';
 import { goFeatureShellRoutes } from '../go-feature-shell.routes';
 import { OnlineLobbyPageComponent } from '../online/lobby/online-lobby-page/online-lobby-page.component';
+import { PrivacyPageComponent } from '../pages/privacy-page/privacy-page.component';
 
 describe('goFeatureShellRoutes', () => {
   beforeEach(() => {
+    localStorage.clear();
+    window.dataLayer = [];
+    document
+      .querySelectorAll('script[id^="gx-gtm-script-"]')
+      .forEach((element) => element.remove());
+
     TestBed.configureTestingModule({
       providers: [
         provideGoPrimeNGTheme(),
@@ -49,6 +57,14 @@ describe('goFeatureShellRoutes', () => {
     });
   });
 
+  afterEach(() => {
+    localStorage.clear();
+    window.dataLayer = [];
+    document
+      .querySelectorAll('script[id^="gx-gtm-script-"]')
+      .forEach((element) => element.remove());
+  });
+
   it('renders the hosted lobby at the root route', async () => {
     const harness = await RouterTestingHarness.create();
     const i18n = TestBed.inject(GoI18nService);
@@ -61,6 +77,204 @@ describe('goFeatureShellRoutes', () => {
     expect(harness.routeNativeElement?.textContent).toContain(
       i18n.t('lobby.panel.announcement'),
     );
+    expect(
+      harness.routeNativeElement?.querySelector(
+        '[data-testid="hosted-header-link-privacy"]',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('renders the privacy preferences route', async () => {
+    const harness = await RouterTestingHarness.create();
+    const i18n = TestBed.inject(GoI18nService);
+
+    await harness.navigateByUrl('/privacy', PrivacyPageComponent);
+
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(root.textContent).toContain(i18n.t('privacy.title'));
+    expect(
+      root.querySelector('[data-testid="privacy-category-necessary"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="privacy-category-preferences"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="privacy-category-analytics"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.unset'));
+    expect(
+      (
+        root.querySelector(
+          '[data-testid="privacy-analytics-allow"]',
+        ) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+    expect(
+      (
+        root.querySelector(
+          '[data-testid="privacy-analytics-deny"]',
+        ) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
+
+  it('updates analytics consent from the privacy page controls', async () => {
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+    TestBed.inject(GoAnalyticsService).watchRouter(router);
+    const i18n = TestBed.inject(GoI18nService);
+
+    await harness.navigateByUrl('/privacy', PrivacyPageComponent);
+
+    const root = harness.routeNativeElement as HTMLElement;
+    const allowButton = root.querySelector(
+      '[data-testid="privacy-analytics-allow"]',
+    ) as HTMLButtonElement;
+
+    allowButton.click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('granted');
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.granted'));
+    expect(allowButton.disabled).toBe(true);
+    expect(
+      document.querySelector('script[id^="gx-gtm-script-"]'),
+    ).not.toBeNull();
+    expect(window.dataLayer).toContainEqual([
+      'consent',
+      'update',
+      {
+        ad_personalization: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        analytics_storage: 'granted',
+      },
+    ]);
+    expect(window.dataLayer).toContainEqual(
+      expect.objectContaining({
+        event: 'page_view',
+        page_path_normalized: '/privacy',
+        route_group: 'privacy',
+      }),
+    );
+
+    const denyButton = root.querySelector(
+      '[data-testid="privacy-analytics-deny"]',
+    ) as HTMLButtonElement;
+
+    expect(denyButton.disabled).toBe(false);
+
+    denyButton.click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('denied');
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.denied'));
+    expect(allowButton.disabled).toBe(false);
+    expect(denyButton.disabled).toBe(true);
+    expect(window.dataLayer).toContainEqual([
+      'consent',
+      'update',
+      {
+        ad_personalization: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        analytics_storage: 'denied',
+      },
+    ]);
+  });
+
+  it('turns off analytics directly from an undecided privacy page state', async () => {
+    const harness = await RouterTestingHarness.create();
+    const i18n = TestBed.inject(GoI18nService);
+
+    await harness.navigateByUrl('/privacy', PrivacyPageComponent);
+
+    const root = harness.routeNativeElement as HTMLElement;
+    const denyButton = root.querySelector(
+      '[data-testid="privacy-analytics-deny"]',
+    ) as HTMLButtonElement;
+
+    denyButton.click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('denied');
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.denied'));
+    expect(denyButton.disabled).toBe(true);
+    expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
+    expect(window.dataLayer).toContainEqual([
+      'consent',
+      'update',
+      {
+        ad_personalization: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        analytics_storage: 'denied',
+      },
+    ]);
+  });
+
+  it('renders granted analytics preference for returning privacy page visitors', async () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'granted');
+
+    const harness = await RouterTestingHarness.create();
+    const i18n = TestBed.inject(GoI18nService);
+
+    await harness.navigateByUrl('/privacy', PrivacyPageComponent);
+
+    const root = harness.routeNativeElement as HTMLElement;
+    const allowButton = root.querySelector(
+      '[data-testid="privacy-analytics-allow"]',
+    ) as HTMLButtonElement;
+    const denyButton = root.querySelector(
+      '[data-testid="privacy-analytics-deny"]',
+    ) as HTMLButtonElement;
+
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.granted'));
+    expect(allowButton.disabled).toBe(true);
+    expect(denyButton.disabled).toBe(false);
+  });
+
+  it('renders denied analytics preference for returning privacy page visitors', async () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'denied');
+
+    const harness = await RouterTestingHarness.create();
+    const i18n = TestBed.inject(GoI18nService);
+
+    await harness.navigateByUrl('/privacy', PrivacyPageComponent);
+
+    const root = harness.routeNativeElement as HTMLElement;
+    const allowButton = root.querySelector(
+      '[data-testid="privacy-analytics-allow"]',
+    ) as HTMLButtonElement;
+    const denyButton = root.querySelector(
+      '[data-testid="privacy-analytics-deny"]',
+    ) as HTMLButtonElement;
+
+    expect(
+      root.querySelector('[data-testid="privacy-analytics-status"]')
+        ?.textContent,
+    ).toContain(i18n.t('privacy.analytics.status.denied'));
+    expect(allowButton.disabled).toBe(false);
+    expect(denyButton.disabled).toBe(true);
   });
 
   it('redirects play routes to setup when no session exists', async () => {

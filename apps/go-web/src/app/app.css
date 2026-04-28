@@ -41,6 +41,18 @@
   line-height: 1.6;
 }
 
+.analytics-consent__link {
+  padding: 0;
+  color: #fde68a;
+  font: inherit;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .analytics-consent__actions {
   display: flex;
   flex-wrap: wrap;
@@ -68,6 +80,12 @@
 .analytics-consent__button--secondary {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.16);
+}
+
+.analytics-consent__button:focus-visible,
+.analytics-consent__link:focus-visible {
+  outline: 3px solid #fde68a;
+  outline-offset: 3px;
 }
 
 @media (min-width: 48rem) {

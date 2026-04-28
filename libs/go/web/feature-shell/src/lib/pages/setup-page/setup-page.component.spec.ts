@@ -136,9 +136,16 @@ describe('SetupPageComponent', () => {
       },
     });
     expect(analytics.track).toHaveBeenCalledWith({
-      board_size: 13,
-      event: 'gx_match_start',
+      action_type: 'nigiri_guess',
+      event: 'gx_match_action',
       game_mode: 'go',
+      play_context: 'local',
+    });
+    expect(analytics.track).toHaveBeenCalledWith({
+      board_size: 13,
+      event: 'level_start',
+      game_mode: 'go',
+      level_name: 'local_go_13',
       play_context: 'local',
       start_source: 'setup',
     });

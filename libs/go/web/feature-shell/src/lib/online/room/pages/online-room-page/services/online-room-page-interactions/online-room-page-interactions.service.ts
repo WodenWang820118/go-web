@@ -6,6 +6,7 @@ import {
   createUniqueDisplayName,
 } from '@gx/go/contracts';
 import { BoardPoint, PlayerColor } from '@gx/go/domain';
+import { GoAnalyticsMatchActionType, GoAnalyticsService } from '@gx/go/state';
 import { EMPTY, catchError, take } from 'rxjs';
 import {
   OnlineRoomChatFormGroup,
@@ -18,6 +19,7 @@ import { OnlineRoomPageViewStateService } from '../online-room-page-view-state/o
 export class OnlineRoomPageInteractionsService {
   private readonly onlineRoom = inject(OnlineRoomService);
   private readonly view = inject(OnlineRoomPageViewStateService);
+  private readonly analytics = inject(GoAnalyticsService);
 
   readonly joinForm: OnlineRoomJoinFormGroup = new FormGroup({
     displayName: new FormControl('', {
@@ -92,6 +94,7 @@ export class OnlineRoomPageInteractionsService {
     }
 
     if (this.view.match()?.state.phase === 'scoring') {
+      this.trackHostedMatchAction('toggle_dead');
       this.onlineRoom.sendGameCommand({
         type: 'toggle-dead',
         point,
@@ -99,6 +102,7 @@ export class OnlineRoomPageInteractionsService {
       return;
     }
 
+    this.trackHostedMatchAction('place');
     this.onlineRoom.sendGameCommand({
       type: 'place',
       point,
@@ -106,30 +110,35 @@ export class OnlineRoomPageInteractionsService {
   }
 
   passTurn(): void {
+    this.trackHostedMatchAction('pass');
     this.onlineRoom.sendGameCommand({
       type: 'pass',
     });
   }
 
   resign(): void {
+    this.trackHostedMatchAction('resign');
     this.onlineRoom.sendGameCommand({
       type: 'resign',
     });
   }
 
   confirmScoring(): void {
+    this.trackHostedMatchAction('confirm_scoring');
     this.onlineRoom.sendGameCommand({
       type: 'confirm-scoring',
     });
   }
 
   disputeScoring(): void {
+    this.trackHostedMatchAction('dispute_scoring');
     this.onlineRoom.sendGameCommand({
       type: 'dispute-scoring',
     });
   }
 
   guessNigiri(guess: NigiriGuess): void {
+    this.trackHostedMatchAction('nigiri_guess');
     this.onlineRoom.sendGameCommand({
       type: 'nigiri-guess',
       guess,
@@ -145,5 +154,14 @@ export class OnlineRoomPageInteractionsService {
 
     this.onlineRoom.sendChat(message);
     this.chatForm.controls.message.setValue('');
+  }
+
+  private trackHostedMatchAction(actionType: GoAnalyticsMatchActionType): void {
+    this.analytics.track({
+      action_type: actionType,
+      event: 'gx_match_action',
+      game_mode: this.view.match()?.settings.mode,
+      play_context: 'hosted',
+    });
   }
 }

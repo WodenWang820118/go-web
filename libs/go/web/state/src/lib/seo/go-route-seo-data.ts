@@ -4,7 +4,7 @@ export const GO_SITE_ORIGIN = 'https://gxgo.synology.me';
 export const GO_SOCIAL_IMAGE_PATH = '/social/gxgo-og.png';
 export const GO_SOCIAL_IMAGE_URL = `${GO_SITE_ORIGIN}${GO_SOCIAL_IMAGE_PATH}`;
 
-export type GoSeoPageKey = 'lobby' | 'setup' | 'room' | 'play';
+export type GoSeoPageKey = 'lobby' | 'privacy' | 'setup' | 'room' | 'play';
 
 export interface GoRouteSeoData {
   readonly page: GoSeoPageKey;

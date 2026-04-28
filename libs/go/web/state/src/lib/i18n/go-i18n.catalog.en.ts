@@ -15,6 +15,26 @@
   'common.move.pass': 'Pass',
   'common.move.resign': 'Resign',
   'common.action.close': 'Close',
+  'analytics.banner.aria': 'Analytics consent',
+  'analytics.banner.title': 'Help improve gx.go',
+  'analytics.banner.body':
+    'We load Google Tag Manager only after you allow analytics. You can change this choice later.',
+  'analytics.banner.privacy_link': 'Review privacy preferences.',
+  'analytics.banner.decline': 'No thanks',
+  'analytics.banner.accept': 'Allow analytics',
+  'analytics.settings.open': 'Cookie settings',
+  'analytics.settings.aria': 'Open Cookie settings',
+  'analytics.dialog.title': 'Cookie preferences',
+  'analytics.dialog.description':
+    'Choose whether gx.go may use analytics in this browser. Required room and preference storage stays on so the app works.',
+  'analytics.dialog.analytics_title': 'Analytics',
+  'analytics.dialog.analytics_body':
+    'Analytics helps us understand page views and game actions. Google Tag Manager loads only when this is on.',
+  'analytics.dialog.analytics_switch': 'Allow analytics',
+  'analytics.dialog.status_on': 'On',
+  'analytics.dialog.status_off': 'Off',
+  'analytics.dialog.cancel': 'Cancel',
+  'analytics.dialog.confirm': 'Save preferences',
 } as const;
 
 const EN_GAME = {
@@ -291,6 +311,7 @@ const EN_LOCAL_UI = {
   'hosted.header.lobby': 'Lobby',
   'hosted.header.start_local_go': 'Start local Go',
   'hosted.header.start_local_gomoku': 'Start local Gomoku',
+  'hosted.header.privacy': 'Privacy',
   'hosted.header.page.room': 'Room view',
   'create.back_to_modes': 'Back to modes',
   'create.eyebrow': 'Hosted multiplayer',
@@ -524,6 +545,42 @@ const EN_HOSTED_UI = {
   'lobby.count.spectator.other': '{{count}} spectators',
 } as const;
 
+const EN_PRIVACY = {
+  'privacy.back_to_lobby': 'Back to lobby',
+  'privacy.eyebrow': 'Privacy and storage',
+  'privacy.title': 'Privacy and Cookie preferences',
+  'privacy.description':
+    'gx.go keeps essential room and preference data in this browser. Google Analytics is loaded only after you allow analytics.',
+  'privacy.category.necessary.title': 'Necessary storage',
+  'privacy.category.necessary.body':
+    'Required data keeps your consent choice and restores your identity in a hosted room you joined.',
+  'privacy.category.necessary.examples':
+    'Examples: gx.analyticsConsent.v1 and gx.go.online.room.<ROOMID> in localStorage.',
+  'privacy.category.necessary.control': 'Always on',
+  'privacy.category.preferences.title': 'Preferences',
+  'privacy.category.preferences.body':
+    'Preference data keeps the interface comfortable across visits without being used for advertising.',
+  'privacy.category.preferences.examples':
+    'Examples: gx.go.locale and local development server-origin overrides.',
+  'privacy.category.preferences.control': 'Functional',
+  'privacy.category.analytics.title': 'Analytics',
+  'privacy.category.analytics.body':
+    'Optional analytics helps us understand page views and game actions with safe, low-cardinality event data.',
+  'privacy.category.analytics.examples':
+    'When allowed, Google Tag Manager loads GA4. Advertising and social tracking remain disabled.',
+  'privacy.category.analytics.control': 'Your choice',
+  'privacy.analytics.panel_label': 'Analytics preference',
+  'privacy.analytics.title': 'Control analytics',
+  'privacy.analytics.description':
+    'Changing this setting updates Google Consent Mode immediately. Turning analytics off blocks future app events and clears first-party GA cookies where the browser allows it.',
+  'privacy.analytics.current_status': 'Current status',
+  'privacy.analytics.status.granted': 'Analytics allowed',
+  'privacy.analytics.status.denied': 'Analytics turned off',
+  'privacy.analytics.status.unset': 'No choice yet',
+  'privacy.analytics.allow': 'Allow analytics',
+  'privacy.analytics.deny': 'Turn off analytics',
+} as const;
+
 export const EN_TRANSLATIONS = {
   ...EN_CORE,
   ...EN_GAME,
@@ -531,6 +588,7 @@ export const EN_TRANSLATIONS = {
   ...EN_MODES,
   ...EN_LOCAL_UI,
   ...EN_HOSTED_UI,
+  ...EN_PRIVACY,
 } as const;
 
 export type GoTranslationKey = keyof typeof EN_TRANSLATIONS;

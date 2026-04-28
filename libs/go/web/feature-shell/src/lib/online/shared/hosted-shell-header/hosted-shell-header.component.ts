@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { GameMode } from '@gx/go/domain';
+import { GoAnalyticsLocale, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GoLocaleSwitcherComponent } from '@gx/go/ui';
 
@@ -42,6 +44,7 @@ import { GoLocaleSwitcherComponent } from '@gx/go/ui';
             [class.bg-white/15]="goSetupLink.isActive"
             [class.text-stone-50]="goSetupLink.isActive"
             data-testid="hosted-header-link-setup-go"
+            (click)="trackLocalModeSelection('go')"
           >
             {{ i18n.t('hosted.header.start_local_go') }}
           </a>
@@ -60,10 +63,31 @@ import { GoLocaleSwitcherComponent } from '@gx/go/ui';
             [class.bg-white/15]="gomokuSetupLink.isActive"
             [class.text-stone-50]="gomokuSetupLink.isActive"
             data-testid="hosted-header-link-setup-gomoku"
+            (click)="trackLocalModeSelection('gomoku')"
           >
             {{ i18n.t('hosted.header.start_local_gomoku') }}
           </a>
-          <lib-go-locale-switcher />
+          <a
+            #privacyLink="routerLinkActive"
+            routerLink="/privacy"
+            routerLinkActive
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+            class="inline-flex items-center rounded-sm px-3.5 py-2 text-sm font-medium transition hover:border-white/20 hover:bg-white/10"
+            [class.border]="true"
+            [class.border-white/10]="!privacyLink.isActive"
+            [class.bg-white/5]="!privacyLink.isActive"
+            [class.text-stone-100]="!privacyLink.isActive"
+            [class.border-amber-300/35]="privacyLink.isActive"
+            [class.bg-white/15]="privacyLink.isActive"
+            [class.text-stone-50]="privacyLink.isActive"
+            data-testid="hosted-header-link-privacy"
+          >
+            {{ i18n.t('hosted.header.privacy') }}
+          </a>
+          <lib-go-locale-switcher
+            (localeChangeRequested)="trackLocaleChange($event)"
+          />
         </nav>
       </div>
     </header>
@@ -72,4 +96,25 @@ import { GoLocaleSwitcherComponent } from '@gx/go/ui';
 })
 export class HostedShellHeaderComponent {
   protected readonly i18n = inject(GoI18nService);
+  private readonly analytics = inject(GoAnalyticsService);
+
+  protected trackLocalModeSelection(gameMode: GameMode): void {
+    this.analytics.track({
+      content_id: gameMode,
+      content_type: 'local_mode',
+      event: 'select_content',
+      game_mode: gameMode,
+    });
+  }
+
+  protected trackLocaleChange(event: {
+    locale: GoAnalyticsLocale;
+    targetLocale: GoAnalyticsLocale;
+  }): void {
+    this.analytics.track({
+      event: 'gx_locale_change',
+      locale: event.locale,
+      target_locale: event.targetLocale,
+    });
+  }
 }

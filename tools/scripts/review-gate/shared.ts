@@ -312,29 +312,17 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
         ? toolArgs.command
         : '';
 
-  if (isReviewGateCommand(command)) {
-    return false;
-  }
-
   const trimmedCommand = command.trim();
   if (!trimmedCommand) {
     return false;
   }
 
-  const riskyShellSyntaxPatterns = [
-    />{1,2}\s*\S/,
-    /<{1,2}\s*\S/,
-    /(^|[\s)])(&&|\|\||;)(?=\s|$)/,
-    /\|(?!\|)/,
-    /\$\(/,
-    /`[^`]+`/,
-    /\b(powershell|pwsh)\b.*\s-(EncodedCommand|enc|e)\b/i,
-  ];
-
-  if (
-    riskyShellSyntaxPatterns.some((pattern) => pattern.test(trimmedCommand))
-  ) {
+  if (hasRiskyShellSyntax(trimmedCommand)) {
     return true;
+  }
+
+  if (isReviewGateCommand(trimmedCommand)) {
+    return false;
   }
 
   // Fail closed for anything that is not on the read-only allowlist.
@@ -363,11 +351,33 @@ export function isMutatingToolUse({ toolName, toolArgs }: HookInput): boolean {
 }
 
 export function isReviewGateCommand(command: string): boolean {
+  const trimmedCommand = command.trim();
+  if (!trimmedCommand || hasRiskyShellSyntax(trimmedCommand)) {
+    return false;
+  }
+
   return (
-    /review-gate[\\/](approve-pre-implementation|status|reset)\.ts/i.test(
-      command,
-    ) || /\breview:(approve-pre-implementation|status|reset)\b/i.test(command)
+    /^node(?:\.exe)?\s+\.?[\\/]?tools[\\/]scripts[\\/]review-gate[\\/](approve-pre-implementation|status|reset)\.ts(?:\s+.*)?$/i.test(
+      trimmedCommand,
+    ) ||
+    /^pnpm(?:\.cmd)?\s+review:(approve-pre-implementation|status|reset)(?:\s+.*)?$/i.test(
+      trimmedCommand,
+    )
   );
+}
+
+function hasRiskyShellSyntax(command: string): boolean {
+  const riskyShellSyntaxPatterns = [
+    />{1,2}\s*\S/,
+    /<{1,2}\s*\S/,
+    /(^|[\s)])(&&|\|\||;)(?=\s|$)/,
+    /\|(?!\|)/,
+    /\$\(/,
+    /`[^`]+`/,
+    /\b(powershell|pwsh)\b.*\s-(EncodedCommand|enc|e)\b/i,
+  ];
+
+  return riskyShellSyntaxPatterns.some((pattern) => pattern.test(command));
 }
 
 export function parseHookInput(rawInput: string): HookInput {
@@ -411,6 +421,6 @@ export function evaluateHookPermission(input: {
 export function buildDenyPayload(reason: string): string {
   return JSON.stringify({
     permissionDecision: 'deny',
-    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan first, Gemini 2.5 Pro if the Claude path is unavailable, Copilot GPT-5 mini if Gemini is unavailable or you explicitly need the Copilot fallback path, or the Codex reviewer subagent if both local CLIs are unavailable, then run: node --experimental-strip-types scripts/review-gate/approve-pre-implementation.ts --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus general --summary "Approved after plan review".`,
+    permissionDecisionReason: `${reason} Use GitHub Copilot Claude to review the plan first, Gemini 2.5 Pro if the Claude path is unavailable, Copilot GPT-5 mini if Gemini is unavailable or you explicitly need the Copilot fallback path, or the Codex reviewer subagent if both local CLIs are unavailable, then run: node tools/scripts/review-gate/approve-pre-implementation.ts --reviewer <copilot-claude|copilot-gpt-5-mini|gemini-2.5-pro|codex-subagent> --focus general --summary "Approved after plan review".`,
   });
 }

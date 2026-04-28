@@ -52,6 +52,7 @@ export class OnlineLobbyRoomPanelComponent {
   readonly activeStatusChange = output<LobbyRoomStatus>();
   readonly createRoomRequested = output<void>();
   readonly joinRoomRequested = output<LobbyRoomSummary>();
+  readonly roomOpenRequested = output<LobbyRoomSummary>();
 
   private readonly roomTableScroll =
     viewChild<ElementRef<HTMLDivElement>>('roomTableScroll');
@@ -68,6 +69,10 @@ export class OnlineLobbyRoomPanelComponent {
 
   protected onJoinRoomRequested(room: LobbyRoomSummary): void {
     this.joinRoomRequested.emit(room);
+  }
+
+  protected onOpenRoomRequested(room: LobbyRoomSummary): void {
+    this.roomOpenRequested.emit(room);
   }
 
   private scrollToTop(): void {

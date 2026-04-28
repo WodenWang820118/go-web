@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { GoAnalyticsService } from '@gx/go/state';
 import { from, EMPTY, catchError, take, tap } from 'rxjs';
 import { OnlineRoomShareChipViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomService } from '../../../../services/online-room/online-room.service';
@@ -15,6 +16,7 @@ export class OnlineRoomPageShareService {
   private readonly onlineRoom = inject(OnlineRoomService);
   private readonly view = inject(OnlineRoomPageViewStateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly analytics = inject(GoAnalyticsService);
   private shareCopyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly shareCopyFeedbackState =
@@ -57,6 +59,7 @@ export class OnlineRoomPageShareService {
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
       this.showShareCopyManualFallback();
       this.onlineRoom.clearTransientMessages();
+      this.trackManualShareFallback();
       return;
     }
 
@@ -65,10 +68,17 @@ export class OnlineRoomPageShareService {
         tap(() => {
           this.showShareCopySuccess();
           this.onlineRoom.clearTransientMessages();
+          this.analytics.track({
+            content_type: 'online_room',
+            event: 'share',
+            item_id: 'hosted_room_invite',
+            method: 'copy_link',
+          });
         }),
         catchError(() => {
           this.showShareCopyManualFallback();
           this.onlineRoom.clearTransientMessages();
+          this.trackManualShareFallback();
           return EMPTY;
         }),
         take(1),
@@ -108,5 +118,15 @@ export class OnlineRoomPageShareService {
     }
 
     this.shareCopyFeedbackState.set('idle');
+  }
+
+  private trackManualShareFallback(): void {
+    this.analytics.track({
+      content_type: 'online_room',
+      event: 'gx_room_share_copy',
+      item_id: 'hosted_room_invite',
+      method: 'copy_link',
+      share_result: 'manual_fallback',
+    });
   }
 }
