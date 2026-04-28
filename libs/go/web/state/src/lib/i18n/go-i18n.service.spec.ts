@@ -185,6 +185,7 @@ describe('GoI18nService', () => {
   });
 
   it('switches locale at runtime and exposes locale-aware date formatting', async () => {
+    setNavigatorLanguages(['fr-FR']);
     const storage = installBrowserGlobals();
     const service = createService();
     const sampleDate = '2026-03-24T13:05:00.000Z';
@@ -203,6 +204,7 @@ describe('GoI18nService', () => {
   });
 
   it('cycles through every supported locale', async () => {
+    setNavigatorLanguages(['fr-FR']);
     installBrowserGlobals();
     const service = createService();
     flushEffects();
@@ -221,6 +223,7 @@ describe('GoI18nService', () => {
   });
 
   it('translates public helper methods through the active locale', async () => {
+    setNavigatorLanguages(['fr-FR']);
     installBrowserGlobals();
     const service = createService();
     flushEffects();
