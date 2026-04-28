@@ -12,13 +12,14 @@
     </p>
     <p class="analytics-consent__body">
       {{ i18n.t('analytics.banner.body') }}
-      <a
-        routerLink="/privacy"
+      <button
+        type="button"
         class="analytics-consent__link"
         data-testid="analytics-consent-privacy-link"
+        (click)="openAnalyticsPreferences('banner')"
       >
         {{ i18n.t('analytics.banner.privacy_link') }}
-      </a>
+      </button>
     </p>
   </div>
   <div class="analytics-consent__actions">
@@ -40,4 +41,89 @@
     </button>
   </div>
 </section>
+} @if (!analyticsConsent.shouldShowBanner()) {
+<button
+  class="analytics-consent-settings"
+  type="button"
+  [attr.aria-label]="i18n.t('analytics.settings.aria')"
+  data-testid="analytics-consent-settings"
+  (click)="openAnalyticsPreferences('launcher')"
+>
+  <span class="analytics-consent-settings__icon" aria-hidden="true">⚙</span>
+  <span class="analytics-consent-settings__label">
+    {{ i18n.t('analytics.settings.open') }}
+  </span>
+</button>
 }
+
+<p-dialog
+  [visible]="consentDialogVisible()"
+  (visibleChange)="onConsentDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: 'min(92vw, 30rem)' }"
+  [header]="i18n.t('analytics.dialog.title')"
+  [closeAriaLabel]="i18n.t('common.action.close')"
+  styleClass="analytics-consent-dialog"
+>
+  <div
+    class="analytics-consent-dialog__content"
+    data-testid="analytics-consent-dialog"
+  >
+    <p class="analytics-consent-dialog__description">
+      {{ i18n.t('analytics.dialog.description') }}
+    </p>
+
+    <label class="analytics-consent-dialog__option">
+      <span class="analytics-consent-dialog__option-copy">
+        <span class="analytics-consent-dialog__option-title">
+          {{ i18n.t('analytics.dialog.analytics_title') }}
+        </span>
+        <span class="analytics-consent-dialog__option-body">
+          {{ i18n.t('analytics.dialog.analytics_body') }}
+        </span>
+      </span>
+      <span class="analytics-consent-dialog__switch-wrap">
+        <span class="analytics-consent-dialog__state">
+          {{ analyticsDraftEnabled() ? i18n.t('analytics.dialog.status_on') :
+          i18n.t('analytics.dialog.status_off') }}
+        </span>
+        <input
+          class="analytics-consent-dialog__checkbox"
+          type="checkbox"
+          role="switch"
+          data-testid="analytics-consent-dialog-toggle"
+          [checked]="analyticsDraftEnabled()"
+          [attr.aria-label]="i18n.t('analytics.dialog.analytics_switch')"
+          (change)="setAnalyticsDraftFromEvent($event)"
+        />
+        <span class="analytics-consent-dialog__switch" aria-hidden="true">
+          <span class="analytics-consent-dialog__switch-thumb"></span>
+        </span>
+      </span>
+    </label>
+  </div>
+
+  <ng-template #footer>
+    <div class="analytics-consent-dialog__actions">
+      <button
+        class="analytics-consent-dialog__button analytics-consent-dialog__button--secondary"
+        type="button"
+        data-testid="analytics-consent-dialog-cancel"
+        (click)="cancelAnalyticsPreferences()"
+      >
+        {{ i18n.t('analytics.dialog.cancel') }}
+      </button>
+      <button
+        class="analytics-consent-dialog__button analytics-consent-dialog__button--primary"
+        type="button"
+        data-testid="analytics-consent-dialog-confirm"
+        (click)="confirmAnalyticsPreferences()"
+      >
+        {{ i18n.t('analytics.dialog.confirm') }}
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

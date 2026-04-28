@@ -577,7 +577,7 @@ describe('OnlineLobbyPageComponent', () => {
     expect(
       root.querySelector('[data-testid="locale-switcher"]'),
     ).not.toBeNull();
-    expect(root.textContent).not.toContain(i18n.t('hosted.header.lobby'));
+    expect(actions.textContent).not.toContain(i18n.t('hosted.header.lobby'));
     expect(root.textContent).toContain(i18n.t('hosted.header.start_local_go'));
     expect(root.textContent).toContain(
       i18n.t('hosted.header.start_local_gomoku'),
@@ -629,15 +629,15 @@ describe('OnlineLobbyPageComponent', () => {
     harness.fixture.detectChanges();
     await harness.fixture.whenStable();
     const root = harness.routeNativeElement as HTMLElement;
-    const currentLocaleButton = root.querySelector(
-      '[data-testid="locale-option-zh-TW"]',
-    ) as HTMLButtonElement;
-    const englishLocaleButton = root.querySelector(
-      '[data-testid="locale-option-en"]',
-    ) as HTMLButtonElement;
+    const localeSelect = root.querySelector(
+      '[data-testid="locale-select"]',
+    ) as HTMLSelectElement;
 
-    currentLocaleButton.click();
-    englishLocaleButton.click();
+    localeSelect.value = 'zh-TW';
+    localeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    harness.fixture.detectChanges();
+    localeSelect.value = 'en';
+    localeSelect.dispatchEvent(new Event('change', { bubbles: true }));
     await harness.fixture.whenStable();
 
     expect(analytics.track).toHaveBeenCalledTimes(1);

@@ -22,6 +22,19 @@
   'analytics.banner.privacy_link': 'Review privacy preferences.',
   'analytics.banner.decline': 'No thanks',
   'analytics.banner.accept': 'Allow analytics',
+  'analytics.settings.open': 'Cookie settings',
+  'analytics.settings.aria': 'Open Cookie settings',
+  'analytics.dialog.title': 'Cookie preferences',
+  'analytics.dialog.description':
+    'Choose whether gx.go may use analytics in this browser. Required room and preference storage stays on so the app works.',
+  'analytics.dialog.analytics_title': 'Analytics',
+  'analytics.dialog.analytics_body':
+    'Analytics helps us understand page views and game actions. Google Tag Manager loads only when this is on.',
+  'analytics.dialog.analytics_switch': 'Allow analytics',
+  'analytics.dialog.status_on': 'On',
+  'analytics.dialog.status_off': 'Off',
+  'analytics.dialog.cancel': 'Cancel',
+  'analytics.dialog.confirm': 'Save preferences',
 } as const;
 
 const EN_GAME = {

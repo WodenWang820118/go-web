@@ -22,6 +22,19 @@
   'analytics.banner.privacy_link': '查看隱私偏好。',
   'analytics.banner.decline': '不用，謝謝',
   'analytics.banner.accept': '允許分析',
+  'analytics.settings.open': 'Cookie 設定',
+  'analytics.settings.aria': '開啟 Cookie 設定',
+  'analytics.dialog.title': 'Cookie 偏好',
+  'analytics.dialog.description':
+    '選擇 gx.go 是否可以在這個瀏覽器中使用分析。必要的房間與偏好儲存會維持啟用，讓網站正常運作。',
+  'analytics.dialog.analytics_title': '分析',
+  'analytics.dialog.analytics_body':
+    '分析能協助我們了解頁面瀏覽與對局操作。只有開啟時才會載入 Google Tag Manager。',
+  'analytics.dialog.analytics_switch': '允許分析',
+  'analytics.dialog.status_on': '開啟',
+  'analytics.dialog.status_off': '關閉',
+  'analytics.dialog.cancel': '取消',
+  'analytics.dialog.confirm': '儲存偏好',
 } as const;
 
 const ZH_GAME = {

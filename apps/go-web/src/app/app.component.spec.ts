@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { AppComponent } from './app.component';
@@ -27,6 +27,9 @@ describe('AppComponent', () => {
     window.dataLayer = [];
     document
       .querySelectorAll('script[id^="gx-gtm-script-"]')
+      .forEach((element) => element.remove());
+    document
+      .querySelectorAll('.p-dialog-mask, .p-dialog')
       .forEach((element) => element.remove());
     document.title = '';
     document.head
@@ -60,6 +63,9 @@ describe('AppComponent', () => {
     document
       .querySelectorAll('script[id^="gx-gtm-script-"]')
       .forEach((element) => element.remove());
+    document
+      .querySelectorAll('.p-dialog-mask, .p-dialog')
+      .forEach((element) => element.remove());
   });
 
   it('creates the root shell', () => {
@@ -76,13 +82,22 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).not.toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-settings')).toBeNull();
+  });
+
+  it('opens the analytics preferences dialog from the banner', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(queryByTestId(fixture, 'analytics-consent-dialog')).toBeNull();
+
+    queryButton(fixture, 'analytics-consent-privacy-link').click();
+    fixture.detectChanges();
+
+    expect(queryByTestId(fixture, 'analytics-consent-dialog')).not.toBeNull();
     expect(
-      (
-        fixture.nativeElement.querySelector(
-          '[data-testid="analytics-consent-privacy-link"]',
-        ) as HTMLAnchorElement
-      ).getAttribute('href'),
-    ).toBe('/privacy');
+      queryCheckbox(fixture, 'analytics-consent-dialog-toggle').checked,
+    ).toBe(false);
   });
 
   it('hides the analytics consent banner for returning granted consent', () => {
@@ -96,6 +111,7 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-settings')).not.toBeNull();
   });
 
   it('hides the analytics consent banner for returning denied consent', () => {
@@ -109,6 +125,7 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-settings')).not.toBeNull();
     expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
   });
 
@@ -129,6 +146,7 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-settings')).not.toBeNull();
     expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
   });
 
@@ -149,6 +167,7 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-settings')).not.toBeNull();
     expect(
       document.querySelector('script[id^="gx-gtm-script-"]'),
     ).not.toBeNull();
@@ -183,6 +202,141 @@ describe('AppComponent', () => {
         route_group: 'privacy',
       }),
     );
+  });
+
+  it('cancels the banner preferences dialog without persisting consent', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-privacy-link').click();
+    fixture.detectChanges();
+    queryCheckbox(fixture, 'analytics-consent-dialog-toggle').click();
+    fixture.detectChanges();
+    queryButton(fixture, 'analytics-consent-dialog-cancel').click();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-dialog')).toBeNull();
+  });
+
+  it('dismisses the preferences dialog without persisting consent', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-privacy-link').click();
+    fixture.detectChanges();
+    queryCheckbox(fixture, 'analytics-consent-dialog-toggle').click();
+    (
+      fixture.componentInstance as unknown as {
+        onConsentDialogVisibleChange(visible: boolean): void;
+      }
+    ).onConsentDialogVisibleChange(false);
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBeNull();
+    expect(queryByTestId(fixture, 'analytics-consent-dialog')).toBeNull();
+  });
+
+  it('confirms granted analytics from the banner dialog and returns home', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+
+    await router.navigateByUrl('/privacy');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-privacy-link').click();
+    fixture.detectChanges();
+    queryCheckbox(fixture, 'analytics-consent-dialog-toggle').click();
+    fixture.detectChanges();
+    queryButton(fixture, 'analytics-consent-dialog-confirm').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('granted');
+    expect(router.url).toBe('/');
+    expect(
+      document.querySelector('script[id^="gx-gtm-script-"]'),
+    ).not.toBeNull();
+    expect(window.dataLayer).toContainEqual(
+      expect.objectContaining({
+        event: 'page_view',
+        page_path_normalized: '/privacy',
+        route_group: 'privacy',
+      }),
+    );
+  });
+
+  it('confirms denied analytics from the banner dialog and returns home', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+
+    await router.navigateByUrl('/privacy');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-privacy-link').click();
+    fixture.detectChanges();
+    queryButton(fixture, 'analytics-consent-dialog-confirm').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('denied');
+    expect(router.url).toBe('/');
+    expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
+  });
+
+  it('opens the launcher dialog with returning consent and saves in place', async () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'granted');
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+
+    await router.navigateByUrl('/privacy');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-settings').click();
+    fixture.detectChanges();
+
+    const toggle = queryCheckbox(fixture, 'analytics-consent-dialog-toggle');
+    expect(toggle.checked).toBe(true);
+
+    toggle.click();
+    fixture.detectChanges();
+    queryButton(fixture, 'analytics-consent-dialog-confirm').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('denied');
+    expect(router.url).toBe('/privacy');
+  });
+
+  it('opens the launcher dialog with denied consent and can grant in place', async () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'denied');
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+
+    await router.navigateByUrl('/privacy');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    queryButton(fixture, 'analytics-consent-settings').click();
+    fixture.detectChanges();
+
+    const toggle = queryCheckbox(fixture, 'analytics-consent-dialog-toggle');
+    expect(toggle.checked).toBe(false);
+
+    toggle.click();
+    fixture.detectChanges();
+    queryButton(fixture, 'analytics-consent-dialog-confirm').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(localStorage.getItem('gx.analyticsConsent.v1')).toBe('granted');
+    expect(router.url).toBe('/privacy');
+    expect(
+      document.querySelector('script[id^="gx-gtm-script-"]'),
+    ).not.toBeNull();
   });
 
   it('renders the active lobby route content', async () => {
@@ -230,4 +384,42 @@ function canonicalHref(): string | null {
       .querySelector<HTMLLinkElement>('link[rel="canonical"]')
       ?.getAttribute('href') ?? null
   );
+}
+
+function queryByTestId<T extends HTMLElement>(
+  fixture: ComponentFixture<AppComponent>,
+  testId: string,
+): T | null {
+  const selector = `[data-testid="${testId}"]`;
+
+  return (
+    fixture.nativeElement.querySelector(selector) ??
+    document.body.querySelector(selector)
+  );
+}
+
+function queryButton(
+  fixture: ComponentFixture<AppComponent>,
+  testId: string,
+): HTMLButtonElement {
+  const button = queryByTestId<HTMLButtonElement>(fixture, testId);
+
+  if (!button) {
+    throw new Error(`Expected ${testId} button to exist.`);
+  }
+
+  return button;
+}
+
+function queryCheckbox(
+  fixture: ComponentFixture<AppComponent>,
+  testId: string,
+): HTMLInputElement {
+  const input = queryByTestId<HTMLInputElement>(fixture, testId);
+
+  if (!input) {
+    throw new Error(`Expected ${testId} checkbox to exist.`);
+  }
+
+  return input;
 }
