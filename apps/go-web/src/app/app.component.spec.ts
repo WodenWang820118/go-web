@@ -15,6 +15,12 @@ class DummyLobbyPageComponent {}
 })
 class DummyRoomPageComponent {}
 
+@Component({
+  standalone: true,
+  template: '<p>Privacy page</p>',
+})
+class DummyPrivacyPageComponent {}
+
 describe('AppComponent', () => {
   beforeEach(async () => {
     localStorage.clear();
@@ -38,6 +44,10 @@ describe('AppComponent', () => {
           {
             path: 'online/room/:roomId',
             component: DummyRoomPageComponent,
+          },
+          {
+            path: 'privacy',
+            component: DummyPrivacyPageComponent,
           },
         ]),
       ],
@@ -66,6 +76,40 @@ describe('AppComponent', () => {
         '[data-testid="analytics-consent-banner"]',
       ),
     ).not.toBeNull();
+    expect(
+      (
+        fixture.nativeElement.querySelector(
+          '[data-testid="analytics-consent-privacy-link"]',
+        ) as HTMLAnchorElement
+      ).getAttribute('href'),
+    ).toBe('/privacy');
+  });
+
+  it('hides the analytics consent banner for returning granted consent', () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'granted');
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-banner"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('hides the analytics consent banner for returning denied consent', () => {
+    localStorage.setItem('gx.analyticsConsent.v1', 'denied');
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-banner"]',
+      ),
+    ).toBeNull();
+    expect(document.querySelector('script[id^="gx-gtm-script-"]')).toBeNull();
   });
 
   it('persists declined analytics consent without loading GTM', () => {
@@ -108,6 +152,37 @@ describe('AppComponent', () => {
     expect(
       document.querySelector('script[id^="gx-gtm-script-"]'),
     ).not.toBeNull();
+    expect(window.dataLayer).toContainEqual({
+      event: 'page_view',
+      page_path_normalized: '/',
+      play_context: 'hosted',
+      route_group: 'lobby',
+    });
+  });
+
+  it('tracks page views from router navigation after analytics is granted', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    (
+      fixture.nativeElement.querySelector(
+        '[data-testid="analytics-consent-accept"]',
+      ) as HTMLButtonElement
+    ).click();
+    await fixture.whenStable();
+
+    await router.navigateByUrl('/privacy');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(window.dataLayer).toContainEqual(
+      expect.objectContaining({
+        event: 'page_view',
+        page_path_normalized: '/privacy',
+        route_group: 'privacy',
+      }),
+    );
   });
 
   it('renders the active lobby route content', async () => {

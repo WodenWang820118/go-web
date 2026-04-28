@@ -53,7 +53,6 @@ export class GoI18nService {
 
       if (typeof document !== 'undefined') {
         document.documentElement.lang = locale;
-        document.title = this.t('app.title');
       }
 
       this.persistLocale(locale);

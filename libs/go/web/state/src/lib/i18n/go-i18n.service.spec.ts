@@ -67,7 +67,6 @@ describe('GoI18nService', () => {
 
     expect(service.locale()).toBe('zh-TW');
     expect(globalThis.document.documentElement.lang).toBe('zh-TW');
-    expect(globalThis.document.title).toBe('gx.go');
     expect(storage.getItem('gx.go.locale')).toBe('zh-TW');
     expect(service.t('common.player.black')).toBe('黑方');
   });

@@ -47,6 +47,11 @@ describe('AppSeoService', () => {
             component: SeoTestPageComponent,
             data: goRouteSeoData('play'),
           },
+          {
+            path: 'privacy',
+            component: SeoTestPageComponent,
+            data: goRouteSeoData('privacy'),
+          },
         ]),
       ],
     }).compileComponents();
@@ -215,6 +220,24 @@ describe('AppSeoService', () => {
     expect(metaName('twitter:image')).toBe(
       'https://gxgo.synology.me/social/gxgo-og.png',
     );
+  });
+
+  it('publishes indexable privacy metadata', async () => {
+    await router.navigateByUrl('/privacy');
+
+    expect(document.title).toBe('Privacy and Cookie Preferences | gx.go');
+    expect(metaName('description')).toContain('analytics consent');
+    expect(metaName('robots')).toBe('index,follow');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/privacy');
+    expect(metaProperty('og:url')).toBe('https://gxgo.synology.me/privacy');
+    expect(metaProperty('og:title')).toBe(
+      'Privacy and Cookie Preferences | gx.go',
+    );
+    expect(metaProperty('og:description')).toContain('analytics consent');
+    expect(metaName('twitter:title')).toBe(
+      'Privacy and Cookie Preferences | gx.go',
+    );
+    expect(metaName('twitter:description')).toContain('analytics consent');
   });
 
   it('updates existing meta tags across transient and indexable navigation', async () => {

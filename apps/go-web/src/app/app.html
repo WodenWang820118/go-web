@@ -3,14 +3,22 @@
 @if (analyticsConsent.shouldShowBanner()) {
 <section
   class="analytics-consent"
-  aria-label="網站分析偏好"
+  [attr.aria-label]="i18n.t('analytics.banner.aria')"
   data-testid="analytics-consent-banner"
 >
   <div class="analytics-consent__copy">
-    <p class="analytics-consent__title">協助我們改善 gx.go</p>
+    <p class="analytics-consent__title">
+      {{ i18n.t('analytics.banner.title') }}
+    </p>
     <p class="analytics-consent__body">
-      我們只在您同意後載入 Google Tag
-      Manager，並只記錄不含姓名、房號、聊天內容與棋盤座標的使用趨勢。
+      {{ i18n.t('analytics.banner.body') }}
+      <a
+        routerLink="/privacy"
+        class="analytics-consent__link"
+        data-testid="analytics-consent-privacy-link"
+      >
+        {{ i18n.t('analytics.banner.privacy_link') }}
+      </a>
     </p>
   </div>
   <div class="analytics-consent__actions">
@@ -20,7 +28,7 @@
       data-testid="analytics-consent-decline"
       (click)="declineAnalytics()"
     >
-      拒絕
+      {{ i18n.t('analytics.banner.decline') }}
     </button>
     <button
       class="analytics-consent__button analytics-consent__button--primary"
@@ -28,7 +36,7 @@
       data-testid="analytics-consent-accept"
       (click)="acceptAnalytics()"
     >
-      接受分析
+      {{ i18n.t('analytics.banner.accept') }}
     </button>
   </div>
 </section>

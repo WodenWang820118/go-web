@@ -39,6 +39,14 @@ const SETUP_SEO = {
   },
 } as const;
 
+const PRIVACY_SEO: ResolvedSeoMetadata = {
+  title: 'Privacy and Cookie Preferences | gx.go',
+  description:
+    'Manage gx.go analytics consent and review browser storage used for rooms, preferences, and Google Analytics.',
+  canonicalPath: '/privacy',
+  robots: 'index,follow',
+};
+
 const MODE_LABEL = {
   go: '圍棋',
   gomoku: '五子棋',
@@ -124,6 +132,10 @@ export class AppSeoService {
         canonicalPath: `/setup/${mode}`,
         robots: 'index,follow',
       };
+    }
+
+    if (routeSeo.page === 'privacy') {
+      return PRIVACY_SEO;
     }
 
     if (routeSeo.page === 'room') {

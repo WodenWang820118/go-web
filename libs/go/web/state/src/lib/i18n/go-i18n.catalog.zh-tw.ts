@@ -15,6 +15,13 @@
   'common.move.pass': '虛手',
   'common.move.resign': '認輸',
   'common.action.close': '關閉',
+  'analytics.banner.aria': '分析同意',
+  'analytics.banner.title': '協助我們改善 gx.go',
+  'analytics.banner.body':
+    '我們只會在你允許分析後載入 Google Tag Manager。你之後也可以重新調整這個選擇。',
+  'analytics.banner.privacy_link': '查看隱私偏好。',
+  'analytics.banner.decline': '不用，謝謝',
+  'analytics.banner.accept': '允許分析',
 } as const;
 
 const ZH_GAME = {
@@ -248,6 +255,7 @@ const ZH_LOCAL_UI = {
   'hosted.header.lobby': '大廳',
   'hosted.header.start_local_go': '開始本機圍棋',
   'hosted.header.start_local_gomoku': '開始本機五子棋',
+  'hosted.header.privacy': '隱私',
   'hosted.header.page.room': '房間檢視',
   'create.back_to_modes': '返回模式選擇',
   'create.eyebrow': '線上多人',
@@ -473,6 +481,42 @@ const ZH_HOSTED_UI = {
   'room.dialog.match_result.title': '對局結果',
 } as const;
 
+const ZH_PRIVACY = {
+  'privacy.back_to_lobby': '返回大廳',
+  'privacy.eyebrow': '隱私與儲存',
+  'privacy.title': '隱私與 Cookie 偏好',
+  'privacy.description':
+    'gx.go 會在這個瀏覽器中保存必要的房間與偏好資料。只有在你允許分析後，才會載入 Google Analytics。',
+  'privacy.category.necessary.title': '必要儲存',
+  'privacy.category.necessary.body':
+    '必要資料會保留你的同意選擇，並在你重新進入曾加入的線上房間時恢復身分。',
+  'privacy.category.necessary.examples':
+    '範例：localStorage 中的 gx.analyticsConsent.v1 與 gx.go.online.room.<ROOMID>。',
+  'privacy.category.necessary.control': '永遠啟用',
+  'privacy.category.preferences.title': '偏好設定',
+  'privacy.category.preferences.body':
+    '偏好資料讓介面在下次造訪時維持熟悉狀態，不會用於廣告。',
+  'privacy.category.preferences.examples':
+    '範例：gx.go.locale，以及本機開發用的 server origin 覆寫。',
+  'privacy.category.preferences.control': '功能用途',
+  'privacy.category.analytics.title': '分析',
+  'privacy.category.analytics.body':
+    '選用分析能協助我們理解頁面瀏覽與對局操作，且只送出安全、低基數的事件資料。',
+  'privacy.category.analytics.examples':
+    '允許後會透過 Google Tag Manager 載入 GA4。廣告與社群追蹤仍維持停用。',
+  'privacy.category.analytics.control': '由你決定',
+  'privacy.analytics.panel_label': '分析偏好',
+  'privacy.analytics.title': '控制分析',
+  'privacy.analytics.description':
+    '變更這個設定會立即更新 Google Consent Mode。關閉分析後會阻擋後續 app 事件，並在瀏覽器允許時清除第一方 GA cookies。',
+  'privacy.analytics.current_status': '目前狀態',
+  'privacy.analytics.status.granted': '已允許分析',
+  'privacy.analytics.status.denied': '已關閉分析',
+  'privacy.analytics.status.unset': '尚未選擇',
+  'privacy.analytics.allow': '允許分析',
+  'privacy.analytics.deny': '關閉分析',
+} as const;
+
 export const ZH_TW_TRANSLATIONS = {
   ...ZH_CORE,
   ...ZH_GAME,
@@ -480,4 +524,5 @@ export const ZH_TW_TRANSLATIONS = {
   ...ZH_MODES,
   ...ZH_LOCAL_UI,
   ...ZH_HOSTED_UI,
+  ...ZH_PRIVACY,
 } as const;

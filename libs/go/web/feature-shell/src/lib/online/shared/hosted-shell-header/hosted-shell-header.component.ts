@@ -67,6 +67,24 @@ import { GoLocaleSwitcherComponent } from '@gx/go/ui';
           >
             {{ i18n.t('hosted.header.start_local_gomoku') }}
           </a>
+          <a
+            #privacyLink="routerLinkActive"
+            routerLink="/privacy"
+            routerLinkActive
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+            class="inline-flex items-center rounded-sm px-3.5 py-2 text-sm font-medium transition hover:border-white/20 hover:bg-white/10"
+            [class.border]="true"
+            [class.border-white/10]="!privacyLink.isActive"
+            [class.bg-white/5]="!privacyLink.isActive"
+            [class.text-stone-100]="!privacyLink.isActive"
+            [class.border-amber-300/35]="privacyLink.isActive"
+            [class.bg-white/15]="privacyLink.isActive"
+            [class.text-stone-50]="privacyLink.isActive"
+            data-testid="hosted-header-link-privacy"
+          >
+            {{ i18n.t('hosted.header.privacy') }}
+          </a>
           <lib-go-locale-switcher
             (localeChangeRequested)="trackLocaleChange($event)"
           />

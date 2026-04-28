@@ -7,6 +7,7 @@ export type GoAnalyticsEventSchema = 'legacy' | 'ga4';
 
 export type GoAnalyticsRouteGroup =
   | 'lobby'
+  | 'privacy'
   | 'setup'
   | 'local_play'
   | 'online_room'

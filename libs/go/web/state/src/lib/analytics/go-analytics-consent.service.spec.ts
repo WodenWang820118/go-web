@@ -15,6 +15,16 @@ describe('analytics consent storage helpers', () => {
     expect(storageBackedBy('maybe')).toBeNull();
   });
 
+  it('treats unavailable storage reads as undecided consent', () => {
+    expect(
+      readStoredAnalyticsConsent({
+        getItem: () => {
+          throw new Error('storage unavailable');
+        },
+      }),
+    ).toBeNull();
+  });
+
   it('writes the selected consent choice with the versioned key', () => {
     const writes: Array<{ key: string; value: string }> = [];
 
@@ -33,6 +43,39 @@ describe('analytics consent storage helpers', () => {
         value: 'granted',
       },
     ]);
+  });
+
+  it('writes denied consent with the versioned key', () => {
+    const writes: Array<{ key: string; value: string }> = [];
+
+    writeStoredAnalyticsConsent(
+      {
+        setItem: (key, value) => {
+          writes.push({ key, value });
+        },
+      },
+      'denied',
+    );
+
+    expect(writes).toEqual([
+      {
+        key: GO_ANALYTICS_CONSENT_STORAGE_KEY,
+        value: 'denied',
+      },
+    ]);
+  });
+
+  it('does not throw when storage writes are unavailable', () => {
+    expect(() =>
+      writeStoredAnalyticsConsent(
+        {
+          setItem: () => {
+            throw new Error('storage full');
+          },
+        },
+        'granted',
+      ),
+    ).not.toThrow();
   });
 });
 
