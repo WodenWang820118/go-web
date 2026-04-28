@@ -1,4 +1,5 @@
 import { BoardSize, GameMode, GameResultReason } from '@gx/go/domain';
+import type { GoLocale } from '../i18n/go-i18n.service';
 
 export const GO_ANALYTICS_CONSENT_STORAGE_KEY = 'gx.analyticsConsent.v1';
 
@@ -21,7 +22,7 @@ export type GoAnalyticsJoinSource = 'lobby' | 'direct_room';
 export type GoAnalyticsErrorType = 'network' | 'not_found' | 'unexpected';
 export type GoAnalyticsRoomStatus = 'live' | 'ready' | 'waiting';
 export type GoAnalyticsShareResult = 'manual_fallback';
-export type GoAnalyticsLocale = 'zh-TW' | 'en';
+export type GoAnalyticsLocale = GoLocale;
 
 export type GoAnalyticsInteractionType =
   | 'seat_claim'

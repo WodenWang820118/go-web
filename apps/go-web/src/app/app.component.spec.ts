@@ -30,7 +30,7 @@ describe('AppComponent', () => {
       .forEach((element) => element.remove());
     document.title = '';
     document.head
-      .querySelectorAll('meta[name], meta[property], link[rel="canonical"]')
+      .querySelectorAll('meta[name], meta[property], link[rel]')
       .forEach((element) => element.remove());
 
     await TestBed.configureTestingModule({
@@ -194,9 +194,9 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Lobby page');
-    expect(document.title).toBe('gx.go｜線上圍棋與五子棋房間');
+    expect(document.title).toBe('gx.go | Online Go and Gomoku Rooms');
     expect(metaName('robots')).toBe('index,follow');
-    expect(canonicalHref()).toBe('https://gxgo.synology.me/');
+    expect(canonicalHref()).toBe('https://gxgo.synology.me/?locale=en');
   });
 
   it('falls back to default metadata for routes without goSeo data', async () => {
@@ -208,9 +208,11 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Room page');
-    expect(document.title).toBe('gx.go｜線上圍棋與五子棋房間');
+    expect(document.title).toBe('gx.go | Online Go and Gomoku Rooms');
     expect(metaName('robots')).toBe('index,follow');
-    expect(canonicalHref()).toBe('https://gxgo.synology.me/online/room/ROOM42');
+    expect(canonicalHref()).toBe(
+      'https://gxgo.synology.me/online/room/ROOM42?locale=en',
+    );
   });
 });
 

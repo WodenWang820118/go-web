@@ -19,7 +19,7 @@ export async function useEnglish(page: Page): Promise<void> {
     },
   );
   await page.goto('/');
-  await page.getByTestId('locale-option-en').click();
+  await page.getByTestId('locale-select').selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 }
 

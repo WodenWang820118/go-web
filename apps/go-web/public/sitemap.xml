@@ -1,12 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
   <url>
     <loc>https://gxgo.synology.me/</loc>
+    <xhtml:link rel="alternate" hreflang="zh-Hant-TW" href="https://gxgo.synology.me/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans-CN" href="https://gxgo.synology.me/?locale=zh-CN" />
+    <xhtml:link rel="alternate" hreflang="ja-JP" href="https://gxgo.synology.me/?locale=ja-JP" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://gxgo.synology.me/?locale=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gxgo.synology.me/" />
   </url>
   <url>
     <loc>https://gxgo.synology.me/setup/go</loc>
+    <xhtml:link rel="alternate" hreflang="zh-Hant-TW" href="https://gxgo.synology.me/setup/go" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans-CN" href="https://gxgo.synology.me/setup/go?locale=zh-CN" />
+    <xhtml:link rel="alternate" hreflang="ja-JP" href="https://gxgo.synology.me/setup/go?locale=ja-JP" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://gxgo.synology.me/setup/go?locale=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gxgo.synology.me/setup/go" />
   </url>
   <url>
     <loc>https://gxgo.synology.me/setup/gomoku</loc>
+    <xhtml:link rel="alternate" hreflang="zh-Hant-TW" href="https://gxgo.synology.me/setup/gomoku" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans-CN" href="https://gxgo.synology.me/setup/gomoku?locale=zh-CN" />
+    <xhtml:link rel="alternate" hreflang="ja-JP" href="https://gxgo.synology.me/setup/gomoku?locale=ja-JP" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://gxgo.synology.me/setup/gomoku?locale=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gxgo.synology.me/setup/gomoku" />
+  </url>
+  <url>
+    <loc>https://gxgo.synology.me/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="zh-Hant-TW" href="https://gxgo.synology.me/privacy" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans-CN" href="https://gxgo.synology.me/privacy?locale=zh-CN" />
+    <xhtml:link rel="alternate" hreflang="ja-JP" href="https://gxgo.synology.me/privacy?locale=ja-JP" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://gxgo.synology.me/privacy?locale=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://gxgo.synology.me/privacy" />
   </url>
 </urlset>

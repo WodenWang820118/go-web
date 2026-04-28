@@ -4,44 +4,48 @@ import {
   inject,
   output,
 } from '@angular/core';
-import { GoI18nService, GoLocale } from '@gx/go/state/i18n';
+import { GO_LOCALE_OPTIONS, GoI18nService, GoLocale } from '@gx/go/state/i18n';
 
 @Component({
   selector: 'lib-go-locale-switcher',
   standalone: true,
   template: `
-    <div
-      class="inline-flex items-center gap-1 rounded-sm border border-white/10 bg-white/10 p-1 text-stone-100"
+    <label
+      class="inline-flex items-center rounded-sm border border-white/10 bg-white/10 px-2 py-1 text-stone-100"
       data-testid="locale-switcher"
-      [attr.aria-label]="i18n.languageLabel()"
     >
-      @for (locale of locales; track locale) {
-        <button
-          type="button"
-          class="rounded-sm px-2.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] transition"
-          [attr.data-testid]="'locale-option-' + locale"
-          [class.bg-stone-50]="i18n.isActiveLocale(locale)"
-          [class.text-slate-950]="i18n.isActiveLocale(locale)"
-          [class.text-stone-200]="!i18n.isActiveLocale(locale)"
-          [class.hover:bg-white/10]="!i18n.isActiveLocale(locale)"
-          (click)="selectLocale(locale)"
-        >
-          {{ i18n.localeOptionLabel(locale) }}
-        </button>
-      }
-    </div>
+      <span class="sr-only">{{ i18n.languageLabel() }}</span>
+      <select
+        class="min-h-9 rounded-sm border-0 bg-transparent px-2 text-xs font-semibold text-stone-100 outline-none transition focus-visible:ring-2 focus-visible:ring-amber-300"
+        data-testid="locale-select"
+        [attr.aria-label]="i18n.languageLabel()"
+        [value]="i18n.locale()"
+        (change)="selectLocale($event)"
+      >
+        @for (option of localeOptions; track option.locale) {
+          <option
+            class="bg-slate-950 text-stone-100"
+            [attr.data-testid]="'locale-option-' + option.locale"
+            [value]="option.locale"
+          >
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </label>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GoLocaleSwitcherComponent {
   protected readonly i18n = inject(GoI18nService);
-  protected readonly locales: GoLocale[] = ['zh-TW', 'en'];
+  protected readonly localeOptions = GO_LOCALE_OPTIONS;
   readonly localeChangeRequested = output<{
     locale: GoLocale;
     targetLocale: GoLocale;
   }>();
 
-  protected selectLocale(targetLocale: GoLocale): void {
+  protected selectLocale(event: Event): void {
+    const targetLocale = (event.target as HTMLSelectElement).value as GoLocale;
     const locale = this.i18n.locale();
 
     if (locale !== targetLocale) {
