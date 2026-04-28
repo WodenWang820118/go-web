@@ -9,7 +9,6 @@ import {
 import { BoardSize, GameMode } from '@gx/go/domain';
 import {
   buildGoAnalyticsLevelName,
-  GoAnalyticsErrorType,
   GoAnalyticsJoinSource,
   GoAnalyticsService,
 } from '@gx/go/state';
@@ -32,6 +31,7 @@ import { OnlineRoomStorageService } from '../online-room-storage/online-room-sto
 import { OnlineRoomSocketService } from '../online-room-socket/online-room-socket.service';
 import { OnlineRoomsHttpService } from '../online-rooms-http/online-rooms-http.service';
 import { JOIN_ROOM_REQUIRED_MESSAGE } from '../../contracts/online-room-service.contracts';
+import { OnlineRoomAnalyticsErrorService } from './online-room-analytics-error.service';
 import { OnlineRoomSessionStateService } from './online-room-session-state.service';
 
 type JoinResponse = CreateRoomResponse | JoinRoomResponse;
@@ -48,6 +48,7 @@ export class OnlineRoomSessionWorkflowService {
   private readonly storage = inject(OnlineRoomStorageService);
   private readonly socket = inject(OnlineRoomSocketService);
   private readonly state = inject(OnlineRoomSessionStateService);
+  private readonly analyticsErrors = inject(OnlineRoomAnalyticsErrorService);
   private bootstrapSubscription: Subscription | null = null;
 
   bootstrapRoom(roomId: string): void {
@@ -154,7 +155,7 @@ export class OnlineRoomSessionWorkflowService {
         catchError((error) => {
           this.analytics.track({
             board_size: boardSize,
-            error_type: describeAnalyticsError(error),
+            error_type: this.analyticsErrors.describe(error),
             event: 'gx_room_create_error',
             game_mode: mode,
           });
@@ -216,7 +217,7 @@ export class OnlineRoomSessionWorkflowService {
           map(() => void 0),
           catchError((error) => {
             this.analytics.track({
-              error_type: describeAnalyticsError(error),
+              error_type: this.analyticsErrors.describe(error),
               event: 'gx_room_join_error',
               join_source: joinSource,
             });
@@ -345,18 +346,4 @@ export class OnlineRoomSessionWorkflowService {
 
     return session;
   }
-}
-
-function describeAnalyticsError(error: unknown): GoAnalyticsErrorType {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 404) {
-      return 'not_found';
-    }
-
-    if (error.status === 0) {
-      return 'network';
-    }
-  }
-
-  return 'unexpected';
 }

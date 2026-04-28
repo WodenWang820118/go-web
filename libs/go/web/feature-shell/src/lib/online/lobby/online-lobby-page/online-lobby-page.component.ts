@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import {
   BoardSize,
@@ -21,7 +20,7 @@ import {
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { DialogModule } from 'primeng/dialog';
-import { EMPTY, catchError, from, interval, switchMap, take } from 'rxjs';
+import { interval } from 'rxjs';
 import {
   LobbyAnnouncementCardViewModel,
   LobbyOnlinePlayerGroupViewModel,
@@ -36,6 +35,8 @@ import { OnlineLobbyFlashNoticeService } from '../services/online-lobby-flash-no
 import { OnlineLobbyAnnouncementPanelComponent } from './components/online-lobby-announcement-panel/online-lobby-announcement-panel.component';
 import { OnlineLobbyOnlinePlayersPanelComponent } from './components/online-lobby-online-players-panel/online-lobby-online-players-panel.component';
 import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-panel/online-lobby-room-panel.component';
+import { OnlineLobbyRoomNavigationService } from './services/online-lobby-room-navigation.service';
+import { OnlineLobbyViewportService } from './services/online-lobby-viewport.service';
 
 @Component({
   selector: 'lib-go-online-lobby-page',
@@ -49,6 +50,7 @@ import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-pa
     OnlineLobbyOnlinePlayersPanelComponent,
   ],
   templateUrl: './online-lobby-page.component.html',
+  providers: [OnlineLobbyViewportService],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OnlineLobbyPageComponent {
@@ -58,14 +60,14 @@ export class OnlineLobbyPageComponent {
   protected readonly flashNotice = inject(OnlineLobbyFlashNoticeService);
   protected readonly presentation = inject(OnlineLobbyPresentationService);
   private readonly analytics = inject(GoAnalyticsService);
+  private readonly navigation = inject(OnlineLobbyRoomNavigationService);
+  private readonly viewport = inject(OnlineLobbyViewportService);
 
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
   protected readonly GO_BOARD_SIZES = GO_BOARD_SIZES;
   protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
   protected readonly activeStatus = this.activeStatusSignal.asReadonly();
-  private readonly mdUpSignal = signal(this.resolveMdUp());
   protected readonly createRoomDialogVisible = signal(false);
 
   protected readonly displayName = new FormControl(
@@ -130,7 +132,7 @@ export class OnlineLobbyPageComponent {
   protected readonly totalOnlinePlayers = computed(
     () => this.onlineLobby.onlineParticipants().length,
   );
-  protected readonly isMdUp = this.mdUpSignal.asReadonly();
+  protected readonly isMdUp = this.viewport.isMdUp;
   protected readonly trimmedDisplayName = computed(() =>
     this.displayNameValue().trim(),
   );
@@ -149,7 +151,7 @@ export class OnlineLobbyPageComponent {
   );
 
   constructor() {
-    this.bindViewportMode();
+    this.viewport.bind(this.destroyRef);
     this.onlineRoom.clearTransientMessages();
     this.onlineLobby.refresh();
     interval(10000)
@@ -237,16 +239,7 @@ export class OnlineLobbyPageComponent {
     const boardSize = this.resolveCreateRoomBoardSize(mode);
 
     this.createRoomDialogVisible.set(false);
-    this.onlineRoom
-      .createRoom(displayName, mode, boardSize)
-      .pipe(
-        switchMap((response) =>
-          from(this.router.navigate(['/online/room', response.roomId])),
-        ),
-        catchError(() => EMPTY),
-        take(1),
-      )
-      .subscribe();
+    this.navigation.createRoom(displayName, mode, boardSize);
   }
 
   protected joinRoom(room: LobbyRoomSummary | null): void {
@@ -256,58 +249,11 @@ export class OnlineLobbyPageComponent {
       return;
     }
 
-    this.analytics.track({
-      event: 'select_content',
-      content_type: 'online_room',
-      content_id: 'room_join',
-      room_status: room.status,
-    });
-    this.onlineRoom
-      .joinRoom(room.roomId, displayName, 'lobby')
-      .pipe(
-        switchMap(() =>
-          from(this.router.navigate(['/online/room', room.roomId])),
-        ),
-        catchError(() => EMPTY),
-        take(1),
-      )
-      .subscribe();
+    this.navigation.joinRoom(room, displayName);
   }
 
   protected trackRoomOpen(room: LobbyRoomSummary): void {
-    this.analytics.track({
-      event: 'select_content',
-      content_type: 'online_room',
-      content_id: 'room_open',
-      room_status: room.status,
-    });
-  }
-
-  private bindViewportMode(): void {
-    if (
-      typeof window === 'undefined' ||
-      typeof window.matchMedia !== 'function'
-    ) {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 768px)');
-    const listener = (event: MediaQueryListEvent) => {
-      this.mdUpSignal.set(event.matches);
-    };
-
-    this.mdUpSignal.set(mediaQuery.matches);
-    mediaQuery.addEventListener('change', listener);
-    this.destroyRef.onDestroy(() => {
-      mediaQuery.removeEventListener('change', listener);
-    });
-  }
-
-  private resolveMdUp(): boolean {
-    return typeof window === 'undefined' ||
-      typeof window.matchMedia !== 'function'
-      ? true
-      : window.matchMedia('(min-width: 768px)').matches;
+    this.navigation.trackRoomOpen(room);
   }
 
   private resolveCreateRoomBoardSize(mode: GameMode): BoardSize {
