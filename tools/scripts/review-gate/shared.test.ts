@@ -55,8 +55,12 @@ test('validateReviewerId rejects reviewers outside the allowlist', () => {
 
 test('isReviewGateCommand only exempts the TypeScript review-gate entrypoints', () => {
   assert.equal(
+    isReviewGateCommand('node tools/scripts/review-gate/status.ts'),
+    true,
+  );
+  assert.equal(
     isReviewGateCommand(
-      'node --experimental-strip-types scripts/review-gate/status.ts',
+      'node ./tools/scripts/review-gate/approve-pre-implementation.ts --reviewer gemini-2.5-pro --focus general',
     ),
     true,
   );
@@ -65,6 +69,12 @@ test('isReviewGateCommand only exempts the TypeScript review-gate entrypoints', 
     false,
   );
   assert.equal(isReviewGateCommand('pnpm review:status'), true);
+  assert.equal(
+    isReviewGateCommand(
+      'node tools/scripts/review-gate/status.ts && Remove-Item temp.txt',
+    ),
+    false,
+  );
   assert.equal(isReviewGateCommand('pnpm nx test law-prep-web'), false);
 });
 
@@ -245,11 +255,20 @@ test('isMutatingToolUse fails closed for non-allowlisted shell commands', () => 
     isMutatingToolUse({
       toolName: 'powershell',
       toolArgs: {
-        command:
-          'node --experimental-strip-types scripts/review-gate/status.ts',
+        command: 'node tools/scripts/review-gate/status.ts',
       },
     }),
     false,
+  );
+  assert.equal(
+    isMutatingToolUse({
+      toolName: 'powershell',
+      toolArgs: {
+        command:
+          'node tools/scripts/review-gate/status.ts && Remove-Item temp.txt',
+      },
+    }),
+    true,
   );
   assert.equal(
     isMutatingToolUse({
