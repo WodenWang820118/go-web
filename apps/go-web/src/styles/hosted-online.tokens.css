@@ -1,0 +1,9 @@
+@layer base {
+  :root {
+    --go-hosted-radius-shell: 1.75rem;
+    --go-hosted-radius-card: 1.25rem;
+    --go-hosted-radius-soft: 1rem;
+    --go-hosted-radius-pill: 999px;
+    --go-hosted-shadow-panel: 0 24px 60px rgba(15, 23, 42, 0.28);
+  }
+}
