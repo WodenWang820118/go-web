@@ -251,7 +251,7 @@ describe('OnlineRoomPagePresentationService', () => {
     ]);
   });
 
-  it('builds pending and resolved nigiri panels', () => {
+  it('builds pending nigiri panels and hides resolved nigiri', () => {
     const participants: ParticipantSummary[] = [
       createParticipantSummary({
         participantId: 'host-1',
@@ -344,13 +344,7 @@ describe('OnlineRoomPagePresentationService', () => {
         viewerSeat: 'black',
         realtimeConnected: true,
       }),
-    ).toMatchObject({
-      status: 'resolved',
-      description: 'Guest takes Black.',
-      canGuess: false,
-      resultLabel: 'Guess: Odd. Hidden stones: Odd.',
-      assignedBlackLabel: 'Guest is Black.',
-    });
+    ).toBeNull();
   });
 
   it('maps connection states to localized labels', () => {

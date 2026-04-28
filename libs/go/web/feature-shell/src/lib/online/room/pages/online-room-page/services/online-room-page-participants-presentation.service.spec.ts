@@ -156,7 +156,7 @@ describe('OnlineRoomPageParticipantsPresentationService', () => {
     });
   });
 
-  it('builds a resolved nigiri view with the assigned black player', () => {
+  it('returns no nigiri view after nigiri resolves', () => {
     expect(
       service.buildRoomNigiriViewModel({
         nigiri: {
@@ -177,38 +177,25 @@ describe('OnlineRoomPageParticipantsPresentationService', () => {
         viewerSeat: 'white',
         realtimeConnected: true,
       }),
-    ).toMatchObject({
-      status: 'resolved',
-      description: 'resolved Guest',
-      assignedBlackLabel: 'assigned Guest',
-      guess: 'odd',
-      parity: 'odd',
-      canGuess: false,
-    });
+    ).toBeNull();
   });
 
-  it('uses player labels when nigiri participants are unavailable', () => {
+  it('uses player labels when pending nigiri participants are unavailable', () => {
     expect(
       service.buildRoomNigiriViewModel({
         nigiri: {
-          status: 'resolved',
+          status: 'pending',
           commitment: 'abc123',
           guesser: 'white',
-          guess: 'even',
-          parity: 'odd',
-          nonce: 'nonce',
-          assignedBlack: 'black',
         },
         participants: [],
         viewerSeat: null,
         realtimeConnected: true,
       }),
     ).toMatchObject({
-      status: 'resolved',
-      description: 'resolved Player black',
-      assignedBlackLabel: 'assigned Player black',
-      guess: 'even',
-      parity: 'odd',
+      status: 'pending',
+      description: 'pending Player white',
+      canGuess: false,
     });
   });
 

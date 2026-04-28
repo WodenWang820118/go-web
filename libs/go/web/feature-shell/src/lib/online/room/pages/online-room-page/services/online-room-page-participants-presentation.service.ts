@@ -87,31 +87,7 @@ export class OnlineRoomPageParticipantsPresentationService {
       };
     }
 
-    const assignedBlackName =
-      this.findParticipantBySeat(state.participants, 'black')?.displayName ??
-      this.i18n.playerLabel('black');
-
-    return {
-      status: 'resolved',
-      title: this.i18n.t('room.nigiri.resolved.title'),
-      description: this.i18n.t('room.nigiri.resolved.description', {
-        player: assignedBlackName,
-      }),
-      commitmentLabel: this.i18n.t('room.nigiri.commitment'),
-      commitment: nigiri.commitment,
-      canGuess: false,
-      oddLabel: this.i18n.t('room.nigiri.guess.odd'),
-      evenLabel: this.i18n.t('room.nigiri.guess.even'),
-      resultLabel: this.i18n.t('room.nigiri.resolved.result', {
-        guess: this.i18n.t(`room.nigiri.guess.${nigiri.guess}`),
-        parity: this.i18n.t(`room.nigiri.guess.${nigiri.parity}`),
-      }),
-      assignedBlackLabel: this.i18n.t('room.nigiri.resolved.assigned_black', {
-        player: assignedBlackName,
-      }),
-      guess: nigiri.guess,
-      parity: nigiri.parity,
-    };
+    return null;
   }
 
   findRoomRematchViewerSeat(

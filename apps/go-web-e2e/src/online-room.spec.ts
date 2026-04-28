@@ -223,9 +223,10 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
       guestPage.getByTestId('room-sidebar-nigiri-panel'),
     ).toBeVisible();
     await guestPage.getByTestId('room-nigiri-guess-odd').click();
-    await expect(page.getByTestId('room-sidebar-nigiri-panel')).toContainText(
-      /takes Black/,
-    );
+    await expect(page.getByTestId('room-sidebar-nigiri-panel')).toHaveCount(0);
+    await expect(
+      guestPage.getByTestId('room-sidebar-nigiri-panel'),
+    ).toHaveCount(0);
 
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();
@@ -269,11 +270,12 @@ async function resolveNigiriTurnPages(
   hostPage: Page,
   guestPage: Page,
 ): Promise<{ blackPage: Page; whitePage: Page }> {
-  const nigiriText =
-    (await hostPage.getByTestId('room-sidebar-nigiri-panel').textContent()) ??
-    '';
+  const blackSeat = hostPage.getByTestId('room-player-black');
 
-  return nigiriText.includes('Go Host takes Black')
+  await expect(blackSeat).toContainText(/Go Host|Go Guest/);
+  const blackSeatText = (await blackSeat.textContent()) ?? '';
+
+  return blackSeatText.includes('Go Host')
     ? { blackPage: hostPage, whitePage: guestPage }
     : { blackPage: guestPage, whitePage: hostPage };
 }
