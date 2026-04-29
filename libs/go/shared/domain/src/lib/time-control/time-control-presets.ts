@@ -222,11 +222,11 @@ export function cloneTimeControlSettings(
 }
 
 function readTimeControlSettings(value: unknown): TimeControlSettings | null {
-  if (!isRecord(value) || typeof value.type !== 'string') {
+  if (!isRecord(value) || typeof value['type'] !== 'string') {
     return null;
   }
 
-  switch (value.type) {
+  switch (value['type']) {
     case 'byo-yomi':
       return readByoYomiTimeControl(value);
     case 'fischer':
@@ -248,18 +248,18 @@ function readByoYomiTimeControl(
   }
 
   if (
-    !isPositiveInteger(value.mainTimeMs) ||
-    !isPositiveInteger(value.periodTimeMs) ||
-    !isPositiveInteger(value.periods)
+    !isPositiveInteger(value['mainTimeMs']) ||
+    !isPositiveInteger(value['periodTimeMs']) ||
+    !isPositiveInteger(value['periods'])
   ) {
     return null;
   }
 
   return {
     type: 'byo-yomi',
-    mainTimeMs: value.mainTimeMs,
-    periodTimeMs: value.periodTimeMs,
-    periods: value.periods,
+    mainTimeMs: value['mainTimeMs'],
+    periodTimeMs: value['periodTimeMs'],
+    periods: value['periods'],
   };
 }
 
@@ -271,16 +271,16 @@ function readFischerTimeControl(
   }
 
   if (
-    !isPositiveInteger(value.mainTimeMs) ||
-    !isPositiveInteger(value.incrementMs)
+    !isPositiveInteger(value['mainTimeMs']) ||
+    !isPositiveInteger(value['incrementMs'])
   ) {
     return null;
   }
 
   return {
     type: 'fischer',
-    mainTimeMs: value.mainTimeMs,
-    incrementMs: value.incrementMs,
+    mainTimeMs: value['mainTimeMs'],
+    incrementMs: value['incrementMs'],
   };
 }
 
@@ -299,18 +299,18 @@ function readCanadianTimeControl(
   }
 
   if (
-    !isPositiveInteger(value.mainTimeMs) ||
-    !isPositiveInteger(value.periodTimeMs) ||
-    !isPositiveInteger(value.stonesPerPeriod)
+    !isPositiveInteger(value['mainTimeMs']) ||
+    !isPositiveInteger(value['periodTimeMs']) ||
+    !isPositiveInteger(value['stonesPerPeriod'])
   ) {
     return null;
   }
 
   return {
     type: 'canadian',
-    mainTimeMs: value.mainTimeMs,
-    periodTimeMs: value.periodTimeMs,
-    stonesPerPeriod: value.stonesPerPeriod,
+    mainTimeMs: value['mainTimeMs'],
+    periodTimeMs: value['periodTimeMs'],
+    stonesPerPeriod: value['stonesPerPeriod'],
   };
 }
 
@@ -321,13 +321,13 @@ function readAbsoluteTimeControl(
     return null;
   }
 
-  if (!isPositiveInteger(value.mainTimeMs)) {
+  if (!isPositiveInteger(value['mainTimeMs'])) {
     return null;
   }
 
   return {
     type: 'absolute',
-    mainTimeMs: value.mainTimeMs,
+    mainTimeMs: value['mainTimeMs'],
   };
 }
 

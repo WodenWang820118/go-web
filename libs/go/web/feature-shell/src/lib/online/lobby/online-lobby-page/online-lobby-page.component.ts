@@ -11,11 +11,14 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import {
-  BoardSize,
+  DEFAULT_GO_TIME_CONTROL,
   GOMOKU_BOARD_SIZE,
   GO_BOARD_SIZES,
-  GameMode,
-  GoBoardSize,
+  cloneTimeControlSettings,
+  type BoardSize,
+  type GameMode,
+  type GoBoardSize,
+  type TimeControlSettings,
 } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -37,6 +40,7 @@ import { OnlineLobbyOnlinePlayersPanelComponent } from './components/online-lobb
 import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-panel/online-lobby-room-panel.component';
 import { OnlineLobbyRoomNavigationService } from './services/online-lobby-room-navigation.service';
 import { OnlineLobbyViewportService } from './services/online-lobby-viewport.service';
+import { TimeControlPresetSelectorComponent } from '../../../shared/time-control/time-control-preset-selector.component';
 
 @Component({
   selector: 'lib-go-online-lobby-page',
@@ -45,6 +49,7 @@ import { OnlineLobbyViewportService } from './services/online-lobby-viewport.ser
     HostedShellHeaderComponent,
     DialogModule,
     ReactiveFormsModule,
+    TimeControlPresetSelectorComponent,
     OnlineLobbyRoomPanelComponent,
     OnlineLobbyAnnouncementPanelComponent,
     OnlineLobbyOnlinePlayersPanelComponent,
@@ -69,6 +74,9 @@ export class OnlineLobbyPageComponent {
   protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
   protected readonly activeStatus = this.activeStatusSignal.asReadonly();
   protected readonly createRoomDialogVisible = signal(false);
+  protected readonly createRoomTimeControl = signal<TimeControlSettings>(
+    cloneTimeControlSettings(DEFAULT_GO_TIME_CONTROL),
+  );
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || '',
@@ -239,6 +247,16 @@ export class OnlineLobbyPageComponent {
     const boardSize = this.resolveCreateRoomBoardSize(mode);
 
     this.createRoomDialogVisible.set(false);
+    if (mode === 'go') {
+      this.navigation.createRoom(
+        displayName,
+        mode,
+        boardSize,
+        cloneTimeControlSettings(this.createRoomTimeControl()),
+      );
+      return;
+    }
+
     this.navigation.createRoom(displayName, mode, boardSize);
   }
 
@@ -260,5 +278,11 @@ export class OnlineLobbyPageComponent {
     return mode === 'gomoku'
       ? GOMOKU_BOARD_SIZE
       : this.createRoomSettings.controls.goBoardSize.value;
+  }
+
+  protected selectCreateRoomTimeControl(
+    timeControl: TimeControlSettings,
+  ): void {
+    this.createRoomTimeControl.set(cloneTimeControlSettings(timeControl));
   }
 }

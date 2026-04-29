@@ -8,11 +8,16 @@ import {
   output,
   signal,
 } from '@angular/core';
-import {
+import type {
+  HostedClockSnapshot,
   HostedClockPlayerSnapshot,
   HostedMatchSnapshot,
 } from '@gx/go/contracts';
-import { consumeByoYomiTime, PlayerColor } from '@gx/go/domain';
+import {
+  consumeTimeControlElapsed,
+  getTimeControlRemainingMs,
+  type PlayerColor,
+} from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-card/online-room-sidebar-seat-card.component';
@@ -88,34 +93,52 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
   }
 
   protected clockLabel(color: PlayerColor): string | null {
-    const player = this.clockPlayer(color);
+    const clock = this.clockView(color);
 
-    if (!player) {
+    if (!clock) {
       return null;
     }
 
     return this.formatClockMs(
-      player.mainTimeMs > 0 ? player.mainTimeMs : player.periodTimeMs,
+      getTimeControlRemainingMs(clock.player, clock.config),
     );
   }
 
   protected clockDetailLabel(color: PlayerColor): string | null {
-    const player = this.clockPlayer(color);
+    const clock = this.clockView(color);
 
-    if (!player) {
+    if (!clock) {
       return null;
     }
 
-    if (player.mainTimeMs > 0) {
-      return this.i18n.t('room.clock.main');
+    switch (clock.player.type) {
+      case 'byo-yomi':
+        return clock.player.mainTimeMs > 0
+          ? this.i18n.t('room.clock.main')
+          : this.i18n.t('room.clock.byo_yomi_periods', {
+              count: clock.player.periodsRemaining,
+            });
+      case 'fischer':
+        return this.i18n.t('room.clock.fischer_increment', {
+          increment: this.formatClockMs(
+            clock.config.type === 'fischer' ? clock.config.incrementMs : 0,
+          ),
+        });
+      case 'canadian':
+        return clock.player.mainTimeMs > 0
+          ? this.i18n.t('room.clock.main')
+          : this.i18n.t('room.clock.canadian_stones', {
+              count: clock.player.stonesRemaining,
+            });
+      case 'absolute':
+        return this.i18n.t('room.clock.absolute');
     }
-
-    return this.i18n.t('room.clock.byo_yomi_periods', {
-      count: player.periodsRemaining,
-    });
   }
 
-  private clockPlayer(color: PlayerColor): HostedClockPlayerSnapshot | null {
+  private clockView(color: PlayerColor): {
+    player: HostedClockPlayerSnapshot;
+    config: HostedClockSnapshot['config'];
+  } | null {
     const match = this.match();
     const clock = match?.clock;
 
@@ -126,14 +149,20 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
     const player = clock.players[color];
 
     if (match.state.phase !== 'playing' || clock.activeColor !== color) {
-      return player;
+      return {
+        player,
+        config: clock.config,
+      };
     }
 
-    return consumeByoYomiTime(
-      player,
-      clock.config,
-      Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
-    );
+    return {
+      player: consumeTimeControlElapsed(
+        player,
+        clock.config,
+        Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
+      ),
+      config: clock.config,
+    };
   }
 
   private hasTickingClock(): boolean {

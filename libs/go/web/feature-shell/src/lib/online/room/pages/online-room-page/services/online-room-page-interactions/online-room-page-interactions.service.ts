@@ -1,6 +1,7 @@
 import { Injectable, effect, inject } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import {
+  GameStartSettings,
   MAX_DISPLAY_NAME_LENGTH,
   NigiriGuess,
   createUniqueDisplayName,
@@ -86,6 +87,10 @@ export class OnlineRoomPageInteractionsService {
 
   releaseSeat(): void {
     this.onlineRoom.releaseSeat();
+  }
+
+  updateNextMatchSettings(settings: GameStartSettings): void {
+    this.onlineRoom.updateNextMatchSettings(settings);
   }
 
   onBoardPoint(point: BoardPoint): void {
