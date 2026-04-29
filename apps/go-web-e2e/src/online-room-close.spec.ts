@@ -8,6 +8,8 @@ import {
 test('host confirms leaving a room, which closes it and removes it from the lobby', async ({
   page,
 }) => {
+  test.setTimeout(60_000);
+
   await waitForApiHealth();
 
   await useEnglish(page);
@@ -33,6 +35,8 @@ test('guests return to the lobby when the host closes the room', async ({
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 

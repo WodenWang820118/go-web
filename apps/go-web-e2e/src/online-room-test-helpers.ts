@@ -5,6 +5,12 @@ const goServerOrigin = (
 ).replace(/\/+$/, '');
 const analyticsConsentStorageKey = 'gx.analyticsConsent.v1';
 const goServerOriginStorageKey = 'gx.go.serverOrigin';
+const expectedDefaultGoTimeControl = {
+  type: 'byo-yomi',
+  mainTimeMs: 1_800_000,
+  periodTimeMs: 30_000,
+  periods: 3,
+} as const;
 
 export async function useEnglish(page: Page): Promise<void> {
   await page.addInitScript(
@@ -121,11 +127,21 @@ export async function createHostedRoom(
     requestBody,
     'Expected create-room request to include a JSON body.',
   ).not.toBeNull();
-  expect(requestBody).toEqual({
-    displayName,
-    mode,
-    boardSize,
-  });
+  const expectedRequestBody =
+    mode === 'go'
+      ? {
+          displayName,
+          mode,
+          boardSize,
+          timeControl: expectedDefaultGoTimeControl,
+        }
+      : {
+          displayName,
+          mode,
+          boardSize,
+        };
+
+  expect(requestBody).toEqual(expectedRequestBody);
 
   expect(
     payload,
@@ -196,6 +212,7 @@ function readCreateRoomRequestBody(request: Request): {
   displayName?: unknown;
   mode?: unknown;
   boardSize?: unknown;
+  timeControl?: unknown;
 } | null {
   const rawBody = request.postData();
 
@@ -208,6 +225,7 @@ function readCreateRoomRequestBody(request: Request): {
       displayName?: unknown;
       mode?: unknown;
       boardSize?: unknown;
+      timeControl?: unknown;
     };
   } catch {
     return null;
