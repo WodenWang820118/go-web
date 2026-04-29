@@ -114,7 +114,10 @@ export interface ScoreBreakdown {
   whiteStones: number;
   blackTerritory: number;
   whiteTerritory: number;
+  blackPrisoners: number;
+  whitePrisoners: number;
   komi: number;
+  scoringRule: GoScoringRule;
 }
 
 export interface ScoringState {
