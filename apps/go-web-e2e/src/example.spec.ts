@@ -37,6 +37,8 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await clickLocalLink(page, '/setup/go');
   await expect(page.getByTestId('setup-form')).toBeVisible();
 
+  await page.getByTestId('setup-ko-rule-positional-superko').click();
+  await page.getByTestId('setup-scoring-rule-japanese-territory').click();
   await page.getByTestId('setup-nigiri-odd-button').click();
   await expect(page.getByTestId('setup-nigiri-result')).toContainText(
     /starts as Black/i,
@@ -50,6 +52,10 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await page.getByRole('button', { name: 'Pass' }).click();
   await page.getByRole('button', { name: 'Pass' }).click();
 
+  await expect(page.getByText('Japanese territory').first()).toBeVisible();
+  await expect(page.getByTestId('match-sidebar-score-prisoners')).toContainText(
+    'Prisoner points: Black +0, White +0',
+  );
   await expect(
     page.getByRole('button', { name: /black confirms/i }),
   ).toBeVisible();
