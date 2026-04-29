@@ -4,12 +4,13 @@ import {
   input,
   output,
 } from '@angular/core';
-import {
+import type {
   ChatMessage,
+  GameStartSettings,
   HostedMatchSnapshot,
   ParticipantSummary,
 } from '@gx/go/contracts';
-import { PlayerColor } from '@gx/go/domain';
+import type { PlayerColor } from '@gx/go/domain';
 import {
   OnlineRoomChatFormGroup,
   OnlineRoomJoinFormGroup,
@@ -23,6 +24,7 @@ import { OnlineRoomSidebarChatPanelComponent } from './components/online-room-si
 import { OnlineRoomSidebarIdentityPanelComponent } from './components/online-room-sidebar-identity-panel/online-room-sidebar-identity-panel.component';
 import { OnlineRoomSidebarRematchPanelComponent } from './components/online-room-sidebar-rematch-panel/online-room-sidebar-rematch-panel.component';
 import { OnlineRoomSidebarSeatsPanelComponent } from './components/online-room-sidebar-seats-panel/online-room-sidebar-seats-panel.component';
+import { OnlineRoomSidebarNextMatchPanelComponent } from './components/online-room-sidebar-next-match-panel/online-room-sidebar-next-match-panel.component';
 
 @Component({
   selector: 'lib-go-online-room-sidebar',
@@ -31,6 +33,7 @@ import { OnlineRoomSidebarSeatsPanelComponent } from './components/online-room-s
     OnlineRoomSidebarIdentityPanelComponent,
     OnlineRoomSidebarSeatsPanelComponent,
     OnlineRoomSidebarRematchPanelComponent,
+    OnlineRoomSidebarNextMatchPanelComponent,
     OnlineRoomSidebarChatPanelComponent,
     OnlineRoomSidebarActionsComponent,
   ],
@@ -53,6 +56,10 @@ export class OnlineRoomSidebarComponent {
   readonly seats = input.required<readonly OnlineRoomSeatViewModel[]>();
   readonly participants = input.required<readonly ParticipantSummary[]>();
   readonly match = input<HostedMatchSnapshot | null>(null);
+  readonly nextMatchSettings = input<GameStartSettings | null>(null);
+  readonly isHost = input.required<boolean>();
+  readonly canEditNextMatchSettings = input.required<boolean>();
+  readonly nextMatchSettingsLockedReason = input<string | null>(null);
   readonly messages = input.required<readonly ChatMessage[]>();
   readonly helperText = input.required<string>();
   readonly canPass = input.required<boolean>();
@@ -72,6 +79,7 @@ export class OnlineRoomSidebarComponent {
   readonly resignRequested = output<void>();
   readonly confirmScoringRequested = output<void>();
   readonly disputeScoringRequested = output<void>();
+  readonly nextMatchSettingsChange = output<GameStartSettings>();
   readonly acceptRematchRequested = output<void>();
   readonly declineRematchRequested = output<void>();
   readonly sendRequested = output<void>();

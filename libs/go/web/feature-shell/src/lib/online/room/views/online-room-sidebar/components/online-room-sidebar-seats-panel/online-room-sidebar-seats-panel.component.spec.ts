@@ -210,11 +210,13 @@ const playingMatch: HostedMatchSnapshot = {
     revision: 1,
     players: {
       black: {
+        type: 'byo-yomi',
         mainTimeMs: 600_000,
         periodTimeMs: 30_000,
         periodsRemaining: 5,
       },
       white: {
+        type: 'byo-yomi',
         mainTimeMs: 600_000,
         periodTimeMs: 30_000,
         periodsRemaining: 5,

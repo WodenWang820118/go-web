@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { GoI18nService } from '@gx/go/state';
-import { createMessage } from '@gx/go/domain';
+import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
 import { GameBoardComponent } from '@gx/go/ui';
 import {
   createHostedMatch,
@@ -48,6 +48,43 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
     expect(text).toContain(i18n.t('room.stage.ready.label'));
     expect(text).toContain(i18n.t('room.stage.ready.title'));
+  });
+
+  it('lets the host update the next Go match time control', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        nextMatchSettings: {
+          mode: 'go',
+          boardSize: 19,
+          komi: 6.5,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const select = root.querySelector(
+      '[data-testid="time-control-preset-select"]',
+    ) as HTMLSelectElement;
+
+    select.value = 'bga-candidates-fischer-75-20';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await harness.fixture.whenStable();
+
+    expect(roomService.updateNextMatchSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'go',
+        boardSize: 19,
+        timeControl: {
+          type: 'fischer',
+          mainTimeMs: 4_500_000,
+          incrementMs: 20_000,
+        },
+      }),
+    );
   });
 
   it('opens pending Go nigiri in a dialog and routes guesses from the page', async () => {
@@ -285,7 +322,12 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
     expect(
       root.querySelector('[data-testid="room-next-match-panel"]'),
-    ).toBeNull();
+    ).not.toBeNull();
+    expect(
+      root.querySelector(
+        '[data-testid="room-next-match-readonly-time-control"]',
+      ),
+    ).not.toBeNull();
     expect(
       root.querySelector('[data-testid="room-move-log-panel"]'),
     ).toBeNull();

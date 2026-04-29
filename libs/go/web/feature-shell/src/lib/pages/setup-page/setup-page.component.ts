@@ -12,14 +12,17 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NigiriGuess } from '@gx/go/contracts';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_TIME_CONTROL,
   GO_AREA_AGREEMENT_RULESET,
   GOMOKU_BOARD_SIZE,
   GO_DIGITAL_NIGIRI_OPENING,
   GO_BOARD_SIZES,
+  cloneTimeControlSettings,
   isGameMode,
   type GoBoardSize,
   type MatchSettings,
   type PlayerColor,
+  type TimeControlSettings,
 } from '@gx/go/domain';
 import { buildGoAnalyticsLevelName, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -27,6 +30,8 @@ import { GameSessionStore } from '@gx/go/state/session';
 import { map } from 'rxjs';
 
 import { HostedShellHeaderComponent } from '../../online/shared/hosted-shell-header/hosted-shell-header.component';
+import { TimeControlPresetSelectorComponent } from '../../shared/time-control/time-control-preset-selector.component';
+import { summarizeTimeControl } from '../../shared/time-control/time-control-presentation';
 
 interface SetupFactViewModel {
   id: string;
@@ -49,6 +54,7 @@ interface LocalNigiriResult {
     ReactiveFormsModule,
     RouterLink,
     HostedShellHeaderComponent,
+    TimeControlPresetSelectorComponent,
   ],
   templateUrl: './setup-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,6 +117,12 @@ export class SetupPageComponent {
     const size = this.selectedBoardSize();
     return `${size} x ${size}`;
   });
+  protected readonly selectedTimeControl = signal<TimeControlSettings>(
+    cloneTimeControlSettings(DEFAULT_GO_TIME_CONTROL),
+  );
+  protected readonly timeControlSummary = computed(() =>
+    summarizeTimeControl(this.selectedTimeControl(), this.i18n),
+  );
   protected readonly nigiriResult = signal<LocalNigiriResult | null>(null);
   protected readonly canResolveNigiri = computed(
     () => this.mode() === 'go' && this.nigiriResult() === null,
@@ -135,9 +147,9 @@ export class SetupPageComponent {
     const mode = this.mode();
 
     if (mode === 'go') {
-      return `${this.boardSizeSummary()} · ${this.i18n.t('setup.go_komi_note', {
+      return `${this.boardSizeSummary()} | ${this.i18n.t('setup.go_komi_note', {
         komi: DEFAULT_GO_KOMI,
-      })}`;
+      })} | ${this.timeControlSummary()}`;
     }
 
     if (mode === 'gomoku') {
@@ -176,6 +188,11 @@ export class SetupPageComponent {
         hint: this.i18n.t('setup.go_komi_note', {
           komi: DEFAULT_GO_KOMI,
         }),
+      });
+      facts.push({
+        id: 'time-control',
+        label: this.i18n.t('time_control.title'),
+        value: this.timeControlSummary(),
       });
 
       return facts;
@@ -224,7 +241,7 @@ export class SetupPageComponent {
         ? {
             ruleset: GO_AREA_AGREEMENT_RULESET,
             openingRule: GO_DIGITAL_NIGIRI_OPENING,
-            timeControl: null,
+            timeControl: cloneTimeControlSettings(this.selectedTimeControl()),
           }
         : {}),
     };
@@ -273,6 +290,10 @@ export class SetupPageComponent {
       game_mode: 'go',
       play_context: 'local',
     });
+  }
+
+  protected selectTimeControl(timeControl: TimeControlSettings): void {
+    this.selectedTimeControl.set(cloneTimeControlSettings(timeControl));
   }
 }
 

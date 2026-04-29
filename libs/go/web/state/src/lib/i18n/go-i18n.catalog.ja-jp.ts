@@ -134,6 +134,9 @@ export const JA_JP_TRANSLATIONS = {
     '囲碁は 9x9、13x13、19x19 の盤面のみ使用できます。',
   'room.error.invalid_gomoku_board_size':
     '五目並べは 15x15 の盤面のみ使用できます。',
+  'room.error.invalid_time_control': '公式の囲碁時間制を選択してください。',
+  'room.error.time_control_not_supported':
+    '公式の囲碁時間制は囲碁の部屋でのみ使用できます。',
   'room.error.display_name_required': '表示名は必須です。',
   'room.error.display_name_too_long':
     '表示名は {{max}} 文字以内にしてください。',
@@ -239,6 +242,23 @@ export const JA_JP_TRANSLATIONS = {
     '予想：{{guess}}。隠し石：{{parity}}。{{player}}が黒番として先手です。',
   'setup.start_local_match': 'ローカル対局を開始',
   'setup.rules_refresher': 'ルールのおさらい',
+  'time_control.title': '時間制',
+  'time_control.selector.legend': '公式時間制',
+  'time_control.system.byo-yomi': '秒読み',
+  'time_control.system.fischer': 'フィッシャー',
+  'time_control.system.canadian': 'カナダ式',
+  'time_control.system.absolute': '切れ負け',
+  'time_control.summary.byo_yomi':
+    '{{main}} + {{periods}} 回 {{period}} 秒読み',
+  'time_control.summary.fischer': '{{main}} + 1手ごとに {{increment}}',
+  'time_control.summary.canadian': '{{main}} + {{stones}} 手 / {{period}}',
+  'time_control.summary.absolute': '{{main}} 切れ負け',
+  'time_control.duration.minutes': '{{count}} 分',
+  'time_control.duration.seconds': '{{count}} 秒',
+  'time_control.duration.minutes_seconds': '{{minutes}} 分 {{seconds}} 秒',
+  'time_control.source': '出典：{{source}}',
+  'time_control.not_available_gomoku':
+    '五目並べの部屋では公式の囲碁時間制を使用しません。',
   'play.back_to_setup': '設定へ戻る',
   'play.current_turn': '現在の手番',
   'play.scoring_hint':
@@ -410,6 +430,9 @@ export const JA_JP_TRANSLATIONS = {
   'room.nigiri.resolved.assigned_black': '{{player}}が黒番です。',
   'room.clock.main': '持ち時間',
   'room.clock.byo_yomi_periods': '残り {{count}} 回の秒読み',
+  'room.clock.fischer_increment': 'フィッシャー +{{increment}}',
+  'room.clock.canadian_stones': '残り {{count}} 手',
+  'room.clock.absolute': '切れ負け',
   'room.next_match.eyebrow': '次の対局',
   'room.next_match.title': '次の対局設定',
   'room.next_match.description':
@@ -421,6 +444,10 @@ export const JA_JP_TRANSLATIONS = {
     '現在の対局が終了すると、設定を再び変更できます。',
   'room.next_match.locked.filled':
     '両方の席が埋まり部屋が自動開始できる状態になると、設定はロックされます。',
+  'room.next_match.locked.offline':
+    '次の対局設定を変更する前に部屋へ再接続してください。',
+  'room.next_match.host_only':
+    '次の対局の時間制を変更できるのは部屋のホストだけです。',
   'room.rematch.eyebrow': '再戦',
   'room.rematch.title': 'もう一局しますか？',
   'room.rematch.description.player':

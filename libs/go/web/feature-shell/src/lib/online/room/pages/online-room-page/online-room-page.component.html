@@ -281,6 +281,12 @@
         [seats]="presenter.view.seats()"
         [participants]="presenter.view.participants()"
         [match]="presenter.view.match()"
+        [nextMatchSettings]="presenter.view.nextMatchSettings()"
+        [isHost]="presenter.view.onlineRoom.isHost()"
+        [canEditNextMatchSettings]="presenter.view.canEditNextMatchSettings()"
+        [nextMatchSettingsLockedReason]="
+          presenter.view.nextMatchSettingsLockedReason()
+        "
         [messages]="presenter.view.onlineRoom.chat()"
         [helperText]="presenter.view.chatHelperText()"
         [canPass]="presenter.view.canPass()"
@@ -294,6 +300,9 @@
         (backToLobbyRequested)="presenter.leave.requestBackToLobby()"
         (claimSeatRequested)="presenter.interactions.claimSeat($event)"
         (releaseSeatRequested)="presenter.interactions.releaseSeat()"
+        (nextMatchSettingsChange)="
+          presenter.interactions.updateNextMatchSettings($event)
+        "
         (passRequested)="presenter.interactions.passTurn()"
         (resignRequested)="presenter.interactions.resign()"
         (confirmScoringRequested)="presenter.interactions.confirmScoring()"

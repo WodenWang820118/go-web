@@ -5,7 +5,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { RoomSnapshot } from '@gx/go/contracts';
-import { createMessage } from '@gx/go/domain';
+import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
@@ -229,15 +229,18 @@ describe('OnlineRoomService', () => {
   it('stores the created-room identity and connects realtime after room creation', () => {
     let createdRoomId = '';
 
-    service.createRoom('Host', 'go', 13).subscribe((response) => {
-      createdRoomId = response.roomId;
-    });
+    service
+      .createRoom('Host', 'go', 13, DEFAULT_GO_TIME_CONTROL)
+      .subscribe((response) => {
+        createdRoomId = response.roomId;
+      });
 
     const request = httpMock.expectOne('/api/rooms');
     expect(request.request.body).toEqual({
       displayName: 'Host',
       mode: 'go',
       boardSize: 13,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
     });
     request.flush({
       roomId: 'ROOM42',

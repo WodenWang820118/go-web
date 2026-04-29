@@ -6,7 +6,7 @@ import {
   HostedMatchSnapshot,
   ParticipantSummary,
 } from '@gx/go/contracts';
-import { createMessage } from '@gx/go/domain';
+import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
 import { vi } from 'vitest';
 import { OnlineRoomSidebarComponent } from './online-room-sidebar.component';
 
@@ -49,6 +49,15 @@ describe('OnlineRoomSidebarComponent', () => {
     fixture.componentRef.setInput('seats', seats);
     fixture.componentRef.setInput('participants', participants);
     fixture.componentRef.setInput('match', liveMatch);
+    fixture.componentRef.setInput('nextMatchSettings', {
+      mode: 'go',
+      boardSize: 19,
+      komi: 6.5,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
+    });
+    fixture.componentRef.setInput('isHost', true);
+    fixture.componentRef.setInput('canEditNextMatchSettings', true);
+    fixture.componentRef.setInput('nextMatchSettingsLockedReason', null);
     fixture.componentRef.setInput('messages', chatMessages);
     fixture.componentRef.setInput('helperText', 'Send a message to the room.');
     fixture.componentRef.setInput('canPass', true);
@@ -177,6 +186,34 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(backEmit).toHaveBeenCalled();
   });
 
+  it('bubbles next-match time-control changes from the sidebar', async () => {
+    const updateEmit = vi.spyOn(
+      fixture.componentInstance.nextMatchSettingsChange,
+      'emit',
+    );
+    const root = fixture.nativeElement as HTMLElement;
+    const select = root.querySelector(
+      '[data-testid="time-control-preset-select"]',
+    ) as HTMLSelectElement;
+
+    select.value = 'aga-open-fischer-60-20';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(updateEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'go',
+        boardSize: 19,
+        timeControl: {
+          type: 'fischer',
+          mainTimeMs: 3_600_000,
+          incrementMs: 20_000,
+        },
+      }),
+    );
+  });
+
   it('bubbles hosted scoring agreement actions', async () => {
     const confirmEmit = vi.spyOn(
       fixture.componentInstance.confirmScoringRequested,
@@ -253,6 +290,7 @@ describe('OnlineRoomSidebarComponent', () => {
       ...liveMatch,
       clock: {
         config: {
+          type: 'byo-yomi',
           mainTimeMs: 600_000,
           periodTimeMs: 30_000,
           periods: 5,
@@ -262,11 +300,13 @@ describe('OnlineRoomSidebarComponent', () => {
         revision: 1,
         players: {
           black: {
+            type: 'byo-yomi',
             mainTimeMs: 590_000,
             periodTimeMs: 30_000,
             periodsRemaining: 5,
           },
           white: {
+            type: 'byo-yomi',
             mainTimeMs: 600_000,
             periodTimeMs: 30_000,
             periodsRemaining: 5,

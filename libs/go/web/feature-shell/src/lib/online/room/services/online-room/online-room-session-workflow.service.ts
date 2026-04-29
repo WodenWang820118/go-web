@@ -6,7 +6,7 @@ import {
   JoinRoomResponse,
   RoomClosedEvent,
 } from '@gx/go/contracts';
-import { BoardSize, GameMode } from '@gx/go/domain';
+import type { BoardSize, GameMode, TimeControlSettings } from '@gx/go/domain';
 import {
   buildGoAnalyticsLevelName,
   GoAnalyticsJoinSource,
@@ -125,6 +125,7 @@ export class OnlineRoomSessionWorkflowService {
     displayName: string,
     mode: GameMode,
     boardSize: BoardSize,
+    timeControl?: TimeControlSettings | null,
   ): Observable<CreateRoomResponse> {
     return defer(() => {
       this.state.setCreating(true);
@@ -135,42 +136,44 @@ export class OnlineRoomSessionWorkflowService {
         game_mode: mode,
       });
 
-      return this.api.createRoom(displayName, mode, boardSize).pipe(
-        tap((response) => {
-          this.applyJoinResponse(response.roomId, displayName, response);
-          this.analytics.track({
-            board_size: boardSize,
-            event: 'gx_room_create',
-            game_mode: mode,
-          });
-          this.analytics.track({
-            board_size: boardSize,
-            event: 'level_start',
-            game_mode: mode,
-            level_name: buildGoAnalyticsLevelName('hosted', mode, boardSize),
-            play_context: 'hosted',
-            start_source: 'room_create',
-          });
-        }),
-        catchError((error) => {
-          this.analytics.track({
-            board_size: boardSize,
-            error_type: this.analyticsErrors.describe(error),
-            event: 'gx_room_create_error',
-            game_mode: mode,
-          });
-          this.state.setLastError(
-            this.api.describeHttpError(
-              error,
-              'room.client.unexpected_network_error',
-            ),
-          );
-          return throwError(() => error);
-        }),
-        finalize(() => {
-          this.state.setCreating(false);
-        }),
-      );
+      return this.api
+        .createRoom(displayName, mode, boardSize, timeControl)
+        .pipe(
+          tap((response) => {
+            this.applyJoinResponse(response.roomId, displayName, response);
+            this.analytics.track({
+              board_size: boardSize,
+              event: 'gx_room_create',
+              game_mode: mode,
+            });
+            this.analytics.track({
+              board_size: boardSize,
+              event: 'level_start',
+              game_mode: mode,
+              level_name: buildGoAnalyticsLevelName('hosted', mode, boardSize),
+              play_context: 'hosted',
+              start_source: 'room_create',
+            });
+          }),
+          catchError((error) => {
+            this.analytics.track({
+              board_size: boardSize,
+              error_type: this.analyticsErrors.describe(error),
+              event: 'gx_room_create_error',
+              game_mode: mode,
+            });
+            this.state.setLastError(
+              this.api.describeHttpError(
+                error,
+                'room.client.unexpected_network_error',
+              ),
+            );
+            return throwError(() => error);
+          }),
+          finalize(() => {
+            this.state.setCreating(false);
+          }),
+        );
     });
   }
 
