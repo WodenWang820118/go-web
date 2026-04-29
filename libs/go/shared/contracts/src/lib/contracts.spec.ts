@@ -2,8 +2,12 @@ import {
   ROOM_SNAPSHOT_SCHEMA_VERSION,
   RoomSnapshot,
   cloneRoomSnapshot,
+  normalizeGameStartTimeControl,
 } from './contracts';
-import { DEFAULT_HOSTED_BYO_YOMI } from '@gx/go/domain';
+import {
+  DEFAULT_GO_TIME_CONTROL,
+  DEFAULT_HOSTED_BYO_YOMI,
+} from '@gx/go/domain';
 import { createRoomSnapshot } from './testing/room-fixtures';
 import {
   MAX_DISPLAY_NAME_LENGTH,
@@ -146,6 +150,51 @@ describe('go-contracts', () => {
       schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
       nigiri: null,
       rules: null,
+    });
+  });
+
+  it('normalizes Go room time controls to official presets', () => {
+    expect(normalizeGameStartTimeControl('go', null)).toEqual({
+      ok: true,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
+    });
+    expect(
+      normalizeGameStartTimeControl('go', {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      }),
+    ).toEqual({
+      ok: true,
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
+    });
+  });
+
+  it('rejects unofficial or non-Go room time controls', () => {
+    expect(
+      normalizeGameStartTimeControl('go', {
+        type: 'byo-yomi',
+        mainTimeMs: 10 * 60 * 1000,
+        periodTimeMs: 30 * 1000,
+        periods: 5,
+      }),
+    ).toEqual({
+      ok: false,
+      reason: 'invalid-time-control',
+    });
+    expect(
+      normalizeGameStartTimeControl('gomoku', DEFAULT_GO_TIME_CONTROL),
+    ).toEqual({
+      ok: false,
+      reason: 'time-control-not-supported',
+    });
+    expect(normalizeGameStartTimeControl('gomoku', null)).toEqual({
+      ok: true,
+      timeControl: null,
     });
   });
 
