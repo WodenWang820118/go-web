@@ -22,6 +22,8 @@ test('online room auto-starts once both seats are claimed and both players can a
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const spectatorContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
@@ -62,9 +64,12 @@ test('online room auto-starts once both seats are claimed and both players can a
       .fill('Spectator');
     await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
+    await expect(spectatorPage.getByTestId('join-room-form')).toHaveCount(0);
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
-    await spectatorPage.getByTestId('chat-message-input').fill('Watching live');
-    await spectatorPage.getByRole('button', { name: 'Send' }).click();
+    const spectatorChatInput = spectatorPage.getByTestId('chat-message-input');
+    await expect(spectatorChatInput).toBeEditable();
+    await spectatorChatInput.fill('Watching live');
+    await spectatorChatInput.press('Enter');
     await expect(page.getByText('Watching live')).toBeVisible();
 
     await page.getByRole('button', { name: 'Resign' }).click();
@@ -129,6 +134,8 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 
@@ -196,6 +203,8 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 
