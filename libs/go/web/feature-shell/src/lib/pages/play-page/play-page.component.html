@@ -18,16 +18,48 @@
         </p>
       </div>
 
-      <div
-        class="rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-600 shadow-sm backdrop-blur"
-      >
-        {{ i18n.t('play.current_turn') }}:
-        <span
-          class="ml-2 inline-flex items-center gap-2 font-semibold text-stone-900"
+      <div class="flex flex-wrap items-center justify-end gap-3">
+        @if (localClockViews().length > 0) {
+          <div
+            class="grid gap-2 sm:grid-cols-2"
+            data-testid="local-clock-panel"
+          >
+            @for (clock of localClockViews(); track clock.color) {
+              <div
+                class="min-w-36 rounded-2xl border bg-white/75 px-4 py-2 text-sm shadow-sm backdrop-blur"
+                [class.border-amber-300]="clock.isActive"
+                [class.text-stone-900]="clock.isActive"
+                [class.border-stone-200]="!clock.isActive"
+                [class.text-stone-600]="!clock.isActive"
+                [attr.data-testid]="'local-clock-' + clock.color"
+                [attr.aria-label]="clock.detail + ' ' + clock.label"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <span class="inline-flex items-center gap-2 font-semibold">
+                    <lib-go-stone-badge [color]="clock.color" />
+                    {{ clock.playerName }}
+                  </span>
+                  <span class="font-mono text-base font-semibold">
+                    {{ clock.label }}
+                  </span>
+                </div>
+                <p class="mt-1 text-xs text-stone-500">{{ clock.detail }}</p>
+              </div>
+            }
+          </div>
+        }
+
+        <div
+          class="rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-600 shadow-sm backdrop-blur"
         >
-          <lib-go-stone-badge [color]="state()!.nextPlayer" />
-          {{ store.currentPlayerName() }}
-        </span>
+          {{ i18n.t('play.current_turn') }}:
+          <span
+            class="ml-2 inline-flex items-center gap-2 font-semibold text-stone-900"
+          >
+            <lib-go-stone-badge [color]="state()!.nextPlayer" />
+            {{ store.currentPlayerName() }}
+          </span>
+        </div>
       </div>
     </div>
 
