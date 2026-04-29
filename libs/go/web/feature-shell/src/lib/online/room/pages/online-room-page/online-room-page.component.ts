@@ -70,6 +70,12 @@ export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
     }
   }
 
+  protected onNigiriVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.presenter.dialogs.dismissNigiriDialog();
+    }
+  }
+
   canDeactivateRoomPage(nextUrl: string | null): boolean {
     return this.presenter.leave.canDeactivate(nextUrl);
   }

@@ -9,6 +9,8 @@ import {
   createSeatedSnapshot,
   createSnapshot,
   queryDialog,
+  queryDialogHeaderClose,
+  queryVisibleDialogs,
   renderOnlineRoomPage,
   resetOnlineRoomPageTestEnvironment,
 } from './online-room-page.test-support';
@@ -46,6 +48,130 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
 
     expect(text).toContain(i18n.t('room.stage.ready.label'));
     expect(text).toContain(i18n.t('room.stage.ready.title'));
+  });
+
+  it('opens pending Go nigiri in a dialog and routes guesses from the page', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+      }),
+      participantId: 'guest-1',
+      participantToken: 'token-guest',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const [visibleDialog] = queryVisibleDialogs(harness);
+    const oddButton = document.body.querySelector(
+      '[data-testid="room-nigiri-guess-odd"]',
+    ) as HTMLButtonElement | null;
+
+    expect(
+      root.querySelector('[data-testid="room-sidebar-nigiri-panel"]'),
+    ).toBe(null);
+    expect(queryDialog('room-nigiri-dialog')).not.toBeNull();
+    expect(visibleDialog?.closable).toBe(false);
+    expect(visibleDialog?.dismissableMask).toBe(false);
+    expect(document.body.textContent).toContain('Guest');
+    expect(oddButton).not.toBeNull();
+
+    oddButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.sendGameCommand).toHaveBeenCalledWith({
+      type: 'nigiri-guess',
+      guess: 'odd',
+    });
+  });
+
+  it('shows waiting players a dismissable pending Go nigiri dialog without guess buttons', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        participants: [
+          {
+            participantId: 'host-1',
+            displayName: 'Host',
+            seat: 'black',
+            isHost: true,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:00:00.000Z',
+          },
+          {
+            participantId: 'guest-1',
+            displayName: 'Guest',
+            seat: 'white',
+            isHost: false,
+            online: true,
+            muted: false,
+            joinedAt: '2026-03-20T00:01:00.000Z',
+          },
+        ],
+        seatState: {
+          black: 'host-1',
+          white: 'guest-1',
+        },
+        nigiri: {
+          status: 'pending',
+          commitment: 'commitment',
+          guesser: 'white',
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const i18n = TestBed.inject(GoI18nService);
+    const [visibleDialog] = queryVisibleDialogs(harness);
+    const closeButton = queryDialogHeaderClose(
+      'room-nigiri-dialog',
+      i18n.t('common.action.close'),
+    );
+
+    expect(queryDialog('room-nigiri-dialog')).not.toBeNull();
+    expect(visibleDialog?.closable).toBe(true);
+    expect(visibleDialog?.dismissableMask).toBe(true);
+    expect(document.body.textContent).toContain('Guest');
+    expect(
+      document.body.querySelector('[data-testid="room-nigiri-guess-odd"]'),
+    ).toBeNull();
+    expect(
+      document.body.querySelector('[data-testid="room-nigiri-guess-even"]'),
+    ).toBeNull();
+
+    closeButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-nigiri-dialog')).toBeNull();
   });
 
   it('shows blocked copy when auto-start is paused after a declined rematch', async () => {

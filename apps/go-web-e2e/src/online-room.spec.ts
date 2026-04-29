@@ -137,6 +137,10 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
 
     await useEnglish(page);
     const roomId = await createHostedRoom(page, 'Host', { mode: 'gomoku' });
+    const rematchBlockedAlert = (target: Page) =>
+      target.getByRole('alert').filter({
+        hasText: 'A player passed on the rematch.',
+      });
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
@@ -166,23 +170,15 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await page.getByTestId('room-rematch-dialog-decline').click();
 
     await expect(guestPage.getByTestId('room-rematch-dialog')).toHaveCount(0);
-    await expect(
-      page.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toBeVisible();
-    await expect(
-      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toBeVisible();
+    await expect(rematchBlockedAlert(page)).toBeVisible();
+    await expect(rematchBlockedAlert(guestPage)).toBeVisible();
 
     await page.getByTestId('release-black').click();
     await expect(page.getByTestId('claim-black')).toBeVisible();
     await page.getByTestId('claim-black').click();
 
-    await expect(
-      page.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toHaveCount(0);
-    await expect(
-      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toHaveCount(0);
+    await expect(rematchBlockedAlert(page)).toHaveCount(0);
+    await expect(rematchBlockedAlert(guestPage)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Resign' })).toBeVisible();
     await expect(
       guestPage.getByRole('button', { name: 'Resign' }),
@@ -216,17 +212,12 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
       .fill('Go Guest');
     await guestPage.getByRole('button', { name: 'Join room' }).click();
 
-    await page.getByTestId('claim-black').click();
-    await guestPage.getByTestId('claim-white').click();
-
-    await expect(
-      guestPage.getByTestId('room-sidebar-nigiri-panel'),
-    ).toBeVisible();
-    await guestPage.getByTestId('room-nigiri-guess-odd').click();
+    await expect(page.getByTestId('room-nigiri-dialog')).toBeVisible();
+    await expect(guestPage.getByTestId('room-nigiri-dialog')).toBeVisible();
     await expect(page.getByTestId('room-sidebar-nigiri-panel')).toHaveCount(0);
-    await expect(
-      guestPage.getByTestId('room-sidebar-nigiri-panel'),
-    ).toHaveCount(0);
+    await guestPage.getByTestId('room-nigiri-guess-odd').click();
+    await expect(page.getByTestId('room-nigiri-dialog')).toHaveCount(0);
+    await expect(guestPage.getByTestId('room-nigiri-dialog')).toHaveCount(0);
 
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();

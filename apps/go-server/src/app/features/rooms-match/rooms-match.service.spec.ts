@@ -35,7 +35,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('auto-starts with the saved next-match settings after the second seat is claimed', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -69,7 +72,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('creates a rematch gate when a hosted match finishes and starts again after both players accept', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -124,7 +130,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('blocks a new game after a rematch decline until a seat changes', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -176,7 +185,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('cancels a pending rematch if one of the seated players leaves a seat', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',

@@ -22,7 +22,10 @@ describe('rooms realtime contract', () => {
   }, 30000);
 
   it('creates, joins, auto-starts, plays, and chats through REST plus websocket', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest);
@@ -106,7 +109,10 @@ describe('rooms realtime contract', () => {
   }, 30000);
 
   it('waits for both seated players to accept a rematch before auto-starting again', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest);
@@ -194,7 +200,10 @@ describe('rooms realtime contract', () => {
   }, 30000);
 
   it('allows a polling guest to claim white after the host claims black', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest, [

@@ -89,6 +89,9 @@ describe('OnlineRoomSidebarComponent', () => {
       root.querySelector('[data-testid="room-sidebar-rematch"]'),
     ).not.toBeNull();
     expect(
+      root.querySelector('[data-testid="room-sidebar-nigiri-panel"]'),
+    ).toBe(null);
+    expect(
       root.querySelector('[data-testid="room-sidebar-chat"]'),
     ).not.toBeNull();
     expect(
@@ -214,82 +217,6 @@ describe('OnlineRoomSidebarComponent', () => {
 
     expect(confirmEmit).toHaveBeenCalled();
     expect(disputeEmit).toHaveBeenCalled();
-  });
-
-  it('renders pending nigiri and bubbles odd/even guesses', async () => {
-    const guessEmit = vi.spyOn(
-      fixture.componentInstance.nigiriGuessRequested,
-      'emit',
-    );
-
-    fixture.componentRef.setInput('match', null);
-    fixture.componentRef.setInput('nigiri', {
-      status: 'pending',
-      title: 'Digital nigiri',
-      description: 'Guest guesses odd or even.',
-      commitmentLabel: 'Commitment',
-      commitment: 'commitment',
-      canGuess: true,
-      oddLabel: 'Odd',
-      evenLabel: 'Even',
-      resultLabel: null,
-      assignedBlackLabel: null,
-    });
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const root = fixture.nativeElement as HTMLElement;
-    const oddButton = root.querySelector(
-      '[data-testid="room-nigiri-guess-odd"]',
-    ) as HTMLButtonElement | null;
-    const evenButton = root.querySelector(
-      '[data-testid="room-nigiri-guess-even"]',
-    ) as HTMLButtonElement | null;
-
-    expect(
-      root.querySelector('[data-testid="room-sidebar-nigiri-panel"]'),
-    ).not.toBeNull();
-    expect(root.textContent).toContain('Guest guesses odd or even.');
-
-    oddButton?.click();
-    evenButton?.click();
-
-    expect(guessEmit).toHaveBeenCalledWith('odd');
-    expect(guessEmit).toHaveBeenCalledWith('even');
-  });
-
-  it('renders resolved nigiri without guess buttons', async () => {
-    fixture.componentRef.setInput('match', liveMatch);
-    fixture.componentRef.setInput('nigiri', {
-      status: 'resolved',
-      title: 'Nigiri resolved',
-      description: 'Guest takes Black.',
-      commitmentLabel: 'Commitment',
-      commitment: 'commitment',
-      canGuess: false,
-      oddLabel: 'Odd',
-      evenLabel: 'Even',
-      resultLabel: 'Guess: Odd. Hidden stones: Odd.',
-      assignedBlackLabel: 'Guest is Black.',
-      guess: 'odd',
-      parity: 'odd',
-    });
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const root = fixture.nativeElement as HTMLElement;
-
-    expect(
-      root.querySelector('[data-testid="room-sidebar-nigiri-panel"]'),
-    ).not.toBeNull();
-    expect(root.textContent).toContain('Guess: Odd. Hidden stones: Odd.');
-    expect(root.textContent).toContain('Guest is Black.');
-    expect(
-      root.querySelector('[data-testid="room-nigiri-guess-odd"]'),
-    ).toBeNull();
-    expect(
-      root.querySelector('[data-testid="room-nigiri-guess-even"]'),
-    ).toBeNull();
   });
 
   it('keeps hosted scoring agreement actions disabled when unavailable', async () => {

@@ -181,6 +181,58 @@
     </ng-template>
   </p-dialog>
 
+  @if (presenter.view.nigiriPanel(); as nigiriPanel) {
+    <p-dialog
+      [visible]="presenter.dialogs.nigiriDialogVisible()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [dismissableMask]="!nigiriPanel.canGuess"
+      [closable]="!nigiriPanel.canGuess"
+      [appendTo]="'body'"
+      [style]="{ width: 'min(34rem, calc(100vw - 2rem))' }"
+      [header]="nigiriPanel.title"
+      [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+      styleClass="room-event-dialog"
+      contentStyleClass="space-y-4"
+      (visibleChange)="onNigiriVisibleChange($event)"
+    >
+      <div class="space-y-4" data-testid="room-nigiri-dialog">
+        <p class="text-sm leading-7 text-surface-700">
+          {{ nigiriPanel.description }}
+        </p>
+        <p class="break-all text-xs leading-5 text-surface-500">
+          {{ nigiriPanel.commitmentLabel }}: {{ nigiriPanel.commitment }}
+        </p>
+      </div>
+
+      @if (nigiriPanel.canGuess) {
+        <ng-template #footer>
+          <div class="grid w-full grid-cols-2 gap-2">
+            <button
+              pButton
+              type="button"
+              class="go-hosted-button-secondary justify-center"
+              data-testid="room-nigiri-guess-odd"
+              (click)="presenter.interactions.guessNigiri('odd')"
+            >
+              {{ nigiriPanel.oddLabel }}
+            </button>
+            <button
+              pButton
+              type="button"
+              class="go-hosted-button-primary justify-center"
+              data-testid="room-nigiri-guess-even"
+              (click)="presenter.interactions.guessNigiri('even')"
+            >
+              {{ nigiriPanel.evenLabel }}
+            </button>
+          </div>
+        </ng-template>
+      }
+    </p-dialog>
+  }
+
   @if (presenter.view.bootstrapState() === 'missing') {
     <lib-go-online-room-page-status
       [eyebrow]="presenter.view.missingStatusView().eyebrow"
@@ -228,7 +280,6 @@
         [joinCardDescription]="presenter.view.joinCardDescription()"
         [seats]="presenter.view.seats()"
         [participants]="presenter.view.participants()"
-        [nigiri]="presenter.view.nigiriPanel()"
         [match]="presenter.view.match()"
         [messages]="presenter.view.onlineRoom.chat()"
         [helperText]="presenter.view.chatHelperText()"
@@ -243,7 +294,6 @@
         (backToLobbyRequested)="presenter.leave.requestBackToLobby()"
         (claimSeatRequested)="presenter.interactions.claimSeat($event)"
         (releaseSeatRequested)="presenter.interactions.releaseSeat()"
-        (nigiriGuessRequested)="presenter.interactions.guessNigiri($event)"
         (passRequested)="presenter.interactions.passTurn()"
         (resignRequested)="presenter.interactions.resign()"
         (confirmScoringRequested)="presenter.interactions.confirmScoring()"

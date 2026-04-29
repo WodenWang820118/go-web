@@ -8,7 +8,23 @@ export class OnlineRoomPageDialogsService {
   private readonly view = inject(OnlineRoomPageViewStateService);
   private lastRematchDialogKey: string | null = null;
   private lastResignDialogKey: string | null = null;
+  private readonly dismissedNigiriDialogKey = signal<string | null>(null);
 
+  readonly nigiriDialogVisible = computed(() => {
+    const panel = this.view.nigiriPanel();
+
+    if (!panel) {
+      return false;
+    }
+
+    if (panel.canGuess) {
+      return true;
+    }
+
+    const dialogKey = this.nigiriDialogKey();
+
+    return !!dialogKey && dialogKey !== this.dismissedNigiriDialogKey();
+  });
   readonly rematchDialogVisible = signal(false);
   readonly resignResultDialogVisible = signal(false);
   readonly shouldShowRematchDialog = computed(
@@ -82,6 +98,24 @@ export class OnlineRoomPageDialogsService {
 
   dismissResignResultDialog(): void {
     this.resignResultDialogVisible.set(false);
+  }
+
+  dismissNigiriDialog(): void {
+    const dialogKey = this.nigiriDialogKey();
+
+    if (dialogKey) {
+      this.dismissedNigiriDialogKey.set(dialogKey);
+    }
+  }
+
+  private nigiriDialogKey(): string | null {
+    const nigiri = this.view.nigiri();
+
+    if (!nigiri || nigiri.status !== 'pending') {
+      return null;
+    }
+
+    return [nigiri.commitment, nigiri.guesser].join(':');
   }
 
   private resignDialogKey(): string | null {

@@ -7,6 +7,7 @@ import {
   RoomSnapshot,
 } from '@gx/go/contracts';
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { GoMessageDescriptor } from '@gx/go/domain';
 import {
   CREATE_ATTEMPTS_PER_WINDOW,
   JOIN_ATTEMPTS_PER_WINDOW,
@@ -14,8 +15,14 @@ import {
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
-import { CloseRoomResult } from '../../contracts/rooms.types';
+import {
+  CloseRoomResult,
+  JoinRoomMutationResult,
+  ParticipantRecord,
+  RoomRecord,
+} from '../../contracts/rooms.types';
 import { RoomsClockService } from '../rooms-match/rooms-clock.service';
+import { RoomsMatchNigiriService } from '../rooms-match/rooms-match-nigiri.service';
 import { RoomsMatchSettingsService } from '../rooms-match/rooms-match-settings';
 import { RoomsDisplayNameService } from './rooms-display-name.service';
 import { RoomsRequestThrottleService } from './rooms-request-throttle.service';
@@ -57,6 +64,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     ),
     @Inject(RoomsRequestThrottleService)
     private readonly requestThrottle: RoomsRequestThrottleService = new RoomsRequestThrottleService(
+      store,
+      roomsErrors,
+    ),
+    @Inject(RoomsMatchNigiriService)
+    private readonly nigiri: RoomsMatchNigiriService = new RoomsMatchNigiriService(
       store,
       roomsErrors,
     ),
@@ -105,6 +117,20 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     participantToken: string | undefined,
     requesterKey: string,
   ): JoinRoomResponse {
+    return this.joinRoomMutation(
+      roomId,
+      displayName,
+      participantToken,
+      requesterKey,
+    ).response;
+  }
+
+  joinRoomMutation(
+    roomId: string,
+    displayName: string,
+    participantToken: string | undefined,
+    requesterKey: string,
+  ): JoinRoomMutationResult {
     this.requestThrottle.assertWithinLimit(
       requesterKey,
       JOIN_ATTEMPTS_PER_WINDOW,
@@ -137,13 +163,19 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     }
 
     this.store.touchRoom(room);
-
-    return {
+    const nigiriNotice = this.prepareGoRoomForDirectNigiri(room);
+    const snapshot = this.snapshotMapper.toSnapshot(room);
+    const response = {
       roomId: room.id,
       participantToken: participant.token,
       participantId: participant.id,
       resumed,
-      snapshot: this.snapshotMapper.toSnapshot(room),
+      snapshot,
+    };
+
+    return {
+      response,
+      notice: nigiriNotice ? this.store.createNotice(nigiriNotice) : undefined,
     };
   }
 
@@ -254,5 +286,83 @@ export class RoomsLifecycleService implements OnModuleDestroy {
 
   onModuleDestroy(): void {
     clearInterval(this.cleanupTimer);
+  }
+
+  private prepareGoRoomForDirectNigiri(
+    room: RoomRecord,
+  ): GoMessageDescriptor | null {
+    if (
+      !this.nigiri.requiresDigitalNigiri(room.nextMatchSettings) ||
+      room.nigiri ||
+      room.rematch ||
+      room.autoStartBlockedUntilSeatChange ||
+      (room.match && room.match.state.phase !== 'finished')
+    ) {
+      return null;
+    }
+
+    if (!this.ensureDirectGoSeats(room)) {
+      return null;
+    }
+
+    return this.nigiri.maybeBeginDigitalNigiri(room);
+  }
+
+  private ensureDirectGoSeats(room: RoomRecord): boolean {
+    const black = this.store.getSeatHolder(room, 'black');
+    const white = this.store.getSeatHolder(room, 'white');
+
+    if (black && white) {
+      return true;
+    }
+
+    if (!black && !white) {
+      const host = this.store.getParticipantById(room, room.hostParticipantId);
+      const guest = this.findFirstSeatCandidate(room, host.id);
+
+      if (!guest) {
+        return false;
+      }
+
+      host.seat = 'black';
+      guest.seat = 'white';
+      return true;
+    }
+
+    if (!black && white) {
+      const candidate = this.findFirstSeatCandidate(room, white.id);
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.seat = 'black';
+      return true;
+    }
+
+    if (black && !white) {
+      const candidate = this.findFirstSeatCandidate(room, black.id);
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.seat = 'white';
+      return true;
+    }
+
+    return false;
+  }
+
+  private findFirstSeatCandidate(
+    room: RoomRecord,
+    excludedParticipantId: string,
+  ): ParticipantRecord | null {
+    return (
+      [...room.participants.values()].find(
+        (participant) =>
+          participant.id !== excludedParticipantId && !participant.seat,
+      ) ?? null
+    );
   }
 }

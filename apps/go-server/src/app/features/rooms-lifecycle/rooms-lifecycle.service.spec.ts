@@ -41,6 +41,82 @@ describe('RoomsLifecycleService', () => {
     });
   });
 
+  it('starts Go nigiri as soon as the host and guest have joined', () => {
+    const host = lifecycle.createRoom('Host', 'create:test');
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    expect(guest.snapshot.match).toBeNull();
+    expect(guest.snapshot.seatState).toEqual({
+      black: host.participantId,
+      white: guest.participantId,
+    });
+    expect(guest.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+  });
+
+  it('returns a realtime notice when direct Go nigiri starts from a join mutation', () => {
+    const host = lifecycle.createRoom('Host', 'create:test');
+    const guest = lifecycle.joinRoomMutation(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    expect(guest.response.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(guest.notice).toBeDefined();
+    expect(guest.notice?.message.key).toBe('room.notice.nigiri_started');
+    expect(guest.notice?.message.params).toEqual({
+      player: { key: 'common.player.white' },
+    });
+  });
+
+  it('leaves Gomoku rooms unseated on join', () => {
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    expect(guest.snapshot.match).toBeNull();
+    expect(guest.snapshot.nigiri).toBeNull();
+    expect(guest.snapshot.seatState).toEqual({
+      black: null,
+      white: null,
+    });
+  });
+
+  it('does not return a realtime notice for Gomoku join mutations', () => {
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    const guest = lifecycle.joinRoomMutation(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    expect(guest.notice).toBeUndefined();
+    expect(guest.response.snapshot.nigiri).toBeNull();
+  });
+
   describe('createRoom throttling', () => {
     const requesterKey = 'create:throttle-test';
 

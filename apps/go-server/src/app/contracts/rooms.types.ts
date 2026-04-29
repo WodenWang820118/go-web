@@ -4,6 +4,7 @@ import {
   HostedMatchSnapshot,
   HostedNigiriSnapshot,
   HostedRematchState,
+  JoinRoomResponse,
   NigiriGuess,
   RoomClosedEvent,
   RoomSnapshot,
@@ -53,6 +54,11 @@ export interface SocketIndexEntry {
 
 export interface MutationResult {
   snapshot: RoomSnapshot;
+  notice?: SystemNotice;
+}
+
+export interface JoinRoomMutationResult {
+  response: JoinRoomResponse;
   notice?: SystemNotice;
 }
 

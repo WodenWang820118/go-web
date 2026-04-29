@@ -29,7 +29,10 @@ describe('rooms services composition', () => {
   });
 
   it('auto-starts once both seats are filled and uses the saved next-match settings', () => {
-    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = context.lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -71,12 +74,7 @@ describe('rooms services composition', () => {
       'join:test',
     );
 
-    context.match.claimSeat(host.roomId, host.participantToken, 'black');
-    const pending = context.match.claimSeat(
-      host.roomId,
-      guest.participantToken,
-      'white',
-    );
+    const pending = guest;
     const room = context.store.getRoomRecord(host.roomId);
 
     expect(pending.snapshot.match).toBeNull();
@@ -128,12 +126,7 @@ describe('rooms services composition', () => {
       'join:test',
     );
 
-    context.match.claimSeat(host.roomId, host.participantToken, 'black');
-    const pending = context.match.claimSeat(
-      host.roomId,
-      guest.participantToken,
-      'white',
-    );
+    const pending = guest;
     const duplicateStart = context.match.startMatch(
       host.roomId,
       host.participantToken,
@@ -161,7 +154,10 @@ describe('rooms services composition', () => {
   });
 
   it('rejects game commands from spectators', () => {
-    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = context.lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -191,7 +187,10 @@ describe('rooms services composition', () => {
   });
 
   it('preserves hosted match state when a guest reconnects with the same token', () => {
-    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = context.lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -304,7 +303,14 @@ describe('rooms services composition', () => {
 
     try {
       vi.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
-      const liveHost = context.lifecycle.createRoom('Host Live', 'create:live');
+      const liveHost = context.lifecycle.createRoom(
+        'Host Live',
+        'create:live',
+        {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
+      );
       context.lifecycle.connectParticipantSocket(
         liveHost.roomId,
         liveHost.participantToken,
@@ -346,6 +352,10 @@ describe('rooms services composition', () => {
       const readyHost = context.lifecycle.createRoom(
         'Host Ready',
         'create:ready',
+        {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
       );
       context.lifecycle.connectParticipantSocket(
         readyHost.roomId,
@@ -542,7 +552,10 @@ describe('rooms services composition', () => {
   });
 
   it('prevents seat changes while a hosted match is active', () => {
-    const host = context.lifecycle.createRoom('Host', 'create:test');
+    const host = context.lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = context.lifecycle.joinRoom(
       host.roomId,
       'Guest',
