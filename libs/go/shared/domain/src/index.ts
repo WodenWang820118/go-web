@@ -7,6 +7,8 @@ export * from './lib/board/point-utils';
 export * from './lib/board/winning-line';
 export * from './lib/metadata/game-mode-meta';
 export * from './lib/time-control/byo-yomi-clock';
+export * from './lib/time-control/time-control-clock';
+export * from './lib/time-control/time-control-presets';
 export * from './lib/rules/rules-engine';
 export * from './lib/engines/go-rules-engine';
 export * from './lib/engines/gomoku-rules-engine';

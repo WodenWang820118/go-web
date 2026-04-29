@@ -27,7 +27,29 @@ export interface ByoYomiTimeControl {
   periods: number;
 }
 
-export type TimeControlSettings = ByoYomiTimeControl;
+export interface FischerTimeControl {
+  type: 'fischer';
+  mainTimeMs: number;
+  incrementMs: number;
+}
+
+export interface CanadianTimeControl {
+  type: 'canadian';
+  mainTimeMs: number;
+  periodTimeMs: number;
+  stonesPerPeriod: number;
+}
+
+export interface AbsoluteTimeControl {
+  type: 'absolute';
+  mainTimeMs: number;
+}
+
+export type TimeControlSettings =
+  | ByoYomiTimeControl
+  | FischerTimeControl
+  | CanadianTimeControl
+  | AbsoluteTimeControl;
 
 export interface GoMessageDescriptor {
   key: string;
@@ -153,12 +175,15 @@ export const GO_DIGITAL_NIGIRI_OPENING: GameOpeningRule = 'digital-nigiri';
 
 export const GOMOKU_FREE_OPENING: GameOpeningRule = 'free-opening';
 
-export const DEFAULT_HOSTED_BYO_YOMI: ByoYomiTimeControl = {
+export const DEFAULT_GO_TIME_CONTROL: ByoYomiTimeControl = {
   type: 'byo-yomi',
-  mainTimeMs: 10 * 60 * 1000,
+  mainTimeMs: 30 * 60 * 1000,
   periodTimeMs: 30 * 1000,
-  periods: 5,
+  periods: 3,
 };
+
+export const DEFAULT_HOSTED_BYO_YOMI: ByoYomiTimeControl =
+  DEFAULT_GO_TIME_CONTROL;
 
 export function createMessage(
   key: string,
