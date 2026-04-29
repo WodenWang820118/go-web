@@ -13,12 +13,9 @@ import type {
   HostedClockPlayerSnapshot,
   HostedMatchSnapshot,
 } from '@gx/go/contracts';
-import {
-  consumeTimeControlElapsed,
-  getTimeControlRemainingMs,
-  type PlayerColor,
-} from '@gx/go/domain';
+import { consumeTimeControlElapsed, type PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
+import { formatTimeControlClockPlayer } from '../../../../../../shared/time-control/time-control-presentation';
 import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-card/online-room-sidebar-seat-card.component';
 
@@ -99,9 +96,8 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
       return null;
     }
 
-    return this.formatClockMs(
-      getTimeControlRemainingMs(clock.player, clock.config),
-    );
+    return formatTimeControlClockPlayer(clock.player, clock.config, this.i18n)
+      .label;
   }
 
   protected clockDetailLabel(color: PlayerColor): string | null {
@@ -111,28 +107,8 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
       return null;
     }
 
-    switch (clock.player.type) {
-      case 'byo-yomi':
-        return clock.player.mainTimeMs > 0
-          ? this.i18n.t('room.clock.main')
-          : this.i18n.t('room.clock.byo_yomi_periods', {
-              count: clock.player.periodsRemaining,
-            });
-      case 'fischer':
-        return this.i18n.t('room.clock.fischer_increment', {
-          increment: this.formatClockMs(
-            clock.config.type === 'fischer' ? clock.config.incrementMs : 0,
-          ),
-        });
-      case 'canadian':
-        return clock.player.mainTimeMs > 0
-          ? this.i18n.t('room.clock.main')
-          : this.i18n.t('room.clock.canadian_stones', {
-              count: clock.player.stonesRemaining,
-            });
-      case 'absolute':
-        return this.i18n.t('room.clock.absolute');
-    }
+    return formatTimeControlClockPlayer(clock.player, clock.config, this.i18n)
+      .detail;
   }
 
   private clockView(color: PlayerColor): {
@@ -188,13 +164,5 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
 
     clearInterval(this.clockTimer);
     this.clockTimer = null;
-  }
-
-  private formatClockMs(milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   computed,
   effect,
   inject,
@@ -14,6 +15,9 @@ import {
   type GoMessageDescriptor,
   type BoardPoint,
   type PlayerColor,
+  consumeTimeControlElapsed,
+  type TimeControlClockState,
+  type TimeControlPlayerClockState,
 } from '@gx/go/domain';
 import { GoAnalyticsMatchActionType, GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -24,6 +28,7 @@ import {
   StoneBadgeComponent,
 } from '@gx/go/ui';
 import { map } from 'rxjs';
+import { formatTimeControlClockPlayer } from '../../shared/time-control/time-control-presentation';
 import { GoLocalMatchAnalyticsService } from './services/go-local-match-analytics.service';
 
 interface ConfirmationCopy {
@@ -43,6 +48,14 @@ interface PlayBanner {
   detail: string;
 }
 
+interface LocalClockView {
+  color: PlayerColor;
+  detail: string;
+  isActive: boolean;
+  label: string;
+  playerName: string;
+}
+
 @Component({
   selector: 'lib-go-play-page',
   standalone: true,
@@ -58,7 +71,7 @@ interface PlayBanner {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [GoLocalMatchAnalyticsService],
 })
-export class PlayPageComponent {
+export class PlayPageComponent implements OnDestroy {
   protected readonly i18n = inject(GoI18nService);
   protected readonly store = inject(GameSessionStore);
   protected readonly helpVisible = signal(false);
@@ -67,6 +80,16 @@ export class PlayPageComponent {
     null,
   );
   protected readonly banner = signal<PlayBanner | null>(null);
+  private readonly now = signal(Date.now());
+  private clockTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly clockTickerEffect = effect(() => {
+    if (this.hasTickingClock()) {
+      this.startClockTimer();
+      return;
+    }
+
+    this.stopClockTimer();
+  });
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -88,6 +111,32 @@ export class PlayPageComponent {
   });
   protected readonly settings = this.store.settings;
   protected readonly state = this.store.state;
+  protected readonly localClockViews = computed<LocalClockView[]>(() => {
+    const snapshot = this.store.snapshot();
+
+    if (!snapshot?.clock) {
+      return [];
+    }
+
+    return (['black', 'white'] as const).map((color) => {
+      const player = this.getProjectedClockPlayer(snapshot.clock!, color);
+      const display = formatTimeControlClockPlayer(
+        player,
+        snapshot.clock!.config,
+        this.i18n,
+      );
+
+      return {
+        color,
+        detail: display.detail,
+        isActive:
+          snapshot.state.phase === 'playing' &&
+          snapshot.clock!.activeColor === color,
+        label: display.label,
+        playerName: snapshot.settings.players[color],
+      };
+    });
+  });
   protected readonly lastPlacedPoint = computed(() => {
     const command = this.state()?.lastMove?.command;
     return command?.type === 'place' ? command.point : null;
@@ -123,6 +172,10 @@ export class PlayPageComponent {
         this.resultVisible.set(true);
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.stopClockTimer();
   }
 
   protected onBoardPoint(point: BoardPoint): void {
@@ -269,5 +322,52 @@ export class PlayPageComponent {
       game_mode: this.settings()?.mode ?? this.mode() ?? undefined,
       play_context: 'local',
     });
+  }
+
+  private getProjectedClockPlayer(
+    clock: TimeControlClockState,
+    color: PlayerColor,
+  ): TimeControlPlayerClockState {
+    const player = clock.players[color];
+    const snapshot = this.store.snapshot();
+
+    if (
+      !snapshot ||
+      snapshot.state.phase !== 'playing' ||
+      clock.activeColor !== color
+    ) {
+      return player;
+    }
+
+    return consumeTimeControlElapsed(
+      player,
+      clock.config,
+      Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
+    );
+  }
+
+  private hasTickingClock(): boolean {
+    const snapshot = this.store.snapshot();
+
+    return !!snapshot?.clock && snapshot.state.phase === 'playing';
+  }
+
+  private startClockTimer(): void {
+    if (this.clockTimer) {
+      return;
+    }
+
+    this.clockTimer = setInterval(() => {
+      this.now.set(Date.now());
+    }, 1000);
+  }
+
+  private stopClockTimer(): void {
+    if (!this.clockTimer) {
+      return;
+    }
+
+    clearInterval(this.clockTimer);
+    this.clockTimer = null;
   }
 }

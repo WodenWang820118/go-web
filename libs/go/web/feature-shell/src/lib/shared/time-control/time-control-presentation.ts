@@ -2,7 +2,9 @@ import {
   OFFICIAL_GO_TIME_CONTROL_PRESETS,
   areTimeControlSettingsEqual,
   cloneTimeControlSettings,
+  getTimeControlRemainingMs,
   type OfficialGoTimeControlPreset,
+  type TimeControlPlayerClockState,
   type TimeControlPresetSystem,
   type TimeControlSettings,
 } from '@gx/go/domain';
@@ -20,6 +22,11 @@ export interface TimeControlPresetGroup {
   readonly system: TimeControlPresetSystem;
   readonly label: string;
   readonly options: readonly TimeControlPresetOption[];
+}
+
+export interface TimeControlClockPlayerDisplay {
+  readonly label: string;
+  readonly detail: string;
 }
 
 const SYSTEM_ORDER: readonly TimeControlPresetSystem[] = [
@@ -106,6 +113,25 @@ export function formatTimeControlDuration(
   });
 }
 
+export function formatTimeControlClockPlayer(
+  player: TimeControlPlayerClockState,
+  config: TimeControlSettings,
+  i18n: GoI18nService,
+): TimeControlClockPlayerDisplay {
+  return {
+    label: formatTimeControlClockMs(getTimeControlRemainingMs(player, config)),
+    detail: getTimeControlClockDetail(player, config, i18n),
+  };
+}
+
+export function formatTimeControlClockMs(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 function toPresetOption(
   preset: OfficialGoTimeControlPreset,
   i18n: GoI18nService,
@@ -117,4 +143,33 @@ function toPresetOption(
     summary: summarizeTimeControl(preset.settings, i18n),
     settings: cloneTimeControlSettings(preset.settings),
   };
+}
+
+function getTimeControlClockDetail(
+  player: TimeControlPlayerClockState,
+  config: TimeControlSettings,
+  i18n: GoI18nService,
+): string {
+  switch (player.type) {
+    case 'byo-yomi':
+      return player.mainTimeMs > 0
+        ? i18n.t('room.clock.main')
+        : i18n.t('room.clock.byo_yomi_periods', {
+            count: player.periodsRemaining,
+          });
+    case 'fischer':
+      return i18n.t('room.clock.fischer_increment', {
+        increment: formatTimeControlClockMs(
+          config.type === 'fischer' ? config.incrementMs : 0,
+        ),
+      });
+    case 'canadian':
+      return player.mainTimeMs > 0
+        ? i18n.t('room.clock.main')
+        : i18n.t('room.clock.canadian_stones', {
+            count: player.stonesRemaining,
+          });
+    case 'absolute':
+      return i18n.t('room.clock.absolute');
+  }
 }
