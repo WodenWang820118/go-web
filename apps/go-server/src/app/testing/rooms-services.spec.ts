@@ -4,7 +4,6 @@ import {
   HttpException,
 } from '@nestjs/common';
 import {
-  DEFAULT_HOSTED_BYO_YOMI,
   GO_AREA_AGREEMENT_RULESET,
   GO_DIGITAL_NIGIRI_OPENING,
   GOMOKU_FREE_OPENING,
@@ -55,7 +54,7 @@ describe('rooms services composition', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
     expect(started.snapshot.match?.state.phase).toBe('playing');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');
@@ -88,7 +87,12 @@ describe('rooms services composition', () => {
       mode: 'go',
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: {
+        type: 'byo-yomi',
+        mainTimeMs: 30 * 60 * 1000,
+        periodTimeMs: 30 * 1000,
+        periods: 3,
+      },
     });
 
     room.nigiriSecret = {

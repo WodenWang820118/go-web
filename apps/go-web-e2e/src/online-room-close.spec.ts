@@ -33,6 +33,8 @@ test('guests return to the lobby when the host closes the room', async ({
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 

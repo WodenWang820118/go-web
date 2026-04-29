@@ -56,6 +56,7 @@ export interface RoomServiceStub {
   roomClosed: StubSignal<RoomClosedState>;
   bootstrapRoom: StubMock;
   joinRoom: StubMock;
+  updateNextMatchSettings: StubMock;
   respondToRematch: StubMock;
   sendGameCommand: StubMock;
   closeRoom: StubMock;

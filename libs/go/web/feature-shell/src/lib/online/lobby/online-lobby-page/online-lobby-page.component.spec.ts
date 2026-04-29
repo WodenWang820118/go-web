@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { DEFAULT_GO_TIME_CONTROL } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state';
 import { throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -92,7 +93,12 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      DEFAULT_GO_TIME_CONTROL,
+    );
     expect(router.url).toBe('/online/room/ROOM42');
   });
 
@@ -116,8 +122,43 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 13);
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      13,
+      DEFAULT_GO_TIME_CONTROL,
+    );
     expect(router.url).toBe('/online/room/ROOM01');
+  });
+
+  it('creates a go room with the selected official time control', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomTimeControl().value = 'aga-canadian-30-20-5';
+    queryCreateRoomTimeControl().dispatchEvent(
+      new Event('change', { bubbles: true }),
+    );
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19, {
+      type: 'canadian',
+      mainTimeMs: 1_800_000,
+      periodTimeMs: 300_000,
+      stonesPerPeriod: 20,
+    });
   });
 
   it('creates a go room with the selected 9-line board size', async () => {
@@ -140,7 +181,12 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 9);
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      9,
+      DEFAULT_GO_TIME_CONTROL,
+    );
     expect(router.url).toBe('/online/room/ROOM01');
   });
 
@@ -203,7 +249,12 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      DEFAULT_GO_TIME_CONTROL,
+    );
   });
 
   it('does not create or navigate when the create-room dialog is canceled', async () => {
@@ -512,7 +563,12 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19);
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      DEFAULT_GO_TIME_CONTROL,
+    );
     expect(
       harness.routeNativeElement?.querySelector(
         '[data-testid="lobby-message-rail"]',
@@ -691,4 +747,10 @@ function queryCreateRoomFixedBoardSize(): HTMLElement | null {
   return document.body.querySelector(
     '[data-testid="lobby-create-board-size-fixed"]',
   );
+}
+
+function queryCreateRoomTimeControl(): HTMLSelectElement {
+  return document.body.querySelector(
+    '[data-testid="time-control-preset-select"]',
+  ) as HTMLSelectElement;
 }

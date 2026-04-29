@@ -129,6 +129,12 @@
                   </p>
                 </fieldset>
 
+                <lib-go-time-control-preset-selector
+                  controlId="setup-time-control-preset"
+                  [selected]="selectedTimeControl()"
+                  (selectionChange)="selectTimeControl($event)"
+                />
+
                 <fieldset
                   class="space-y-3 rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-4"
                   data-testid="setup-nigiri-fieldset"

@@ -1,4 +1,5 @@
 import { APIResponse, expect, Page, Request } from '@playwright/test';
+import { DEFAULT_GO_TIME_CONTROL } from '@gx/go/domain';
 
 const goServerOrigin = (
   process.env['GO_SERVER_ORIGIN'] || 'http://127.0.0.1:3000'
@@ -121,11 +122,21 @@ export async function createHostedRoom(
     requestBody,
     'Expected create-room request to include a JSON body.',
   ).not.toBeNull();
-  expect(requestBody).toEqual({
-    displayName,
-    mode,
-    boardSize,
-  });
+  const expectedRequestBody =
+    mode === 'go'
+      ? {
+          displayName,
+          mode,
+          boardSize,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+        }
+      : {
+          displayName,
+          mode,
+          boardSize,
+        };
+
+  expect(requestBody).toEqual(expectedRequestBody);
 
   expect(
     payload,
@@ -196,6 +207,7 @@ function readCreateRoomRequestBody(request: Request): {
   displayName?: unknown;
   mode?: unknown;
   boardSize?: unknown;
+  timeControl?: unknown;
 } | null {
   const rawBody = request.postData();
 
@@ -208,6 +220,7 @@ function readCreateRoomRequestBody(request: Request): {
       displayName?: unknown;
       mode?: unknown;
       boardSize?: unknown;
+      timeControl?: unknown;
     };
   } catch {
     return null;

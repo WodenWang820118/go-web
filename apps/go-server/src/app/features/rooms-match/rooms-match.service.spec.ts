@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import {
-  DEFAULT_HOSTED_BYO_YOMI,
   GOMOKU_FREE_OPENING,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
 } from '@gx/go/domain';
@@ -61,7 +60,7 @@ describe('RoomsMatchService', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
     expect(started.snapshot.match?.settings.mode).toBe('gomoku');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');

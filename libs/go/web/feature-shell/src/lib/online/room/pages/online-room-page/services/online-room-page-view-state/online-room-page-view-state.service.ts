@@ -100,6 +100,34 @@ export class OnlineRoomPageViewStateService {
       this.match()?.settings.mode === 'go' &&
       this.match()?.state.phase === 'scoring',
   );
+  readonly nextMatchSettingsLockedReason = computed(() => {
+    const snapshot = this.snapshot();
+    const match = this.match();
+
+    if (!snapshot) {
+      return null;
+    }
+
+    if (snapshot.rematch) {
+      return this.i18n.t('room.next_match.locked.rematch');
+    }
+
+    if (match && match.state.phase !== 'finished') {
+      return this.i18n.t('room.next_match.locked.live');
+    }
+
+    if (snapshot.seatState.black && snapshot.seatState.white) {
+      return this.i18n.t('room.next_match.locked.filled');
+    }
+
+    return null;
+  });
+  readonly canEditNextMatchSettings = computed(
+    () =>
+      this.onlineRoom.isHost() &&
+      this.realtimeConnected() &&
+      this.nextMatchSettingsLockedReason() === null,
+  );
   readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
     this.presentation.findRoomRematchViewerSeat(
       this.onlineRoom.participantId(),

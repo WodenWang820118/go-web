@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_TIME_CONTROL,
   GO_AREA_AGREEMENT_RULESET,
   GOMOKU_BOARD_SIZE,
   GO_DIGITAL_NIGIRI_OPENING,
@@ -129,7 +130,7 @@ describe('SetupPageComponent', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
-      timeControl: null,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
       players: {
         black: 'Ren',
         white: 'Aki',
@@ -166,6 +167,40 @@ describe('SetupPageComponent', () => {
     await harness.fixture.whenStable();
 
     expect(store.startMatch).not.toHaveBeenCalled();
+  });
+
+  it('starts a go match with the selected official time control', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const root = harness.routeNativeElement as HTMLElement;
+    const timeControlSelect = root.querySelector(
+      '[data-testid="time-control-preset-select"]',
+    ) as HTMLSelectElement;
+    const nigiriOddButton = root.querySelector(
+      '[data-testid="setup-nigiri-odd-button"]',
+    ) as HTMLButtonElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    timeControlSelect.value = 'aga-open-fischer-60-20';
+    timeControlSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    nigiriOddButton.click();
+    await harness.fixture.whenStable();
+
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(store.startMatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeControl: {
+          type: 'fischer',
+          mainTimeMs: 3_600_000,
+          incrementMs: 20_000,
+        },
+      }),
+    );
   });
 
   it('keeps original go player order when the nigiri guess fails', async () => {

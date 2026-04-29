@@ -3,7 +3,14 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { boardHash, cloneBoard, createBoard, setCell } from '@gx/go/domain';
+import {
+  boardHash,
+  cloneBoard,
+  createBoard,
+  DEFAULT_GO_TIME_CONTROL,
+  setCell,
+  type TimeControlSettings,
+} from '@gx/go/domain';
 import { vi } from 'vitest';
 import type {
   ParticipantRecord,
@@ -88,7 +95,7 @@ describe('rooms-match-transitions', () => {
         .mockReturnValueOnce('2026-04-20T00:00:05.000Z')
         .mockReturnValueOnce('2026-04-20T00:00:05.000Z');
 
-      startTimedGomokuMatch(room, dependencies);
+      startTimedGoMatch(room, dependencies);
       applyHostedGameCommand(
         room,
         host,
@@ -101,14 +108,16 @@ describe('rooms-match-transitions', () => {
         lastStartedAt: '2026-04-20T00:00:05.000Z',
         players: {
           black: {
-            mainTimeMs: 5_000,
+            type: 'byo-yomi',
+            mainTimeMs: 30 * 60 * 1000 - 5_000,
             periodTimeMs: 30_000,
-            periodsRemaining: 5,
+            periodsRemaining: 3,
           },
           white: {
-            mainTimeMs: 10_000,
+            type: 'byo-yomi',
+            mainTimeMs: 30 * 60 * 1000,
             periodTimeMs: 30_000,
-            periodsRemaining: 5,
+            periodsRemaining: 3,
           },
         },
       });
@@ -118,12 +127,11 @@ describe('rooms-match-transitions', () => {
       const { room, host, guest } = createRoomWithSeatedPlayers(store);
       vi.spyOn(store, 'timestamp')
         .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
-        .mockReturnValueOnce('2026-04-20T00:00:04.000Z');
+        .mockReturnValueOnce('2026-04-20T00:10:00.000Z');
 
-      startTimedGomokuMatch(room, dependencies, {
-        mainTimeMs: 3_000,
-        periodTimeMs: 1_000,
-        periods: 1,
+      startTimedGoMatch(room, dependencies, {
+        type: 'absolute',
+        mainTimeMs: 10 * 60 * 1000,
       });
       applyHostedGameCommand(
         room,
@@ -157,13 +165,12 @@ describe('rooms-match-transitions', () => {
       const { room, host } = createRoomWithSeatedPlayers(store);
       vi.spyOn(store, 'timestamp')
         .mockReturnValueOnce('2026-04-20T00:00:00.000Z')
-        .mockReturnValueOnce('2026-04-20T00:00:03.999Z')
-        .mockReturnValueOnce('2026-04-20T00:00:03.999Z');
+        .mockReturnValueOnce('2026-04-20T00:09:59.999Z')
+        .mockReturnValueOnce('2026-04-20T00:09:59.999Z');
 
-      startTimedGomokuMatch(room, dependencies, {
-        mainTimeMs: 3_000,
-        periodTimeMs: 1_000,
-        periods: 1,
+      startTimedGoMatch(room, dependencies, {
+        type: 'absolute',
+        mainTimeMs: 10 * 60 * 1000,
       });
       applyHostedGameCommand(
         room,
@@ -177,12 +184,11 @@ describe('rooms-match-transitions', () => {
       expect(room.match?.state.nextPlayer).toBe('white');
       expect(room.match?.clock).toMatchObject({
         activeColor: 'white',
-        lastStartedAt: '2026-04-20T00:00:03.999Z',
+        lastStartedAt: '2026-04-20T00:09:59.999Z',
         players: {
           black: {
-            mainTimeMs: 0,
-            periodTimeMs: 1_000,
-            periodsRemaining: 1,
+            type: 'absolute',
+            remainingMs: 1,
           },
         },
       });
@@ -1135,27 +1141,6 @@ function startGomokuMatch(
   );
 }
 
-function startTimedGomokuMatch(
-  room: RoomRecord,
-  dependencies: RoomsMatchTransitionDependencies,
-  timeControl = {
-    mainTimeMs: 10_000,
-    periodTimeMs: 30_000,
-    periods: 5,
-  },
-): void {
-  startMatchWithCurrentSeats(
-    room,
-    {
-      mode: 'gomoku',
-      boardSize: 15,
-      komi: 0,
-      timeControl,
-    },
-    dependencies,
-  );
-}
-
 function startGoMatch(
   room: RoomRecord,
   dependencies: RoomsMatchTransitionDependencies,
@@ -1174,6 +1159,7 @@ function startGoMatch(
 function startTimedGoMatch(
   room: RoomRecord,
   dependencies: RoomsMatchTransitionDependencies,
+  timeControl: TimeControlSettings = DEFAULT_GO_TIME_CONTROL,
 ): void {
   startMatchWithCurrentSeats(
     room,
@@ -1181,11 +1167,7 @@ function startTimedGoMatch(
       mode: 'go',
       boardSize: 9,
       komi: 6.5,
-      timeControl: {
-        mainTimeMs: 60_000,
-        periodTimeMs: 30_000,
-        periods: 5,
-      },
+      timeControl,
     },
     dependencies,
   );

@@ -11,6 +11,7 @@ describe('rooms-match-clock', () => {
 
     expect(clock).toEqual({
       config: {
+        type: 'byo-yomi',
         mainTimeMs: 10_000,
         periodTimeMs: 30_000,
         periods: 5,
@@ -20,11 +21,13 @@ describe('rooms-match-clock', () => {
       revision: 0,
       players: {
         black: {
+          type: 'byo-yomi',
           mainTimeMs: 10_000,
           periodTimeMs: 30_000,
           periodsRemaining: 5,
         },
         white: {
+          type: 'byo-yomi',
           mainTimeMs: 10_000,
           periodTimeMs: 30_000,
           periodsRemaining: 5,
@@ -55,6 +58,7 @@ describe('rooms-match-clock', () => {
 
     expect(advanced.timedOutColor).toBeNull();
     expect(advanced.clock.players.black).toEqual({
+      type: 'byo-yomi',
       mainTimeMs: 0,
       periodTimeMs: 29_000,
       periodsRemaining: 5,
@@ -75,6 +79,7 @@ describe('rooms-match-clock', () => {
 
     expect(advanced.timedOutColor).toBeNull();
     expect(advanced.clock.players.black).toEqual({
+      type: 'byo-yomi',
       mainTimeMs: 0,
       periodTimeMs: 29_000,
       periodsRemaining: 4,
@@ -94,6 +99,7 @@ describe('rooms-match-clock', () => {
 
     expect(advanced.timedOutColor).toBe('black');
     expect(advanced.clock.players.black).toEqual({
+      type: 'byo-yomi',
       mainTimeMs: 0,
       periodTimeMs: 0,
       periodsRemaining: 0,
@@ -115,6 +121,7 @@ describe('rooms-match-clock', () => {
 
     expect(nextClock.activeColor).toBe('white');
     expect(nextClock.players.black).toEqual({
+      type: 'byo-yomi',
       mainTimeMs: 0,
       periodTimeMs: 30_000,
       periodsRemaining: 3,
@@ -150,6 +157,105 @@ describe('rooms-match-clock', () => {
       activeColor: 'white',
       lastStartedAt: '2026-04-20T00:00:10.000Z',
       revision: clock.revision + 1,
+    });
+  });
+
+  it('adds Fischer increment after a hosted legal move', () => {
+    const clock = calculator.createHostedClock(
+      {
+        ...testSettings(),
+        timeControl: {
+          type: 'fischer',
+          mainTimeMs: 10_000,
+          incrementMs: 2_000,
+        },
+      },
+      startedAt,
+    );
+
+    if (!clock) {
+      throw new Error('Expected Fischer settings to create a hosted clock.');
+    }
+
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:00:03.000Z',
+    );
+    const completed = calculator.completeHostedClockTurn(
+      advanced.clock,
+      'white',
+      'playing',
+      '2026-04-20T00:00:03.000Z',
+    );
+
+    expect(completed.players.black).toEqual({
+      type: 'fischer',
+      remainingMs: 9_000,
+    });
+  });
+
+  it('tracks Canadian stones in hosted overtime', () => {
+    const clock = calculator.createHostedClock(
+      {
+        ...testSettings(),
+        timeControl: {
+          type: 'canadian',
+          mainTimeMs: 1_000,
+          periodTimeMs: 5_000,
+          stonesPerPeriod: 2,
+        },
+      },
+      startedAt,
+    );
+
+    if (!clock) {
+      throw new Error('Expected Canadian settings to create a hosted clock.');
+    }
+
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:00:02.000Z',
+    );
+    const completed = calculator.completeHostedClockTurn(
+      advanced.clock,
+      'white',
+      'playing',
+      '2026-04-20T00:00:02.000Z',
+    );
+
+    expect(completed.players.black).toEqual({
+      type: 'canadian',
+      mainTimeMs: 0,
+      periodTimeMs: 4_000,
+      stonesRemaining: 1,
+    });
+  });
+
+  it('times out absolute hosted clocks', () => {
+    const clock = calculator.createHostedClock(
+      {
+        ...testSettings(),
+        timeControl: {
+          type: 'absolute',
+          mainTimeMs: 10_000,
+        },
+      },
+      startedAt,
+    );
+
+    if (!clock) {
+      throw new Error('Expected absolute settings to create a hosted clock.');
+    }
+
+    const advanced = calculator.advanceHostedClock(
+      clock,
+      '2026-04-20T00:00:10.000Z',
+    );
+
+    expect(advanced.timedOutColor).toBe('black');
+    expect(advanced.clock.players.black).toEqual({
+      type: 'absolute',
+      remainingMs: 0,
     });
   });
 
@@ -192,6 +298,7 @@ describe('rooms-match-clock', () => {
         white: 'White',
       },
       timeControl: {
+        type: 'byo-yomi',
         mainTimeMs: 10_000,
         periodTimeMs: 30_000,
         periods: 5,
@@ -215,6 +322,7 @@ describe('rooms-match-clock', () => {
   }): HostedClockSnapshot {
     return {
       config: {
+        type: 'byo-yomi',
         mainTimeMs: 10_000,
         periodTimeMs: 30_000,
         periods: 5,
@@ -224,10 +332,12 @@ describe('rooms-match-clock', () => {
       revision: 1,
       players: {
         black: {
+          type: 'byo-yomi',
           mainTimeMs: 0,
           ...player,
         },
         white: {
+          type: 'byo-yomi',
           mainTimeMs: 10_000,
           periodTimeMs: 30_000,
           periodsRemaining: 5,
