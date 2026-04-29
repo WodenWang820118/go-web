@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { LobbyRoomSummary } from '@gx/go/contracts';
-import type { BoardSize, GameMode, TimeControlSettings } from '@gx/go/domain';
+import type {
+  BoardSize,
+  GameMode,
+  GoRuleOptions,
+  TimeControlSettings,
+} from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { EMPTY, catchError, from, switchMap, take } from 'rxjs';
 import { OnlineRoomService } from '../../../room/services/online-room/online-room.service';
@@ -17,11 +22,18 @@ export class OnlineLobbyRoomNavigationService {
     mode: GameMode,
     boardSize: BoardSize,
     timeControl?: TimeControlSettings | null,
+    goRules?: GoRuleOptions,
   ): void {
     const createRoom$ =
-      timeControl === undefined
+      timeControl === undefined && goRules === undefined
         ? this.onlineRoom.createRoom(displayName, mode, boardSize)
-        : this.onlineRoom.createRoom(displayName, mode, boardSize, timeControl);
+        : this.onlineRoom.createRoom(
+            displayName,
+            mode,
+            boardSize,
+            timeControl,
+            goRules,
+          );
 
     createRoom$
       .pipe(

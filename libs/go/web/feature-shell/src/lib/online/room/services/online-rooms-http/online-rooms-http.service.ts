@@ -10,7 +10,12 @@ import {
   ListRoomsResponse,
 } from '@gx/go/contracts';
 import { isMessageDescriptor } from '@gx/go/domain';
-import type { BoardSize, GameMode, TimeControlSettings } from '@gx/go/domain';
+import type {
+  BoardSize,
+  GameMode,
+  GoRuleOptions,
+  TimeControlSettings,
+} from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GO_SERVER_ORIGIN } from '@gx/go/state/server-origin';
 import { Observable } from 'rxjs';
@@ -38,6 +43,7 @@ export class OnlineRoomsHttpService {
     mode: GameMode,
     boardSize: BoardSize,
     timeControl?: TimeControlSettings | null,
+    goRules?: GoRuleOptions,
   ): Observable<CreateRoomResponse> {
     const body: CreateRoomRequest = {
       displayName,
@@ -47,6 +53,10 @@ export class OnlineRoomsHttpService {
 
     if (timeControl !== undefined) {
       body.timeControl = timeControl;
+    }
+
+    if (goRules !== undefined) {
+      body.goRules = goRules;
     }
 
     return this.http.post<CreateRoomResponse>(this.apiBase, body);

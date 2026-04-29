@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { GoI18nService } from '@gx/go/state';
-import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
+  createMessage,
+} from '@gx/go/domain';
 import { GameBoardComponent } from '@gx/go/ui';
 import {
   createHostedMatch,
@@ -58,6 +62,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
           boardSize: 19,
           komi: 6.5,
           timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: DEFAULT_GO_RULE_OPTIONS,
         },
       }),
       participantId: 'host-1',
@@ -82,6 +87,73 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
           type: 'fischer',
           mainTimeMs: 4_500_000,
           incrementMs: 20_000,
+        },
+      }),
+    );
+  });
+
+  it('lets the host update the next Go match rule options', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        nextMatchSettings: {
+          mode: 'go',
+          boardSize: 19,
+          komi: 6.5,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: DEFAULT_GO_RULE_OPTIONS,
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+    const koRule = root.querySelector(
+      '[data-testid="room-next-match-ko-rule-positional-superko"]',
+    ) as HTMLInputElement;
+    const scoringRule = root.querySelector(
+      '[data-testid="room-next-match-scoring-rule-japanese-territory"]',
+    ) as HTMLInputElement;
+
+    koRule.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.updateNextMatchSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'area',
+        },
+      }),
+    );
+
+    roomService.updateNextMatchSettings.mockClear();
+    roomService.snapshot.set(
+      createSnapshot({
+        nextMatchSettings: {
+          mode: 'go',
+          boardSize: 19,
+          komi: 6.5,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: {
+            koRule: 'positional-superko',
+            scoringRule: 'area',
+          },
+        },
+      }),
+    );
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    scoringRule.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.updateNextMatchSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'japanese-territory',
         },
       }),
     );
@@ -519,7 +591,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
                 whiteStones: 12,
                 blackTerritory: 0,
                 whiteTerritory: 0,
+                blackPrisoners: 0,
+                whitePrisoners: 0,
                 komi: 6.5,
+                scoringRule: 'area',
               },
             },
           }),
@@ -619,7 +694,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
                 whiteStones: 12,
                 blackTerritory: 0,
                 whiteTerritory: 0,
+                blackPrisoners: 0,
+                whitePrisoners: 0,
                 komi: 6.5,
+                scoringRule: 'area',
               },
             },
           }),

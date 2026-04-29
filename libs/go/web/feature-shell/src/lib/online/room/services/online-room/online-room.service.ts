@@ -8,6 +8,7 @@ import {
 import type {
   BoardSize,
   GameMode,
+  GoRuleOptions,
   PlayerColor,
   TimeControlSettings,
 } from '@gx/go/domain';
@@ -71,8 +72,15 @@ export class OnlineRoomService {
     mode: GameMode,
     boardSize: BoardSize,
     timeControl?: TimeControlSettings | null,
+    goRules?: GoRuleOptions,
   ): Observable<CreateRoomResponse> {
-    return this.workflow.createRoom(displayName, mode, boardSize, timeControl);
+    return this.workflow.createRoom(
+      displayName,
+      mode,
+      boardSize,
+      timeControl,
+      goRules,
+    );
   }
 
   joinRoom(

@@ -11,6 +11,7 @@ import {
   MatchSettings,
   MatchState,
   MoveRecord,
+  type GoScoringRule,
   type PlayerColor,
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -85,6 +86,9 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/75">
               {{ i18n.t('ui.match_sidebar.score_preview') }}
             </p>
+            <p class="mt-1 text-xs font-semibold text-amber-50/85">
+              {{ scoringRuleLabel(state()!.scoring!.score.scoringRule) }}
+            </p>
             <div class="mt-3 grid grid-cols-2 gap-3 text-sm text-stone-100">
               <div>
                 <p class="font-semibold">
@@ -109,6 +113,19 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
                 <p>{{ state()!.scoring!.score.white.toFixed(1) }}</p>
               </div>
             </div>
+            @if (state()!.scoring!.score.scoringRule === 'japanese-territory') {
+              <p
+                class="mt-3 rounded-sm border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-stone-100"
+                data-testid="match-sidebar-score-prisoners"
+              >
+                {{
+                  i18n.t('ui.match_sidebar.prisoner_points', {
+                    black: state()!.scoring!.score.blackPrisoners,
+                    white: state()!.scoring!.score.whitePrisoners,
+                  })
+                }}
+              </p>
+            }
           </section>
         }
 
@@ -287,5 +304,9 @@ export class MatchSidebarComponent {
   protected canDisputeScoring(color: PlayerColor): boolean {
     void color;
     return this.canFinalizeScoring();
+  }
+
+  protected scoringRuleLabel(rule: GoScoringRule): string {
+    return this.i18n.t(`go_rules.scoring_rule.${rule.replace('-', '_')}`);
   }
 }

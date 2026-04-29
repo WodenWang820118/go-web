@@ -6,7 +6,11 @@ import {
   HostedMatchSnapshot,
   ParticipantSummary,
 } from '@gx/go/contracts';
-import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
+  createMessage,
+} from '@gx/go/domain';
 import { vi } from 'vitest';
 import { OnlineRoomSidebarComponent } from './online-room-sidebar.component';
 
@@ -54,6 +58,7 @@ describe('OnlineRoomSidebarComponent', () => {
       boardSize: 19,
       komi: 6.5,
       timeControl: DEFAULT_GO_TIME_CONTROL,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
     });
     fixture.componentRef.setInput('isHost', true);
     fixture.componentRef.setInput('canEditNextMatchSettings', true);
@@ -212,6 +217,72 @@ describe('OnlineRoomSidebarComponent', () => {
         },
       }),
     );
+  });
+
+  it('bubbles next-match Go rule changes from the sidebar', async () => {
+    const updateEmit = vi.spyOn(
+      fixture.componentInstance.nextMatchSettingsChange,
+      'emit',
+    );
+    const root = fixture.nativeElement as HTMLElement;
+    const koRule = root.querySelector(
+      '[data-testid="room-next-match-ko-rule-positional-superko"]',
+    ) as HTMLInputElement;
+    const scoringRule = root.querySelector(
+      '[data-testid="room-next-match-scoring-rule-japanese-territory"]',
+    ) as HTMLInputElement;
+
+    koRule.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    scoringRule.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(updateEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'area',
+        },
+      }),
+    );
+    expect(updateEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'basic-ko',
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    );
+  });
+
+  it('keeps next-match Go rule controls disabled while settings are locked', async () => {
+    const updateEmit = vi.spyOn(
+      fixture.componentInstance.nextMatchSettingsChange,
+      'emit',
+    );
+
+    fixture.componentRef.setInput('canEditNextMatchSettings', false);
+    fixture.componentRef.setInput(
+      'nextMatchSettingsLockedReason',
+      'Settings locked',
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const koRule = root.querySelector(
+      '[data-testid="room-next-match-ko-rule-positional-superko"]',
+    ) as HTMLInputElement;
+
+    expect(koRule.disabled).toBe(true);
+
+    koRule.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(updateEmit).not.toHaveBeenCalled();
   });
 
   it('bubbles hosted scoring agreement actions', async () => {

@@ -230,7 +230,10 @@ describe('OnlineRoomService', () => {
     let createdRoomId = '';
 
     service
-      .createRoom('Host', 'go', 13, DEFAULT_GO_TIME_CONTROL)
+      .createRoom('Host', 'go', 13, DEFAULT_GO_TIME_CONTROL, {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      })
       .subscribe((response) => {
         createdRoomId = response.roomId;
       });
@@ -241,6 +244,10 @@ describe('OnlineRoomService', () => {
       mode: 'go',
       boardSize: 13,
       timeControl: DEFAULT_GO_TIME_CONTROL,
+      goRules: {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
     });
     request.flush({
       roomId: 'ROOM42',

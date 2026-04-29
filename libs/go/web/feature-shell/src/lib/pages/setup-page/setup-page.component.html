@@ -129,6 +129,60 @@
                   </p>
                 </fieldset>
 
+                <div class="grid gap-4 md:grid-cols-2">
+                  <fieldset
+                    class="space-y-3"
+                    data-testid="setup-ko-rule-fieldset"
+                  >
+                    <legend class="text-sm font-semibold text-stone-100">
+                      {{ i18n.t('go_rules.ko_rule.title') }}
+                    </legend>
+                    <div class="grid gap-2">
+                      @for (option of koRuleOptions; track option) {
+                        <label
+                          class="flex cursor-pointer items-center gap-3 rounded-sm border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-stone-100 transition has-[:checked]:border-amber-300/40 has-[:checked]:bg-stone-50 has-[:checked]:text-slate-950"
+                        >
+                          <input
+                            type="radio"
+                            class="h-4 w-4 accent-amber-300"
+                            formControlName="koRule"
+                            name="koRule"
+                            [value]="option"
+                            [attr.data-testid]="'setup-ko-rule-' + option"
+                          />
+                          <span>{{ koRuleLabel(option) }}</span>
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
+
+                  <fieldset
+                    class="space-y-3"
+                    data-testid="setup-scoring-rule-fieldset"
+                  >
+                    <legend class="text-sm font-semibold text-stone-100">
+                      {{ i18n.t('go_rules.scoring_rule.title') }}
+                    </legend>
+                    <div class="grid gap-2">
+                      @for (option of scoringRuleOptions; track option) {
+                        <label
+                          class="flex cursor-pointer items-center gap-3 rounded-sm border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-stone-100 transition has-[:checked]:border-amber-300/40 has-[:checked]:bg-stone-50 has-[:checked]:text-slate-950"
+                        >
+                          <input
+                            type="radio"
+                            class="h-4 w-4 accent-amber-300"
+                            formControlName="scoringRule"
+                            name="scoringRule"
+                            [value]="option"
+                            [attr.data-testid]="'setup-scoring-rule-' + option"
+                          />
+                          <span>{{ scoringRuleLabel(option) }}</span>
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
+                </div>
+
                 <lib-go-time-control-preset-selector
                   controlId="setup-time-control-preset"
                   [selected]="selectedTimeControl()"

@@ -11,13 +11,19 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import {
+  DEFAULT_GO_RULE_OPTIONS,
   DEFAULT_GO_TIME_CONTROL,
   GOMOKU_BOARD_SIZE,
   GO_BOARD_SIZES,
+  GO_KO_RULES,
+  GO_SCORING_RULES,
   cloneTimeControlSettings,
   type BoardSize,
   type GameMode,
   type GoBoardSize,
+  type GoKoRule,
+  type GoScoringRule,
+  type GoRuleOptions,
   type TimeControlSettings,
 } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
@@ -72,6 +78,8 @@ export class OnlineLobbyPageComponent {
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
   protected readonly GO_BOARD_SIZES = GO_BOARD_SIZES;
   protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
+  protected readonly koRuleOptions = GO_KO_RULES;
+  protected readonly scoringRuleOptions = GO_SCORING_RULES;
   protected readonly activeStatus = this.activeStatusSignal.asReadonly();
   protected readonly createRoomDialogVisible = signal(false);
   protected readonly createRoomTimeControl = signal<TimeControlSettings>(
@@ -94,6 +102,15 @@ export class OnlineLobbyPageComponent {
     goBoardSize: new FormControl<GoBoardSize>(19, {
       nonNullable: true,
     }),
+    koRule: new FormControl<GoKoRule>(DEFAULT_GO_RULE_OPTIONS.koRule, {
+      nonNullable: true,
+    }),
+    scoringRule: new FormControl<GoScoringRule>(
+      DEFAULT_GO_RULE_OPTIONS.scoringRule,
+      {
+        nonNullable: true,
+      },
+    ),
   });
   private readonly createRoomModeValue = toSignal(
     this.createRoomSettings.controls.mode.valueChanges,
@@ -253,6 +270,7 @@ export class OnlineLobbyPageComponent {
         mode,
         boardSize,
         cloneTimeControlSettings(this.createRoomTimeControl()),
+        this.createGoRuleOptions(),
       );
       return;
     }
@@ -284,5 +302,20 @@ export class OnlineLobbyPageComponent {
     timeControl: TimeControlSettings,
   ): void {
     this.createRoomTimeControl.set(cloneTimeControlSettings(timeControl));
+  }
+
+  protected koRuleLabel(rule: GoKoRule): string {
+    return this.i18n.t(`go_rules.ko_rule.${rule.replace('-', '_')}`);
+  }
+
+  protected scoringRuleLabel(rule: GoScoringRule): string {
+    return this.i18n.t(`go_rules.scoring_rule.${rule.replace('-', '_')}`);
+  }
+
+  private createGoRuleOptions(): GoRuleOptions {
+    return {
+      koRule: this.createRoomSettings.controls.koRule.value,
+      scoringRule: this.createRoomSettings.controls.scoringRule.value,
+    };
   }
 }

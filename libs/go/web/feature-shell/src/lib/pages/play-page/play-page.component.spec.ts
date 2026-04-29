@@ -2,7 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { createMessage, type TimeControlClockState } from '@gx/go/domain';
+import {
+  createMessage,
+  type ScoringState,
+  type TimeControlClockState,
+} from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { GameSessionStore } from '@gx/go/state/session';
@@ -301,6 +305,62 @@ describe('PlayPageComponent', () => {
     }
   });
 
+  it('shows Japanese scoring prisoner points in the local score preview', async () => {
+    const store = createGameSessionStoreStub({
+      phase: 'scoring',
+      scoring: {
+        deadStones: [],
+        territory: [],
+        score: {
+          black: 12,
+          white: 18.5,
+          blackStones: 0,
+          whiteStones: 0,
+          blackTerritory: 9,
+          whiteTerritory: 12,
+          blackPrisoners: 3,
+          whitePrisoners: 0,
+          komi: 6.5,
+          scoringRule: 'japanese-territory',
+        },
+      },
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'play/:mode',
+            component: PlayPageComponent,
+          },
+        ]),
+        {
+          provide: GameSessionStore,
+          useValue: store,
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: createAnalyticsStub(),
+        },
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/play/go', PlayPageComponent);
+    const root = harness.routeNativeElement as HTMLElement;
+    const i18n = TestBed.inject(GoI18nService);
+
+    expect(root.textContent).toContain(
+      i18n.t('go_rules.scoring_rule.japanese_territory'),
+    );
+    expect(root.textContent).toContain(
+      i18n.t('ui.match_sidebar.prisoner_points', {
+        black: 3,
+        white: 0,
+      }),
+    );
+  });
+
   it('clears the local clock ticker on destroy', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-29T00:00:00.000Z'));
@@ -395,6 +455,7 @@ function createGameSessionStoreStub(
   options: {
     clock?: TimeControlClockState | null;
     phase?: 'finished' | 'playing' | 'scoring';
+    scoring?: ScoringState | null;
   } = {},
 ) {
   const settings = signal({
@@ -430,7 +491,7 @@ function createGameSessionStoreStub(
       winner: createMessage('common.player.black'),
       margin: '2.5',
     }),
-    scoring: null,
+    scoring: options.scoring ?? null,
   });
 
   return {

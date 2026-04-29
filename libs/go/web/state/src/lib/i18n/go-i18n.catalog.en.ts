@@ -250,6 +250,13 @@ const EN_LOCAL_UI = {
     'Guess: {{guess}}. Hidden stones: {{parity}}. {{player}} starts as Black.',
   'setup.start_local_match': 'Start local match',
   'setup.rules_refresher': 'Rules refresher',
+  'go_rules.title': 'Go rules',
+  'go_rules.ko_rule.title': 'Ko rule',
+  'go_rules.ko_rule.basic_ko': 'Basic ko',
+  'go_rules.ko_rule.positional_superko': 'Positional superko',
+  'go_rules.scoring_rule.title': 'Scoring',
+  'go_rules.scoring_rule.area': 'Area scoring',
+  'go_rules.scoring_rule.japanese_territory': 'Japanese territory',
   'time_control.title': 'Time control',
   'time_control.selector.legend': 'Official time control',
   'time_control.system.byo-yomi': 'Byo-yomi',
@@ -304,6 +311,8 @@ const EN_LOCAL_UI = {
   'ui.match_sidebar.gomoku_match': 'Gomoku match',
   'ui.match_sidebar.captures': 'Captures: {{count}}',
   'ui.match_sidebar.score_preview': 'Score preview',
+  'ui.match_sidebar.prisoner_points':
+    'Prisoner points: Black +{{black}}, White +{{white}}',
   'ui.match_sidebar.pass': 'Pass',
   'ui.match_sidebar.resign': 'Resign',
   'ui.match_sidebar.confirm_score': '{{player}} confirms',
@@ -460,7 +469,7 @@ const EN_HOSTED_UI = {
   'room.next_match.locked.offline':
     'Reconnect to the room before changing next-match settings.',
   'room.next_match.host_only':
-    'Only the room host can change the next-match time control.',
+    'Only the room host can change the next-match Go rules and time control.',
   'room.rematch.eyebrow': 'Rematch',
   'room.rematch.title': 'Play another one?',
   'room.rematch.description.player':

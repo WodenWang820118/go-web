@@ -458,12 +458,45 @@ describe('OnlineRoomPagePresentationService', () => {
               whiteStones: 12,
               blackTerritory: 0,
               whiteTerritory: 0,
+              blackPrisoners: 0,
+              whitePrisoners: 0,
               komi: 6.5,
+              scoringRule: 'area',
             },
           },
         }),
       ),
-    ).toBe('Score preview: Black Player 12.0, White Player 18.5');
+    ).toBe(
+      'Score preview (Area scoring): Black Player 12.0, White Player 18.5',
+    );
+  });
+
+  it('adds Japanese prisoner points to the scoring status line', () => {
+    expect(
+      service.buildMatchStatusLine(
+        createHostedMatch({
+          phase: 'scoring',
+          scoring: {
+            deadStones: [],
+            territory: [],
+            score: {
+              black: 12,
+              white: 18.5,
+              blackStones: 0,
+              whiteStones: 0,
+              blackTerritory: 9,
+              whiteTerritory: 12,
+              blackPrisoners: 3,
+              whitePrisoners: 0,
+              komi: 6.5,
+              scoringRule: 'japanese-territory',
+            },
+          },
+        }),
+      ),
+    ).toBe(
+      'Score preview (Japanese territory): Black Player 12.0, White Player 18.5; Prisoner points: Black +3, White +0',
+    );
   });
 
   it('falls back to the match message when scoring has no preview snapshot yet', () => {
@@ -671,6 +704,20 @@ function createI18n() {
 
       if (key === 'ui.match_sidebar.score_preview') {
         return 'Score preview';
+      }
+
+      if (key === 'go_rules.scoring_rule.area') {
+        return 'Area scoring';
+      }
+
+      if (key === 'go_rules.scoring_rule.japanese_territory') {
+        return 'Japanese territory';
+      }
+
+      if (key === 'ui.match_sidebar.prisoner_points') {
+        return `Prisoner points: Black +${String(
+          params?.black ?? '',
+        )}, White +${String(params?.white ?? '')}`;
       }
 
       return key;

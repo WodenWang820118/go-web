@@ -214,6 +214,13 @@ const ZH_LOCAL_UI = {
     '猜測：{{guess}}。藏子：{{parity}}。{{player}} 執黑先行。',
   'setup.start_local_match': '開始本機對局',
   'setup.rules_refresher': '規則摘要',
+  'go_rules.title': '圍棋規則',
+  'go_rules.ko_rule.title': '打劫規則',
+  'go_rules.ko_rule.basic_ko': '基本劫',
+  'go_rules.ko_rule.positional_superko': '全局同形禁著',
+  'go_rules.scoring_rule.title': '計分方式',
+  'go_rules.scoring_rule.area': '中國數子法',
+  'go_rules.scoring_rule.japanese_territory': '日本數目法',
   'time_control.title': '時間制',
   'time_control.selector.legend': '正式時間制',
   'time_control.system.byo-yomi': '讀秒',
@@ -259,6 +266,8 @@ const ZH_LOCAL_UI = {
   'ui.match_sidebar.gomoku_match': '五子棋對局',
   'ui.match_sidebar.captures': '提子：{{count}}',
   'ui.match_sidebar.score_preview': '算地預覽',
+  'ui.match_sidebar.prisoner_points':
+    '俘虜目數：黑方 +{{black}}，白方 +{{white}}',
   'ui.match_sidebar.pass': '虛手',
   'ui.match_sidebar.resign': '認輸',
   'ui.match_sidebar.confirm_score': '{{player}}確認',
@@ -498,7 +507,7 @@ const ZH_HOSTED_UI = {
   'room.next_match.locked.filled':
     '黑白雙方都入座後，房間準備自動開始，設定也會先鎖定。',
   'room.next_match.locked.offline': '重新連上房間後，才能調整下一局設定。',
-  'room.next_match.host_only': '只有房主可以調整下一局時間制。',
+  'room.next_match.host_only': '只有房主可以調整下一局圍棋規則與時間制。',
   'room.rematch.eyebrow': '再來一局',
   'room.rematch.title': '還要再下一場嗎？',
   'room.rematch.description.player':

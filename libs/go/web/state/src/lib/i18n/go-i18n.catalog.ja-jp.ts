@@ -242,6 +242,13 @@ export const JA_JP_TRANSLATIONS = {
     '予想：{{guess}}。隠し石：{{parity}}。{{player}}が黒番として先手です。',
   'setup.start_local_match': 'ローカル対局を開始',
   'setup.rules_refresher': 'ルールのおさらい',
+  'go_rules.title': '囲碁ルール',
+  'go_rules.ko_rule.title': 'コウルール',
+  'go_rules.ko_rule.basic_ko': '基本コウ',
+  'go_rules.ko_rule.positional_superko': '局面スーパーコウ',
+  'go_rules.scoring_rule.title': '計算方法',
+  'go_rules.scoring_rule.area': '地合い計算',
+  'go_rules.scoring_rule.japanese_territory': '日本式地合い',
   'time_control.title': '時間制',
   'time_control.selector.legend': '公式時間制',
   'time_control.system.byo-yomi': '秒読み',
@@ -295,6 +302,8 @@ export const JA_JP_TRANSLATIONS = {
   'ui.match_sidebar.gomoku_match': '五目並べ対局',
   'ui.match_sidebar.captures': 'アゲハマ：{{count}}',
   'ui.match_sidebar.score_preview': '計算プレビュー',
+  'ui.match_sidebar.prisoner_points':
+    'アゲハマ目数：黒 +{{black}}、白 +{{white}}',
   'ui.match_sidebar.pass': 'パス',
   'ui.match_sidebar.resign': '投了',
   'ui.match_sidebar.confirm_score': '{{player}}が確認',
@@ -447,7 +456,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.next_match.locked.offline':
     '次の対局設定を変更する前に部屋へ再接続してください。',
   'room.next_match.host_only':
-    '次の対局の時間制を変更できるのは部屋のホストだけです。',
+    '次の対局の囲碁ルールと時間制を変更できるのは部屋のホストだけです。',
   'room.rematch.eyebrow': '再戦',
   'room.rematch.title': 'もう一局しますか？',
   'room.rematch.description.player':

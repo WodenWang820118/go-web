@@ -51,6 +51,31 @@ describe('OnlineLobbyRoomNavigationService', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/online/room', 'ROOM42']);
   });
 
+  it('creates a Go room with hosted rule options when supplied', () => {
+    const timeControl = {
+      type: 'byo-yomi' as const,
+      mainTimeMs: 1_800_000,
+      periodTimeMs: 30_000,
+      periods: 3,
+    };
+
+    service.createRoom('Captain', 'go', 19, timeControl, {
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
+    });
+
+    expect(onlineRoom.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      timeControl,
+      {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
+    );
+  });
+
   it('swallows create-room failures without navigating', () => {
     onlineRoom.createRoom.mockReturnValueOnce(
       throwError(() => new Error('offline')),
