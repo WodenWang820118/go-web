@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_RULE_OPTIONS,
   DEFAULT_GO_TIME_CONTROL,
   DEFAULT_HOSTED_BYO_YOMI,
   GOMOKU_FREE_OPENING,
@@ -27,6 +28,7 @@ describe('rooms-match-settings', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
@@ -44,6 +46,7 @@ describe('rooms-match-settings', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
@@ -61,6 +64,7 @@ describe('rooms-match-settings', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: DEFAULT_HOSTED_BYO_YOMI,
     });
   });
@@ -80,10 +84,52 @@ describe('rooms-match-settings', () => {
         komi: 7.5,
         ruleset: GO_AREA_AGREEMENT_RULESET,
         openingRule: GO_DIGITAL_NIGIRI_OPENING,
+        goRules: DEFAULT_GO_RULE_OPTIONS,
         timeControl: DEFAULT_HOSTED_BYO_YOMI,
       });
     },
   );
+
+  it('preserves valid Go rule options', () => {
+    expect(
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    ).toMatchObject({
+      mode: 'go',
+      boardSize: 19,
+      goRules: {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
+    });
+  });
+
+  it('rejects invalid or non-Go rule options', () => {
+    expect(() =>
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        goRules: {
+          koRule: 'cycle-ko',
+          scoringRule: 'japanese-territory',
+        } as never,
+      }),
+    ).toThrow(BadRequestException);
+
+    expect(() =>
+      service.normalizeHostedStartSettings({
+        mode: 'gomoku',
+        boardSize: 15,
+        goRules: DEFAULT_GO_RULE_OPTIONS,
+      }),
+    ).toThrow(BadRequestException);
+  });
 
   it('normalizes gomoku starts to the fixed board size and zero komi', () => {
     expect(
@@ -213,6 +259,7 @@ describe('rooms-match-settings', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: DEFAULT_HOSTED_BYO_YOMI,
       players: {
         black: 'Host',

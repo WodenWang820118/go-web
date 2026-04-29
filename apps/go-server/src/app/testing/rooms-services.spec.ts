@@ -4,6 +4,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import {
+  DEFAULT_GO_RULE_OPTIONS,
   GO_AREA_AGREEMENT_RULESET,
   GO_DIGITAL_NIGIRI_OPENING,
   GOMOKU_FREE_OPENING,
@@ -85,6 +86,7 @@ describe('rooms services composition', () => {
       mode: 'go',
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: {
         type: 'byo-yomi',
         mainTimeMs: 30 * 60 * 1000,

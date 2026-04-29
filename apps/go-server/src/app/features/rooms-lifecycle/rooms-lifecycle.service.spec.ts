@@ -4,7 +4,10 @@ import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-ma
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
 import { ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import { ROOM_SNAPSHOT_SCHEMA_VERSION } from '@gx/go/contracts';
-import { DEFAULT_HOSTED_BYO_YOMI } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_HOSTED_BYO_YOMI,
+} from '@gx/go/domain';
 import {
   CREATE_ATTEMPTS_PER_WINDOW,
   ROOM_IDLE_TTL_MS,
@@ -36,6 +39,7 @@ describe('RoomsLifecycleService', () => {
       rules: {
         ruleset: 'go-area-agreement',
         openingRule: 'digital-nigiri',
+        goRules: DEFAULT_GO_RULE_OPTIONS,
         timeControl: DEFAULT_HOSTED_BYO_YOMI,
       },
     });

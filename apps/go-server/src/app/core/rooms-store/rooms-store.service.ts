@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_RULE_OPTIONS,
   DEFAULT_GO_TIME_CONTROL,
   GO_AREA_AGREEMENT_RULESET,
   GO_DIGITAL_NIGIRI_OPENING,
@@ -63,6 +64,7 @@ export class RoomsStore {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
       timeControl: DEFAULT_GO_TIME_CONTROL,
     },
   ): RoomRecord {
