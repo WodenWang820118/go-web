@@ -46,6 +46,7 @@ export class RoomsController {
       {
         mode: body.mode,
         boardSize: body.boardSize,
+        timeControl: body.timeControl,
       },
     );
   }

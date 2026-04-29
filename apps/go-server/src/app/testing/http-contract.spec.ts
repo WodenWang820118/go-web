@@ -172,6 +172,11 @@ describe('rooms HTTP contract', () => {
     const goRoom = await harness.createRoom('Go Host', {
       mode: 'go',
       boardSize: 9,
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
     });
     const gomokuRoom = await harness.createRoom('Gomoku Host', {
       mode: 'gomoku',
@@ -184,7 +189,11 @@ describe('rooms HTTP contract', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
     });
     expect(gomokuRoom.snapshot.nextMatchSettings).toEqual({
       mode: 'gomoku',
@@ -192,7 +201,7 @@ describe('rooms HTTP contract', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
   });
 
@@ -228,6 +237,35 @@ describe('rooms HTTP contract', () => {
       .http()
       .post('/api/rooms')
       .send({ displayName: 'Bad Gomoku Size', mode: 'gomoku', boardSize: 19 })
+      .expect(400);
+  });
+
+  it('rejects unsupported create-room time controls', async () => {
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Go Time',
+        mode: 'go',
+        boardSize: 19,
+        timeControl: {
+          type: 'byo-yomi',
+          mainTimeMs: 10 * 60 * 1000,
+          periodTimeMs: 30 * 1000,
+          periods: 5,
+        },
+      })
+      .expect(400);
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Gomoku Time',
+        mode: 'gomoku',
+        boardSize: 15,
+        timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      })
       .expect(400);
   });
 

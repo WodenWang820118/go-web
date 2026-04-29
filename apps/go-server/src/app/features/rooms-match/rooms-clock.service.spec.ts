@@ -61,18 +61,16 @@ describe('RoomsClockService', () => {
     const { room, host, guest } = createRoomWithSeatedPlayers(store);
 
     transitions.startMatchWithCurrentSeats(room, {
-      mode: 'gomoku',
-      boardSize: 15,
-      komi: 0,
+      mode: 'go',
+      boardSize: 9,
       timeControl: {
-        mainTimeMs: 0,
-        periodTimeMs: 100,
-        periods: 1,
+        type: 'absolute',
+        mainTimeMs: 10 * 60 * 1000,
       },
     });
 
     service.refresh(room);
-    await vi.advanceTimersByTimeAsync(150);
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 50);
 
     expect(room.match?.state.phase).toBe('finished');
     expect(room.match?.state.result).toMatchObject({
@@ -115,19 +113,17 @@ describe('RoomsClockService', () => {
     const { room } = createRoomWithSeatedPlayers(store);
 
     transitions.startMatchWithCurrentSeats(room, {
-      mode: 'gomoku',
-      boardSize: 15,
-      komi: 0,
+      mode: 'go',
+      boardSize: 9,
       timeControl: {
-        mainTimeMs: 0,
-        periodTimeMs: 100,
-        periods: 1,
+        type: 'absolute',
+        mainTimeMs: 10 * 60 * 1000,
       },
     });
 
     service.refresh(room);
     service.onModuleDestroy();
-    await vi.advanceTimersByTimeAsync(150);
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 50);
 
     expect(room.match?.state.phase).toBe('playing');
     expect(realtime.broadcastMutationResult).not.toHaveBeenCalled();
@@ -138,20 +134,18 @@ describe('RoomsClockService', () => {
     const clearSpy = vi.spyOn(service, 'clear');
 
     transitions.startMatchWithCurrentSeats(room, {
-      mode: 'gomoku',
-      boardSize: 15,
-      komi: 0,
+      mode: 'go',
+      boardSize: 9,
       timeControl: {
-        mainTimeMs: 0,
-        periodTimeMs: 100,
-        periods: 1,
+        type: 'absolute',
+        mainTimeMs: 10 * 60 * 1000,
       },
     });
 
     service.refresh(room);
     store.rooms.delete(room.id);
     service.sweepStaleRooms();
-    await vi.advanceTimersByTimeAsync(150);
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 50);
 
     expect(clearSpy).toHaveBeenCalledWith(room.id);
     expect(room.match?.state.phase).toBe('playing');
