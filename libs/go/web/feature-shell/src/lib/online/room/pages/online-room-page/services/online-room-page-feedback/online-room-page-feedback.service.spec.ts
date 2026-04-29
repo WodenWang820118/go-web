@@ -183,6 +183,209 @@ describe('OnlineRoomPageFeedbackService', () => {
     });
   });
 
+  it('shows only the primary stateful warning when multiple stateful messages are active', () => {
+    setFeedback([
+      feedbackMessage({
+        tone: 'warning',
+        lifetime: 'stateful',
+        message: 'Realtime unavailable',
+      }),
+      feedbackMessage({
+        tone: 'warning',
+        lifetime: 'stateful',
+        message: 'Rematch blocked until a seat changes.',
+      }),
+    ]);
+
+    expect(toastBatch()).toHaveLength(1);
+    // Equal-priority stateful warnings keep the existing array-order tie-break.
+    expect(firstToast()).toMatchObject({
+      detail: 'Realtime unavailable',
+      sticky: true,
+    });
+  });
+
+  it('chooses the highest-priority stateful message when stateful tones differ', () => {
+    setFeedback([
+      feedbackMessage({
+        tone: 'warning',
+        lifetime: 'stateful',
+        message: 'Realtime unavailable',
+      }),
+      feedbackMessage({
+        tone: 'error',
+        lifetime: 'stateful',
+        message: 'Room unavailable',
+      }),
+    ]);
+
+    expect(toastBatch()).toHaveLength(1);
+    expect(firstToast()).toMatchObject({
+      severity: 'error',
+      detail: 'Room unavailable',
+      sticky: true,
+    });
+  });
+
+  it('shows the next stateful message when the primary stateful message clears', () => {
+    const warning = feedbackMessage({
+      tone: 'warning',
+      lifetime: 'stateful',
+      message: 'Realtime unavailable',
+    });
+    const error = feedbackMessage({
+      tone: 'error',
+      lifetime: 'stateful',
+      message: 'Room unavailable',
+    });
+
+    setFeedback([error, warning]);
+    setFeedback([warning]);
+
+    expect(clear).toHaveBeenCalledTimes(2);
+    expect(addAll).toHaveBeenCalledTimes(2);
+    expect(firstToast()).toMatchObject({
+      detail: 'Room unavailable',
+    });
+    expect(firstToast(1)).toMatchObject({
+      detail: 'Realtime unavailable',
+    });
+  });
+
+  it('emits only the highest-priority transient toast in a single feedback cycle', () => {
+    setFeedback([
+      feedbackMessage({
+        tone: 'notice',
+        lifetime: 'transient',
+        message: 'Seat updated',
+      }),
+      feedbackMessage({
+        tone: 'error',
+        lifetime: 'transient',
+        message: 'Join failed',
+      }),
+    ]);
+
+    expect(addAll).toHaveBeenCalledTimes(1);
+    expect(toastBatch()).toHaveLength(1);
+    expect(firstToast()).toMatchObject({
+      severity: 'error',
+      detail: 'Join failed',
+      sticky: false,
+    });
+    expect(clearTransientMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the first transient message when transient priorities tie', () => {
+    setFeedback([
+      feedbackMessage({
+        tone: 'notice',
+        lifetime: 'transient',
+        message: 'Seat updated',
+      }),
+      feedbackMessage({
+        tone: 'notice',
+        lifetime: 'transient',
+        message: 'Room copied',
+      }),
+    ]);
+
+    expect(addAll).toHaveBeenCalledTimes(1);
+    expect(toastBatch()).toHaveLength(1);
+    expect(firstToast()).toMatchObject({
+      detail: 'Seat updated',
+    });
+  });
+
+  it('does not emit suppressed transient messages on the next effect trigger', () => {
+    const messages = [
+      feedbackMessage({
+        tone: 'notice',
+        lifetime: 'transient',
+        message: 'Seat updated',
+      }),
+      feedbackMessage({
+        tone: 'error',
+        lifetime: 'transient',
+        message: 'Join failed',
+      }),
+    ];
+
+    setFeedback(messages);
+    setFeedback([...messages]);
+
+    expect(addAll).toHaveBeenCalledTimes(1);
+    expect(firstToast()).toMatchObject({
+      detail: 'Join failed',
+    });
+    expect(clearTransientMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows a suppressed transient toast to appear after its higher-priority blocker clears', () => {
+    const notice = feedbackMessage({
+      tone: 'notice',
+      lifetime: 'transient',
+      message: 'Seat updated',
+    });
+    const error = feedbackMessage({
+      tone: 'error',
+      lifetime: 'transient',
+      message: 'Join failed',
+    });
+
+    setFeedback([notice, error]);
+    setFeedback([notice]);
+
+    expect(addAll).toHaveBeenCalledTimes(2);
+    expect(firstToast()).toMatchObject({
+      detail: 'Join failed',
+    });
+    expect(firstToast(1)).toMatchObject({
+      detail: 'Seat updated',
+    });
+    expect(clearTransientMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it('limits stateful and transient batches independently when both lifetimes are present', () => {
+    setFeedback([
+      feedbackMessage({
+        tone: 'warning',
+        lifetime: 'stateful',
+        message: 'Realtime unavailable',
+      }),
+      feedbackMessage({
+        tone: 'notice',
+        lifetime: 'transient',
+        message: 'Seat updated',
+      }),
+      feedbackMessage({
+        tone: 'error',
+        lifetime: 'transient',
+        message: 'Join failed',
+      }),
+    ]);
+
+    expect(addAll).toHaveBeenCalledTimes(2);
+    expect(toastBatch()).toHaveLength(1);
+    expect(toastBatch(1)).toHaveLength(1);
+    expect(firstToast()).toMatchObject({
+      detail: 'Realtime unavailable',
+      sticky: true,
+    });
+    expect(firstToast(1)).toMatchObject({
+      detail: 'Join failed',
+      sticky: false,
+    });
+  });
+
+  it('clears room feedback toasts on destroy', () => {
+    clear.mockClear();
+
+    TestBed.resetTestingModule();
+
+    expect(clear).toHaveBeenCalledWith(ROOM_FEEDBACK_TOAST_KEY);
+  });
+
   it('does not emit a toast when the source suppresses auto-start notices', () => {
     setFeedback([]);
 
@@ -198,8 +401,19 @@ describe('OnlineRoomPageFeedbackService', () => {
   }
 
   function firstToast(callIndex = 0): ToastMessageOptions {
+    return toastBatch(callIndex)[0];
+  }
+
+  function toastBatch(callIndex = 0): ToastMessageOptions[] {
     const call = addAll.mock.calls[callIndex] as [ToastMessageOptions[]];
-    return call[0][0];
+
+    if (!call) {
+      throw new Error(
+        `addAll call[${callIndex}] does not exist; total calls: ${addAll.mock.calls.length}`,
+      );
+    }
+
+    return call[0];
   }
 
   function feedbackMessage(
