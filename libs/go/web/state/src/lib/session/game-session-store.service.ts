@@ -1,11 +1,17 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import {
+  activateTimeControlClock,
+  advanceTimeControlClock,
+  completeTimeControlClockTurn,
+  createTimeControlClock,
   createMessage,
+  getTimeControlRemainingMs,
   GoMessageDescriptor,
   type BoardPoint,
   type GameMode,
   type MatchSettings,
   type PlayerColor,
+  otherPlayer,
 } from '@gx/go/domain';
 import { GAME_SESSION_PORT } from './game-session.port';
 import { GameRulesEngineService } from './services/game-rules-engine.service';
@@ -28,12 +34,13 @@ type LocalMatchCommand =
  * Signal-backed facade for the local, single-device game session.
  */
 @Injectable({ providedIn: 'root' })
-export class GameSessionStore {
+export class GameSessionStore implements OnDestroy {
   private readonly port = inject(GAME_SESSION_PORT);
   private readonly rulesEngines = inject(GameRulesEngineService);
   private readonly snapshotSignal = signal<GameSessionSnapshot | null>(
     this.port.read(),
   );
+  private clockTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly snapshot = this.snapshotSignal.asReadonly();
   readonly settings = computed(() => this.snapshotSignal()?.settings ?? null);
@@ -50,13 +57,26 @@ export class GameSessionStore {
   readonly isScoring = computed(() => this.state()?.phase === 'scoring');
   readonly isFinished = computed(() => this.state()?.phase === 'finished');
 
+  constructor() {
+    this.scheduleClock(this.snapshotSignal());
+  }
+
+  ngOnDestroy(): void {
+    this.clearClockTimer();
+  }
+
   /**
    * Starts a new local match and persists it through the configured session port.
    */
   startMatch(settings: MatchSettings): GameSessionSnapshot {
+    const startedAt = this.timestamp();
     const snapshot = {
       settings,
       state: this.rulesEngines.get(settings.mode).createInitialState(settings),
+      clock:
+        settings.mode === 'go' && settings.timeControl
+          ? createTimeControlClock(settings.timeControl, 'black', startedAt)
+          : null,
     };
 
     this.commit(snapshot);
@@ -184,6 +204,14 @@ export class GameSessionStore {
 
     this.commit({
       ...snapshot,
+      clock:
+        snapshot.clock && nextState.phase === 'playing'
+          ? activateTimeControlClock(
+              snapshot.clock,
+              nextState.nextPlayer,
+              this.timestamp(),
+            )
+          : snapshot.clock,
       state: nextState,
     });
 
@@ -197,16 +225,38 @@ export class GameSessionStore {
       return createMessage('local.play.error.start_before_move');
     }
 
+    const clockedSnapshot = this.advanceSnapshotClock(snapshot);
+
+    if (clockedSnapshot.state.phase === 'finished') {
+      this.commit(clockedSnapshot);
+      return null;
+    }
+
     const result = this.rulesEngines
-      .get(snapshot.settings.mode)
-      .applyMove(snapshot.state, snapshot.settings, command);
+      .get(clockedSnapshot.settings.mode)
+      .applyMove(clockedSnapshot.state, clockedSnapshot.settings, command);
 
     if (!result.ok) {
+      if (clockedSnapshot !== snapshot) {
+        this.commit(clockedSnapshot);
+      }
+
       return result.error ?? createMessage('local.play.error.move_rejected');
     }
 
+    const now = this.timestamp();
+    const nextClock = clockedSnapshot.clock
+      ? completeTimeControlClockTurn(
+          clockedSnapshot.clock,
+          result.state.nextPlayer,
+          result.state.phase,
+          now,
+        )
+      : null;
+
     this.commit({
-      ...snapshot,
+      ...clockedSnapshot,
+      clock: nextClock,
       state: result.state,
     });
 
@@ -217,5 +267,94 @@ export class GameSessionStore {
     const nextSnapshot = cloneSnapshot(snapshot);
     this.port.write(nextSnapshot);
     this.snapshotSignal.set(nextSnapshot);
+    this.scheduleClock(nextSnapshot);
+  }
+
+  private advanceSnapshotClock(
+    snapshot: GameSessionSnapshot,
+  ): GameSessionSnapshot {
+    if (!snapshot.clock || snapshot.state.phase !== 'playing') {
+      return snapshot;
+    }
+
+    const advanced = advanceTimeControlClock(snapshot.clock, this.timestamp());
+
+    if (!advanced.timedOutColor) {
+      return {
+        ...snapshot,
+        clock: advanced.clock,
+      };
+    }
+
+    return {
+      ...snapshot,
+      clock: advanced.clock,
+      state: this.createTimeoutState(snapshot, advanced.timedOutColor),
+    };
+  }
+
+  private createTimeoutState(
+    snapshot: GameSessionSnapshot,
+    timedOutColor: PlayerColor,
+  ): GameSessionSnapshot['state'] {
+    const winner = otherPlayer(timedOutColor);
+    const summary = createMessage('game.result.timeout', {
+      winner: createMessage(`common.player.${winner}`),
+      loser: createMessage(`common.player.${timedOutColor}`),
+    });
+
+    return {
+      ...snapshot.state,
+      phase: 'finished',
+      result: {
+        winner,
+        reason: 'timeout',
+        summary,
+      },
+      message: summary,
+      scoring: null,
+    };
+  }
+
+  private scheduleClock(snapshot: GameSessionSnapshot | null): void {
+    this.clearClockTimer();
+
+    if (!snapshot?.clock || snapshot.state.phase !== 'playing') {
+      return;
+    }
+
+    const remainingMs = getTimeControlRemainingMs(
+      snapshot.clock.players[snapshot.clock.activeColor],
+      snapshot.clock.config,
+    );
+    this.clockTimer = setTimeout(
+      () => this.resolveScheduledTimeout(),
+      Math.max(0, remainingMs) + 25,
+    );
+  }
+
+  private resolveScheduledTimeout(): void {
+    this.clockTimer = null;
+
+    const snapshot = this.snapshotSignal();
+
+    if (!snapshot?.clock || snapshot.state.phase !== 'playing') {
+      return;
+    }
+
+    this.commit(this.advanceSnapshotClock(snapshot));
+  }
+
+  private clearClockTimer(): void {
+    if (!this.clockTimer) {
+      return;
+    }
+
+    clearTimeout(this.clockTimer);
+    this.clockTimer = null;
+  }
+
+  private timestamp(): string {
+    return new Date().toISOString();
   }
 }
