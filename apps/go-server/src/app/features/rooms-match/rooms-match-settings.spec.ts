@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_TIME_CONTROL,
   DEFAULT_HOSTED_BYO_YOMI,
   GOMOKU_FREE_OPENING,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
@@ -97,16 +98,15 @@ describe('rooms-match-settings', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
   });
 
-  it('preserves provided hosted time controls', () => {
+  it('normalizes official Go time controls', () => {
     const timeControl = {
-      type: 'byo-yomi' as const,
-      mainTimeMs: 300000,
-      periodTimeMs: 10000,
-      periods: 3,
+      type: 'fischer' as const,
+      mainTimeMs: 60 * 60 * 1000,
+      incrementMs: 20 * 1000,
     };
 
     expect(
@@ -115,7 +115,32 @@ describe('rooms-match-settings', () => {
         boardSize: 19,
         timeControl,
       }).timeControl,
-    ).toBe(timeControl);
+    ).toEqual(timeControl);
+  });
+
+  it('rejects unofficial Go time controls', () => {
+    expect(() =>
+      service.normalizeHostedStartSettings({
+        mode: 'go',
+        boardSize: 19,
+        timeControl: {
+          type: 'byo-yomi',
+          mainTimeMs: 10 * 60 * 1000,
+          periodTimeMs: 30 * 1000,
+          periods: 5,
+        },
+      }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('rejects time controls for Gomoku starts', () => {
+    expect(() =>
+      service.normalizeHostedStartSettings({
+        mode: 'gomoku',
+        boardSize: 15,
+        timeControl: DEFAULT_GO_TIME_CONTROL,
+      }),
+    ).toThrow(BadRequestException);
   });
 
   it('rejects unsupported board sizes before a match starts', () => {
@@ -163,7 +188,7 @@ describe('rooms-match-settings', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
       players: {
         black: 'Host',
         white: 'Guest',

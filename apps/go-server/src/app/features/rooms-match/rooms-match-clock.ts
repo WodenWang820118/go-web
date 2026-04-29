@@ -1,13 +1,15 @@
 import { HostedClockSnapshot } from '@gx/go/contracts';
 import {
-  consumeByoYomiTime,
+  activateTimeControlClock,
+  advanceTimeControlClock,
+  completeTimeControlClockTurn,
   createMessage,
-  getByoYomiRemainingMs,
+  createTimeControlClock,
+  getTimeControlRemainingMs,
   MatchSettings,
   MatchState,
   otherPlayer,
   PlayerColor,
-  TimeControlSettings,
 } from '@gx/go/domain';
 import { Injectable } from '@nestjs/common';
 
@@ -28,57 +30,14 @@ export class RoomsMatchClockCalculatorService {
       return null;
     }
 
-    return {
-      config,
-      activeColor: 'black',
-      lastStartedAt: startedAt,
-      revision: 0,
-      players: {
-        black: this.createClockPlayer(config),
-        white: this.createClockPlayer(config),
-      },
-    };
+    return createTimeControlClock(config, 'black', startedAt);
   }
 
   advanceHostedClock(
     clock: HostedClockSnapshot,
     now: string,
   ): ClockAdvanceResult {
-    const elapsedMs = Math.max(
-      0,
-      Date.parse(now) - Date.parse(clock.lastStartedAt),
-    );
-
-    if (elapsedMs <= 0) {
-      return {
-        clock,
-        timedOutColor: null,
-      };
-    }
-
-    const activeColor = clock.activeColor;
-    const activePlayer = consumeByoYomiTime(
-      clock.players[activeColor],
-      clock.config,
-      elapsedMs,
-    );
-    const nextClock: HostedClockSnapshot = {
-      ...clock,
-      lastStartedAt: now,
-      revision: clock.revision + 1,
-      players: {
-        ...clock.players,
-        [activeColor]: activePlayer,
-      },
-    };
-
-    return {
-      clock: nextClock,
-      timedOutColor:
-        getByoYomiRemainingMs(activePlayer, clock.config) <= 0
-          ? activeColor
-          : null,
-    };
+    return advanceTimeControlClock(clock, now);
   }
 
   completeHostedClockTurn(
@@ -87,26 +46,7 @@ export class RoomsMatchClockCalculatorService {
     nextPhase: MatchState['phase'],
     now: string,
   ): HostedClockSnapshot {
-    const activeColor = clock.activeColor;
-    const activePlayer = clock.players[activeColor];
-    const resetActivePlayer =
-      activePlayer.mainTimeMs <= 0 && activePlayer.periodsRemaining > 0
-        ? {
-            ...activePlayer,
-            periodTimeMs: clock.config.periodTimeMs,
-          }
-        : activePlayer;
-
-    return {
-      ...clock,
-      activeColor: nextPhase === 'playing' ? nextPlayer : clock.activeColor,
-      lastStartedAt: now,
-      revision: clock.revision + 1,
-      players: {
-        ...clock.players,
-        [activeColor]: resetActivePlayer,
-      },
-    };
+    return completeTimeControlClockTurn(clock, nextPlayer, nextPhase, now);
   }
 
   activateHostedClock(
@@ -114,16 +54,11 @@ export class RoomsMatchClockCalculatorService {
     activeColor: PlayerColor,
     now: string,
   ): HostedClockSnapshot {
-    return {
-      ...clock,
-      activeColor,
-      lastStartedAt: now,
-      revision: clock.revision + 1,
-    };
+    return activateTimeControlClock(clock, activeColor, now);
   }
 
   getActiveClockRemainingMs(clock: HostedClockSnapshot): number {
-    return getByoYomiRemainingMs(
+    return getTimeControlRemainingMs(
       clock.players[clock.activeColor],
       clock.config,
     );
@@ -149,14 +84,6 @@ export class RoomsMatchClockCalculatorService {
       },
       message: summary,
       scoring: null,
-    };
-  }
-
-  private createClockPlayer(config: TimeControlSettings) {
-    return {
-      mainTimeMs: config.mainTimeMs,
-      periodTimeMs: config.periodTimeMs,
-      periodsRemaining: config.periods,
     };
   }
 }

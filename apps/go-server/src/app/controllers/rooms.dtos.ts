@@ -4,6 +4,7 @@ import {
   GameStartSettings,
   JoinRoomRequest,
 } from '@gx/go/contracts';
+import { type TimeControlSettings } from '@gx/go/domain';
 import { Transform } from 'class-transformer';
 import {
   IsInt,
@@ -34,6 +35,9 @@ export class CreateRoomDto implements CreateRoomRequest {
   @Min(1)
   @Max(30)
   boardSize!: GameStartSettings['boardSize'];
+
+  @IsOptional()
+  timeControl?: TimeControlSettings | null;
 }
 
 export class JoinRoomDto implements JoinRoomRequest {
@@ -70,4 +74,7 @@ export class GameStartSettingsDto implements GameStartSettings {
   @Min(0)
   @Max(20)
   komi?: number;
+
+  @IsOptional()
+  timeControl?: TimeControlSettings | null;
 }
