@@ -19,6 +19,7 @@ import {
   MatchState,
   MoveCommand,
   PlayerColor,
+  resolveGoRuleOptions,
 } from '../types';
 
 /**
@@ -218,11 +219,15 @@ export class GoRulesEngine implements RulesEngine {
 
     const nextHash = boardHash(nextBoard);
 
-    if (
-      state.previousBoardHashes.length >= 2 &&
-      nextHash ===
-        state.previousBoardHashes[state.previousBoardHashes.length - 2]
-    ) {
+    const { koRule } = resolveGoRuleOptions(settings);
+    const isRepeatedPosition =
+      koRule === 'positional-superko'
+        ? state.previousBoardHashes.includes(nextHash)
+        : state.previousBoardHashes.length >= 2 &&
+          nextHash ===
+            state.previousBoardHashes[state.previousBoardHashes.length - 2];
+
+    if (isRepeatedPosition) {
       return failure(state, 'game.go.error.ko_repeat');
     }
 

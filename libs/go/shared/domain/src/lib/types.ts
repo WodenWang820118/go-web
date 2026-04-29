@@ -20,6 +20,15 @@ export type GameRuleset = 'go-area-agreement' | 'gomoku-standard-exact-five';
 
 export type GameOpeningRule = 'digital-nigiri' | 'free-opening';
 
+export type GoKoRule = 'basic-ko' | 'positional-superko';
+
+export type GoScoringRule = 'area' | 'japanese-territory';
+
+export interface GoRuleOptions {
+  koRule: GoKoRule;
+  scoringRule: GoScoringRule;
+}
+
 export interface ByoYomiTimeControl {
   type: 'byo-yomi';
   mainTimeMs: number;
@@ -76,6 +85,7 @@ export interface MatchSettings {
   komi: number;
   ruleset?: GameRuleset;
   openingRule?: GameOpeningRule;
+  goRules?: GoRuleOptions;
   timeControl?: TimeControlSettings | null;
 }
 
@@ -175,6 +185,21 @@ export const GO_DIGITAL_NIGIRI_OPENING: GameOpeningRule = 'digital-nigiri';
 
 export const GOMOKU_FREE_OPENING: GameOpeningRule = 'free-opening';
 
+export const GO_KO_RULES: readonly GoKoRule[] = [
+  'basic-ko',
+  'positional-superko',
+];
+
+export const GO_SCORING_RULES: readonly GoScoringRule[] = [
+  'area',
+  'japanese-territory',
+];
+
+export const DEFAULT_GO_RULE_OPTIONS: GoRuleOptions = {
+  koRule: 'basic-ko',
+  scoringRule: 'area',
+};
+
 export const DEFAULT_GO_TIME_CONTROL: ByoYomiTimeControl = {
   type: 'byo-yomi',
   mainTimeMs: 30 * 60 * 1000,
@@ -190,6 +215,29 @@ export function createMessage(
   params?: GoMessageParams,
 ): GoMessageDescriptor {
   return params ? { key, params } : { key };
+}
+
+export function isGoKoRule(value: unknown): value is GoKoRule {
+  return GO_KO_RULES.includes(value as GoKoRule);
+}
+
+export function isGoScoringRule(value: unknown): value is GoScoringRule {
+  return GO_SCORING_RULES.includes(value as GoScoringRule);
+}
+
+export function resolveGoRuleOptions(
+  settings?: { goRules?: Partial<GoRuleOptions> | null } | null,
+): GoRuleOptions {
+  const options = settings?.goRules;
+
+  return {
+    koRule: isGoKoRule(options?.koRule)
+      ? options.koRule
+      : DEFAULT_GO_RULE_OPTIONS.koRule,
+    scoringRule: isGoScoringRule(options?.scoringRule)
+      ? options.scoringRule
+      : DEFAULT_GO_RULE_OPTIONS.scoringRule,
+  };
 }
 
 export function isMessageDescriptor(

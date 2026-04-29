@@ -6,7 +6,15 @@ import {
 } from './board/board-state';
 import { buildScoringState } from './engines/go/go-scoring';
 import { GoRulesEngine } from './engines/go-rules-engine';
-import { DEFAULT_GO_KOMI, MatchSettings, MatchState } from './types';
+import {
+  DEFAULT_GO_KOMI,
+  DEFAULT_GO_RULE_OPTIONS,
+  isGoKoRule,
+  isGoScoringRule,
+  MatchSettings,
+  MatchState,
+  resolveGoRuleOptions,
+} from './types';
 
 describe('GoRulesEngine', () => {
   const engine = new GoRulesEngine();
@@ -27,6 +35,58 @@ describe('GoRulesEngine', () => {
     expect(state.nextPlayer).toBe('black');
     expect(state.board[0][0]).toBeNull();
     expect(state.previousBoardHashes).toHaveLength(1);
+  });
+
+  it('resolves default Go rule options for legacy settings', () => {
+    expect(resolveGoRuleOptions(settings)).toEqual(DEFAULT_GO_RULE_OPTIONS);
+    expect(resolveGoRuleOptions(null)).toEqual(DEFAULT_GO_RULE_OPTIONS);
+  });
+
+  it('resolves supplied and partial Go rule options', () => {
+    expect(
+      resolveGoRuleOptions({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    ).toEqual({
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
+    });
+    expect(
+      resolveGoRuleOptions({
+        goRules: {
+          koRule: 'positional-superko',
+        },
+      }),
+    ).toEqual({
+      koRule: 'positional-superko',
+      scoringRule: 'area',
+    });
+    expect(
+      resolveGoRuleOptions({
+        goRules: {
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    ).toEqual({
+      koRule: 'basic-ko',
+      scoringRule: 'japanese-territory',
+    });
+  });
+
+  it('rejects unknown Go rule option values', () => {
+    expect(isGoKoRule('invalid')).toBe(false);
+    expect(isGoScoringRule('invalid')).toBe(false);
+    expect(
+      resolveGoRuleOptions({
+        goRules: {
+          koRule: 'invalid',
+          scoringRule: 'invalid',
+        } as never,
+      }),
+    ).toEqual(DEFAULT_GO_RULE_OPTIONS);
   });
 
   it('captures surrounded stones', () => {
@@ -243,6 +303,45 @@ describe('GoRulesEngine', () => {
     expect(result.state.previousBoardHashes.at(-1)).toBe(
       boardHash(previousBoard),
     );
+  });
+
+  it('rejects positional superko repetitions from earlier board history', () => {
+    const previousBoard = createBoard(9);
+    setCell(previousBoard, { x: 0, y: 0 }, 'black');
+
+    const unrelatedBoard = createBoard(9);
+    setCell(unrelatedBoard, { x: 8, y: 8 }, 'white');
+
+    const currentBoard = createBoard(9);
+    const state: MatchState = {
+      ...engine.createInitialState(settings),
+      board: currentBoard,
+      nextPlayer: 'black',
+      previousBoardHashes: [
+        boardHash(previousBoard),
+        boardHash(unrelatedBoard),
+        boardHash(currentBoard),
+      ],
+    };
+    const result = engine.applyMove(
+      state,
+      {
+        ...settings,
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'area',
+        },
+      },
+      {
+        type: 'place',
+        point: { x: 0, y: 0 },
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatchObject({
+      key: 'game.go.error.ko_repeat',
+    });
   });
 
   it('keeps the match playing after a single pass', () => {
