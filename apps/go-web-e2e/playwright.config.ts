@@ -3,7 +3,7 @@ import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const baseURL = process.env['BASE_URL'] || 'http://localhost:4300';
 const chromiumProject = {
   name: 'chromium',
   use: { ...devices['Desktop Chrome'] },
@@ -45,7 +45,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'node tools/scripts/e2e/start-go-web-stack.ts',
-    url: 'http://localhost:4200',
+    url: baseURL,
     reuseExistingServer: !process.env['CI'],
     timeout: 180 * 1000,
     cwd: workspaceRoot,

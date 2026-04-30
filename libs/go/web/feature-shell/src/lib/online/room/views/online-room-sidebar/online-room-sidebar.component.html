@@ -2,10 +2,6 @@
   class="go-hosted-panel-dark go-hosted-scroll flex h-full min-h-full flex-col gap-3 p-3"
   data-testid="room-sidebar"
 >
-  @if (roomMessages().length > 0) {
-    <lib-go-online-room-sidebar-messages [messages]="roomMessages()" />
-  }
-
   @if (!participantId()) {
     <lib-go-online-room-sidebar-identity-panel
       [joinForm]="joinForm()"
@@ -24,59 +20,6 @@
     (claimSeatRequested)="claimSeatRequested.emit($event)"
     (releaseSeatRequested)="releaseSeatRequested.emit()"
   />
-
-  @if (nigiri(); as nigiriPanel) {
-    <section
-      class="rounded-[0.375rem] border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-50"
-      data-testid="room-sidebar-nigiri-panel"
-    >
-      <div class="space-y-2">
-        <p
-          class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-100/80"
-        >
-          {{ nigiriPanel.title }}
-        </p>
-        <p class="leading-6 text-amber-50/90">
-          {{ nigiriPanel.description }}
-        </p>
-        <p class="break-all text-xs leading-5 text-amber-100/70">
-          {{ nigiriPanel.commitmentLabel }}: {{ nigiriPanel.commitment }}
-        </p>
-
-        @if (nigiriPanel.resultLabel) {
-          <p class="text-xs leading-5 text-amber-100/80">
-            {{ nigiriPanel.resultLabel }}
-          </p>
-        }
-        @if (nigiriPanel.assignedBlackLabel) {
-          <p class="text-xs font-semibold leading-5 text-amber-50">
-            {{ nigiriPanel.assignedBlackLabel }}
-          </p>
-        }
-      </div>
-
-      @if (nigiriPanel.canGuess) {
-        <div class="mt-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            class="go-hosted-button-secondary justify-center"
-            data-testid="room-nigiri-guess-odd"
-            (click)="nigiriGuessRequested.emit('odd')"
-          >
-            {{ nigiriPanel.oddLabel }}
-          </button>
-          <button
-            type="button"
-            class="go-hosted-button-primary justify-center"
-            data-testid="room-nigiri-guess-even"
-            (click)="nigiriGuessRequested.emit('even')"
-          >
-            {{ nigiriPanel.evenLabel }}
-          </button>
-        </div>
-      }
-    </section>
-  }
 
   @if (showRematch()) {
     <lib-go-online-room-sidebar-rematch-panel

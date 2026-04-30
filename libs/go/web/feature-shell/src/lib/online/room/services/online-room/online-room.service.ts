@@ -5,7 +5,13 @@ import {
   GameStartSettings,
   RoomClosedEvent,
 } from '@gx/go/contracts';
-import { BoardSize, GameMode, PlayerColor } from '@gx/go/domain';
+import type {
+  BoardSize,
+  GameMode,
+  GoRuleOptions,
+  PlayerColor,
+  TimeControlSettings,
+} from '@gx/go/domain';
 import { GoAnalyticsJoinSource, GoAnalyticsService } from '@gx/go/state';
 import { Observable } from 'rxjs';
 import { OnlineRoomRealtimeEvent } from '../../contracts/online-room-service.contracts';
@@ -65,8 +71,16 @@ export class OnlineRoomService {
     displayName: string,
     mode: GameMode,
     boardSize: BoardSize,
+    timeControl?: TimeControlSettings | null,
+    goRules?: GoRuleOptions,
   ): Observable<CreateRoomResponse> {
-    return this.workflow.createRoom(displayName, mode, boardSize);
+    return this.workflow.createRoom(
+      displayName,
+      mode,
+      boardSize,
+      timeControl,
+      goRules,
+    );
   }
 
   joinRoom(

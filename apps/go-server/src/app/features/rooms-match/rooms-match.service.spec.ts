@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import {
-  DEFAULT_HOSTED_BYO_YOMI,
   GOMOKU_FREE_OPENING,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
 } from '@gx/go/domain';
@@ -35,7 +34,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('auto-starts with the saved next-match settings after the second seat is claimed', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -61,15 +63,67 @@ describe('RoomsMatchService', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
     expect(started.snapshot.match?.settings.mode).toBe('gomoku');
     expect(started.snapshot.match?.settings.players.black).toBe('Host');
     expect(started.snapshot.match?.settings.players.white).toBe('Guest');
   });
 
-  it('creates a rematch gate when a hosted match finishes and starts again after both players accept', () => {
+  it('rejects manual seat claims in Go rooms because colors are assigned by nigiri', () => {
     const host = lifecycle.createRoom('Host', 'create:test');
+
+    try {
+      match.claimSeat(host.roomId, host.participantToken, 'black');
+      throw new Error('Expected Go seat claim to be rejected.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        message: {
+          key: 'room.error.go_seats_assigned_by_nigiri',
+        },
+      });
+    }
+  });
+
+  it('starts direct Go nigiri when a waiting two-person room switches to Go settings', () => {
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    const guest = lifecycle.joinRoom(
+      host.roomId,
+      'Guest',
+      undefined,
+      'join:test',
+    );
+
+    const updated = match.updateNextMatchSettings(
+      host.roomId,
+      host.participantToken,
+      {
+        mode: 'go',
+        boardSize: 19,
+      },
+    );
+
+    expect(updated.snapshot.match).toBeNull();
+    expect(updated.snapshot.seatState).toEqual({
+      black: host.participantId,
+      white: guest.participantId,
+    });
+    expect(updated.snapshot.nigiri).toMatchObject({
+      status: 'pending',
+      guesser: 'white',
+    });
+    expect(updated.notice?.message.key).toBe('room.notice.nigiri_started');
+  });
+
+  it('creates a rematch gate when a hosted match finishes and starts again after both players accept', () => {
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -124,7 +178,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('blocks a new game after a rematch decline until a seat changes', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',
@@ -176,7 +233,10 @@ describe('RoomsMatchService', () => {
   });
 
   it('cancels a pending rematch if one of the seated players leaves a seat', () => {
-    const host = lifecycle.createRoom('Host', 'create:test');
+    const host = lifecycle.createRoom('Host', 'create:test', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = lifecycle.joinRoom(
       host.roomId,
       'Guest',

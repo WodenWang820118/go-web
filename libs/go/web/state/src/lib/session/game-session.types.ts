@@ -1,8 +1,13 @@
-import { MatchSettings, MatchState } from '@gx/go/domain';
+import {
+  MatchSettings,
+  MatchState,
+  TimeControlClockState,
+} from '@gx/go/domain';
 
 export interface GameSessionSnapshot {
   settings: MatchSettings;
   state: MatchState;
+  clock?: TimeControlClockState | null;
 }
 
 export function cloneSnapshot(

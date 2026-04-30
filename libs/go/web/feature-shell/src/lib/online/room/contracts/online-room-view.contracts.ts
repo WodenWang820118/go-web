@@ -36,6 +36,12 @@ export interface OnlineRoomShareChipViewModel {
   readonly feedbackState: OnlineRoomShareChipFeedbackState;
 }
 
+export interface OnlineRoomSettingsChipViewModel {
+  readonly label: string;
+  readonly title: string;
+  readonly ariaLabel: string;
+}
+
 export interface OnlineRoomBoardSectionViewModel {
   readonly lastPlacedPoint: BoardPoint | null;
   readonly interactive: boolean;
@@ -49,10 +55,13 @@ export interface OnlineRoomSeatViewModel {
   readonly isViewerSeat: boolean;
 }
 
-export interface OnlineRoomSidebarMessageViewModel {
+export type OnlineRoomFeedbackLifetime = 'stateful' | 'transient';
+
+export interface OnlineRoomFeedbackMessageViewModel {
   readonly tone: 'error' | 'notice' | 'warning';
+  readonly lifetime: OnlineRoomFeedbackLifetime;
+  readonly closable: true;
   readonly message: string;
-  readonly testId: string;
 }
 
 export interface OnlineRoomSidebarRematchStatusViewModel {

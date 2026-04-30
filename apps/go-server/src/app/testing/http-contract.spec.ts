@@ -4,6 +4,7 @@ import {
 } from './rooms-contract-harness';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_RULE_OPTIONS,
   DEFAULT_HOSTED_BYO_YOMI,
   GOMOKU_FREE_OPENING,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
@@ -172,6 +173,15 @@ describe('rooms HTTP contract', () => {
     const goRoom = await harness.createRoom('Go Host', {
       mode: 'go',
       boardSize: 9,
+      goRules: {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
     });
     const gomokuRoom = await harness.createRoom('Gomoku Host', {
       mode: 'gomoku',
@@ -184,7 +194,15 @@ describe('rooms HTTP contract', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      goRules: {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
     });
     expect(gomokuRoom.snapshot.nextMatchSettings).toEqual({
       mode: 'gomoku',
@@ -192,8 +210,20 @@ describe('rooms HTTP contract', () => {
       komi: 0,
       ruleset: GOMOKU_STANDARD_EXACT_FIVE_RULESET,
       openingRule: GOMOKU_FREE_OPENING,
-      timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      timeControl: null,
     });
+  });
+
+  it('defaults legacy Go room payloads to the current Go rule options', async () => {
+    const room = await harness.createRoom('Legacy Go Host', {
+      mode: 'go',
+      boardSize: 19,
+    });
+
+    expect(room.snapshot.nextMatchSettings.goRules).toEqual(
+      DEFAULT_GO_RULE_OPTIONS,
+    );
+    expect(room.snapshot.rules?.goRules).toEqual(DEFAULT_GO_RULE_OPTIONS);
   });
 
   it('rejects missing or invalid create-room match settings', async () => {
@@ -228,6 +258,62 @@ describe('rooms HTTP contract', () => {
       .http()
       .post('/api/rooms')
       .send({ displayName: 'Bad Gomoku Size', mode: 'gomoku', boardSize: 19 })
+      .expect(400);
+  });
+
+  it('rejects invalid or non-Go create-room rule options', async () => {
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Go Rules',
+        mode: 'go',
+        boardSize: 19,
+        goRules: {
+          koRule: 'cycle-ko',
+          scoringRule: 'area',
+        },
+      })
+      .expect(400);
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Gomoku Rules',
+        mode: 'gomoku',
+        boardSize: 15,
+        goRules: DEFAULT_GO_RULE_OPTIONS,
+      })
+      .expect(400);
+  });
+
+  it('rejects unsupported create-room time controls', async () => {
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Go Time',
+        mode: 'go',
+        boardSize: 19,
+        timeControl: {
+          type: 'byo-yomi',
+          mainTimeMs: 10 * 60 * 1000,
+          periodTimeMs: 30 * 1000,
+          periods: 5,
+        },
+      })
+      .expect(400);
+
+    await harness
+      .http()
+      .post('/api/rooms')
+      .send({
+        displayName: 'Bad Gomoku Time',
+        mode: 'gomoku',
+        boardSize: 15,
+        timeControl: DEFAULT_HOSTED_BYO_YOMI,
+      })
       .expect(400);
   });
 

@@ -20,10 +20,12 @@ describe('OnlineRoomSidebarSeatsPanelComponent', () => {
         {
           provide: GoI18nService,
           useValue: {
-            t: (key: string, params?: Record<string, number>) =>
-              params?.['count'] === undefined
-                ? key
-                : `${key}:${params['count']}`,
+            t: (key: string, params?: Record<string, number | string>) =>
+              params
+                ? `${key}:${Object.entries(params)
+                    .map(([paramKey, value]) => `${paramKey}=${String(value)}`)
+                    .join(',')}`
+                : key,
             playerLabel: (color: string) => color,
           },
         },
@@ -81,13 +83,140 @@ describe('OnlineRoomSidebarSeatsPanelComponent', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
+    const blackSeat = root.querySelector('[data-testid="room-player-black"]');
+    const whiteSeat = root.querySelector('[data-testid="room-player-white"]');
 
-    expect(root.textContent).toContain('10:00');
+    expect(blackSeat?.textContent).toContain('10:00');
+    expect(whiteSeat?.textContent).toContain('10:00');
 
     vi.advanceTimersByTime(1000);
     fixture.detectChanges();
 
-    expect(root.textContent).toContain('9:59');
+    expect(blackSeat?.textContent).toContain('9:59');
+    expect(whiteSeat?.textContent).toContain('10:00');
+  });
+
+  it('formats hosted clock displays for every supported time system', () => {
+    const cases: Array<{
+      clock: NonNullable<HostedMatchSnapshot['clock']>;
+      expectedAriaLabel: string;
+    }> = [
+      {
+        clock: {
+          config: {
+            type: 'byo-yomi',
+            mainTimeMs: 600_000,
+            periodTimeMs: 30_000,
+            periods: 5,
+          },
+          activeColor: 'black',
+          lastStartedAt: '2026-03-20T00:00:00.000Z',
+          revision: 1,
+          players: {
+            black: {
+              type: 'byo-yomi',
+              mainTimeMs: 0,
+              periodTimeMs: 10_000,
+              periodsRemaining: 2,
+            },
+            white: {
+              type: 'byo-yomi',
+              mainTimeMs: 600_000,
+              periodTimeMs: 30_000,
+              periodsRemaining: 5,
+            },
+          },
+        },
+        expectedAriaLabel: 'room.clock.byo_yomi_periods:count=2 0:40',
+      },
+      {
+        clock: {
+          config: {
+            type: 'fischer',
+            mainTimeMs: 300_000,
+            incrementMs: 20_000,
+          },
+          activeColor: 'black',
+          lastStartedAt: '2026-03-20T00:00:00.000Z',
+          revision: 1,
+          players: {
+            black: {
+              type: 'fischer',
+              remainingMs: 65_000,
+            },
+            white: {
+              type: 'fischer',
+              remainingMs: 300_000,
+            },
+          },
+        },
+        expectedAriaLabel: 'room.clock.fischer_increment:increment=0:20 1:05',
+      },
+      {
+        clock: {
+          config: {
+            type: 'canadian',
+            mainTimeMs: 600_000,
+            periodTimeMs: 300_000,
+            stonesPerPeriod: 20,
+          },
+          activeColor: 'black',
+          lastStartedAt: '2026-03-20T00:00:00.000Z',
+          revision: 1,
+          players: {
+            black: {
+              type: 'canadian',
+              mainTimeMs: 0,
+              periodTimeMs: 120_000,
+              stonesRemaining: 5,
+            },
+            white: {
+              type: 'canadian',
+              mainTimeMs: 600_000,
+              periodTimeMs: 300_000,
+              stonesRemaining: 20,
+            },
+          },
+        },
+        expectedAriaLabel: 'room.clock.canadian_stones:count=5 2:00',
+      },
+      {
+        clock: {
+          config: {
+            type: 'absolute',
+            mainTimeMs: 600_000,
+          },
+          activeColor: 'black',
+          lastStartedAt: '2026-03-20T00:00:00.000Z',
+          revision: 1,
+          players: {
+            black: {
+              type: 'absolute',
+              remainingMs: 45_000,
+            },
+            white: {
+              type: 'absolute',
+              remainingMs: 600_000,
+            },
+          },
+        },
+        expectedAriaLabel: 'room.clock.absolute 0:45',
+      },
+    ];
+
+    for (const testCase of cases) {
+      fixture.componentRef.setInput('match', {
+        ...playingMatch,
+        clock: testCase.clock,
+      });
+      fixture.detectChanges();
+
+      const ariaLabels = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('[aria-label]'),
+      ).map((element) => element.getAttribute('aria-label'));
+
+      expect(ariaLabels).toContain(testCase.expectedAriaLabel);
+    }
   });
 
   it('stops the clock ticker when play stops and on destroy', () => {
@@ -210,11 +339,13 @@ const playingMatch: HostedMatchSnapshot = {
     revision: 1,
     players: {
       black: {
+        type: 'byo-yomi',
         mainTimeMs: 600_000,
         periodTimeMs: 30_000,
         periodsRemaining: 5,
       },
       white: {
+        type: 'byo-yomi',
         mainTimeMs: 600_000,
         periodTimeMs: 30_000,
         periodsRemaining: 5,

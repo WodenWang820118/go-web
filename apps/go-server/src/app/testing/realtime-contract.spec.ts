@@ -1,4 +1,5 @@
 import {
+  CommandErrorEvent,
   RoomClosedEvent,
   RoomPresenceEvent,
   RoomSnapshot,
@@ -22,7 +23,10 @@ describe('rooms realtime contract', () => {
   }, 30000);
 
   it('creates, joins, auto-starts, plays, and chats through REST plus websocket', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest);
@@ -105,8 +109,45 @@ describe('rooms realtime contract', () => {
     });
   }, 30000);
 
+  it('rejects non-host room settings updates over the socket', async () => {
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
+    const guest = await harness.joinRoom(host.roomId, 'Guest');
+    const { socket: guestSocket } = await harness.joinParticipantSocket(guest);
+
+    const rejected = once<CommandErrorEvent>(guestSocket, 'command.error');
+    guestSocket.emit('room.settings.update', {
+      roomId: host.roomId,
+      participantToken: guest.participantToken,
+      settings: {
+        mode: 'go',
+        boardSize: 9,
+      },
+    });
+
+    await expect(rejected).resolves.toMatchObject({
+      code: '403',
+      message: {
+        key: 'room.error.host_only_action',
+      },
+    });
+    await expect(harness.getRoom(host.roomId)).resolves.toMatchObject({
+      snapshot: {
+        nextMatchSettings: {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
+      },
+    });
+  }, 30000);
+
   it('waits for both seated players to accept a rematch before auto-starting again', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest);
@@ -194,7 +235,10 @@ describe('rooms realtime contract', () => {
   }, 30000);
 
   it('allows a polling guest to claim white after the host claims black', async () => {
-    const host = await harness.createRoom('Host');
+    const host = await harness.createRoom('Host', {
+      mode: 'gomoku',
+      boardSize: 15,
+    });
     const guest = await harness.joinRoom(host.roomId, 'Guest');
     const { socket: hostSocket } = await harness.joinParticipantSocket(host);
     const { socket: guestSocket } = await harness.joinParticipantSocket(guest, [

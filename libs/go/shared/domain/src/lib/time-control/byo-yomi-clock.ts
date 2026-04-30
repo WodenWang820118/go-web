@@ -1,4 +1,8 @@
-import { type TimeControlSettings } from '../types';
+import { type ByoYomiTimeControl } from '../types';
+import {
+  consumeByoYomiElapsed,
+  getByoYomiClockRemainingMs,
+} from './time-control-clock';
 
 export interface TimeControlPlayerClock {
   mainTimeMs: number;
@@ -6,67 +10,43 @@ export interface TimeControlPlayerClock {
   periodsRemaining: number;
 }
 
+/**
+ * @deprecated Use consumeTimeControlElapsed from time-control-clock instead.
+ */
 export function consumeByoYomiTime<TPlayer extends TimeControlPlayerClock>(
   player: TPlayer,
-  config: TimeControlSettings,
+  config: ByoYomiTimeControl,
   elapsedMs: number,
 ): TPlayer {
-  let remainingElapsedMs = Math.max(0, elapsedMs);
-  let mainTimeMs = player.mainTimeMs;
-
-  if (mainTimeMs > 0) {
-    const mainConsumed = Math.min(mainTimeMs, remainingElapsedMs);
-    mainTimeMs -= mainConsumed;
-    remainingElapsedMs -= mainConsumed;
-  }
-
-  if (remainingElapsedMs <= 0) {
-    return {
-      ...player,
-      mainTimeMs,
-    };
-  }
-
-  const totalByoYomiMs = getByoYomiRemainingMs(
+  const result = consumeByoYomiElapsed(
     {
+      type: 'byo-yomi',
       ...player,
-      mainTimeMs: 0,
     },
     config,
+    elapsedMs,
   );
-  const remainingByoYomiMs = totalByoYomiMs - remainingElapsedMs;
-
-  if (remainingByoYomiMs <= 0 || config.periodTimeMs <= 0) {
-    return {
-      ...player,
-      mainTimeMs: 0,
-      periodTimeMs: 0,
-      periodsRemaining: 0,
-    };
-  }
-
-  const periodsRemaining = Math.ceil(remainingByoYomiMs / config.periodTimeMs);
-  const periodTimeMs =
-    remainingByoYomiMs - (periodsRemaining - 1) * config.periodTimeMs;
 
   return {
     ...player,
-    mainTimeMs: 0,
-    periodTimeMs,
-    periodsRemaining,
+    mainTimeMs: result.mainTimeMs,
+    periodTimeMs: result.periodTimeMs,
+    periodsRemaining: result.periodsRemaining,
   };
 }
 
+/**
+ * @deprecated Use getTimeControlRemainingMs from time-control-clock instead.
+ */
 export function getByoYomiRemainingMs(
   player: TimeControlPlayerClock,
-  config: TimeControlSettings,
+  config: ByoYomiTimeControl,
 ): number {
-  if (player.mainTimeMs > 0) {
-    return player.mainTimeMs;
-  }
-
-  return Math.max(
-    0,
-    (player.periodsRemaining - 1) * config.periodTimeMs + player.periodTimeMs,
+  return getByoYomiClockRemainingMs(
+    {
+      type: 'byo-yomi',
+      ...player,
+    },
+    config,
   );
 }

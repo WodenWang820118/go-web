@@ -46,6 +46,11 @@ export class RoomsMatchService {
     private readonly policy: RoomsMatchPolicyService = new RoomsMatchPolicyService(
       store,
     ),
+    @Inject(RoomsMatchNigiriService)
+    private readonly nigiri: RoomsMatchNigiriService = new RoomsMatchNigiriService(
+      store,
+      roomsErrors,
+    ),
     @Inject(RoomsMatchTransitionsService)
     private readonly transitions: RoomsMatchTransitionsService = new RoomsMatchTransitionsService(
       store,
@@ -54,7 +59,7 @@ export class RoomsMatchService {
       matchSettings,
       policy,
       new RoomsMatchClockCalculatorService(),
-      new RoomsMatchNigiriService(store, roomsErrors),
+      nigiri,
     ),
     @Inject(RoomsClockService)
     private readonly clocks: Pick<RoomsClockService, 'refresh'> = NOOP_CLOCKS,
@@ -72,6 +77,7 @@ export class RoomsMatchService {
     );
 
     this.assertSeatChangeAllowed(room);
+    this.assertManualSeatClaimAllowed(room);
 
     const seatHolder = this.store.getSeatHolder(room, color);
     if (seatHolder && seatHolder.id !== participant.id) {
@@ -147,15 +153,20 @@ export class RoomsMatchService {
     const normalizedSettings =
       this.matchSettings.normalizeHostedStartSettings(settings);
     room.nextMatchSettings = normalizedSettings;
+    const nigiriNotice = this.nigiri.prepareRoomForDirectNigiri(room);
 
     return this.finalizeMutation(
       room,
-      this.roomsErrors.roomMessage('room.notice.next_match_settings_updated', {
-        mode: this.roomsErrors.roomMessage(
-          `common.mode.${normalizedSettings.mode}`,
+      nigiriNotice ??
+        this.roomsErrors.roomMessage(
+          'room.notice.next_match_settings_updated',
+          {
+            mode: this.roomsErrors.roomMessage(
+              `common.mode.${normalizedSettings.mode}`,
+            ),
+            size: normalizedSettings.boardSize,
+          },
         ),
-        size: normalizedSettings.boardSize,
-      }),
     );
   }
 
@@ -198,7 +209,9 @@ export class RoomsMatchService {
       this.matchSettings.normalizeHostedStartSettings(settings);
     room.nextMatchSettings = normalizedSettings;
 
-    const nigiriNotice = this.transitions.maybeBeginDigitalNigiri(room);
+    const nigiriNotice =
+      this.nigiri.prepareRoomForDirectNigiri(room) ??
+      this.transitions.maybeBeginDigitalNigiri(room);
 
     if (nigiriNotice) {
       return this.finalizeMutation(room, nigiriNotice);
@@ -311,6 +324,14 @@ export class RoomsMatchService {
   private assertSeatChangeAllowed(room: RoomRecord): void {
     if (room.match && room.match.state.phase !== 'finished') {
       throw this.roomsErrors.badRequest('room.error.seat_change_while_live');
+    }
+  }
+
+  private assertManualSeatClaimAllowed(room: RoomRecord): void {
+    if (this.nigiri.requiresDigitalNigiri(room.nextMatchSettings)) {
+      throw this.roomsErrors.badRequest(
+        'room.error.go_seats_assigned_by_nigiri',
+      );
     }
   }
 }

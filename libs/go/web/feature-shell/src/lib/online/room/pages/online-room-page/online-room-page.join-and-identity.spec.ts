@@ -144,6 +144,10 @@ describe('OnlineRoomPageComponent > join and identity', () => {
             joinedAt: '2026-03-20T00:01:00.000Z',
           },
         ],
+        nextMatchSettings: {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
       }),
       participantId: 'guest-1',
       participantToken: 'token-guest',
@@ -151,16 +155,14 @@ describe('OnlineRoomPageComponent > join and identity', () => {
     });
 
     const harness = await renderOnlineRoomPage(roomService);
-    const i18n = TestBed.inject(GoI18nService);
     const root = harness.routeNativeElement as HTMLElement;
     const claimBlackButton = root.querySelector(
       '[data-testid="claim-black"]',
     ) as HTMLButtonElement | null;
 
     expect(
-      root.querySelector('[data-testid="room-sidebar-message-warning"]')
-        ?.textContent,
-    ).toContain(i18n.t('room.client.realtime_unavailable'));
+      root.querySelector('[data-testid="room-sidebar-message-warning"]'),
+    ).toBeNull();
     expect(claimBlackButton).not.toBeNull();
     expect(claimBlackButton?.disabled).toBe(true);
   });

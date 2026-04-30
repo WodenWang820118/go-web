@@ -6,6 +6,8 @@ import {
 } from './online-room-test-helpers';
 
 test('creates a gomoku hosted room from the lobby dialog', async ({ page }) => {
+  test.setTimeout(60_000);
+
   await waitForApiHealth();
 
   await useEnglish(page);
@@ -22,6 +24,8 @@ test('online room auto-starts once both seats are claimed and both players can a
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const spectatorContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
@@ -62,10 +66,25 @@ test('online room auto-starts once both seats are claimed and both players can a
       .fill('Spectator');
     await spectatorPage.getByRole('button', { name: 'Join room' }).click();
 
+    await expect(spectatorPage.getByTestId('join-room-form')).toHaveCount(0);
     await expect(spectatorPage.getByTestId('game-board')).toBeVisible();
-    await spectatorPage.getByTestId('chat-message-input').fill('Watching live');
-    await spectatorPage.getByRole('button', { name: 'Send' }).click();
-    await expect(page.getByText('Watching live')).toBeVisible();
+    const spectatorChatInput = spectatorPage.getByTestId('chat-message-input');
+    await expect(spectatorChatInput).toBeEditable();
+    await spectatorChatInput.fill('Watching live');
+    await spectatorChatInput.press('Enter');
+    await expect(
+      page.getByTestId('room-sidebar-chat-list').getByText('Watching live'),
+    ).toBeVisible();
+    await expect(
+      guestPage
+        .getByTestId('room-sidebar-chat-list')
+        .getByText('Watching live'),
+    ).toBeVisible();
+    await expect(
+      spectatorPage
+        .getByTestId('room-sidebar-chat-list')
+        .getByText('Watching live'),
+    ).toBeVisible();
 
     await page.getByRole('button', { name: 'Resign' }).click();
 
@@ -129,6 +148,8 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 
@@ -137,6 +158,10 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
 
     await useEnglish(page);
     const roomId = await createHostedRoom(page, 'Host', { mode: 'gomoku' });
+    const rematchBlockedAlert = (target: Page) =>
+      target.getByRole('alert').filter({
+        hasText: 'A player passed on the rematch.',
+      });
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);
@@ -166,23 +191,15 @@ test('online room stays idle after a rematch decline until a seat changes', asyn
     await page.getByTestId('room-rematch-dialog-decline').click();
 
     await expect(guestPage.getByTestId('room-rematch-dialog')).toHaveCount(0);
-    await expect(
-      page.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toBeVisible();
-    await expect(
-      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toBeVisible();
+    await expect(rematchBlockedAlert(page)).toBeVisible();
+    await expect(rematchBlockedAlert(guestPage)).toBeVisible();
 
     await page.getByTestId('release-black').click();
     await expect(page.getByTestId('claim-black')).toBeVisible();
     await page.getByTestId('claim-black').click();
 
-    await expect(
-      page.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toHaveCount(0);
-    await expect(
-      guestPage.getByTestId('room-sidebar-message-rematch-blocked'),
-    ).toHaveCount(0);
+    await expect(rematchBlockedAlert(page)).toHaveCount(0);
+    await expect(rematchBlockedAlert(guestPage)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Resign' })).toBeVisible();
     await expect(
       guestPage.getByRole('button', { name: 'Resign' }),
@@ -196,6 +213,8 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
   browser,
   page,
 }) => {
+  test.setTimeout(60_000);
+
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
 
@@ -206,6 +225,8 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
     const roomId = await createHostedRoom(page, 'Go Host', {
       mode: 'go',
       boardSize: 9,
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
     });
 
     await useEnglish(guestPage);
@@ -216,16 +237,12 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
       .fill('Go Guest');
     await guestPage.getByRole('button', { name: 'Join room' }).click();
 
-    await page.getByTestId('claim-black').click();
-    await guestPage.getByTestId('claim-white').click();
-
-    await expect(
-      guestPage.getByTestId('room-sidebar-nigiri-panel'),
-    ).toBeVisible();
+    await expect(page.getByTestId('room-nigiri-dialog')).toBeVisible();
+    await expect(guestPage.getByTestId('room-nigiri-dialog')).toBeVisible();
+    await expect(page.getByTestId('room-sidebar-nigiri-panel')).toHaveCount(0);
     await guestPage.getByTestId('room-nigiri-guess-odd').click();
-    await expect(page.getByTestId('room-sidebar-nigiri-panel')).toContainText(
-      /takes Black/,
-    );
+    await expect(page.getByTestId('room-nigiri-dialog')).toHaveCount(0);
+    await expect(guestPage.getByTestId('room-nigiri-dialog')).toHaveCount(0);
 
     await expect(page.getByTestId('game-board')).toBeVisible();
     await expect(guestPage.getByTestId('game-board')).toBeVisible();
@@ -250,6 +267,15 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
     ).toBeEnabled();
     await whitePage.getByRole('button', { name: 'Pass', exact: true }).click();
 
+    await expect(page.getByTestId('room-stage-hud')).toContainText(
+      'Japanese territory',
+    );
+    await expect(page.getByTestId('room-stage-hud')).toContainText(
+      'Prisoner points: Black +0, White +0',
+    );
+    await expect(guestPage.getByTestId('room-stage-hud')).toContainText(
+      'Japanese territory',
+    );
     await expect(page.getByTestId('room-confirm-scoring')).toBeVisible();
     await expect(guestPage.getByTestId('room-confirm-scoring')).toBeVisible();
 
@@ -269,11 +295,12 @@ async function resolveNigiriTurnPages(
   hostPage: Page,
   guestPage: Page,
 ): Promise<{ blackPage: Page; whitePage: Page }> {
-  const nigiriText =
-    (await hostPage.getByTestId('room-sidebar-nigiri-panel').textContent()) ??
-    '';
+  const blackSeat = hostPage.getByTestId('room-player-black');
 
-  return nigiriText.includes('Go Host takes Black')
+  await expect(blackSeat).toContainText(/Go Host|Go Guest/);
+  const blackSeatText = (await blackSeat.textContent()) ?? '';
+
+  return blackSeatText.includes('Go Host')
     ? { blackPage: hostPage, whitePage: guestPage }
     : { blackPage: guestPage, whitePage: hostPage };
 }

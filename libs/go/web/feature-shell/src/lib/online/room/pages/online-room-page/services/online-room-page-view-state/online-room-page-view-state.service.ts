@@ -9,7 +9,8 @@ import {
   OnlineRoomNigiriViewModel,
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
-  OnlineRoomSidebarMessageViewModel,
+  OnlineRoomFeedbackMessageViewModel,
+  OnlineRoomSettingsChipViewModel,
   OnlineRoomSidebarRematchStatusViewModel,
   OnlineRoomStageViewModel,
 } from '../../../../contracts/online-room-view.contracts';
@@ -52,6 +53,21 @@ export class OnlineRoomPageViewStateService {
       this.match(),
     );
   });
+  readonly settingsChip = computed<OnlineRoomSettingsChipViewModel | null>(
+    () => {
+      if (!this.nextMatchSettings()) {
+        return null;
+      }
+
+      const title = this.i18n.t('room.next_match.title');
+
+      return {
+        label: this.i18n.t('room.next_match.chip_label'),
+        title,
+        ariaLabel: title,
+      };
+    },
+  );
   readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
     this.presentation.buildRoomLoadingStatusView(this.roomId()),
   );
@@ -99,6 +115,34 @@ export class OnlineRoomPageViewStateService {
       !!this.onlineRoom.viewerSeat() &&
       this.match()?.settings.mode === 'go' &&
       this.match()?.state.phase === 'scoring',
+  );
+  readonly nextMatchSettingsLockedReason = computed(() => {
+    const snapshot = this.snapshot();
+    const match = this.match();
+
+    if (!snapshot) {
+      return null;
+    }
+
+    if (snapshot.rematch) {
+      return this.i18n.t('room.next_match.locked.rematch');
+    }
+
+    if (match && match.state.phase !== 'finished') {
+      return this.i18n.t('room.next_match.locked.live');
+    }
+
+    if (snapshot.seatState.black && snapshot.seatState.white) {
+      return this.i18n.t('room.next_match.locked.filled');
+    }
+
+    return null;
+  });
+  readonly canEditNextMatchSettings = computed(
+    () =>
+      this.onlineRoom.isHost() &&
+      this.realtimeConnected() &&
+      this.nextMatchSettingsLockedReason() === null,
   );
   readonly rematchViewerSeat = computed<PlayerColor | null>(() =>
     this.presentation.findRoomRematchViewerSeat(
@@ -165,8 +209,10 @@ export class OnlineRoomPageViewStateService {
       ? this.i18n.t('room.client.realtime_unavailable')
       : null,
   );
-  readonly roomMessages = computed<OnlineRoomSidebarMessageViewModel[]>(() => {
-    return this.presentation.buildRoomSidebarMessages({
+  readonly roomFeedbackMessages = computed<
+    OnlineRoomFeedbackMessageViewModel[]
+  >(() => {
+    return this.presentation.buildRoomFeedbackMessages({
       lastError: this.onlineRoom.lastError(),
       lastNotice: this.onlineRoom.lastNotice(),
       lastSystemNotice: this.onlineRoom.lastSystemNotice(),

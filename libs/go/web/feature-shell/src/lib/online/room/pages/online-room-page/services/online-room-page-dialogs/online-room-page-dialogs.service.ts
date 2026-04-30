@@ -8,9 +8,26 @@ export class OnlineRoomPageDialogsService {
   private readonly view = inject(OnlineRoomPageViewStateService);
   private lastRematchDialogKey: string | null = null;
   private lastResignDialogKey: string | null = null;
+  private readonly dismissedNigiriDialogKey = signal<string | null>(null);
 
+  readonly nigiriDialogVisible = computed(() => {
+    const panel = this.view.nigiriPanel();
+
+    if (!panel) {
+      return false;
+    }
+
+    if (panel.canGuess) {
+      return true;
+    }
+
+    const dialogKey = this.nigiriDialogKey();
+
+    return !!dialogKey && dialogKey !== this.dismissedNigiriDialogKey();
+  });
   readonly rematchDialogVisible = signal(false);
   readonly resignResultDialogVisible = signal(false);
+  readonly nextMatchSettingsDialogVisible = signal(false);
   readonly shouldShowRematchDialog = computed(
     () =>
       this.view.match()?.state.phase === 'finished' &&
@@ -50,6 +67,12 @@ export class OnlineRoomPageDialogsService {
     });
 
     effect(() => {
+      if (!this.view.nextMatchSettings()) {
+        this.nextMatchSettingsDialogVisible.set(false);
+      }
+    });
+
+    effect(() => {
       const rematchDialogKey = this.rematchDialogKey();
 
       if (!this.shouldShowRematchDialog() || !rematchDialogKey) {
@@ -82,6 +105,36 @@ export class OnlineRoomPageDialogsService {
 
   dismissResignResultDialog(): void {
     this.resignResultDialogVisible.set(false);
+  }
+
+  dismissNigiriDialog(): void {
+    const dialogKey = this.nigiriDialogKey();
+
+    if (dialogKey) {
+      this.dismissedNigiriDialogKey.set(dialogKey);
+    }
+  }
+
+  openNextMatchSettingsDialog(): void {
+    if (!this.view.nextMatchSettings()) {
+      return;
+    }
+
+    this.nextMatchSettingsDialogVisible.set(true);
+  }
+
+  dismissNextMatchSettingsDialog(): void {
+    this.nextMatchSettingsDialogVisible.set(false);
+  }
+
+  private nigiriDialogKey(): string | null {
+    const nigiri = this.view.nigiri();
+
+    if (!nigiri || nigiri.status !== 'pending') {
+      return null;
+    }
+
+    return [nigiri.commitment, nigiri.guesser].join(':');
   }
 
   private resignDialogKey(): string | null {

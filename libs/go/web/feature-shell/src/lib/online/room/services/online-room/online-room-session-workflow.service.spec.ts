@@ -146,8 +146,17 @@ describe('OnlineRoomSessionWorkflowService', () => {
       }),
     );
 
-    service.createRoom('Host', 'go', 19).subscribe();
+    service
+      .createRoom('Host', 'go', 19, null, {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      })
+      .subscribe();
 
+    expect(api.createRoom).toHaveBeenCalledWith('Host', 'go', 19, null, {
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
+    });
     expect(analytics.track.mock.calls.map(([event]) => event)).toEqual([
       {
         board_size: 19,

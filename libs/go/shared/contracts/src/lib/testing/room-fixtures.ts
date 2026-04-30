@@ -6,6 +6,7 @@ import type {
   SeatState,
 } from '../room/snapshots';
 import { ROOM_SNAPSHOT_SCHEMA_VERSION } from '../room/snapshots';
+import { DEFAULT_GO_RULE_OPTIONS } from '@gx/go/domain';
 
 const DEFAULT_ROOM_ID = 'ROOM01';
 const DEFAULT_TIMESTAMP = '2026-03-20T00:00:00.000Z';
@@ -91,6 +92,7 @@ export function createRoomSnapshot(
       mode: 'go',
       boardSize: 19,
       komi: 6.5,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
     },
     rematch: null,
     autoStartBlockedUntilSeatChange: false,

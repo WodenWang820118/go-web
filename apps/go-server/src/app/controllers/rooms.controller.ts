@@ -46,6 +46,8 @@ export class RoomsController {
       {
         mode: body.mode,
         boardSize: body.boardSize,
+        goRules: body.goRules,
+        timeControl: body.timeControl,
       },
     );
   }
@@ -56,12 +58,19 @@ export class RoomsController {
     @Body() body: JoinRoomDto,
     @Req() request: Request,
   ): JoinRoomResponse {
-    return this.roomsLifecycleService.joinRoom(
+    const result = this.roomsLifecycleService.joinRoomMutation(
       roomId,
       body.displayName,
       body.participantToken,
       this.requestKeys.fromRequest(request, `join:${roomId}`),
     );
+
+    this.realtime.broadcastMutationResult({
+      snapshot: result.response.snapshot,
+      notice: result.notice,
+    });
+
+    return result.response;
   }
 
   @Post(':roomId/close')

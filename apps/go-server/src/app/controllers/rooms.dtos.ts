@@ -4,11 +4,13 @@ import {
   GameStartSettings,
   JoinRoomRequest,
 } from '@gx/go/contracts';
+import { type GoRuleOptions, type TimeControlSettings } from '@gx/go/domain';
 import { Transform } from 'class-transformer';
 import {
   IsInt,
   IsIn,
   IsOptional,
+  IsObject,
   IsString,
   Max,
   MaxLength,
@@ -34,6 +36,13 @@ export class CreateRoomDto implements CreateRoomRequest {
   @Min(1)
   @Max(30)
   boardSize!: GameStartSettings['boardSize'];
+
+  @IsOptional()
+  @IsObject()
+  goRules?: GoRuleOptions;
+
+  @IsOptional()
+  timeControl?: TimeControlSettings | null;
 }
 
 export class JoinRoomDto implements JoinRoomRequest {
@@ -70,4 +79,11 @@ export class GameStartSettingsDto implements GameStartSettings {
   @Min(0)
   @Max(20)
   komi?: number;
+
+  @IsOptional()
+  @IsObject()
+  goRules?: GoRuleOptions;
+
+  @IsOptional()
+  timeControl?: TimeControlSettings | null;
 }

@@ -6,6 +6,10 @@ import {
   mockLobby,
 } from './test-support/lobby-fixtures';
 
+const LAYOUT_TOLERANCE_PX = 1;
+const COORDINATE_ALIGNMENT_TOLERANCE_PERCENT = 0.001;
+const MIN_LOCAL_BOARD_SIZE_PX = 100;
+
 test('uses the browser locale by default and persists a locale override across reloads', async ({
   page,
 }) => {
@@ -37,6 +41,8 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await clickLocalLink(page, '/setup/go');
   await expect(page.getByTestId('setup-form')).toBeVisible();
 
+  await page.getByTestId('setup-ko-rule-positional-superko').click();
+  await page.getByTestId('setup-scoring-rule-japanese-territory').click();
   await page.getByTestId('setup-nigiri-odd-button').click();
   await expect(page.getByTestId('setup-nigiri-result')).toContainText(
     /starts as Black/i,
@@ -50,6 +56,10 @@ test('starts a Go match and enters the scoring flow', async ({ page }) => {
   await page.getByRole('button', { name: 'Pass' }).click();
   await page.getByRole('button', { name: 'Pass' }).click();
 
+  await expect(page.getByText('Japanese territory').first()).toBeVisible();
+  await expect(page.getByTestId('match-sidebar-score-prisoners')).toContainText(
+    'Prisoner points: Black +0, White +0',
+  );
   await expect(
     page.getByRole('button', { name: /black confirms/i }),
   ).toBeVisible();
@@ -82,6 +92,39 @@ test('starts a Gomoku match and creates five in a row', async ({ page }) => {
   const resultDialog = page.getByTestId('match-result-dialog');
   await expect(resultDialog).toBeVisible();
   await expect(resultDialog.getByText(/five in a row/i)).toBeVisible();
+});
+
+test('keeps the local play board fully visible on desktop viewports', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await useEnglish(page);
+
+  await startLocalMatch(page, 'go');
+  await expectBoardFullyInViewport(page);
+  await expectBoardCoordinatesAligned(page);
+  await expectDocumentOverflowWithin(page, LAYOUT_TOLERANCE_PX);
+
+  await startLocalMatch(page, 'gomoku');
+  await expectBoardFullyInViewport(page);
+  await expectBoardCoordinatesAligned(page);
+  await expectDocumentOverflowWithin(page, LAYOUT_TOLERANCE_PX);
+});
+
+test('keeps the local play board fully visible on mobile viewports', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await useEnglish(page);
+
+  // Mobile may scroll the sidebar below the board; the board must stay in view.
+  await startLocalMatch(page, 'go');
+  await expectBoardFullyInViewport(page);
+  await expectBoardCoordinatesAligned(page);
+
+  await startLocalMatch(page, 'gomoku');
+  await expectBoardFullyInViewport(page);
+  await expectBoardCoordinatesAligned(page);
 });
 
 test('supports keyboard play through the board grid semantics', async ({
@@ -230,4 +273,99 @@ async function clickLocalLink(
   await page
     .locator(`a[href="${href}"]`)
     .evaluate((node: HTMLAnchorElement) => node.click());
+}
+
+async function startLocalMatch(
+  page: Page,
+  mode: 'go' | 'gomoku',
+): Promise<void> {
+  await page.goto('/');
+  await clickLocalLink(page, `/setup/${mode}`);
+
+  if (mode === 'go') {
+    await page.getByTestId('setup-nigiri-odd-button').click();
+    await expect(page.getByTestId('setup-nigiri-result')).toContainText(
+      /starts as Black/i,
+    );
+  }
+
+  await page.getByRole('button', { name: /start local match/i }).click();
+  await expect(page.getByTestId('game-board')).toBeVisible();
+}
+
+async function expectBoardFullyInViewport(page: Page): Promise<void> {
+  const board = page.getByTestId('game-board');
+  const box = await board.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  if (!box || !viewport) {
+    return;
+  }
+
+  expect(box.width).toBeGreaterThan(MIN_LOCAL_BOARD_SIZE_PX);
+  expect(box.height).toBeGreaterThan(MIN_LOCAL_BOARD_SIZE_PX);
+  expect(box.x).toBeGreaterThanOrEqual(-LAYOUT_TOLERANCE_PX);
+  expect(box.y).toBeGreaterThanOrEqual(-LAYOUT_TOLERANCE_PX);
+  expect(box.x + box.width).toBeLessThanOrEqual(
+    viewport.width + LAYOUT_TOLERANCE_PX,
+  );
+  expect(box.y + box.height).toBeLessThanOrEqual(
+    viewport.height + LAYOUT_TOLERANCE_PX,
+  );
+}
+
+async function expectBoardCoordinatesAligned(page: Page): Promise<void> {
+  const alignment = await page.getByTestId('game-board').evaluate((board) => {
+    const boardSize = Number(board.getAttribute('aria-colcount'));
+    const bottomLabels = Array.from(
+      board.querySelectorAll<HTMLElement>(
+        '[data-testid="board-coordinates-bottom"] span',
+      ),
+    );
+    const leftLabels = Array.from(
+      board.querySelectorAll<HTMLElement>(
+        '[data-testid="board-coordinates-left"] span',
+      ),
+    );
+    const boardPixels = 52 * 2 + 60 * (boardSize - 1);
+    const expectedOffsetPercentages = Array.from(
+      { length: boardSize },
+      (_, index) => ((52 + index * 60) / boardPixels) * 100,
+    );
+    const bottomDeltas = bottomLabels.map((label, index) =>
+      Math.abs(parseFloat(label.style.left) - expectedOffsetPercentages[index]),
+    );
+    const leftDeltas = leftLabels.map((label, index) =>
+      Math.abs(parseFloat(label.style.top) - expectedOffsetPercentages[index]),
+    );
+
+    return {
+      boardSize,
+      bottomLabelCount: bottomLabels.length,
+      leftLabelCount: leftLabels.length,
+      maxDelta: Math.max(...bottomDeltas, ...leftDeltas),
+    };
+  });
+
+  expect(alignment.bottomLabelCount).toBe(alignment.boardSize);
+  expect(alignment.leftLabelCount).toBe(alignment.boardSize);
+  expect(alignment.maxDelta).toBeLessThanOrEqual(
+    COORDINATE_ALIGNMENT_TOLERANCE_PERCENT,
+  );
+}
+
+async function expectDocumentOverflowWithin(
+  page: Page,
+  tolerancePx: number,
+): Promise<void> {
+  const scrollOverflow = await page.evaluate(() => {
+    const root = document.scrollingElement;
+
+    return root ? root.scrollHeight - window.innerHeight : 0;
+  });
+
+  expect(scrollOverflow).toBeLessThanOrEqual(tolerancePx);
 }

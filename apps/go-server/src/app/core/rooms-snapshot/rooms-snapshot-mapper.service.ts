@@ -5,6 +5,7 @@ import {
   LobbyRoomSummary,
   ROOM_SNAPSHOT_SCHEMA_VERSION,
   RoomSnapshot,
+  normalizeRoomSnapshot,
 } from '@gx/go/contracts';
 import { Inject, Injectable } from '@nestjs/common';
 import { ParticipantRecord, RoomRecord } from '../../contracts/rooms.types';
@@ -36,7 +37,7 @@ export class RoomsSnapshotMapper {
         return left.joinedAt.localeCompare(right.joinedAt);
       });
 
-    return {
+    return normalizeRoomSnapshot({
       schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
       roomId: room.id,
       createdAt: room.createdAt,
@@ -54,7 +55,7 @@ export class RoomsSnapshotMapper {
       nigiri: room.nigiri ? structuredClone(room.nigiri) : null,
       rules: this.getRulesMetadata(room),
       chat: structuredClone(room.chat),
-    };
+    });
   }
 
   toLobbySummary(room: RoomRecord): LobbyRoomSummary {

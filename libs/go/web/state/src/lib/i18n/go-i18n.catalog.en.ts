@@ -90,11 +90,13 @@ const EN_ROOM_SHARED = {
   'room.error.too_many_join_attempts':
     'Too many room join attempts. Please wait a moment and try again.',
   'room.error.seat_already_claimed': 'That seat is already claimed.',
+  'room.error.go_seats_assigned_by_nigiri':
+    'Go rooms assign colors by digital nigiri instead of manual seat claims.',
   'room.error.no_player_seat': 'You do not currently occupy a player seat.',
   'room.error.match_must_finish':
     'The current match must finish before a new one can start.',
   'room.error.both_seats_required':
-    'Both black and white seats must be claimed before starting a match.',
+    'Both black and white seats must be filled before starting a match.',
   'room.error.spectators_cannot_play':
     'Spectators cannot submit game commands.',
   'room.error.dead_group_toggle_unavailable':
@@ -137,6 +139,10 @@ const EN_ROOM_SHARED = {
     'Go matches must use a 9x9, 13x13, or 19x19 board.',
   'room.error.invalid_gomoku_board_size':
     'Gomoku matches must use a 15x15 board.',
+  'room.error.invalid_time_control':
+    'Choose one of the official Go time controls.',
+  'room.error.time_control_not_supported':
+    'Formal Go time controls are only available for Go rooms.',
   'room.error.display_name_required': 'Display name is required.',
   'room.error.display_name_too_long':
     'Display names must be {{max}} characters or fewer.',
@@ -246,6 +252,30 @@ const EN_LOCAL_UI = {
     'Guess: {{guess}}. Hidden stones: {{parity}}. {{player}} starts as Black.',
   'setup.start_local_match': 'Start local match',
   'setup.rules_refresher': 'Rules refresher',
+  'go_rules.title': 'Go rules',
+  'go_rules.ko_rule.title': 'Ko rule',
+  'go_rules.ko_rule.basic_ko': 'Basic ko',
+  'go_rules.ko_rule.positional_superko': 'Positional superko',
+  'go_rules.scoring_rule.title': 'Scoring',
+  'go_rules.scoring_rule.area': 'Area scoring',
+  'go_rules.scoring_rule.japanese_territory': 'Japanese territory',
+  'time_control.title': 'Time control',
+  'time_control.selector.legend': 'Official time control',
+  'time_control.system.byo-yomi': 'Byo-yomi',
+  'time_control.system.fischer': 'Fischer',
+  'time_control.system.canadian': 'Canadian',
+  'time_control.system.absolute': 'Sudden death',
+  'time_control.summary.byo_yomi':
+    '{{main}} + {{periods}} x {{period}} byo-yomi',
+  'time_control.summary.fischer': '{{main}} + {{increment}} per move',
+  'time_control.summary.canadian': '{{main}} + {{stones}} stones / {{period}}',
+  'time_control.summary.absolute': '{{main}} sudden death',
+  'time_control.duration.minutes': '{{count}} min',
+  'time_control.duration.seconds': '{{count}} sec',
+  'time_control.duration.minutes_seconds': '{{minutes}} min {{seconds}} sec',
+  'time_control.source': 'Source: {{source}}',
+  'time_control.not_available_gomoku':
+    'Gomoku rooms do not use formal Go time controls.',
   'play.back_to_setup': 'Back to setup',
   'play.current_turn': 'Current turn',
   'play.scoring_hint':
@@ -283,6 +313,8 @@ const EN_LOCAL_UI = {
   'ui.match_sidebar.gomoku_match': 'Gomoku match',
   'ui.match_sidebar.captures': 'Captures: {{count}}',
   'ui.match_sidebar.score_preview': 'Score preview',
+  'ui.match_sidebar.prisoner_points':
+    'Prisoner points: Black +{{black}}, White +{{white}}',
   'ui.match_sidebar.pass': 'Pass',
   'ui.match_sidebar.resign': 'Resign',
   'ui.match_sidebar.confirm_score': '{{player}} confirms',
@@ -372,7 +404,7 @@ const EN_HOSTED_UI = {
   'room.stage.waiting.label': 'Waiting room',
   'room.stage.waiting.title': 'Open seats are still available.',
   'room.stage.waiting.description':
-    'Players can claim black and white while the host tunes the next-match settings and spectators keep the room chat moving.',
+    'Players can join while the host tunes the next-match settings and spectators keep the room chat moving.',
   'room.join.title.spectator': 'Join as spectator',
   'room.join.title.pre_match': 'Enter as a spectator or player',
   'room.join.description.spectator':
@@ -422,8 +454,12 @@ const EN_HOSTED_UI = {
   'room.nigiri.resolved.assigned_black': '{{player}} is Black.',
   'room.clock.main': 'Main time',
   'room.clock.byo_yomi_periods': '{{count}} byo-yomi periods remaining',
+  'room.clock.fischer_increment': 'Fischer +{{increment}}',
+  'room.clock.canadian_stones': '{{count}} stones remaining',
+  'room.clock.absolute': 'Sudden death',
   'room.next_match.eyebrow': 'Next up',
   'room.next_match.title': 'Next match settings',
+  'room.next_match.chip_label': 'Settings',
   'room.next_match.description':
     'These saved settings are used whenever the room auto-starts another game.',
   'room.next_match.save': 'Save next match',
@@ -433,6 +469,10 @@ const EN_HOSTED_UI = {
     'Settings unlock again after the current live match finishes.',
   'room.next_match.locked.filled':
     'Settings lock as soon as both seats are filled and the room is ready to auto-start.',
+  'room.next_match.locked.offline':
+    'Reconnect to the room before changing next-match settings.',
+  'room.next_match.host_only':
+    'Only the room host can change the next-match Go rules and time control.',
   'room.rematch.eyebrow': 'Rematch',
   'room.rematch.title': 'Play another one?',
   'room.rematch.description.player':

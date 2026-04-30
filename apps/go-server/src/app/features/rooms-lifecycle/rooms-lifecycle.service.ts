@@ -14,8 +14,12 @@ import {
 import { RoomsErrorsService } from '../../core/rooms-errors/rooms-errors.service';
 import { RoomsSnapshotMapper } from '../../core/rooms-snapshot/rooms-snapshot-mapper.service';
 import { RoomsStore } from '../../core/rooms-store/rooms-store.service';
-import { CloseRoomResult } from '../../contracts/rooms.types';
+import {
+  CloseRoomResult,
+  JoinRoomMutationResult,
+} from '../../contracts/rooms.types';
 import { RoomsClockService } from '../rooms-match/rooms-clock.service';
+import { RoomsMatchNigiriService } from '../rooms-match/rooms-match-nigiri.service';
 import { RoomsMatchSettingsService } from '../rooms-match/rooms-match-settings';
 import { RoomsDisplayNameService } from './rooms-display-name.service';
 import { RoomsRequestThrottleService } from './rooms-request-throttle.service';
@@ -57,6 +61,11 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     ),
     @Inject(RoomsRequestThrottleService)
     private readonly requestThrottle: RoomsRequestThrottleService = new RoomsRequestThrottleService(
+      store,
+      roomsErrors,
+    ),
+    @Inject(RoomsMatchNigiriService)
+    private readonly nigiri: RoomsMatchNigiriService = new RoomsMatchNigiriService(
       store,
       roomsErrors,
     ),
@@ -105,6 +114,20 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     participantToken: string | undefined,
     requesterKey: string,
   ): JoinRoomResponse {
+    return this.joinRoomMutation(
+      roomId,
+      displayName,
+      participantToken,
+      requesterKey,
+    ).response;
+  }
+
+  joinRoomMutation(
+    roomId: string,
+    displayName: string,
+    participantToken: string | undefined,
+    requesterKey: string,
+  ): JoinRoomMutationResult {
     this.requestThrottle.assertWithinLimit(
       requesterKey,
       JOIN_ATTEMPTS_PER_WINDOW,
@@ -137,13 +160,19 @@ export class RoomsLifecycleService implements OnModuleDestroy {
     }
 
     this.store.touchRoom(room);
-
-    return {
+    const nigiriNotice = this.nigiri.prepareRoomForDirectNigiri(room);
+    const snapshot = this.snapshotMapper.toSnapshot(room);
+    const response = {
       roomId: room.id,
       participantToken: participant.token,
       participantId: participant.id,
       resumed,
-      snapshot: this.snapshotMapper.toSnapshot(room),
+      snapshot,
+    };
+
+    return {
+      response,
+      notice: nigiriNotice ? this.store.createNotice(nigiriNotice) : undefined,
     };
   }
 

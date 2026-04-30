@@ -1,6 +1,13 @@
 <section
   class="room-shell min-h-dvh bg-[radial-gradient(circle_at_top_left,_rgba(33,58,74,0.55),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(103,74,28,0.25),_transparent_28%),linear-gradient(180deg,_#0f1821,_#070b11_70%)] text-stone-100"
 >
+  <p-toast
+    key="room-feedback"
+    position="top-center"
+    [preventDuplicates]="true"
+    [preventOpenDuplicates]="true"
+  />
+
   <p-dialog
     [visible]="!!presenter.leave.leaveConfirmation()"
     [modal]="true"
@@ -174,6 +181,87 @@
     </ng-template>
   </p-dialog>
 
+  @if (presenter.view.nigiriPanel(); as nigiriPanel) {
+    <p-dialog
+      [visible]="presenter.dialogs.nigiriDialogVisible()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [dismissableMask]="!nigiriPanel.canGuess"
+      [closable]="!nigiriPanel.canGuess"
+      [appendTo]="'body'"
+      [style]="{ width: 'min(34rem, calc(100vw - 2rem))' }"
+      [header]="nigiriPanel.title"
+      [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+      styleClass="room-event-dialog"
+      contentStyleClass="space-y-4"
+      (visibleChange)="onNigiriVisibleChange($event)"
+    >
+      <div class="space-y-4" data-testid="room-nigiri-dialog">
+        <p class="text-sm leading-7 text-surface-700">
+          {{ nigiriPanel.description }}
+        </p>
+        <p class="break-all text-xs leading-5 text-surface-500">
+          {{ nigiriPanel.commitmentLabel }}: {{ nigiriPanel.commitment }}
+        </p>
+      </div>
+
+      @if (nigiriPanel.canGuess) {
+        <ng-template #footer>
+          <div class="grid w-full grid-cols-2 gap-2">
+            <button
+              pButton
+              type="button"
+              class="go-hosted-button-secondary justify-center"
+              data-testid="room-nigiri-guess-odd"
+              (click)="presenter.interactions.guessNigiri('odd')"
+            >
+              {{ nigiriPanel.oddLabel }}
+            </button>
+            <button
+              pButton
+              type="button"
+              class="go-hosted-button-primary justify-center"
+              data-testid="room-nigiri-guess-even"
+              (click)="presenter.interactions.guessNigiri('even')"
+            >
+              {{ nigiriPanel.evenLabel }}
+            </button>
+          </div>
+        </ng-template>
+      }
+    </p-dialog>
+  }
+
+  <p-dialog
+    [visible]="presenter.dialogs.nextMatchSettingsDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    [closable]="true"
+    [appendTo]="'body'"
+    [style]="{ width: 'min(34rem, calc(100vw - 2rem))' }"
+    [header]="presenter.view.i18n.t('room.next_match.title')"
+    [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+    styleClass="room-event-dialog"
+    contentStyleClass="space-y-4"
+    (visibleChange)="onNextMatchSettingsVisibleChange($event)"
+  >
+    <div class="space-y-4" data-testid="room-next-match-dialog">
+      <lib-go-online-room-next-match-panel
+        [settings]="presenter.view.nextMatchSettings()"
+        [isHost]="presenter.view.onlineRoom.isHost()"
+        [canEdit]="presenter.view.canEditNextMatchSettings()"
+        [realtimeConnected]="presenter.view.realtimeConnected()"
+        [lockedReason]="presenter.view.nextMatchSettingsLockedReason()"
+        (settingsChange)="
+          presenter.interactions.updateNextMatchSettings($event)
+        "
+      />
+    </div>
+  </p-dialog>
+
   @if (presenter.view.bootstrapState() === 'missing') {
     <lib-go-online-room-page-status
       [eyebrow]="presenter.view.missingStatusView().eyebrow"
@@ -202,11 +290,13 @@
         [roomStage]="presenter.view.roomStage()"
         [boardSection]="presenter.view.boardSection()"
         [shareChip]="presenter.share.shareChip()"
+        [settingsChip]="presenter.view.settingsChip()"
         (pointSelected)="presenter.interactions.onBoardPoint($event)"
         (copyRequested)="presenter.share.copyShareUrl()"
         (manualFallbackDismissed)="
           presenter.share.dismissShareCopyManualFallback()
         "
+        (settingsRequested)="presenter.dialogs.openNextMatchSettingsDialog()"
       />
 
       <lib-go-online-room-sidebar
@@ -221,11 +311,9 @@
         [joinCardDescription]="presenter.view.joinCardDescription()"
         [seats]="presenter.view.seats()"
         [participants]="presenter.view.participants()"
-        [nigiri]="presenter.view.nigiriPanel()"
         [match]="presenter.view.match()"
         [messages]="presenter.view.onlineRoom.chat()"
         [helperText]="presenter.view.chatHelperText()"
-        [roomMessages]="presenter.view.roomMessages()"
         [canPass]="presenter.view.canPass()"
         [canResign]="presenter.view.canResign()"
         [canConfirmScoring]="presenter.view.canConfirmScoring()"
@@ -237,7 +325,6 @@
         (backToLobbyRequested)="presenter.leave.requestBackToLobby()"
         (claimSeatRequested)="presenter.interactions.claimSeat($event)"
         (releaseSeatRequested)="presenter.interactions.releaseSeat()"
-        (nigiriGuessRequested)="presenter.interactions.guessNigiri($event)"
         (passRequested)="presenter.interactions.passTurn()"
         (resignRequested)="presenter.interactions.resign()"
         (confirmScoringRequested)="presenter.interactions.confirmScoring()"

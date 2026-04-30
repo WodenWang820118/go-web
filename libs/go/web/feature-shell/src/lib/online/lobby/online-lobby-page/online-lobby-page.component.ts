@@ -11,11 +11,20 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LobbyRoomStatus, LobbyRoomSummary } from '@gx/go/contracts';
 import {
-  BoardSize,
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
   GOMOKU_BOARD_SIZE,
   GO_BOARD_SIZES,
-  GameMode,
-  GoBoardSize,
+  GO_KO_RULES,
+  GO_SCORING_RULES,
+  cloneTimeControlSettings,
+  type BoardSize,
+  type GameMode,
+  type GoBoardSize,
+  type GoKoRule,
+  type GoScoringRule,
+  type GoRuleOptions,
+  type TimeControlSettings,
 } from '@gx/go/domain';
 import { GoAnalyticsService } from '@gx/go/state';
 import { GoI18nService } from '@gx/go/state/i18n';
@@ -37,6 +46,7 @@ import { OnlineLobbyOnlinePlayersPanelComponent } from './components/online-lobb
 import { OnlineLobbyRoomPanelComponent } from './components/online-lobby-room-panel/online-lobby-room-panel.component';
 import { OnlineLobbyRoomNavigationService } from './services/online-lobby-room-navigation.service';
 import { OnlineLobbyViewportService } from './services/online-lobby-viewport.service';
+import { TimeControlPresetSelectorComponent } from '../../../shared/time-control/time-control-preset-selector.component';
 
 @Component({
   selector: 'lib-go-online-lobby-page',
@@ -45,6 +55,7 @@ import { OnlineLobbyViewportService } from './services/online-lobby-viewport.ser
     HostedShellHeaderComponent,
     DialogModule,
     ReactiveFormsModule,
+    TimeControlPresetSelectorComponent,
     OnlineLobbyRoomPanelComponent,
     OnlineLobbyAnnouncementPanelComponent,
     OnlineLobbyOnlinePlayersPanelComponent,
@@ -67,8 +78,13 @@ export class OnlineLobbyPageComponent {
   private readonly activeStatusSignal = signal<LobbyRoomStatus>('live');
   protected readonly GO_BOARD_SIZES = GO_BOARD_SIZES;
   protected readonly GOMOKU_BOARD_SIZE = GOMOKU_BOARD_SIZE;
+  protected readonly koRuleOptions = GO_KO_RULES;
+  protected readonly scoringRuleOptions = GO_SCORING_RULES;
   protected readonly activeStatus = this.activeStatusSignal.asReadonly();
   protected readonly createRoomDialogVisible = signal(false);
+  protected readonly createRoomTimeControl = signal<TimeControlSettings>(
+    cloneTimeControlSettings(DEFAULT_GO_TIME_CONTROL),
+  );
 
   protected readonly displayName = new FormControl(
     this.onlineRoom.displayName() || '',
@@ -86,6 +102,15 @@ export class OnlineLobbyPageComponent {
     goBoardSize: new FormControl<GoBoardSize>(19, {
       nonNullable: true,
     }),
+    koRule: new FormControl<GoKoRule>(DEFAULT_GO_RULE_OPTIONS.koRule, {
+      nonNullable: true,
+    }),
+    scoringRule: new FormControl<GoScoringRule>(
+      DEFAULT_GO_RULE_OPTIONS.scoringRule,
+      {
+        nonNullable: true,
+      },
+    ),
   });
   private readonly createRoomModeValue = toSignal(
     this.createRoomSettings.controls.mode.valueChanges,
@@ -239,6 +264,17 @@ export class OnlineLobbyPageComponent {
     const boardSize = this.resolveCreateRoomBoardSize(mode);
 
     this.createRoomDialogVisible.set(false);
+    if (mode === 'go') {
+      this.navigation.createRoom(
+        displayName,
+        mode,
+        boardSize,
+        cloneTimeControlSettings(this.createRoomTimeControl()),
+        this.createGoRuleOptions(),
+      );
+      return;
+    }
+
     this.navigation.createRoom(displayName, mode, boardSize);
   }
 
@@ -260,5 +296,26 @@ export class OnlineLobbyPageComponent {
     return mode === 'gomoku'
       ? GOMOKU_BOARD_SIZE
       : this.createRoomSettings.controls.goBoardSize.value;
+  }
+
+  protected selectCreateRoomTimeControl(
+    timeControl: TimeControlSettings,
+  ): void {
+    this.createRoomTimeControl.set(cloneTimeControlSettings(timeControl));
+  }
+
+  protected koRuleLabel(rule: GoKoRule): string {
+    return this.i18n.t(`go_rules.ko_rule.${rule.replace('-', '_')}`);
+  }
+
+  protected scoringRuleLabel(rule: GoScoringRule): string {
+    return this.i18n.t(`go_rules.scoring_rule.${rule.replace('-', '_')}`);
+  }
+
+  private createGoRuleOptions(): GoRuleOptions {
+    return {
+      koRule: this.createRoomSettings.controls.koRule.value,
+      scoringRule: this.createRoomSettings.controls.scoringRule.value,
+    };
   }
 }

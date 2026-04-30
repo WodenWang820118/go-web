@@ -131,6 +131,10 @@ describe('OnlineRoomPagePresentationService', () => {
         black: black.participantId,
         white: null,
       },
+      nextMatchSettings: {
+        mode: 'gomoku',
+        boardSize: 15,
+      },
     });
 
     expect(
@@ -151,6 +155,43 @@ describe('OnlineRoomPagePresentationService', () => {
         occupant: null,
         canClaim: true,
         isViewerSeat: false,
+      }),
+    ]);
+  });
+
+  it('does not expose Go seat claims because digital nigiri assigns colors', () => {
+    const guest = createParticipantSummary({
+      participantId: 'guest-1',
+      displayName: 'Guest',
+      isHost: false,
+      seat: null,
+    });
+    const snapshot = createRoomSnapshot({
+      participants: [createParticipantSummary(), guest],
+      seatState: {
+        black: null,
+        white: null,
+      },
+      nextMatchSettings: {
+        mode: 'go',
+        boardSize: 19,
+      },
+    });
+
+    expect(
+      service.buildRoomSeatViewModels(snapshot, {
+        participantId: guest.participantId,
+        viewerSeat: null,
+        canChangeSeats: true,
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        color: 'black',
+        canClaim: false,
+      }),
+      expect.objectContaining({
+        color: 'white',
+        canClaim: false,
       }),
     ]);
   });
@@ -251,7 +292,7 @@ describe('OnlineRoomPagePresentationService', () => {
     ]);
   });
 
-  it('builds pending and resolved nigiri panels', () => {
+  it('builds pending nigiri panels and hides resolved nigiri', () => {
     const participants: ParticipantSummary[] = [
       createParticipantSummary({
         participantId: 'host-1',
@@ -344,13 +385,7 @@ describe('OnlineRoomPagePresentationService', () => {
         viewerSeat: 'black',
         realtimeConnected: true,
       }),
-    ).toMatchObject({
-      status: 'resolved',
-      description: 'Guest takes Black.',
-      canGuess: false,
-      resultLabel: 'Guess: Odd. Hidden stones: Odd.',
-      assignedBlackLabel: 'Guest is Black.',
-    });
+    ).toBeNull();
   });
 
   it('maps connection states to localized labels', () => {
@@ -361,7 +396,7 @@ describe('OnlineRoomPagePresentationService', () => {
   });
 
   it('builds sidebar messages in priority order and adds rematch warnings', () => {
-    const messages = service.buildRoomSidebarMessages({
+    const messages = service.buildRoomFeedbackMessages({
       lastError: 'Join failed',
       lastNotice: 'Seat updated',
       lastSystemNotice: {
@@ -378,29 +413,33 @@ describe('OnlineRoomPagePresentationService', () => {
     expect(messages).toEqual([
       {
         tone: 'error',
+        lifetime: 'transient',
+        closable: true,
         message: 'Join failed',
-        testId: 'room-sidebar-message-error',
       },
       {
         tone: 'notice',
+        lifetime: 'transient',
+        closable: true,
         message: 'Seat updated',
-        testId: 'room-sidebar-message-notice',
       },
       {
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: 'Realtime unavailable',
-        testId: 'room-sidebar-message-warning',
       },
       {
         tone: 'warning',
+        lifetime: 'stateful',
+        closable: true,
         message: 'Rematch blocked until a seat changes.',
-        testId: 'room-sidebar-message-rematch-blocked',
       },
     ]);
   });
 
   it('suppresses the duplicate auto-start system notice in the sidebar', () => {
-    const messages = service.buildRoomSidebarMessages({
+    const messages = service.buildRoomFeedbackMessages({
       lastError: null,
       lastNotice: 'Match started automatically',
       lastSystemNotice: {
@@ -460,12 +499,45 @@ describe('OnlineRoomPagePresentationService', () => {
               whiteStones: 12,
               blackTerritory: 0,
               whiteTerritory: 0,
+              blackPrisoners: 0,
+              whitePrisoners: 0,
               komi: 6.5,
+              scoringRule: 'area',
             },
           },
         }),
       ),
-    ).toBe('Score preview: Black Player 12.0, White Player 18.5');
+    ).toBe(
+      'Score preview (Area scoring): Black Player 12.0, White Player 18.5',
+    );
+  });
+
+  it('adds Japanese prisoner points to the scoring status line', () => {
+    expect(
+      service.buildMatchStatusLine(
+        createHostedMatch({
+          phase: 'scoring',
+          scoring: {
+            deadStones: [],
+            territory: [],
+            score: {
+              black: 12,
+              white: 18.5,
+              blackStones: 0,
+              whiteStones: 0,
+              blackTerritory: 9,
+              whiteTerritory: 12,
+              blackPrisoners: 3,
+              whitePrisoners: 0,
+              komi: 6.5,
+              scoringRule: 'japanese-territory',
+            },
+          },
+        }),
+      ),
+    ).toBe(
+      'Score preview (Japanese territory): Black Player 12.0, White Player 18.5; Prisoner points: Black +3, White +0',
+    );
   });
 
   it('falls back to the match message when scoring has no preview snapshot yet', () => {
@@ -673,6 +745,20 @@ function createI18n() {
 
       if (key === 'ui.match_sidebar.score_preview') {
         return 'Score preview';
+      }
+
+      if (key === 'go_rules.scoring_rule.area') {
+        return 'Area scoring';
+      }
+
+      if (key === 'go_rules.scoring_rule.japanese_territory') {
+        return 'Japanese territory';
+      }
+
+      if (key === 'ui.match_sidebar.prisoner_points') {
+        return `Prisoner points: Black +${String(
+          params?.black ?? '',
+        )}, White +${String(params?.white ?? '')}`;
       }
 
       return key;

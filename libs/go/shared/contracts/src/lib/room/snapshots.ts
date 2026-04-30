@@ -2,15 +2,17 @@ import {
   BoardPoint,
   GameOpeningRule,
   GoMessageDescriptor,
+  GoRuleOptions,
   GameRuleset,
   MatchSettings,
   MatchState,
   MoveCommand,
   PlayerColor,
+  TimeControlPlayerClockState,
   TimeControlSettings,
 } from '@gx/go/domain';
 
-export const ROOM_SNAPSHOT_SCHEMA_VERSION = 2;
+export const ROOM_SNAPSHOT_SCHEMA_VERSION = 4;
 
 export type RoomSnapshotSchemaVersion = typeof ROOM_SNAPSHOT_SCHEMA_VERSION;
 
@@ -66,11 +68,7 @@ export interface HostedMatchSnapshot {
   clock?: HostedClockSnapshot | null;
 }
 
-export interface HostedClockPlayerSnapshot {
-  mainTimeMs: number;
-  periodTimeMs: number;
-  periodsRemaining: number;
-}
+export type HostedClockPlayerSnapshot = TimeControlPlayerClockState;
 
 export interface HostedClockSnapshot {
   config: TimeControlSettings;
@@ -105,6 +103,7 @@ export type HostedNigiriSnapshot =
 export interface HostedRulesMetadata {
   ruleset: GameRuleset;
   openingRule: GameOpeningRule;
+  goRules?: GoRuleOptions;
   timeControl: TimeControlSettings | null;
 }
 
@@ -183,6 +182,7 @@ export interface GameStartSettings {
   komi?: number;
   ruleset?: GameRuleset;
   openingRule?: GameOpeningRule;
+  goRules?: GoRuleOptions;
   timeControl?: TimeControlSettings | null;
 }
 

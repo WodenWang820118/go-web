@@ -8,12 +8,14 @@ import {
   output,
   signal,
 } from '@angular/core';
-import {
+import type {
+  HostedClockSnapshot,
   HostedClockPlayerSnapshot,
   HostedMatchSnapshot,
 } from '@gx/go/contracts';
-import { consumeByoYomiTime, PlayerColor } from '@gx/go/domain';
+import { consumeTimeControlElapsed, type PlayerColor } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
+import { formatTimeControlClockPlayer } from '../../../../../../shared/time-control/time-control-presentation';
 import { OnlineRoomSeatViewModel } from '../../../../contracts/online-room-view.contracts';
 import { OnlineRoomSidebarSeatCardComponent } from '../online-room-sidebar-seat-card/online-room-sidebar-seat-card.component';
 
@@ -88,34 +90,31 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
   }
 
   protected clockLabel(color: PlayerColor): string | null {
-    const player = this.clockPlayer(color);
+    const clock = this.clockView(color);
 
-    if (!player) {
+    if (!clock) {
       return null;
     }
 
-    return this.formatClockMs(
-      player.mainTimeMs > 0 ? player.mainTimeMs : player.periodTimeMs,
-    );
+    return formatTimeControlClockPlayer(clock.player, clock.config, this.i18n)
+      .label;
   }
 
   protected clockDetailLabel(color: PlayerColor): string | null {
-    const player = this.clockPlayer(color);
+    const clock = this.clockView(color);
 
-    if (!player) {
+    if (!clock) {
       return null;
     }
 
-    if (player.mainTimeMs > 0) {
-      return this.i18n.t('room.clock.main');
-    }
-
-    return this.i18n.t('room.clock.byo_yomi_periods', {
-      count: player.periodsRemaining,
-    });
+    return formatTimeControlClockPlayer(clock.player, clock.config, this.i18n)
+      .detail;
   }
 
-  private clockPlayer(color: PlayerColor): HostedClockPlayerSnapshot | null {
+  private clockView(color: PlayerColor): {
+    player: HostedClockPlayerSnapshot;
+    config: HostedClockSnapshot['config'];
+  } | null {
     const match = this.match();
     const clock = match?.clock;
 
@@ -126,14 +125,20 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
     const player = clock.players[color];
 
     if (match.state.phase !== 'playing' || clock.activeColor !== color) {
-      return player;
+      return {
+        player,
+        config: clock.config,
+      };
     }
 
-    return consumeByoYomiTime(
-      player,
-      clock.config,
-      Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
-    );
+    return {
+      player: consumeTimeControlElapsed(
+        player,
+        clock.config,
+        Math.max(0, this.now() - Date.parse(clock.lastStartedAt)),
+      ),
+      config: clock.config,
+    };
   }
 
   private hasTickingClock(): boolean {
@@ -159,13 +164,5 @@ export class OnlineRoomSidebarSeatsPanelComponent implements OnDestroy {
 
     clearInterval(this.clockTimer);
     this.clockTimer = null;
-  }
-
-  private formatClockMs(milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 }

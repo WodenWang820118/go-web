@@ -2,8 +2,13 @@ import {
   ROOM_SNAPSHOT_SCHEMA_VERSION,
   RoomSnapshot,
   cloneRoomSnapshot,
+  normalizeGameStartTimeControl,
 } from './contracts';
-import { DEFAULT_HOSTED_BYO_YOMI } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
+  DEFAULT_HOSTED_BYO_YOMI,
+} from '@gx/go/domain';
 import { createRoomSnapshot } from './testing/room-fixtures';
 import {
   MAX_DISPLAY_NAME_LENGTH,
@@ -37,6 +42,7 @@ describe('go-contracts', () => {
         mode: 'go',
         boardSize: 19,
         komi: 6.5,
+        goRules: DEFAULT_GO_RULE_OPTIONS,
       },
       rematch: {
         participants: {
@@ -53,12 +59,14 @@ describe('go-contracts', () => {
       rules: {
         ruleset: 'go-area-agreement',
         openingRule: 'digital-nigiri',
+        goRules: DEFAULT_GO_RULE_OPTIONS,
         timeControl: DEFAULT_HOSTED_BYO_YOMI,
       },
       match: {
         settings: {
           mode: 'go',
           boardSize: 19,
+          goRules: DEFAULT_GO_RULE_OPTIONS,
           players: {
             black: 'Host',
             white: 'Guest',
@@ -122,6 +130,10 @@ describe('go-contracts', () => {
     firstBoardRow[0] = 'black';
     clonedRematch.responses.black = 'declined';
     clonedRules.openingRule = 'free-opening';
+    clonedRules.goRules = {
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
+    };
     if (clonedRules.timeControl?.type === 'byo-yomi') {
       clonedRules.timeControl.periods = 1;
     }
@@ -131,8 +143,72 @@ describe('go-contracts', () => {
     expect(snapshot.match?.state.board[0]?.[0]).toBeNull();
     expect(snapshot.rematch?.responses.black).toBe('accepted');
     expect(snapshot.rules?.openingRule).toBe('digital-nigiri');
+    expect(snapshot.rules?.goRules).toEqual(DEFAULT_GO_RULE_OPTIONS);
     expect(snapshot.rules?.timeControl).toEqual(DEFAULT_HOSTED_BYO_YOMI);
     expect(snapshot.chat[0]?.message).toBe('Hello');
+  });
+
+  it('normalizes legacy room snapshots that omit goRules', () => {
+    const legacy = createRoomSnapshot({
+      schemaVersion: 3 as never,
+      nextMatchSettings: {
+        mode: 'go',
+        boardSize: 19,
+        komi: 6.5,
+      },
+      rules: {
+        ruleset: 'go-area-agreement',
+        openingRule: 'digital-nigiri',
+        timeControl: DEFAULT_GO_TIME_CONTROL,
+      },
+      match: {
+        settings: {
+          mode: 'go',
+          boardSize: 19,
+          players: {
+            black: 'Host',
+            white: 'Guest',
+          },
+          komi: 6.5,
+        },
+        state: {
+          mode: 'go',
+          phase: 'playing',
+          boardSize: 19,
+          board: Array.from({ length: 19 }, () => Array(19).fill(null)),
+          nextPlayer: 'black',
+          captures: {
+            black: 0,
+            white: 0,
+          },
+          moveHistory: [],
+          message: {
+            key: 'game.state.next_turn',
+            params: {
+              player: {
+                key: 'common.player.black',
+              },
+            },
+          },
+        },
+        startedAt: '2026-03-20T00:05:00.000Z',
+      },
+    });
+
+    expect(cloneRoomSnapshot(legacy)).toMatchObject({
+      schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
+      nextMatchSettings: {
+        goRules: DEFAULT_GO_RULE_OPTIONS,
+      },
+      rules: {
+        goRules: DEFAULT_GO_RULE_OPTIONS,
+      },
+      match: {
+        settings: {
+          goRules: DEFAULT_GO_RULE_OPTIONS,
+        },
+      },
+    });
   });
 
   it('adds a numeric suffix when a display name is already taken', () => {
@@ -144,8 +220,56 @@ describe('go-contracts', () => {
   it('creates room snapshot fixtures with the current schema version defaults', () => {
     expect(createRoomSnapshot()).toMatchObject({
       schemaVersion: ROOM_SNAPSHOT_SCHEMA_VERSION,
+      nextMatchSettings: {
+        goRules: DEFAULT_GO_RULE_OPTIONS,
+      },
       nigiri: null,
       rules: null,
+    });
+  });
+
+  it('normalizes Go room time controls to official presets', () => {
+    expect(normalizeGameStartTimeControl('go', null)).toEqual({
+      ok: true,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
+    });
+    expect(
+      normalizeGameStartTimeControl('go', {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      }),
+    ).toEqual({
+      ok: true,
+      timeControl: {
+        type: 'fischer',
+        mainTimeMs: 60 * 60 * 1000,
+        incrementMs: 20 * 1000,
+      },
+    });
+  });
+
+  it('rejects unofficial or non-Go room time controls', () => {
+    expect(
+      normalizeGameStartTimeControl('go', {
+        type: 'byo-yomi',
+        mainTimeMs: 10 * 60 * 1000,
+        periodTimeMs: 30 * 1000,
+        periods: 5,
+      }),
+    ).toEqual({
+      ok: false,
+      reason: 'invalid-time-control',
+    });
+    expect(
+      normalizeGameStartTimeControl('gomoku', DEFAULT_GO_TIME_CONTROL),
+    ).toEqual({
+      ok: false,
+      reason: 'time-control-not-supported',
+    });
+    expect(normalizeGameStartTimeControl('gomoku', null)).toEqual({
+      ok: true,
+      timeControl: null,
     });
   });
 

@@ -45,8 +45,8 @@ or when the backend is already running.
 - Local Gomoku on a fixed 15x15 board
 - Browser-session local match state
 - Digital `nigiri` before Go matches
-- Pass, resign, captures, ko checks, komi, dead-stone review, and area scoring
-  for Go
+- Pass, resign, captures, selectable ko rules, komi, dead-stone review, and
+  selectable Go scoring
 - Exact-five Gomoku wins, draw detection, and overline handling
 
 ### Hosted Rooms
@@ -144,17 +144,23 @@ persistence is added.
 - Black plays first after color assignment.
 - Groups with no liberties are captured immediately.
 - Suicide is illegal.
-- Only basic ko is enforced: immediate recapture of the previous position is
-  blocked, but positional superko is not implemented.
+- Ko can use either basic ko, which blocks immediate recapture of the previous
+  position, or positional superko, which blocks recreating any previous board
+  position from the current game.
 - White receives 6.5 komi.
 - Pass and resign are both supported.
 - Two consecutive passes open a dead-stone review instead of ending the game
   immediately.
-- Scoring uses area scoring: live stones on the board plus surrounded
-  territory, with komi added for White.
+- Scoring can use area scoring or manual Japanese territory scoring. Area
+  scoring counts live stones on the board plus surrounded territory, with komi
+  added for White. Japanese territory scoring counts surrounded territory plus
+  prisoner points and White komi; prisoner points include captures and opponent
+  stones manually marked dead during scoring review.
 - During scoring review, players can mark dead groups. Changing dead stones
   clears confirmations, both players must confirm to finish, and either player
   can dispute to resume play from the post-pass board.
+- This build does not provide automatic life-and-death assistance, seki
+  detection, or neutral-point marking.
 - Go color assignment uses digital `nigiri`: one side guesses odd or even, and
   the winner is assigned Black before the match starts.
 - Hosted rooms use server-authoritative byo-yomi clocks by default: 10 minutes
@@ -236,7 +242,7 @@ and configurable:
 - Add durable hosted-room persistence and decide how timers should survive
   server restart or multi-node deployment.
 - Add configurable hosted time-control presets beyond the current default.
-- Consider stronger Go rule options such as positional superko, Japanese
-  scoring, or automatic life-and-death assistance.
+- Consider automatic Go life-and-death assistance, seki detection, or
+  neutral-point marking after the current manual scoring review proves stable.
 - Decide whether Gomoku needs an opening-balance flow such as Swap2 or
   Renju-style forbidden-move rules.

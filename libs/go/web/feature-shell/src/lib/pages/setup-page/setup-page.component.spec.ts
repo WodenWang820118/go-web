@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
+  DEFAULT_GO_RULE_OPTIONS,
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_TIME_CONTROL,
   GO_AREA_AGREEMENT_RULESET,
   GOMOKU_BOARD_SIZE,
   GO_DIGITAL_NIGIRI_OPENING,
@@ -129,7 +131,8 @@ describe('SetupPageComponent', () => {
       komi: DEFAULT_GO_KOMI,
       ruleset: GO_AREA_AGREEMENT_RULESET,
       openingRule: GO_DIGITAL_NIGIRI_OPENING,
-      timeControl: null,
+      goRules: DEFAULT_GO_RULE_OPTIONS,
+      timeControl: DEFAULT_GO_TIME_CONTROL,
       players: {
         black: 'Ren',
         white: 'Aki',
@@ -152,6 +155,42 @@ describe('SetupPageComponent', () => {
     expect(router.url).toBe('/play/go');
   });
 
+  it('starts a go match with the selected ko and scoring rules', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const root = harness.routeNativeElement as HTMLElement;
+    const koRuleInput = root.querySelector(
+      '[data-testid="setup-ko-rule-positional-superko"]',
+    ) as HTMLInputElement;
+    const scoringRuleInput = root.querySelector(
+      '[data-testid="setup-scoring-rule-japanese-territory"]',
+    ) as HTMLInputElement;
+    const nigiriOddButton = root.querySelector(
+      '[data-testid="setup-nigiri-odd-button"]',
+    ) as HTMLButtonElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    koRuleInput.click();
+    scoringRuleInput.click();
+    nigiriOddButton.click();
+    await harness.fixture.whenStable();
+
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(store.startMatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    );
+  });
+
   it('does not start a go match before nigiri is resolved', async () => {
     const store = createGameSessionStoreStub();
     const harness = await renderSetup('/setup/go', store);
@@ -166,6 +205,40 @@ describe('SetupPageComponent', () => {
     await harness.fixture.whenStable();
 
     expect(store.startMatch).not.toHaveBeenCalled();
+  });
+
+  it('starts a go match with the selected official time control', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const store = createGameSessionStoreStub();
+    const harness = await renderSetup('/setup/go', store);
+    const root = harness.routeNativeElement as HTMLElement;
+    const timeControlSelect = root.querySelector(
+      '[data-testid="time-control-preset-select"]',
+    ) as HTMLSelectElement;
+    const nigiriOddButton = root.querySelector(
+      '[data-testid="setup-nigiri-odd-button"]',
+    ) as HTMLButtonElement;
+    const submitButton = root.querySelector(
+      '[data-testid="setup-start-match-button"]',
+    ) as HTMLButtonElement;
+
+    timeControlSelect.value = 'aga-open-fischer-60-20';
+    timeControlSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    nigiriOddButton.click();
+    await harness.fixture.whenStable();
+
+    submitButton.click();
+    await harness.fixture.whenStable();
+
+    expect(store.startMatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeControl: {
+          type: 'fischer',
+          mainTimeMs: 3_600_000,
+          incrementMs: 20_000,
+        },
+      }),
+    );
   });
 
   it('keeps original go player order when the nigiri guess fails', async () => {
