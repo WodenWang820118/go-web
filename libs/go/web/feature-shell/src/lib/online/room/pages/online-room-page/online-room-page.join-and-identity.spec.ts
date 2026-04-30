@@ -144,6 +144,10 @@ describe('OnlineRoomPageComponent > join and identity', () => {
             joinedAt: '2026-03-20T00:01:00.000Z',
           },
         ],
+        nextMatchSettings: {
+          mode: 'gomoku',
+          boardSize: 15,
+        },
       }),
       participantId: 'guest-1',
       participantToken: 'token-guest',
