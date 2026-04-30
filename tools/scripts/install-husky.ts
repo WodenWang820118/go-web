@@ -93,7 +93,7 @@ export function main(
   const packageManager = resolvePackageManagerExecution(dependencies.env);
   const status = dependencies.runCommand(
     packageManager.command,
-    [...packageManager.args, 'exec', 'husky', 'install'],
+    [...packageManager.args, 'exec', 'husky'],
     dependencies.cwd,
   );
 

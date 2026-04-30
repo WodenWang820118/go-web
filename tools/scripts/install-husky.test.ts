@@ -57,7 +57,24 @@ describe('install-husky', () => {
 
     expect(runCommand).toHaveBeenCalledWith(
       process.execPath,
-      ['/pnpm.cjs', 'exec', 'husky', 'install'],
+      ['/pnpm.cjs', 'exec', 'husky'],
+      '/repo',
+    );
+  });
+
+  it('falls back to pnpm when npm_execpath is unavailable', () => {
+    const runCommand = vi.fn().mockReturnValue(0);
+
+    main({
+      cwd: '/repo',
+      env: {},
+      resolveGitDir: () => '.git',
+      runCommand,
+    });
+
+    expect(runCommand).toHaveBeenCalledWith(
+      process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
+      ['exec', 'husky'],
       '/repo',
     );
   });
