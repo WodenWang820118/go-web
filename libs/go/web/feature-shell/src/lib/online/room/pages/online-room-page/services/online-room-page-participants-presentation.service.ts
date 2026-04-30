@@ -38,6 +38,8 @@ export class OnlineRoomPageParticipantsPresentationService {
       return [];
     }
 
+    const seatClaimsAvailable = snapshot.nextMatchSettings?.mode !== 'go';
+
     return (['black', 'white'] as const).map((color) => ({
       color,
       occupant:
@@ -46,6 +48,7 @@ export class OnlineRoomPageParticipantsPresentationService {
             participant.participantId === snapshot.seatState[color],
         ) ?? null,
       canClaim:
+        seatClaimsAvailable &&
         !!options.participantId &&
         options.canChangeSeats &&
         !snapshot.seatState[color],

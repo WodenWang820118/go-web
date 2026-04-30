@@ -90,11 +90,13 @@ const EN_ROOM_SHARED = {
   'room.error.too_many_join_attempts':
     'Too many room join attempts. Please wait a moment and try again.',
   'room.error.seat_already_claimed': 'That seat is already claimed.',
+  'room.error.go_seats_assigned_by_nigiri':
+    'Go rooms assign colors by digital nigiri instead of manual seat claims.',
   'room.error.no_player_seat': 'You do not currently occupy a player seat.',
   'room.error.match_must_finish':
     'The current match must finish before a new one can start.',
   'room.error.both_seats_required':
-    'Both black and white seats must be claimed before starting a match.',
+    'Both black and white seats must be filled before starting a match.',
   'room.error.spectators_cannot_play':
     'Spectators cannot submit game commands.',
   'room.error.dead_group_toggle_unavailable':
@@ -402,7 +404,7 @@ const EN_HOSTED_UI = {
   'room.stage.waiting.label': 'Waiting room',
   'room.stage.waiting.title': 'Open seats are still available.',
   'room.stage.waiting.description':
-    'Players can claim black and white while the host tunes the next-match settings and spectators keep the room chat moving.',
+    'Players can join while the host tunes the next-match settings and spectators keep the room chat moving.',
   'room.join.title.spectator': 'Join as spectator',
   'room.join.title.pre_match': 'Enter as a spectator or player',
   'room.join.description.spectator':
@@ -457,6 +459,7 @@ const EN_HOSTED_UI = {
   'room.clock.absolute': 'Sudden death',
   'room.next_match.eyebrow': 'Next up',
   'room.next_match.title': 'Next match settings',
+  'room.next_match.chip_label': 'Settings',
   'room.next_match.description':
     'These saved settings are used whenever the room auto-starts another game.',
   'room.next_match.save': 'Save next match',

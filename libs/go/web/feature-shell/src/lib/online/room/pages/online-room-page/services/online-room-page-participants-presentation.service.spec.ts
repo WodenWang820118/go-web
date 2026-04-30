@@ -36,6 +36,10 @@ describe('OnlineRoomPageParticipantsPresentationService', () => {
         black: 'host-1',
         white: null,
       },
+      nextMatchSettings: {
+        mode: 'gomoku',
+        boardSize: 15,
+      },
     });
 
     expect(
@@ -57,6 +61,43 @@ describe('OnlineRoomPageParticipantsPresentationService', () => {
         canClaim: true,
         isViewerSeat: false,
       }),
+    ]);
+  });
+
+  it('does not make Go seats claimable because colors are assigned by nigiri', () => {
+    const snapshot = createRoomSnapshot({
+      participants: [
+        createParticipantSummary({
+          participantId: 'host-1',
+          displayName: 'Host',
+          seat: null,
+        }),
+        createParticipantSummary({
+          participantId: 'guest-1',
+          displayName: 'Guest',
+          isHost: false,
+          seat: null,
+        }),
+      ],
+      seatState: {
+        black: null,
+        white: null,
+      },
+      nextMatchSettings: {
+        mode: 'go',
+        boardSize: 19,
+      },
+    });
+
+    expect(
+      service.buildRoomSeatViewModels(snapshot, {
+        participantId: 'guest-1',
+        viewerSeat: null,
+        canChangeSeats: true,
+      }),
+    ).toEqual([
+      expect.objectContaining({ color: 'black', canClaim: false }),
+      expect.objectContaining({ color: 'white', canClaim: false }),
     ]);
   });
 

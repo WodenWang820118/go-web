@@ -27,6 +27,7 @@ export class OnlineRoomPageDialogsService {
   });
   readonly rematchDialogVisible = signal(false);
   readonly resignResultDialogVisible = signal(false);
+  readonly nextMatchSettingsDialogVisible = signal(false);
   readonly shouldShowRematchDialog = computed(
     () =>
       this.view.match()?.state.phase === 'finished' &&
@@ -62,6 +63,12 @@ export class OnlineRoomPageDialogsService {
     effect(() => {
       if (!this.resignResultMessage()) {
         this.resignResultDialogVisible.set(false);
+      }
+    });
+
+    effect(() => {
+      if (!this.view.nextMatchSettings()) {
+        this.nextMatchSettingsDialogVisible.set(false);
       }
     });
 
@@ -106,6 +113,18 @@ export class OnlineRoomPageDialogsService {
     if (dialogKey) {
       this.dismissedNigiriDialogKey.set(dialogKey);
     }
+  }
+
+  openNextMatchSettingsDialog(): void {
+    if (!this.view.nextMatchSettings()) {
+      return;
+    }
+
+    this.nextMatchSettingsDialogVisible.set(true);
+  }
+
+  dismissNextMatchSettingsDialog(): void {
+    this.nextMatchSettingsDialogVisible.set(false);
   }
 
   private nigiriDialogKey(): string | null {

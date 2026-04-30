@@ -89,6 +89,8 @@ export const JA_JP_TRANSLATIONS = {
   'room.error.too_many_join_attempts':
     '部屋への参加回数が多すぎます。少し待ってから再試行してください。',
   'room.error.seat_already_claimed': 'その席はすでに取られています。',
+  'room.error.go_seats_assigned_by_nigiri':
+    '囲碁の部屋では手動で席を取らず、デジタルニギリで色を決めます。',
   'room.error.no_player_seat': '現在プレイヤー席に座っていません。',
   'room.error.match_must_finish':
     '新しい対局を始める前に、現在の対局を終了してください。',
@@ -389,7 +391,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.stage.waiting.label': '待機中',
   'room.stage.waiting.title': 'まだ空いている席があります。',
   'room.stage.waiting.description':
-    'プレイヤーは黒白の席を取り、ホストは次の対局設定を調整でき、観戦者はチャットできます。',
+    'プレイヤーは先に部屋へ参加でき、ホストは次の対局設定を調整でき、観戦者はチャットできます。',
   'room.join.title.spectator': '観戦者として参加',
   'room.join.title.pre_match': 'プレイヤーまたは観戦者として参加',
   'room.join.description.spectator':
@@ -444,6 +446,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.clock.absolute': '切れ負け',
   'room.next_match.eyebrow': '次の対局',
   'room.next_match.title': '次の対局設定',
+  'room.next_match.chip_label': '設定',
   'room.next_match.description':
     '部屋が新しい対局を自動開始するとき、この保存済み設定を使用します。',
   'room.next_match.save': '次の対局を保存',

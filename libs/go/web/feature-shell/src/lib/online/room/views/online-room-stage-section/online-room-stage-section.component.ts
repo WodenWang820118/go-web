@@ -2,23 +2,31 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   input,
   output,
 } from '@angular/core';
 import { HostedMatchSnapshot } from '@gx/go/contracts';
 import { BoardPoint } from '@gx/go/domain';
 import { GameBoardComponent } from '@gx/go/ui';
+import { ChipModule } from 'primeng/chip';
 import { OnlineRoomShareChipComponent } from '../../components/online-room-share-chip/online-room-share-chip.component';
 import {
   OnlineRoomBoardSectionViewModel,
   OnlineRoomShareChipViewModel,
+  OnlineRoomSettingsChipViewModel,
   OnlineRoomStageViewModel,
 } from '../../contracts/online-room-view.contracts';
 
 @Component({
   selector: 'lib-go-online-room-stage-section',
   standalone: true,
-  imports: [CommonModule, GameBoardComponent, OnlineRoomShareChipComponent],
+  imports: [
+    ChipModule,
+    CommonModule,
+    GameBoardComponent,
+    OnlineRoomShareChipComponent,
+  ],
   styleUrl: './online-room-stage-section.component.css',
   host: {
     class: 'block min-h-0 min-w-0',
@@ -30,7 +38,7 @@ import {
     >
       <div
         class="room-stage__layout"
-        [class.room-stage__layout--with-dock]="!!shareChip().shareUrl"
+        [class.room-stage__layout--with-dock]="showDock()"
         data-testid="room-stage-layout"
       >
         @if (match()) {
@@ -79,31 +87,55 @@ import {
           </div>
         }
 
-        @if (shareChip().shareUrl) {
+        @if (showDock()) {
           <div class="room-stage__dock" data-testid="room-stage-dock">
-            <div
-              class="room-stage__share-anchor"
-              [class.room-stage__share-anchor--board]="!!match()"
-              data-testid="room-stage-share-anchor"
-            >
-              <lib-go-online-room-share-chip
-                [shareUrl]="shareChip().shareUrl!"
-                [shareLabel]="shareChip().shareLabel"
-                [copiedLabel]="shareChip().copiedLabel"
-                [copyAriaLabel]="shareChip().copyAriaLabel"
-                [retryAriaLabel]="shareChip().retryAriaLabel"
-                [copiedMessage]="shareChip().copiedMessage"
-                [copyFailedMessage]="shareChip().copyFailedMessage"
-                [manualCopyInstruction]="shareChip().manualCopyInstruction"
-                [manualUrlAriaLabel]="shareChip().manualUrlAriaLabel"
-                [dismissLabel]="shareChip().dismissLabel"
-                [connectionState]="shareChip().connectionState"
-                [connectionLabel]="shareChip().connectionLabel"
-                [feedbackState]="shareChip().feedbackState"
-                (copyRequested)="copyRequested.emit()"
-                (manualFallbackDismissed)="manualFallbackDismissed.emit()"
-              />
-            </div>
+            @if (settingsChip(); as settingsChip) {
+              <div
+                class="room-stage__settings-anchor"
+                data-testid="room-stage-settings-anchor"
+              >
+                <button
+                  type="button"
+                  class="room-stage-settings-chip__button-reset"
+                  data-testid="room-settings-chip-button"
+                  [attr.aria-label]="settingsChip.ariaLabel"
+                  [attr.title]="settingsChip.title"
+                  (click)="settingsRequested.emit()"
+                >
+                  <p-chip class="room-stage-settings-chip__trigger">
+                    <span class="room-stage-settings-chip__label">
+                      {{ settingsChip.label }}
+                    </span>
+                  </p-chip>
+                </button>
+              </div>
+            }
+
+            @if (shareChip().shareUrl) {
+              <div
+                class="room-stage__share-anchor"
+                [class.room-stage__share-anchor--board]="!!match()"
+                data-testid="room-stage-share-anchor"
+              >
+                <lib-go-online-room-share-chip
+                  [shareUrl]="shareChip().shareUrl!"
+                  [shareLabel]="shareChip().shareLabel"
+                  [copiedLabel]="shareChip().copiedLabel"
+                  [copyAriaLabel]="shareChip().copyAriaLabel"
+                  [retryAriaLabel]="shareChip().retryAriaLabel"
+                  [copiedMessage]="shareChip().copiedMessage"
+                  [copyFailedMessage]="shareChip().copyFailedMessage"
+                  [manualCopyInstruction]="shareChip().manualCopyInstruction"
+                  [manualUrlAriaLabel]="shareChip().manualUrlAriaLabel"
+                  [dismissLabel]="shareChip().dismissLabel"
+                  [connectionState]="shareChip().connectionState"
+                  [connectionLabel]="shareChip().connectionLabel"
+                  [feedbackState]="shareChip().feedbackState"
+                  (copyRequested)="copyRequested.emit()"
+                  (manualFallbackDismissed)="manualFallbackDismissed.emit()"
+                />
+              </div>
+            }
           </div>
         }
       </div>
@@ -116,8 +148,13 @@ export class OnlineRoomStageSectionComponent {
   readonly roomStage = input<OnlineRoomStageViewModel | null>(null);
   readonly boardSection = input.required<OnlineRoomBoardSectionViewModel>();
   readonly shareChip = input.required<OnlineRoomShareChipViewModel>();
+  readonly settingsChip = input<OnlineRoomSettingsChipViewModel | null>(null);
+  protected readonly showDock = computed(
+    () => !!this.settingsChip() || !!this.shareChip().shareUrl,
+  );
 
   readonly pointSelected = output<BoardPoint>();
   readonly copyRequested = output<void>();
   readonly manualFallbackDismissed = output<void>();
+  readonly settingsRequested = output<void>();
 }

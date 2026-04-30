@@ -81,6 +81,8 @@ const ZH_ROOM_SHARED = {
   'room.error.too_many_create_attempts': '建立房間的次數過多，請稍後再試。',
   'room.error.too_many_join_attempts': '加入房間的次數過多，請稍後再試。',
   'room.error.seat_already_claimed': '該座位已被認領。',
+  'room.error.go_seats_assigned_by_nigiri':
+    '圍棋房間會以數位 nigiri 決定棋色，不使用手動認領座位。',
   'room.error.no_player_seat': '你目前不在玩家座位上。',
   'room.error.match_must_finish': '必須先完成目前對局，才能開始新的一局。',
   'room.error.both_seats_required': '黑方與白方座位都必須有人後才能開始對局。',
@@ -350,7 +352,7 @@ const ZH_HOSTED_UI = {
   'room.stage.waiting.label': '等待中',
   'room.stage.waiting.title': '仍有空位可加入。',
   'room.stage.waiting.description':
-    '玩家可以認領黑白座位，觀戰者也能提早加入並在房內聊天。',
+    '玩家可以先加入房間，觀戰者也能提早加入並在房內聊天。',
   'room.join.title.spectator': '以觀戰者加入',
   'room.join.title.pre_match': '以玩家或觀戰者加入',
   'room.join.description.spectator':
@@ -498,6 +500,7 @@ const ZH_HOSTED_UI = {
     '上一場再來一局被婉拒了。請先釋放或調整座位，再重新啟用自動開始。',
   'room.next_match.eyebrow': '下一場',
   'room.next_match.title': '下一局設定',
+  'room.next_match.chip_label': '設定',
   'room.next_match.description':
     '房間自動開始新對局時，會使用這組已儲存的設定。',
   'room.next_match.save': '儲存下一局',

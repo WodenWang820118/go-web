@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  inject,
+} from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
@@ -8,6 +13,7 @@ import { ToastModule } from 'primeng/toast';
 import { OnlineRoomPageStatusComponent } from '../../views/online-room-page-status/online-room-page-status.component';
 import { OnlineRoomSidebarComponent } from '../../views/online-room-sidebar/online-room-sidebar.component';
 import { OnlineRoomStageSectionComponent } from '../../views/online-room-stage-section/online-room-stage-section.component';
+import { OnlineRoomNextMatchPanelComponent } from '../../components/online-room-next-match-panel/online-room-next-match-panel.component';
 import { OnlineRoomPagePresenterService } from './online-room-page.presenter.service';
 import { OnlineRoomPageDialogsService } from './services/online-room-page-dialogs/online-room-page-dialogs.service';
 import { OnlineRoomPageFeedbackService } from './services/online-room-page-feedback/online-room-page-feedback.service';
@@ -25,6 +31,7 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
     CommonModule,
     ButtonModule,
     DialogModule,
+    OnlineRoomNextMatchPanelComponent,
     OnlineRoomPageStatusComponent,
     OnlineRoomSidebarComponent,
     OnlineRoomStageSectionComponent,
@@ -48,7 +55,9 @@ import { OnlineRoomLeaveAware } from '../../guards/online-room-leave.guard';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
+export class OnlineRoomPageComponent
+  implements OnlineRoomLeaveAware, OnDestroy
+{
   protected readonly presenter = inject(OnlineRoomPagePresenterService);
   private readonly feedback = inject(OnlineRoomPageFeedbackService);
   private readonly hostedMatchAnalytics = inject(GoHostedMatchAnalyticsService);
@@ -74,6 +83,16 @@ export class OnlineRoomPageComponent implements OnlineRoomLeaveAware {
     if (!visible) {
       this.presenter.dialogs.dismissNigiriDialog();
     }
+  }
+
+  protected onNextMatchSettingsVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.presenter.dialogs.dismissNextMatchSettingsDialog();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.presenter.dialogs.dismissNextMatchSettingsDialog();
   }
 
   canDeactivateRoomPage(nextUrl: string | null): boolean {

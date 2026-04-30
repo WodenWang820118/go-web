@@ -6,11 +6,7 @@ import {
   HostedMatchSnapshot,
   ParticipantSummary,
 } from '@gx/go/contracts';
-import {
-  DEFAULT_GO_RULE_OPTIONS,
-  DEFAULT_GO_TIME_CONTROL,
-  createMessage,
-} from '@gx/go/domain';
+import { createMessage } from '@gx/go/domain';
 import { vi } from 'vitest';
 import { OnlineRoomSidebarComponent } from './online-room-sidebar.component';
 
@@ -53,16 +49,6 @@ describe('OnlineRoomSidebarComponent', () => {
     fixture.componentRef.setInput('seats', seats);
     fixture.componentRef.setInput('participants', participants);
     fixture.componentRef.setInput('match', liveMatch);
-    fixture.componentRef.setInput('nextMatchSettings', {
-      mode: 'go',
-      boardSize: 19,
-      komi: 6.5,
-      timeControl: DEFAULT_GO_TIME_CONTROL,
-      goRules: DEFAULT_GO_RULE_OPTIONS,
-    });
-    fixture.componentRef.setInput('isHost', true);
-    fixture.componentRef.setInput('canEditNextMatchSettings', true);
-    fixture.componentRef.setInput('nextMatchSettingsLockedReason', null);
     fixture.componentRef.setInput('messages', chatMessages);
     fixture.componentRef.setInput('helperText', 'Send a message to the room.');
     fixture.componentRef.setInput('canPass', true);
@@ -108,6 +94,9 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(
       root.querySelector('[data-testid="room-sidebar-chat"]'),
     ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-next-match-panel"]'),
+    ).toBeNull();
     expect(
       root.querySelectorAll('[data-testid="room-sidebar-chat-metric"]'),
     ).toHaveLength(2);
@@ -189,100 +178,6 @@ describe('OnlineRoomSidebarComponent', () => {
     expect(passEmit).toHaveBeenCalled();
     expect(resignEmit).toHaveBeenCalled();
     expect(backEmit).toHaveBeenCalled();
-  });
-
-  it('bubbles next-match time-control changes from the sidebar', async () => {
-    const updateEmit = vi.spyOn(
-      fixture.componentInstance.nextMatchSettingsChange,
-      'emit',
-    );
-    const root = fixture.nativeElement as HTMLElement;
-    const select = root.querySelector(
-      '[data-testid="time-control-preset-select"]',
-    ) as HTMLSelectElement;
-
-    select.value = 'aga-open-fischer-60-20';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(updateEmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mode: 'go',
-        boardSize: 19,
-        timeControl: {
-          type: 'fischer',
-          mainTimeMs: 3_600_000,
-          incrementMs: 20_000,
-        },
-      }),
-    );
-  });
-
-  it('bubbles next-match Go rule changes from the sidebar', async () => {
-    const updateEmit = vi.spyOn(
-      fixture.componentInstance.nextMatchSettingsChange,
-      'emit',
-    );
-    const root = fixture.nativeElement as HTMLElement;
-    const koRule = root.querySelector(
-      '[data-testid="room-next-match-ko-rule-positional-superko"]',
-    ) as HTMLInputElement;
-    const scoringRule = root.querySelector(
-      '[data-testid="room-next-match-scoring-rule-japanese-territory"]',
-    ) as HTMLInputElement;
-
-    koRule.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    scoringRule.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(updateEmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        goRules: {
-          koRule: 'positional-superko',
-          scoringRule: 'area',
-        },
-      }),
-    );
-    expect(updateEmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        goRules: {
-          koRule: 'basic-ko',
-          scoringRule: 'japanese-territory',
-        },
-      }),
-    );
-  });
-
-  it('keeps next-match Go rule controls disabled while settings are locked', async () => {
-    const updateEmit = vi.spyOn(
-      fixture.componentInstance.nextMatchSettingsChange,
-      'emit',
-    );
-
-    fixture.componentRef.setInput('canEditNextMatchSettings', false);
-    fixture.componentRef.setInput(
-      'nextMatchSettingsLockedReason',
-      'Settings locked',
-    );
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const root = fixture.nativeElement as HTMLElement;
-    const koRule = root.querySelector(
-      '[data-testid="room-next-match-ko-rule-positional-superko"]',
-    ) as HTMLInputElement;
-
-    expect(koRule.disabled).toBe(true);
-
-    koRule.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(updateEmit).not.toHaveBeenCalled();
   });
 
   it('bubbles hosted scoring agreement actions', async () => {

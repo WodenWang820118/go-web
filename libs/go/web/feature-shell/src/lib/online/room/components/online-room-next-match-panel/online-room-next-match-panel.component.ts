@@ -19,11 +19,11 @@ import {
   type TimeControlSettings,
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
-import { TimeControlPresetSelectorComponent } from '../../../../../../shared/time-control/time-control-preset-selector.component';
-import { summarizeTimeControl } from '../../../../../../shared/time-control/time-control-presentation';
+import { TimeControlPresetSelectorComponent } from '../../../../shared/time-control/time-control-preset-selector.component';
+import { summarizeTimeControl } from '../../../../shared/time-control/time-control-presentation';
 
 @Component({
-  selector: 'lib-go-online-room-sidebar-next-match-panel',
+  selector: 'lib-go-online-room-next-match-panel',
   standalone: true,
   imports: [TimeControlPresetSelectorComponent],
   template: `
@@ -83,7 +83,7 @@ import { summarizeTimeControl } from '../../../../../../shared/time-control/time
                     >
                       <input
                         type="radio"
-                        class="h-3.5 w-3.5 accent-amber-300"
+                        class="h-4 w-4 accent-amber-300"
                         name="room-next-match-ko-rule"
                         [checked]="goRules().koRule === option"
                         [disabled]="!canEdit()"
@@ -111,7 +111,7 @@ import { summarizeTimeControl } from '../../../../../../shared/time-control/time
                     >
                       <input
                         type="radio"
-                        class="h-3.5 w-3.5 accent-amber-300"
+                        class="h-4 w-4 accent-amber-300"
                         name="room-next-match-scoring-rule"
                         [checked]="goRules().scoringRule === option"
                         [disabled]="!canEdit()"
@@ -185,7 +185,7 @@ import { summarizeTimeControl } from '../../../../../../shared/time-control/time
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnlineRoomSidebarNextMatchPanelComponent {
+export class OnlineRoomNextMatchPanelComponent {
   protected readonly i18n = inject(GoI18nService);
   protected readonly koRuleOptions = GO_KO_RULES;
   protected readonly scoringRuleOptions = GO_SCORING_RULES;
