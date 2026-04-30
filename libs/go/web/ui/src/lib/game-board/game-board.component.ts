@@ -23,6 +23,12 @@ import {
 } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import { BoardCoordinatesComponent } from '../board-coordinates/board-coordinates.component';
+import {
+  BOARD_CELL_SIZE,
+  BOARD_PADDING,
+  getBoardLinePositions,
+  getBoardPixels,
+} from '../board-layout/board-layout';
 
 @Component({
   selector: 'lib-go-game-board',
@@ -47,8 +53,8 @@ export class GameBoardComponent {
 
   readonly pointSelected = output<BoardPoint>();
 
-  private readonly cellSize = 60;
-  private readonly padding = 52;
+  private readonly cellSize = BOARD_CELL_SIZE;
+  private readonly padding = BOARD_PADDING;
   private readonly hoverPoint = signal<BoardPoint | null>(null);
   private readonly keyboardPoint = signal<BoardPoint>({ x: -1, y: -1 });
 
@@ -57,14 +63,9 @@ export class GameBoardComponent {
       Array.from({ length: this.boardSize() }, (_, x) => ({ x, y })),
     ),
   );
-  readonly boardPixels = computed(
-    () => this.padding * 2 + this.cellSize * (this.boardSize() - 1),
-  );
+  readonly boardPixels = computed(() => getBoardPixels(this.boardSize()));
   readonly linePositions = computed(() =>
-    Array.from(
-      { length: this.boardSize() },
-      (_, index) => this.padding + index * this.cellSize,
-    ),
+    getBoardLinePositions(this.boardSize()),
   );
   readonly ghostPoint = computed(() => {
     if (this.phase() !== 'playing') {
