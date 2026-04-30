@@ -1,122 +1,112 @@
 @if (meta() && state() && settings()) {
-  <section
-    class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8"
-  >
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <a
-          [routerLink]="['/setup', mode()]"
-          class="text-sm font-semibold uppercase tracking-[0.24em] text-stone-500 transition hover:text-stone-900"
-        >
-          &larr; {{ i18n.t('play.back_to_setup') }}
-        </a>
-        <h1 class="mt-3 text-3xl font-semibold text-stone-950 sm:text-4xl">
-          {{ meta()!.title }}
-        </h1>
-        <p class="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-          {{ translateMessage(state()!.message) }}
-        </p>
-      </div>
+  <section class="local-play-shell" data-testid="local-play-shell">
+    <div class="local-play-layout" data-testid="local-play-layout">
+      <section class="local-play-stage" data-testid="local-play-stage">
+        <div class="local-play-stage__header">
+          <div class="local-play-stage__copy">
+            <a [routerLink]="['/setup', mode()]" class="local-play-back-link">
+              &larr; {{ i18n.t('play.back_to_setup') }}
+            </a>
+            <h1 class="local-play-title">{{ meta()!.title }}</h1>
+            <p class="local-play-message">
+              {{ translateMessage(state()!.message) }}
+            </p>
+          </div>
 
-      <div class="flex flex-wrap items-center justify-end gap-3">
-        @if (localClockViews().length > 0) {
-          <div
-            class="grid gap-2 sm:grid-cols-2"
-            data-testid="local-clock-panel"
-          >
-            @for (clock of localClockViews(); track clock.color) {
+          <div class="local-play-stage__status">
+            @if (localClockViews().length > 0) {
               <div
-                class="min-w-36 rounded-2xl border bg-white/75 px-4 py-2 text-sm shadow-sm backdrop-blur"
-                [class.border-amber-300]="clock.isActive"
-                [class.text-stone-900]="clock.isActive"
-                [class.border-stone-200]="!clock.isActive"
-                [class.text-stone-600]="!clock.isActive"
-                [attr.data-testid]="'local-clock-' + clock.color"
-                [attr.aria-label]="clock.detail + ' ' + clock.label"
+                class="local-play-clock-grid"
+                data-testid="local-clock-panel"
               >
-                <div class="flex items-center justify-between gap-3">
-                  <span class="inline-flex items-center gap-2 font-semibold">
-                    <lib-go-stone-badge [color]="clock.color" />
-                    {{ clock.playerName }}
-                  </span>
-                  <span class="font-mono text-base font-semibold">
-                    {{ clock.label }}
-                  </span>
+                @for (clock of localClockViews(); track clock.color) {
+                  <div
+                    class="local-play-clock"
+                    [class.local-play-clock--active]="clock.isActive"
+                    [attr.data-testid]="'local-clock-' + clock.color"
+                    [attr.aria-label]="clock.detail + ' ' + clock.label"
+                  >
+                    <div class="local-play-clock__row">
+                      <span class="local-play-clock__player">
+                        <lib-go-stone-badge [color]="clock.color" />
+                        {{ clock.playerName }}
+                      </span>
+                      <span class="local-play-clock__time">
+                        {{ clock.label }}
+                      </span>
+                    </div>
+                    <p class="local-play-clock__detail">{{ clock.detail }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="local-play-turn-chip">
+              {{ i18n.t('play.current_turn') }}:
+              <span class="local-play-turn-chip__player">
+                <lib-go-stone-badge [color]="state()!.nextPlayer" />
+                {{ store.currentPlayerName() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="local-play-stage__board-region">
+          <div class="local-play-board-frame" data-testid="local-stage-board">
+            <lib-go-game-board
+              [mode]="settings()!.mode"
+              [boardSize]="state()!.boardSize"
+              [board]="state()!.board"
+              [phase]="state()!.phase"
+              [currentPlayer]="state()!.nextPlayer"
+              [lastMove]="lastPlacedPoint()"
+              [winningLine]="state()!.winnerLine"
+              [deadStones]="state()!.scoring?.deadStones ?? []"
+              [interactive]="state()!.phase !== 'finished'"
+              (pointSelected)="onBoardPoint($event)"
+            />
+          </div>
+        </div>
+
+        @if (banner() || state()!.phase === 'scoring') {
+          <div class="local-play-hud" data-testid="local-stage-hud">
+            @if (banner(); as bannerMessage) {
+              <div
+                class="flex items-start justify-between gap-3 rounded-md border border-amber-300/30 bg-amber-900/35 px-3 py-2 text-sm text-stone-50"
+              >
+                <div>
+                  <p class="font-semibold">
+                    {{ bannerMessage.summary }}
+                  </p>
+                  <p class="mt-1 leading-5 text-stone-200">
+                    {{ bannerMessage.detail }}
+                  </p>
                 </div>
-                <p class="mt-1 text-xs text-stone-500">{{ clock.detail }}</p>
+
+                <button
+                  type="button"
+                  class="rounded-full border border-current px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em]"
+                  (click)="clearBanner()"
+                >
+                  {{ i18n.t('common.action.close') }}
+                </button>
+              </div>
+            }
+
+            @if (state()!.phase === 'scoring') {
+              <div
+                class="rounded-md border border-amber-300/30 bg-amber-900/35 px-3 py-2 text-sm leading-5 text-stone-50"
+              >
+                {{ i18n.t('play.scoring_hint') }}
               </div>
             }
           </div>
         }
-
-        <div
-          class="rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-600 shadow-sm backdrop-blur"
-        >
-          {{ i18n.t('play.current_turn') }}:
-          <span
-            class="ml-2 inline-flex items-center gap-2 font-semibold text-stone-900"
-          >
-            <lib-go-stone-badge [color]="state()!.nextPlayer" />
-            {{ store.currentPlayerName() }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    @if (banner(); as bannerMessage) {
-      <div
-        class="mt-6 flex items-start justify-between gap-4 rounded-[1.5rem] border px-5 py-4 shadow-sm"
-        [ngClass]="{
-          'border-emerald-300/60': bannerMessage.tone === 'success',
-          'bg-emerald-100/80': bannerMessage.tone === 'success',
-          'text-emerald-950': bannerMessage.tone === 'success',
-          'border-amber-300/60': bannerMessage.tone === 'warn',
-          'bg-amber-100/80': bannerMessage.tone === 'warn',
-          'text-amber-950': bannerMessage.tone === 'warn',
-        }"
-      >
-        <div>
-          <p class="text-sm font-semibold">{{ bannerMessage.summary }}</p>
-          <p class="mt-1 text-sm leading-6">{{ bannerMessage.detail }}</p>
-        </div>
-
-        <button
-          type="button"
-          class="rounded-full border border-current/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] transition hover:border-current/50"
-          (click)="clearBanner()"
-        >
-          {{ i18n.t('common.action.close') }}
-        </button>
-      </div>
-    }
-
-    @if (state()!.phase === 'scoring') {
-      <div
-        class="mt-6 rounded-[1.5rem] border border-amber-300/50 bg-amber-100/80 px-5 py-4 text-sm text-amber-950 shadow-sm"
-      >
-        {{ i18n.t('play.scoring_hint') }}
-      </div>
-    }
-
-    <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
-      <div
-        class="rounded-[2rem] border border-stone-200/80 bg-white/80 p-4 shadow-xl shadow-stone-950/5 backdrop-blur sm:p-6"
-      >
-        <lib-go-game-board
-          [mode]="settings()!.mode"
-          [boardSize]="state()!.boardSize"
-          [board]="state()!.board"
-          [phase]="state()!.phase"
-          [currentPlayer]="state()!.nextPlayer"
-          [lastMove]="lastPlacedPoint()"
-          [winningLine]="state()!.winnerLine"
-          [deadStones]="state()!.scoring?.deadStones ?? []"
-          [interactive]="state()!.phase !== 'finished'"
-          (pointSelected)="onBoardPoint($event)"
-        />
-      </div>
+      </section>
 
       <lib-go-match-sidebar
+        class="local-play-sidebar"
+        data-testid="local-play-sidebar"
         [settings]="settings()"
         [state]="state()"
         (passRequested)="passTurn()"
@@ -142,25 +132,25 @@
       ></button>
 
       <aside
-        class="relative flex h-full w-full max-w-xl flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white shadow-2xl shadow-slate-950/30"
+        class="relative flex h-full w-full max-w-xl flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/95 text-stone-100 shadow-2xl shadow-slate-950/40"
       >
         <div
-          class="flex items-start justify-between gap-4 border-b border-stone-200 px-6 py-5"
+          class="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5"
         >
           <div>
             <p
-              class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500"
+              class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/65"
             >
               {{ i18n.t('play.rules_and_reminders') }}
             </p>
-            <h2 class="mt-2 text-2xl font-semibold text-stone-950">
+            <h2 class="mt-2 text-2xl font-semibold text-stone-50">
               {{ meta()!.title }}
             </h2>
           </div>
 
           <button
             type="button"
-            class="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-600 transition hover:border-stone-400 hover:text-stone-950"
+            class="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-200 transition hover:border-white/25 hover:text-stone-50"
             (click)="closeHelp()"
           >
             {{ i18n.t('common.action.close') }}
@@ -168,7 +158,7 @@
         </div>
 
         <div
-          class="space-y-4 overflow-auto px-6 py-6 text-sm leading-6 text-stone-700"
+          class="space-y-4 overflow-auto px-6 py-6 text-sm leading-6 text-stone-300"
         >
           <p>{{ meta()!.description }}</p>
           <ul class="space-y-3">
@@ -196,7 +186,7 @@
       ></button>
 
       <section
-        class="relative w-full max-w-xl rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-2xl shadow-slate-950/25"
+        class="relative w-full max-w-xl rounded-lg border border-white/10 bg-slate-950/95 p-6 text-stone-100 shadow-2xl shadow-slate-950/35"
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="i18n.t('play.match_result')"
@@ -205,21 +195,21 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <p
-              class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500"
+              class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/65"
             >
               {{ i18n.t('play.match_result') }}
             </p>
-            <p class="mt-3 text-base font-semibold text-stone-900">
+            <p class="mt-3 text-base font-semibold text-stone-50">
               {{ translateMessage(state()!.result?.summary) }}
             </p>
-            <p class="mt-2 text-sm leading-6 text-stone-600">
+            <p class="mt-2 text-sm leading-6 text-stone-300">
               {{ i18n.t('play.play_again_prompt') }}
             </p>
           </div>
 
           <button
             type="button"
-            class="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-600 transition hover:border-stone-400 hover:text-stone-950"
+            class="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-200 transition hover:border-white/25 hover:text-stone-50"
             (click)="closeResult()"
           >
             {{ i18n.t('common.action.close') }}
@@ -228,16 +218,16 @@
 
         @if (state()!.result?.score) {
           <div
-            class="mt-5 grid grid-cols-2 gap-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm"
+            class="mt-5 grid grid-cols-2 gap-4 rounded-md border border-white/10 bg-white/5 px-4 py-4 text-sm"
           >
             <div>
-              <p class="font-semibold text-stone-900">
+              <p class="font-semibold text-stone-50">
                 {{ i18n.playerLabel('black') }}
               </p>
               <p>{{ state()!.result!.score!.black.toFixed(1) }}</p>
             </div>
             <div>
-              <p class="font-semibold text-stone-900">
+              <p class="font-semibold text-stone-50">
                 {{ i18n.playerLabel('white') }}
               </p>
               <p>{{ state()!.result!.score!.white.toFixed(1) }}</p>
@@ -248,14 +238,14 @@
         <div class="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            class="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
+            class="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
             (click)="restartMatch()"
           >
             {{ i18n.t('play.play_again_action') }}
           </button>
           <button
             type="button"
-            class="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:text-stone-950"
+            class="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/25 hover:text-stone-50"
             (click)="openNewMatchConfirm()"
           >
             {{ i18n.t('play.change_setup_action') }}
@@ -277,28 +267,28 @@
       ></button>
 
       <section
-        class="relative w-full max-w-lg rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-2xl shadow-slate-950/25"
+        class="relative w-full max-w-lg rounded-lg border border-white/10 bg-slate-950/95 p-6 text-stone-100 shadow-2xl shadow-slate-950/35"
       >
         <p
-          class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500"
+          class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200/65"
         >
           {{ confirmation.header }}
         </p>
-        <p class="mt-4 text-sm leading-7 text-stone-700">
+        <p class="mt-4 text-sm leading-7 text-stone-300">
           {{ confirmation.message }}
         </p>
 
         <div class="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            class="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
+            class="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
             (click)="confirmAction()"
           >
             {{ confirmation.acceptLabel }}
           </button>
           <button
             type="button"
-            class="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:text-stone-950"
+            class="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/25 hover:text-stone-50"
             (click)="cancelConfirmation()"
           >
             {{ confirmation.rejectLabel }}

@@ -14,6 +14,95 @@ import { vi } from 'vitest';
 import { PlayPageComponent } from './play-page.component';
 
 describe('PlayPageComponent', () => {
+  it('renders local Go play inside the hosted-style stage layout', async () => {
+    const store = createGameSessionStoreStub({
+      boardSize: 19,
+      phase: 'playing',
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'play/:mode',
+            component: PlayPageComponent,
+          },
+        ]),
+        {
+          provide: GameSessionStore,
+          useValue: store,
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: createAnalyticsStub(),
+        },
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/play/go', PlayPageComponent);
+    const root = harness.routeNativeElement as HTMLElement;
+    const layout = root.querySelector('[data-testid="local-play-layout"]');
+    const stage = root.querySelector('[data-testid="local-play-stage"]');
+    const stageBoard = stage?.querySelector(
+      '[data-testid="local-stage-board"]',
+    );
+    const sidebar = layout?.querySelector('[data-testid="local-play-sidebar"]');
+    const board = stageBoard?.querySelector('[data-testid="game-board"]');
+
+    expect(layout?.classList.contains('local-play-layout')).toBe(true);
+    expect(stage?.classList.contains('local-play-stage')).toBe(true);
+    expect(stageBoard).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    expect(board).not.toBeNull();
+    expect(board?.getAttribute('aria-rowcount')).toBe('19');
+  });
+
+  it('renders local Gomoku play with the same board-first stage layout', async () => {
+    const store = createGameSessionStoreStub({
+      boardSize: 15,
+      mode: 'gomoku',
+      phase: 'playing',
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'play/:mode',
+            component: PlayPageComponent,
+          },
+        ]),
+        {
+          provide: GameSessionStore,
+          useValue: store,
+        },
+        {
+          provide: GoAnalyticsService,
+          useValue: createAnalyticsStub(),
+        },
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/play/gomoku', PlayPageComponent);
+    const root = harness.routeNativeElement as HTMLElement;
+    const layout = root.querySelector('[data-testid="local-play-layout"]');
+    const stage = root.querySelector('[data-testid="local-play-stage"]');
+    const stageBoard = stage?.querySelector(
+      '[data-testid="local-stage-board"]',
+    );
+    const sidebar = layout?.querySelector('[data-testid="local-play-sidebar"]');
+    const board = stageBoard?.querySelector('[data-testid="game-board"]');
+
+    expect(layout?.classList.contains('local-play-layout')).toBe(true);
+    expect(stage?.classList.contains('local-play-stage')).toBe(true);
+    expect(stageBoard).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    expect(board).not.toBeNull();
+    expect(board?.getAttribute('aria-rowcount')).toBe('15');
+  });
+
   it('shows the refreshed play-again actions when a local match is finished', async () => {
     const store = createGameSessionStoreStub();
     const analytics = createAnalyticsStub();
@@ -453,14 +542,18 @@ function createAbsoluteClock(): TimeControlClockState {
 
 function createGameSessionStoreStub(
   options: {
+    boardSize?: 9 | 13 | 15 | 19;
     clock?: TimeControlClockState | null;
+    mode?: 'go' | 'gomoku';
     phase?: 'finished' | 'playing' | 'scoring';
     scoring?: ScoringState | null;
   } = {},
 ) {
+  const mode = options.mode ?? 'go';
+  const boardSize = options.boardSize ?? 9;
   const settings = signal({
-    mode: 'go' as const,
-    boardSize: 9 as const,
+    mode,
+    boardSize,
     komi: 6.5,
     players: {
       black: 'Host',
@@ -470,10 +563,10 @@ function createGameSessionStoreStub(
   });
   const phase = options.phase ?? 'finished';
   const state = signal({
-    mode: 'go' as const,
-    boardSize: 9 as const,
-    board: Array.from({ length: 9 }, () =>
-      Array.from({ length: 9 }, () => null),
+    mode,
+    boardSize,
+    board: Array.from({ length: boardSize }, () =>
+      Array.from({ length: boardSize }, () => null),
     ),
     phase,
     nextPlayer: 'black' as const,

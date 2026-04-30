@@ -24,7 +24,7 @@ import { StoneBadgeComponent } from '../stone-badge/stone-badge.component';
   imports: [CommonModule, GameStatusChipComponent, StoneBadgeComponent],
   template: `
     @if (settings() && state()) {
-      <aside class="flex h-full flex-col gap-4 rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-5 text-stone-100 shadow-2xl shadow-slate-950/40 backdrop-blur">
+      <aside class="flex h-full min-h-0 flex-col gap-4 overflow-auto rounded-lg border border-white/10 bg-slate-950/70 p-5 text-stone-100 shadow-2xl shadow-slate-950/40 backdrop-blur">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/60">
