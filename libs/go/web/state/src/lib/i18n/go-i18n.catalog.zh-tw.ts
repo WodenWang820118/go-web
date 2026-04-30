@@ -81,6 +81,8 @@ const ZH_ROOM_SHARED = {
   'room.error.too_many_create_attempts': '建立房間的次數過多，請稍後再試。',
   'room.error.too_many_join_attempts': '加入房間的次數過多，請稍後再試。',
   'room.error.seat_already_claimed': '該座位已被認領。',
+  'room.error.go_seats_assigned_by_nigiri':
+    '圍棋房間會以數位 nigiri 決定棋色，不使用手動認領座位。',
   'room.error.no_player_seat': '你目前不在玩家座位上。',
   'room.error.match_must_finish': '必須先完成目前對局，才能開始新的一局。',
   'room.error.both_seats_required': '黑方與白方座位都必須有人後才能開始對局。',
@@ -214,6 +216,13 @@ const ZH_LOCAL_UI = {
     '猜測：{{guess}}。藏子：{{parity}}。{{player}} 執黑先行。',
   'setup.start_local_match': '開始本機對局',
   'setup.rules_refresher': '規則摘要',
+  'go_rules.title': '圍棋規則',
+  'go_rules.ko_rule.title': '打劫規則',
+  'go_rules.ko_rule.basic_ko': '基本劫',
+  'go_rules.ko_rule.positional_superko': '全局同形禁著',
+  'go_rules.scoring_rule.title': '計分方式',
+  'go_rules.scoring_rule.area': '中國數子法',
+  'go_rules.scoring_rule.japanese_territory': '日本數目法',
   'time_control.title': '時間制',
   'time_control.selector.legend': '正式時間制',
   'time_control.system.byo-yomi': '讀秒',
@@ -259,6 +268,8 @@ const ZH_LOCAL_UI = {
   'ui.match_sidebar.gomoku_match': '五子棋對局',
   'ui.match_sidebar.captures': '提子：{{count}}',
   'ui.match_sidebar.score_preview': '算地預覽',
+  'ui.match_sidebar.prisoner_points':
+    '俘虜目數：黑方 +{{black}}，白方 +{{white}}',
   'ui.match_sidebar.pass': '虛手',
   'ui.match_sidebar.resign': '認輸',
   'ui.match_sidebar.confirm_score': '{{player}}確認',
@@ -341,7 +352,7 @@ const ZH_HOSTED_UI = {
   'room.stage.waiting.label': '等待中',
   'room.stage.waiting.title': '仍有空位可加入。',
   'room.stage.waiting.description':
-    '玩家可以認領黑白座位，觀戰者也能提早加入並在房內聊天。',
+    '玩家可以先加入房間，觀戰者也能提早加入並在房內聊天。',
   'room.join.title.spectator': '以觀戰者加入',
   'room.join.title.pre_match': '以玩家或觀戰者加入',
   'room.join.description.spectator':
@@ -489,6 +500,7 @@ const ZH_HOSTED_UI = {
     '上一場再來一局被婉拒了。請先釋放或調整座位，再重新啟用自動開始。',
   'room.next_match.eyebrow': '下一場',
   'room.next_match.title': '下一局設定',
+  'room.next_match.chip_label': '設定',
   'room.next_match.description':
     '房間自動開始新對局時，會使用這組已儲存的設定。',
   'room.next_match.save': '儲存下一局',
@@ -498,7 +510,7 @@ const ZH_HOSTED_UI = {
   'room.next_match.locked.filled':
     '黑白雙方都入座後，房間準備自動開始，設定也會先鎖定。',
   'room.next_match.locked.offline': '重新連上房間後，才能調整下一局設定。',
-  'room.next_match.host_only': '只有房主可以調整下一局時間制。',
+  'room.next_match.host_only': '只有房主可以調整下一局圍棋規則與時間制。',
   'room.rematch.eyebrow': '再來一局',
   'room.rematch.title': '還要再下一場嗎？',
   'room.rematch.description.player':

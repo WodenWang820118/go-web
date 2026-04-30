@@ -89,6 +89,8 @@ export const JA_JP_TRANSLATIONS = {
   'room.error.too_many_join_attempts':
     '部屋への参加回数が多すぎます。少し待ってから再試行してください。',
   'room.error.seat_already_claimed': 'その席はすでに取られています。',
+  'room.error.go_seats_assigned_by_nigiri':
+    '囲碁の部屋では手動で席を取らず、デジタルニギリで色を決めます。',
   'room.error.no_player_seat': '現在プレイヤー席に座っていません。',
   'room.error.match_must_finish':
     '新しい対局を始める前に、現在の対局を終了してください。',
@@ -242,6 +244,13 @@ export const JA_JP_TRANSLATIONS = {
     '予想：{{guess}}。隠し石：{{parity}}。{{player}}が黒番として先手です。',
   'setup.start_local_match': 'ローカル対局を開始',
   'setup.rules_refresher': 'ルールのおさらい',
+  'go_rules.title': '囲碁ルール',
+  'go_rules.ko_rule.title': 'コウルール',
+  'go_rules.ko_rule.basic_ko': '基本コウ',
+  'go_rules.ko_rule.positional_superko': '局面スーパーコウ',
+  'go_rules.scoring_rule.title': '計算方法',
+  'go_rules.scoring_rule.area': '地合い計算',
+  'go_rules.scoring_rule.japanese_territory': '日本式地合い',
   'time_control.title': '時間制',
   'time_control.selector.legend': '公式時間制',
   'time_control.system.byo-yomi': '秒読み',
@@ -295,6 +304,8 @@ export const JA_JP_TRANSLATIONS = {
   'ui.match_sidebar.gomoku_match': '五目並べ対局',
   'ui.match_sidebar.captures': 'アゲハマ：{{count}}',
   'ui.match_sidebar.score_preview': '計算プレビュー',
+  'ui.match_sidebar.prisoner_points':
+    'アゲハマ目数：黒 +{{black}}、白 +{{white}}',
   'ui.match_sidebar.pass': 'パス',
   'ui.match_sidebar.resign': '投了',
   'ui.match_sidebar.confirm_score': '{{player}}が確認',
@@ -380,7 +391,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.stage.waiting.label': '待機中',
   'room.stage.waiting.title': 'まだ空いている席があります。',
   'room.stage.waiting.description':
-    'プレイヤーは黒白の席を取り、ホストは次の対局設定を調整でき、観戦者はチャットできます。',
+    'プレイヤーは先に部屋へ参加でき、ホストは次の対局設定を調整でき、観戦者はチャットできます。',
   'room.join.title.spectator': '観戦者として参加',
   'room.join.title.pre_match': 'プレイヤーまたは観戦者として参加',
   'room.join.description.spectator':
@@ -435,6 +446,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.clock.absolute': '切れ負け',
   'room.next_match.eyebrow': '次の対局',
   'room.next_match.title': '次の対局設定',
+  'room.next_match.chip_label': '設定',
   'room.next_match.description':
     '部屋が新しい対局を自動開始するとき、この保存済み設定を使用します。',
   'room.next_match.save': '次の対局を保存',
@@ -447,7 +459,7 @@ export const JA_JP_TRANSLATIONS = {
   'room.next_match.locked.offline':
     '次の対局設定を変更する前に部屋へ再接続してください。',
   'room.next_match.host_only':
-    '次の対局の時間制を変更できるのは部屋のホストだけです。',
+    '次の対局の囲碁ルールと時間制を変更できるのは部屋のホストだけです。',
   'room.rematch.eyebrow': '再戦',
   'room.rematch.title': 'もう一局しますか？',
   'room.rematch.description.player':

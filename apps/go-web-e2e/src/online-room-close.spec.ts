@@ -44,7 +44,7 @@ test('guests return to the lobby when the host closes the room', async ({
     await waitForApiHealth();
 
     await useEnglish(page);
-    const roomId = await createHostedRoom(page, 'Host');
+    const roomId = await createHostedRoom(page, 'Host', { mode: 'gomoku' });
 
     await useEnglish(guestPage);
     await guestPage.goto(`/online/room/${roomId}`);

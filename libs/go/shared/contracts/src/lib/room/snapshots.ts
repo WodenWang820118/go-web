@@ -2,6 +2,7 @@ import {
   BoardPoint,
   GameOpeningRule,
   GoMessageDescriptor,
+  GoRuleOptions,
   GameRuleset,
   MatchSettings,
   MatchState,
@@ -11,7 +12,7 @@ import {
   TimeControlSettings,
 } from '@gx/go/domain';
 
-export const ROOM_SNAPSHOT_SCHEMA_VERSION = 3;
+export const ROOM_SNAPSHOT_SCHEMA_VERSION = 4;
 
 export type RoomSnapshotSchemaVersion = typeof ROOM_SNAPSHOT_SCHEMA_VERSION;
 
@@ -102,6 +103,7 @@ export type HostedNigiriSnapshot =
 export interface HostedRulesMetadata {
   ruleset: GameRuleset;
   openingRule: GameOpeningRule;
+  goRules?: GoRuleOptions;
   timeControl: TimeControlSettings | null;
 }
 
@@ -180,6 +182,7 @@ export interface GameStartSettings {
   komi?: number;
   ruleset?: GameRuleset;
   openingRule?: GameOpeningRule;
+  goRules?: GoRuleOptions;
   timeControl?: TimeControlSettings | null;
 }
 

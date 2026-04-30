@@ -6,7 +6,7 @@ import {
   RoomSnapshot,
   SystemNotice,
 } from '@gx/go/contracts';
-import { BoardPoint, PlayerColor } from '@gx/go/domain';
+import { BoardPoint, PlayerColor, type ScoreBreakdown } from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state/i18n';
 import {
   OnlineRoomBoardSectionViewModel,
@@ -234,7 +234,7 @@ export class OnlineRoomPagePresentationService {
       const score = match.state.scoring?.score;
 
       if (score) {
-        return `${this.i18n.t('ui.match_sidebar.score_preview')}: ${this.i18n.playerLabel('black')} ${score.black.toFixed(1)}, ${this.i18n.playerLabel('white')} ${score.white.toFixed(1)}`;
+        return this.formatScoringStatusLine(score);
       }
     }
 
@@ -251,5 +251,28 @@ export class OnlineRoomPagePresentationService {
       interactive: state.canInteractBoard && state.realtimeConnected,
       statusLine: this.buildMatchStatusLine(state.match),
     };
+  }
+
+  private formatScoringStatusLine(score: ScoreBreakdown): string {
+    const preview = `${this.i18n.t(
+      'ui.match_sidebar.score_preview',
+    )} (${this.scoringRuleLabel(score.scoringRule)}): ${this.i18n.playerLabel(
+      'black',
+    )} ${score.black.toFixed(1)}, ${this.i18n.playerLabel(
+      'white',
+    )} ${score.white.toFixed(1)}`;
+
+    if (score.scoringRule !== 'japanese-territory') {
+      return preview;
+    }
+
+    return `${preview}; ${this.i18n.t('ui.match_sidebar.prisoner_points', {
+      black: score.blackPrisoners,
+      white: score.whitePrisoners,
+    })}`;
+  }
+
+  private scoringRuleLabel(rule: ScoreBreakdown['scoringRule']): string {
+    return this.i18n.t(`go_rules.scoring_rule.${rule.replace('-', '_')}`);
   }
 }

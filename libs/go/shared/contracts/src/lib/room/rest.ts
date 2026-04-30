@@ -1,6 +1,7 @@
 import {
   BoardSize,
   GameMode,
+  GoRuleOptions,
   GoMessageDescriptor,
   TimeControlSettings,
 } from '@gx/go/domain';
@@ -17,6 +18,7 @@ export interface CreateRoomRequest {
   displayName: string;
   mode: GameMode;
   boardSize: BoardSize;
+  goRules?: GoRuleOptions;
   timeControl?: TimeControlSettings | null;
 }
 

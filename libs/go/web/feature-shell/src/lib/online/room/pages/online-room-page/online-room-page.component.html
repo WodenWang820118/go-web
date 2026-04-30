@@ -233,6 +233,35 @@
     </p-dialog>
   }
 
+  <p-dialog
+    [visible]="presenter.dialogs.nextMatchSettingsDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    [closable]="true"
+    [appendTo]="'body'"
+    [style]="{ width: 'min(34rem, calc(100vw - 2rem))' }"
+    [header]="presenter.view.i18n.t('room.next_match.title')"
+    [closeAriaLabel]="presenter.view.i18n.t('common.action.close')"
+    styleClass="room-event-dialog"
+    contentStyleClass="space-y-4"
+    (visibleChange)="onNextMatchSettingsVisibleChange($event)"
+  >
+    <div class="space-y-4" data-testid="room-next-match-dialog">
+      <lib-go-online-room-next-match-panel
+        [settings]="presenter.view.nextMatchSettings()"
+        [isHost]="presenter.view.onlineRoom.isHost()"
+        [canEdit]="presenter.view.canEditNextMatchSettings()"
+        [realtimeConnected]="presenter.view.realtimeConnected()"
+        [lockedReason]="presenter.view.nextMatchSettingsLockedReason()"
+        (settingsChange)="
+          presenter.interactions.updateNextMatchSettings($event)
+        "
+      />
+    </div>
+  </p-dialog>
+
   @if (presenter.view.bootstrapState() === 'missing') {
     <lib-go-online-room-page-status
       [eyebrow]="presenter.view.missingStatusView().eyebrow"
@@ -261,11 +290,13 @@
         [roomStage]="presenter.view.roomStage()"
         [boardSection]="presenter.view.boardSection()"
         [shareChip]="presenter.share.shareChip()"
+        [settingsChip]="presenter.view.settingsChip()"
         (pointSelected)="presenter.interactions.onBoardPoint($event)"
         (copyRequested)="presenter.share.copyShareUrl()"
         (manualFallbackDismissed)="
           presenter.share.dismissShareCopyManualFallback()
         "
+        (settingsRequested)="presenter.dialogs.openNextMatchSettingsDialog()"
       />
 
       <lib-go-online-room-sidebar
@@ -281,12 +312,6 @@
         [seats]="presenter.view.seats()"
         [participants]="presenter.view.participants()"
         [match]="presenter.view.match()"
-        [nextMatchSettings]="presenter.view.nextMatchSettings()"
-        [isHost]="presenter.view.onlineRoom.isHost()"
-        [canEditNextMatchSettings]="presenter.view.canEditNextMatchSettings()"
-        [nextMatchSettingsLockedReason]="
-          presenter.view.nextMatchSettingsLockedReason()
-        "
         [messages]="presenter.view.onlineRoom.chat()"
         [helperText]="presenter.view.chatHelperText()"
         [canPass]="presenter.view.canPass()"
@@ -300,9 +325,6 @@
         (backToLobbyRequested)="presenter.leave.requestBackToLobby()"
         (claimSeatRequested)="presenter.interactions.claimSeat($event)"
         (releaseSeatRequested)="presenter.interactions.releaseSeat()"
-        (nextMatchSettingsChange)="
-          presenter.interactions.updateNextMatchSettings($event)
-        "
         (passRequested)="presenter.interactions.passTurn()"
         (resignRequested)="presenter.interactions.resign()"
         (confirmScoringRequested)="presenter.interactions.confirmScoring()"

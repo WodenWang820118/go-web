@@ -10,6 +10,7 @@ import {
   OnlineRoomPageStatusViewModel,
   OnlineRoomSeatViewModel,
   OnlineRoomFeedbackMessageViewModel,
+  OnlineRoomSettingsChipViewModel,
   OnlineRoomSidebarRematchStatusViewModel,
   OnlineRoomStageViewModel,
 } from '../../../../contracts/online-room-view.contracts';
@@ -52,6 +53,21 @@ export class OnlineRoomPageViewStateService {
       this.match(),
     );
   });
+  readonly settingsChip = computed<OnlineRoomSettingsChipViewModel | null>(
+    () => {
+      if (!this.nextMatchSettings()) {
+        return null;
+      }
+
+      const title = this.i18n.t('room.next_match.title');
+
+      return {
+        label: this.i18n.t('room.next_match.chip_label'),
+        title,
+        ariaLabel: title,
+      };
+    },
+  );
   readonly loadingStatusView = computed<OnlineRoomPageStatusViewModel>(() =>
     this.presentation.buildRoomLoadingStatusView(this.roomId()),
   );

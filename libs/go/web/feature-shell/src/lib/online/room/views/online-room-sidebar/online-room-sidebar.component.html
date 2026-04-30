@@ -21,15 +21,6 @@
     (releaseSeatRequested)="releaseSeatRequested.emit()"
   />
 
-  <lib-go-online-room-sidebar-next-match-panel
-    [settings]="nextMatchSettings()"
-    [isHost]="isHost()"
-    [canEdit]="canEditNextMatchSettings()"
-    [realtimeConnected]="realtimeConnected()"
-    [lockedReason]="nextMatchSettingsLockedReason()"
-    (settingsChange)="nextMatchSettingsChange.emit($event)"
-  />
-
   @if (showRematch()) {
     <lib-go-online-room-sidebar-rematch-panel
       [canRespondToRematch]="canRespondToRematch()"

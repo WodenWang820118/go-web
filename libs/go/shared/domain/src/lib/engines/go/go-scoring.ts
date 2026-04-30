@@ -1,6 +1,7 @@
 import {
   BoardMatrix,
   BoardPoint,
+  GoScoringRule,
   MatchState,
   PlayerColor,
   ScoreBreakdown,
@@ -17,19 +18,35 @@ import {
 } from '../../board/board-state';
 import { parsePointKey, pointKey } from '../../board/point-utils';
 
+interface GoScoringOptions {
+  komi: number;
+  captures: Record<PlayerColor, number>;
+  scoringRule: GoScoringRule;
+}
+
 /**
  * Recomputes the Go scoring snapshot from the current board and marked dead stones.
  */
 export function buildScoringState(
   board: BoardMatrix,
   deadStoneKeys: Set<string>,
-  komi: number,
+  options: GoScoringOptions,
 ): ScoringState {
   const adjustedBoard = cloneBoard(board);
   const boardSize = board.length as MatchState['boardSize'];
+  const deadStoneCounts: Record<PlayerColor, number> = {
+    black: 0,
+    white: 0,
+  };
 
   for (const key of deadStoneKeys) {
     const point = parsePointKey(key);
+    const color = getCell(board, point);
+
+    if (color) {
+      deadStoneCounts[color] += 1;
+    }
+
     setCell(adjustedBoard, point, null);
   }
 
@@ -86,33 +103,45 @@ export function buildScoringState(
   }
 
   const stoneCounts = countStones(adjustedBoard);
-  const score = territory.reduce<ScoreBreakdown>(
-    (currentScore, region) => {
-      if (region.owner === 'black') {
-        currentScore.blackTerritory += region.points.length;
-      } else if (region.owner === 'white') {
-        currentScore.whiteTerritory += region.points.length;
+  const territoryCounts = territory.reduce<Record<PlayerColor, number>>(
+    (counts, region) => {
+      if (region.owner) {
+        counts[region.owner] += region.points.length;
       }
 
-      currentScore.black =
-        currentScore.blackStones + currentScore.blackTerritory;
-      currentScore.white =
-        currentScore.whiteStones +
-        currentScore.whiteTerritory +
-        currentScore.komi;
-
-      return currentScore;
+      return counts;
     },
     {
-      black: stoneCounts.black,
-      white: stoneCounts.white + komi,
-      blackStones: stoneCounts.black,
-      whiteStones: stoneCounts.white,
-      blackTerritory: 0,
-      whiteTerritory: 0,
-      komi,
+      black: 0,
+      white: 0,
     },
   );
+  const blackPrisoners =
+    options.scoringRule === 'japanese-territory'
+      ? options.captures.black + deadStoneCounts.white
+      : 0;
+  const whitePrisoners =
+    options.scoringRule === 'japanese-territory'
+      ? options.captures.white + deadStoneCounts.black
+      : 0;
+  const score: ScoreBreakdown = {
+    black:
+      options.scoringRule === 'japanese-territory'
+        ? territoryCounts.black + blackPrisoners
+        : stoneCounts.black + territoryCounts.black,
+    white:
+      options.scoringRule === 'japanese-territory'
+        ? territoryCounts.white + whitePrisoners + options.komi
+        : stoneCounts.white + territoryCounts.white + options.komi,
+    blackStones: stoneCounts.black,
+    whiteStones: stoneCounts.white,
+    blackTerritory: territoryCounts.black,
+    whiteTerritory: territoryCounts.white,
+    blackPrisoners,
+    whitePrisoners,
+    komi: options.komi,
+    scoringRule: options.scoringRule,
+  };
 
   return {
     deadStones: [...deadStoneKeys],

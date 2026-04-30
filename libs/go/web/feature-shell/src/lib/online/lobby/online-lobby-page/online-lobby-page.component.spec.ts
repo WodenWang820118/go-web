@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { DEFAULT_GO_TIME_CONTROL } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
+} from '@gx/go/domain';
 import { GoI18nService } from '@gx/go/state';
 import { throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -98,6 +101,7 @@ describe('OnlineLobbyPageComponent', () => {
       'go',
       19,
       DEFAULT_GO_TIME_CONTROL,
+      DEFAULT_GO_RULE_OPTIONS,
     );
     expect(router.url).toBe('/online/room/ROOM42');
   });
@@ -127,6 +131,7 @@ describe('OnlineLobbyPageComponent', () => {
       'go',
       13,
       DEFAULT_GO_TIME_CONTROL,
+      DEFAULT_GO_RULE_OPTIONS,
     );
     expect(router.url).toBe('/online/room/ROOM01');
   });
@@ -153,12 +158,50 @@ describe('OnlineLobbyPageComponent', () => {
     queryCreateRoomDialogConfirm().click();
     await harness.fixture.whenStable();
 
-    expect(roomService.createRoom).toHaveBeenCalledWith('Captain', 'go', 19, {
-      type: 'canadian',
-      mainTimeMs: 1_800_000,
-      periodTimeMs: 300_000,
-      stonesPerPeriod: 20,
-    });
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      {
+        type: 'canadian',
+        mainTimeMs: 1_800_000,
+        periodTimeMs: 300_000,
+        stonesPerPeriod: 20,
+      },
+      DEFAULT_GO_RULE_OPTIONS,
+    );
+  });
+
+  it('creates a go room with selected ko and scoring rules', async () => {
+    const lobbyService = createLobbyServiceStub([], []);
+    const roomService = createRoomServiceStub();
+
+    const harness = await renderLobby(lobbyService, roomService);
+    const button = harness.routeNativeElement?.querySelector(
+      '[data-testid="online-lobby-create-button"]',
+    ) as HTMLButtonElement;
+
+    await fillLobbyDisplayName(harness);
+    button.click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomKoRule('positional-superko').click();
+    queryCreateRoomScoringRule('japanese-territory').click();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    queryCreateRoomDialogConfirm().click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.createRoom).toHaveBeenCalledWith(
+      'Captain',
+      'go',
+      19,
+      DEFAULT_GO_TIME_CONTROL,
+      {
+        koRule: 'positional-superko',
+        scoringRule: 'japanese-territory',
+      },
+    );
   });
 
   it('creates a go room with the selected 9-line board size', async () => {
@@ -186,6 +229,7 @@ describe('OnlineLobbyPageComponent', () => {
       'go',
       9,
       DEFAULT_GO_TIME_CONTROL,
+      DEFAULT_GO_RULE_OPTIONS,
     );
     expect(router.url).toBe('/online/room/ROOM01');
   });
@@ -254,6 +298,7 @@ describe('OnlineLobbyPageComponent', () => {
       'go',
       19,
       DEFAULT_GO_TIME_CONTROL,
+      DEFAULT_GO_RULE_OPTIONS,
     );
   });
 
@@ -568,6 +613,7 @@ describe('OnlineLobbyPageComponent', () => {
       'go',
       19,
       DEFAULT_GO_TIME_CONTROL,
+      DEFAULT_GO_RULE_OPTIONS,
     );
     expect(
       harness.routeNativeElement?.querySelector(
@@ -753,4 +799,20 @@ function queryCreateRoomTimeControl(): HTMLSelectElement {
   return document.body.querySelector(
     '[data-testid="time-control-preset-select"]',
   ) as HTMLSelectElement;
+}
+
+function queryCreateRoomKoRule(
+  rule: 'basic-ko' | 'positional-superko',
+): HTMLInputElement {
+  return document.body.querySelector(
+    `[data-testid="lobby-create-ko-rule-${rule}"]`,
+  ) as HTMLInputElement;
+}
+
+function queryCreateRoomScoringRule(
+  rule: 'area' | 'japanese-territory',
+): HTMLInputElement {
+  return document.body.querySelector(
+    `[data-testid="lobby-create-scoring-rule-${rule}"]`,
+  ) as HTMLInputElement;
 }

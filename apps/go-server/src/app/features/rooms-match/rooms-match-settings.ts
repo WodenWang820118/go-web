@@ -4,12 +4,16 @@ import {
 } from '@gx/go/contracts';
 import {
   DEFAULT_GO_KOMI,
+  DEFAULT_GO_RULE_OPTIONS,
   GOMOKU_FREE_OPENING,
   GOMOKU_BOARD_SIZE,
   GOMOKU_STANDARD_EXACT_FIVE_RULESET,
   GO_AREA_AGREEMENT_RULESET,
   GO_BOARD_SIZES,
   GO_DIGITAL_NIGIRI_OPENING,
+  isGoKoRule,
+  isGoScoringRule,
+  type GoRuleOptions,
   type MatchSettings,
 } from '@gx/go/domain';
 import { Inject, Injectable } from '@nestjs/common';
@@ -41,8 +45,13 @@ export class RoomsMatchSettingsService {
             : DEFAULT_GO_KOMI,
         ruleset: GO_AREA_AGREEMENT_RULESET,
         openingRule: GO_DIGITAL_NIGIRI_OPENING,
+        goRules: this.normalizeGoRuleOptions(settings.goRules),
         timeControl: this.normalizeTimeControl('go', settings.timeControl),
       };
+    }
+
+    if (settings.goRules !== undefined) {
+      throw this.roomsErrors.badRequest('room.error.go_rules_not_supported');
     }
 
     if (settings.boardSize !== GOMOKU_BOARD_SIZE) {
@@ -78,6 +87,11 @@ export class RoomsMatchSettingsService {
         (settings.mode === 'go'
           ? GO_DIGITAL_NIGIRI_OPENING
           : GOMOKU_FREE_OPENING),
+      ...(settings.mode === 'go'
+        ? {
+            goRules: this.normalizeGoRuleOptions(settings.goRules),
+          }
+        : {}),
       timeControl: this.normalizeTimeControl(
         settings.mode,
         settings.timeControl,
@@ -104,5 +118,26 @@ export class RoomsMatchSettingsService {
     }
 
     return result.timeControl;
+  }
+
+  private normalizeGoRuleOptions(goRules: unknown): GoRuleOptions {
+    if (goRules === undefined || goRules === null) {
+      return DEFAULT_GO_RULE_OPTIONS;
+    }
+
+    if (typeof goRules !== 'object') {
+      throw this.roomsErrors.badRequest('room.error.invalid_go_rules');
+    }
+
+    const options = goRules as Partial<GoRuleOptions>;
+
+    if (!isGoKoRule(options.koRule) || !isGoScoringRule(options.scoringRule)) {
+      throw this.roomsErrors.badRequest('room.error.invalid_go_rules');
+    }
+
+    return {
+      koRule: options.koRule,
+      scoringRule: options.scoringRule,
+    };
   }
 }

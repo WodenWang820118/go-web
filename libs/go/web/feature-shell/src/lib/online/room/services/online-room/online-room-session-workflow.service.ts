@@ -6,7 +6,12 @@ import {
   JoinRoomResponse,
   RoomClosedEvent,
 } from '@gx/go/contracts';
-import type { BoardSize, GameMode, TimeControlSettings } from '@gx/go/domain';
+import type {
+  BoardSize,
+  GameMode,
+  GoRuleOptions,
+  TimeControlSettings,
+} from '@gx/go/domain';
 import {
   buildGoAnalyticsLevelName,
   GoAnalyticsJoinSource,
@@ -126,6 +131,7 @@ export class OnlineRoomSessionWorkflowService {
     mode: GameMode,
     boardSize: BoardSize,
     timeControl?: TimeControlSettings | null,
+    goRules?: GoRuleOptions,
   ): Observable<CreateRoomResponse> {
     return defer(() => {
       this.state.setCreating(true);
@@ -137,7 +143,7 @@ export class OnlineRoomSessionWorkflowService {
       });
 
       return this.api
-        .createRoom(displayName, mode, boardSize, timeControl)
+        .createRoom(displayName, mode, boardSize, timeControl, goRules)
         .pipe(
           tap((response) => {
             this.applyJoinResponse(response.roomId, displayName, response);

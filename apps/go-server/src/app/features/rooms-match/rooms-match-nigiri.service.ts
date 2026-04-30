@@ -28,6 +28,27 @@ export class RoomsMatchNigiriService {
     private readonly roomsErrors: RoomsErrorsService,
   ) {}
 
+  /**
+   * Single entry point for assigning temporary Go seats before digital nigiri.
+   */
+  prepareRoomForDirectNigiri(room: RoomRecord): GoMessageDescriptor | null {
+    if (
+      !this.requiresDigitalNigiri(room.nextMatchSettings) ||
+      room.nigiri ||
+      room.rematch ||
+      room.autoStartBlockedUntilSeatChange ||
+      (room.match && room.match.state.phase !== 'finished')
+    ) {
+      return null;
+    }
+
+    if (!this.ensureDirectGoSeats(room)) {
+      return null;
+    }
+
+    return this.maybeBeginDigitalNigiri(room);
+  }
+
   maybeBeginDigitalNigiri(room: RoomRecord): GoMessageDescriptor | null {
     if (!this.requiresDigitalNigiri(room.nextMatchSettings)) {
       return null;
@@ -136,6 +157,64 @@ export class RoomsMatchNigiriService {
 
     black.seat = 'white';
     white.seat = 'black';
+  }
+
+  private ensureDirectGoSeats(room: RoomRecord): boolean {
+    const black = this.store.getSeatHolder(room, 'black');
+    const white = this.store.getSeatHolder(room, 'white');
+
+    if (black && white) {
+      return true;
+    }
+
+    if (!black && !white) {
+      const host = this.store.getParticipantById(room, room.hostParticipantId);
+      const guest = this.findFirstSeatCandidate(room, host.id);
+
+      if (!guest) {
+        return false;
+      }
+
+      host.seat = 'black';
+      guest.seat = 'white';
+      return true;
+    }
+
+    if (!black && white) {
+      const candidate = this.findFirstSeatCandidate(room, white.id);
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.seat = 'black';
+      return true;
+    }
+
+    if (black && !white) {
+      const candidate = this.findFirstSeatCandidate(room, black.id);
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.seat = 'white';
+      return true;
+    }
+
+    return false;
+  }
+
+  private findFirstSeatCandidate(
+    room: RoomRecord,
+    excludedParticipantId: string,
+  ): ParticipantRecord | null {
+    return (
+      [...room.participants.values()].find(
+        (participant) =>
+          participant.id !== excludedParticipantId && !participant.seat,
+      ) ?? null
+    );
   }
 
   private createPendingNigiri(guesser: PlayerColor): {

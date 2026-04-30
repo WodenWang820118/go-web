@@ -19,6 +19,7 @@ import {
   MatchState,
   MoveCommand,
   PlayerColor,
+  resolveGoRuleOptions,
 } from '../types';
 
 /**
@@ -100,7 +101,7 @@ export class GoRulesEngine implements RulesEngine {
     }
 
     const scoring = {
-      ...buildScoringState(state.board, deadStones, settings.komi),
+      ...this.buildScoringState(state.board, deadStones, state, settings),
       confirmedBy: [],
       revision: (state.scoring.revision ?? 0) + 1,
     };
@@ -218,11 +219,15 @@ export class GoRulesEngine implements RulesEngine {
 
     const nextHash = boardHash(nextBoard);
 
-    if (
-      state.previousBoardHashes.length >= 2 &&
-      nextHash ===
-        state.previousBoardHashes[state.previousBoardHashes.length - 2]
-    ) {
+    const { koRule } = resolveGoRuleOptions(settings);
+    const isRepeatedPosition =
+      koRule === 'positional-superko'
+        ? state.previousBoardHashes.includes(nextHash)
+        : state.previousBoardHashes.length >= 2 &&
+          nextHash ===
+            state.previousBoardHashes[state.previousBoardHashes.length - 2];
+
+    if (isRepeatedPosition) {
       return failure(state, 'game.go.error.ko_repeat');
     }
 
@@ -272,7 +277,7 @@ export class GoRulesEngine implements RulesEngine {
     const consecutivePasses = state.consecutivePasses + 1;
     const willStartScoring = consecutivePasses >= 2;
     const scoring = willStartScoring
-      ? buildScoringState(state.board, new Set<string>(), settings.komi)
+      ? this.buildScoringState(state.board, new Set<string>(), state, settings)
       : null;
     const moveRecord = createMoveRecord(
       state,
@@ -375,5 +380,18 @@ export class GoRulesEngine implements RulesEngine {
       },
       message: summary,
     };
+  }
+
+  private buildScoringState(
+    board: MatchState['board'],
+    deadStones: Set<string>,
+    state: MatchState,
+    settings: MatchSettings,
+  ) {
+    return buildScoringState(board, deadStones, {
+      captures: state.captures,
+      komi: settings.komi,
+      scoringRule: resolveGoRuleOptions(settings).scoringRule,
+    });
   }
 }

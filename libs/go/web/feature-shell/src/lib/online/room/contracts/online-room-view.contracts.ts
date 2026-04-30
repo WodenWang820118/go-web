@@ -36,6 +36,12 @@ export interface OnlineRoomShareChipViewModel {
   readonly feedbackState: OnlineRoomShareChipFeedbackState;
 }
 
+export interface OnlineRoomSettingsChipViewModel {
+  readonly label: string;
+  readonly title: string;
+  readonly ariaLabel: string;
+}
+
 export interface OnlineRoomBoardSectionViewModel {
   readonly lastPlacedPoint: BoardPoint | null;
   readonly interactive: boolean;

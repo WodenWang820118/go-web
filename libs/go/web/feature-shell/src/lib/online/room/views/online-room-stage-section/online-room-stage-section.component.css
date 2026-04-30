@@ -62,6 +62,7 @@
   min-width: 0;
 }
 
+.room-stage__settings-anchor,
 .room-stage__share-anchor {
   display: flex;
   justify-content: flex-end;
@@ -70,6 +71,66 @@
 
 .room-stage__share-anchor lib-go-online-room-share-chip {
   width: min(100%, 12rem);
+}
+
+.room-stage-settings-chip__button-reset {
+  width: auto;
+  max-width: min(100%, 12rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.room-stage-settings-chip__button-reset:not(:disabled) {
+  cursor: pointer;
+}
+
+.room-stage-settings-chip__button-reset:not(:disabled):hover
+  .room-stage-settings-chip__trigger,
+.room-stage-settings-chip__button-reset:focus-visible
+  .room-stage-settings-chip__trigger {
+  transform: translateY(-1px);
+}
+
+.room-stage-settings-chip__button-reset:focus-visible {
+  outline: none;
+}
+
+.room-stage-settings-chip__button-reset:focus-visible
+  .room-stage-settings-chip__trigger {
+  outline: 2px solid rgba(220, 184, 93, 0.72);
+  outline-offset: 2px;
+}
+
+.room-stage-settings-chip__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(220, 184, 93, 0.26);
+  border-radius: var(--go-hosted-radius-pill, 999px);
+  padding: 0.56rem 0.72rem;
+  background:
+    linear-gradient(180deg, rgba(61, 51, 31, 0.94), rgba(25, 21, 15, 0.94)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  color: #fff4d0;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+  user-select: none;
+}
+
+.room-stage-settings-chip__label {
+  min-width: 0;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .room-stage__empty {
@@ -90,6 +151,7 @@
     justify-items: stretch;
   }
 
+  .room-stage__settings-anchor,
   .room-stage__share-anchor {
     padding-inline-start: 0.25rem;
   }
@@ -163,5 +225,9 @@
 
   .room-stage__share-anchor--board lib-go-online-room-share-chip {
     width: min(100%, 6rem);
+  }
+
+  .room-stage__settings-anchor .room-stage-settings-chip__button-reset {
+    max-width: min(100%, 6rem);
   }
 }

@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { GoI18nService } from '@gx/go/state';
-import { DEFAULT_GO_TIME_CONTROL, createMessage } from '@gx/go/domain';
+import {
+  DEFAULT_GO_RULE_OPTIONS,
+  DEFAULT_GO_TIME_CONTROL,
+  createMessage,
+} from '@gx/go/domain';
 import { GameBoardComponent } from '@gx/go/ui';
 import {
   createHostedMatch,
@@ -14,6 +18,8 @@ import {
   renderOnlineRoomPage,
   resetOnlineRoomPageTestEnvironment,
 } from './online-room-page.test-support';
+
+type OnlineRoomPageHarness = Awaited<ReturnType<typeof renderOnlineRoomPage>>;
 
 describe('OnlineRoomPageComponent > stage and layout', () => {
   afterEach(() => {
@@ -58,6 +64,7 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
           boardSize: 19,
           komi: 6.5,
           timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: DEFAULT_GO_RULE_OPTIONS,
         },
       }),
       participantId: 'host-1',
@@ -65,10 +72,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     });
 
     const harness = await renderOnlineRoomPage(roomService);
-    const root = harness.routeNativeElement as HTMLElement;
-    const select = root.querySelector(
-      '[data-testid="time-control-preset-select"]',
-    ) as HTMLSelectElement;
+    const select = await openNextMatchSettingsDialogControl<HTMLSelectElement>(
+      harness,
+      'time-control-preset-select',
+    );
 
     select.value = 'bga-candidates-fischer-75-20';
     select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -85,6 +92,127 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
         },
       }),
     );
+  });
+
+  it('lets the host update the next Go match rule options', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        nextMatchSettings: {
+          mode: 'go',
+          boardSize: 19,
+          komi: 6.5,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: DEFAULT_GO_RULE_OPTIONS,
+        },
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const koRule = await openNextMatchSettingsDialogControl<HTMLInputElement>(
+      harness,
+      'room-next-match-ko-rule-positional-superko',
+    );
+
+    koRule.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.updateNextMatchSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'area',
+        },
+      }),
+    );
+
+    roomService.updateNextMatchSettings.mockClear();
+    roomService.snapshot.set(
+      createSnapshot({
+        nextMatchSettings: {
+          mode: 'go',
+          boardSize: 19,
+          komi: 6.5,
+          timeControl: DEFAULT_GO_TIME_CONTROL,
+          goRules: {
+            koRule: 'positional-superko',
+            scoringRule: 'area',
+          },
+        },
+      }),
+    );
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    const scoringRule = document.body.querySelector(
+      '[data-testid="room-next-match-scoring-rule-japanese-territory"]',
+    ) as HTMLInputElement;
+
+    scoringRule.click();
+    await harness.fixture.whenStable();
+
+    expect(roomService.updateNextMatchSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goRules: {
+          koRule: 'positional-superko',
+          scoringRule: 'japanese-territory',
+        },
+      }),
+    );
+  });
+
+  it('dismisses the next-match settings dialog from the dialog close control', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = await openNextMatchSettingsDialog(harness);
+    const i18n = TestBed.inject(GoI18nService);
+    const [visibleDialog] = queryVisibleDialogs(harness);
+
+    expect(visibleDialog?.closable).toBe(true);
+    expect(visibleDialog?.dismissableMask).toBe(true);
+
+    queryDialogHeaderClose(
+      'room-next-match-dialog',
+      i18n.t('common.action.close'),
+    )?.click();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-next-match-dialog')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-settings-chip-button"]'),
+    ).not.toBeNull();
+    expect(roomService.updateNextMatchSettings).not.toHaveBeenCalled();
+  });
+
+  it('closes the next-match settings dialog if room settings disappear', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot(),
+      participantId: 'host-1',
+      participantToken: 'token-host',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = await openNextMatchSettingsDialog(harness);
+
+    roomService.snapshot.set(
+      createSnapshot({
+        nextMatchSettings: null,
+      }),
+    );
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-next-match-dialog')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-settings-chip-button"]'),
+    ).toBeNull();
+    expect(roomService.updateNextMatchSettings).not.toHaveBeenCalled();
   });
 
   it('opens pending Go nigiri in a dialog and routes guesses from the page', async () => {
@@ -269,10 +397,20 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     const stage = root.querySelector('[data-testid="room-stage"]');
     const boardWrap = root.querySelector('[data-testid="room-board-wrap"]');
     const stageDock = root.querySelector('[data-testid="room-stage-dock"]');
+    const settingsAnchor = stageDock?.querySelector(
+      '[data-testid="room-stage-settings-anchor"]',
+    );
+    const shareAnchor = stageDock?.querySelector(
+      '[data-testid="room-stage-share-anchor"]',
+    );
+    const settingsChipButton = root.querySelector(
+      '[data-testid="room-settings-chip-button"]',
+    ) as HTMLButtonElement | null;
     const shareChipButton = root.querySelector(
       '[data-testid="room-share-chip-button"]',
     ) as HTMLButtonElement | null;
 
+    expect(settingsChipButton).not.toBeNull();
     expect(
       root.querySelector('[data-testid="room-compact-header"]'),
     ).toBeNull();
@@ -294,9 +432,14 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     ).not.toBeNull();
     expect(boardWrap).not.toBeNull();
     expect(stageDock).not.toBeNull();
+    expect(settingsAnchor).not.toBeNull();
+    expect(shareAnchor).not.toBeNull();
     expect(
-      stageDock?.querySelector('[data-testid="room-stage-share-anchor"]'),
-    ).not.toBeNull();
+      !!(
+        settingsAnchor?.compareDocumentPosition(shareAnchor as Node) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      ),
+    ).toBe(true);
     expect(
       boardWrap?.querySelector('[data-testid="room-stage-share-anchor"]'),
     ).toBeNull();
@@ -306,6 +449,12 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(
       boardWrap?.querySelector('[data-testid="room-stage-hud"]'),
     ).toBeNull();
+    expect(settingsChipButton?.textContent).toContain(
+      i18n.t('room.next_match.chip_label'),
+    );
+    expect(settingsChipButton?.getAttribute('aria-label')).toBe(
+      i18n.t('room.next_match.title'),
+    );
     expect(shareChipButton?.textContent).toContain(i18n.t('room.hero.share'));
     expect(shareChipButton?.getAttribute('role')).toBe('button');
     expect(shareChipButton?.getAttribute('tabindex')).toBe('0');
@@ -322,12 +471,12 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(root.querySelector('[data-testid="join-room-form"]')).toBeNull();
     expect(
       root.querySelector('[data-testid="room-next-match-panel"]'),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(
       root.querySelector(
         '[data-testid="room-next-match-readonly-time-control"]',
       ),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(
       root.querySelector('[data-testid="room-move-log-panel"]'),
     ).toBeNull();
@@ -369,6 +518,67 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(root.textContent).not.toContain(
       i18n.t('room.sidebar.decorative_avatar'),
     );
+  });
+
+  it('opens next-match settings for guests in readonly mode', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSeatedSnapshot(),
+      participantId: 'guest-1',
+      participantToken: 'token-guest',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = await openNextMatchSettingsDialog(harness);
+    const i18n = TestBed.inject(GoI18nService);
+    const [visibleDialog] = queryVisibleDialogs(harness);
+
+    expect(visibleDialog?.closable).toBe(true);
+    expect(visibleDialog?.dismissableMask).toBe(true);
+    expectReadonlyNextMatchDialog();
+    expect(roomService.updateNextMatchSettings).not.toHaveBeenCalled();
+
+    const closeButton = queryDialogHeaderClose(
+      'room-next-match-dialog',
+      i18n.t('common.action.close'),
+    );
+
+    expect(closeButton).not.toBeNull();
+
+    closeButton?.click();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-next-match-dialog')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-settings-chip-button"]'),
+    ).not.toBeNull();
+    expect(roomService.updateNextMatchSettings).not.toHaveBeenCalled();
+  });
+
+  it('closes a guest readonly settings dialog if room settings disappear', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSeatedSnapshot(),
+      participantId: 'guest-1',
+      participantToken: 'token-guest',
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = await openNextMatchSettingsDialog(harness);
+
+    roomService.snapshot.set(
+      createSeatedSnapshot({
+        overrides: {
+          nextMatchSettings: null,
+        },
+      }),
+    );
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+
+    expect(queryDialog('room-next-match-dialog')).toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-settings-chip-button"]'),
+    ).toBeNull();
+    expect(roomService.updateNextMatchSettings).not.toHaveBeenCalled();
   });
 
   it('keeps the match status hud inside the board column while the share chip stays docked separately', async () => {
@@ -415,10 +625,38 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     ).toBeNull();
   });
 
-  it('omits the stage dock when no share URL is available', async () => {
+  it('keeps the settings chip available in the stage dock when no share URL is available', async () => {
     const roomService = createRoomServiceStub({
       snapshot: createSnapshot({
         match: createHostedMatch(),
+      }),
+      participantId: 'host-1',
+      participantToken: 'token-1',
+      shareUrl: null,
+    });
+
+    const harness = await renderOnlineRoomPage(roomService);
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(
+      root.querySelector('[data-testid="room-stage-board"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-stage-dock"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-stage-settings-anchor"]'),
+    ).not.toBeNull();
+    expect(
+      root.querySelector('[data-testid="room-stage-share-anchor"]'),
+    ).toBeNull();
+  });
+
+  it('omits the stage dock when no share URL or settings chip is available', async () => {
+    const roomService = createRoomServiceStub({
+      snapshot: createSnapshot({
+        match: createHostedMatch(),
+        nextMatchSettings: null,
       }),
       participantId: 'host-1',
       participantToken: 'token-1',
@@ -452,6 +690,9 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     expect(stageEmpty).not.toBeNull();
     expect(root.querySelector('[data-testid="room-board-wrap"]')).toBeNull();
     expect(stageDock).not.toBeNull();
+    expect(
+      stageDock?.querySelector('[data-testid="room-stage-settings-anchor"]'),
+    ).not.toBeNull();
     expect(
       stageDock?.querySelector('[data-testid="room-stage-share-anchor"]'),
     ).not.toBeNull();
@@ -519,7 +760,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
                 whiteStones: 12,
                 blackTerritory: 0,
                 whiteTerritory: 0,
+                blackPrisoners: 0,
+                whitePrisoners: 0,
                 komi: 6.5,
+                scoringRule: 'area',
               },
             },
           }),
@@ -619,7 +863,10 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
                 whiteStones: 12,
                 blackTerritory: 0,
                 whiteTerritory: 0,
+                blackPrisoners: 0,
+                whitePrisoners: 0,
                 komi: 6.5,
+                scoringRule: 'area',
               },
             },
           }),
@@ -711,3 +958,60 @@ describe('OnlineRoomPageComponent > stage and layout', () => {
     ).toBeNull();
   });
 });
+
+async function openNextMatchSettingsDialog(
+  harness: OnlineRoomPageHarness,
+): Promise<HTMLElement> {
+  const root = harness.routeNativeElement as HTMLElement;
+  const settingsButton = root.querySelector(
+    '[data-testid="room-settings-chip-button"]',
+  ) as HTMLButtonElement | null;
+
+  expect(settingsButton).not.toBeNull();
+
+  settingsButton?.click();
+  await harness.fixture.whenStable();
+
+  expect(queryDialog('room-next-match-dialog')).not.toBeNull();
+
+  return root;
+}
+
+async function openNextMatchSettingsDialogControl<T extends HTMLElement>(
+  harness: OnlineRoomPageHarness,
+  testId: string,
+): Promise<T> {
+  await openNextMatchSettingsDialog(harness);
+
+  const control = document.body.querySelector(
+    `[data-testid="${testId}"]`,
+  ) as T | null;
+
+  expect(control).not.toBeNull();
+
+  return control as T;
+}
+
+function expectReadonlyNextMatchDialog(): void {
+  expect(
+    document.body.querySelector('[data-testid="room-next-match-panel"]'),
+  ).not.toBeNull();
+  expect(
+    document.body.querySelector(
+      '[data-testid="room-next-match-readonly-time-control"]',
+    ),
+  ).not.toBeNull();
+  expect(
+    document.body.querySelector('[data-testid="time-control-preset-select"]'),
+  ).toBeNull();
+  expect(
+    document.body.querySelector(
+      '[data-testid="room-next-match-ko-rule-fieldset"]',
+    ),
+  ).toBeNull();
+  expect(
+    document.body.querySelector(
+      '[data-testid="room-next-match-scoring-rule-fieldset"]',
+    ),
+  ).toBeNull();
+}

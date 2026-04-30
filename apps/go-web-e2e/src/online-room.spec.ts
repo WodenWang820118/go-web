@@ -225,6 +225,8 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
     const roomId = await createHostedRoom(page, 'Go Host', {
       mode: 'go',
       boardSize: 9,
+      koRule: 'positional-superko',
+      scoringRule: 'japanese-territory',
     });
 
     await useEnglish(guestPage);
@@ -265,6 +267,15 @@ test('hosted Go resolves nigiri, shows clocks, and completes scoring agreement',
     ).toBeEnabled();
     await whitePage.getByRole('button', { name: 'Pass', exact: true }).click();
 
+    await expect(page.getByTestId('room-stage-hud')).toContainText(
+      'Japanese territory',
+    );
+    await expect(page.getByTestId('room-stage-hud')).toContainText(
+      'Prisoner points: Black +0, White +0',
+    );
+    await expect(guestPage.getByTestId('room-stage-hud')).toContainText(
+      'Japanese territory',
+    );
     await expect(page.getByTestId('room-confirm-scoring')).toBeVisible();
     await expect(guestPage.getByTestId('room-confirm-scoring')).toBeVisible();
 

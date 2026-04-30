@@ -11,6 +11,12 @@ const expectedDefaultGoTimeControl = {
   periodTimeMs: 30_000,
   periods: 3,
 } as const;
+type GoKoRule = 'basic-ko' | 'positional-superko';
+type GoScoringRule = 'area' | 'japanese-territory';
+const expectedDefaultGoRules = {
+  koRule: 'basic-ko',
+  scoringRule: 'area',
+} as const;
 
 export async function useEnglish(page: Page): Promise<void> {
   await page.addInitScript(
@@ -53,10 +59,16 @@ export async function createHostedRoom(
   options: {
     mode?: 'go' | 'gomoku';
     boardSize?: 9 | 13 | 15 | 19;
+    koRule?: GoKoRule;
+    scoringRule?: GoScoringRule;
   } = {},
 ): Promise<string> {
   const mode = options.mode ?? 'go';
   const boardSize = mode === 'gomoku' ? 15 : (options.boardSize ?? 19);
+  const goRules = {
+    koRule: options.koRule ?? expectedDefaultGoRules.koRule,
+    scoringRule: options.scoringRule ?? expectedDefaultGoRules.scoringRule,
+  };
   const displayNameInput = page.getByTestId('lobby-display-name-input');
   const createRoomButton = page.getByTestId('online-lobby-create-button');
   const appOrigin = new URL(page.url()).origin;
@@ -103,6 +115,16 @@ export async function createHostedRoom(
   } else if (boardSize !== 19) {
     await page.getByTestId(`lobby-create-board-size-${boardSize}`).click();
   }
+  if (mode === 'go') {
+    if (goRules.koRule !== expectedDefaultGoRules.koRule) {
+      await page.getByTestId(`lobby-create-ko-rule-${goRules.koRule}`).click();
+    }
+    if (goRules.scoringRule !== expectedDefaultGoRules.scoringRule) {
+      await page
+        .getByTestId(`lobby-create-scoring-rule-${goRules.scoringRule}`)
+        .click();
+    }
+  }
   await page.getByTestId('lobby-create-room-dialog-confirm').click();
 
   const createRoomResponse = await createRoomResponsePromise;
@@ -133,6 +155,7 @@ export async function createHostedRoom(
           displayName,
           mode,
           boardSize,
+          goRules,
           timeControl: expectedDefaultGoTimeControl,
         }
       : {
@@ -212,6 +235,7 @@ function readCreateRoomRequestBody(request: Request): {
   displayName?: unknown;
   mode?: unknown;
   boardSize?: unknown;
+  goRules?: unknown;
   timeControl?: unknown;
 } | null {
   const rawBody = request.postData();
@@ -225,6 +249,7 @@ function readCreateRoomRequestBody(request: Request): {
       displayName?: unknown;
       mode?: unknown;
       boardSize?: unknown;
+      goRules?: unknown;
       timeControl?: unknown;
     };
   } catch {
